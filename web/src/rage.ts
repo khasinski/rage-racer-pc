@@ -1,6 +1,7 @@
 // Typed wrapper over the WebAssembly bridge (web/wasm/rage_web.c). Every
 // heap view is taken fresh: the module's memory can grow, which replaces the
 // underlying ArrayBuffer.
+import type { PadSample } from './input';
 
 interface FsStream { readonly fd: number }
 interface EmscriptenFs {
@@ -26,15 +27,6 @@ export interface RaceOptions {
   reverse: boolean;
   laps: number;
   rivals: boolean;
-}
-
-export interface DriverLevels {
-  left: boolean;
-  right: boolean;
-  throttle: number; // 0..256
-  brake: number; // 0..256
-  shiftUp: boolean;
-  shiftDown: boolean;
 }
 
 export interface Hud {
@@ -63,6 +55,9 @@ export const NO_MATERIAL = 0xffffffff;
 /* rmesh.h RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT: decoded through the
  * environment palette, so it changes with the time of day. */
 export const MATERIAL_ENV_CLUT = 1 << 28;
+/* render_world.h RenderAssetSet: the two ordinary model banks of a track. */
+export const ASSET_TRACK_MODEL_BANK_1 = 3;
+export const ASSET_TRACK_MODEL_BANK_2 = 4;
 
 const DISC_PATH = '/disc/data.bin';
 const CHUNK = 16 * 1024 * 1024;
@@ -112,9 +107,10 @@ export class Rage {
       o.classIndex, o.course, o.car, +o.manual, +o.reverse, o.laps, +o.rivals]) === 1;
   }
 
-  setInput(d: DriverLevels): void {
-    this.m.ccall('rw_set_input', null, Array(6).fill('number'),
-      [+d.left, +d.right, d.throttle, d.brake, +d.shiftUp, +d.shiftDown]);
+  /** One pad sample; the bridge applies the desktop button presets. */
+  setPad(p: PadSample): void {
+    this.m.ccall('rw_set_pad', null, Array(5).fill('number'),
+      [p.held, p.stickX, p.rightTrigger, p.leftTrigger, +p.gamepad]);
   }
 
   /** One 50 Hz simulation tick; returns the race phase or -1. */
@@ -180,8 +176,8 @@ export class Rage {
 
   paletteHash(): number { return this.call('rw_palette_hash') >>> 0; }
 
-  /** Cycles the three retail chase-camera distances. */
-  cycleCamera(): void { this.call('rw_cycle_camera'); }
+  /** Track texture page (0/1) the last frame was built with. */
+  texturePage(): number { return this.call('rw_texture_page'); }
 
   /** Per car variant: whether the disc offers it with an automatic gearbox. */
   carAutomatic(): boolean[] {

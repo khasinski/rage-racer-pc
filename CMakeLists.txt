@@ -965,7 +965,8 @@ if(EMSCRIPTEN)
         src/port/native_car_cache.c
         src/port/race_view.c
         src/port/car_parts.c
-        src/port/chase_camera.c)
+        src/port/chase_camera.c
+        src/port/axis_curve.c)
     target_include_directories(rage-web PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/render
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -1000,7 +1001,8 @@ if(NOT EMSCRIPTEN)
         src/port/native_car_cache.c
         src/port/race_view.c
         src/port/car_parts.c
-        src/port/chase_camera.c)
+        src/port/chase_camera.c
+        src/port/axis_curve.c)
     target_include_directories(rage-web-parity PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/web/wasm/native_stub
         ${CMAKE_CURRENT_SOURCE_DIR}/src/render

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "axis_curve.h"
 #include "client_race.h"
 #include "environment_view.h"
 #include "game/car.h"
@@ -22,6 +23,7 @@
 #include "game/asset_index.h"
 #include "game/track.h"
 #include "game/track_data.h"
+#include "game/state.h"
 #include "race_view.h"
 #include "rage/chase_camera.h"
 #include "render/car_lamps.h"
@@ -76,6 +78,11 @@ static int s_haveStep, s_lastTickStepped;
 /* Retail far plane (16384) and fog scale; above 1 also draws cells the
  * retail visibility table hides (they stay in the scene as ray geometry). */
 static float s_drawDistance = 1.0f;
+/* Track texture page the frame was built with (render/track_textures.c:
+ * retail swaps the upper VRAM rows while the player is inside the track's
+ * texture section range). Terrain and course carry it in their material
+ * variant; track model banks decode against it directly. */
+static int s_page;
 /* Vehicle shadow camera: position, rows 0..2, (scaleX, scaleY, depthScale,
  * depthOffset); zero when no map could be built. */
 static float s_shadow[20];
@@ -88,7 +95,15 @@ typedef struct WebChase {
     int active;
 } WebChase;
 static WebChase s_chase;
-static int s_chasePreset;
+
+/* race_scene.c: the race starts in the car view; the camera button swaps it
+ * with the chase view (chase preset 0, the only one retail selects), and
+ * holding down in the chase view looks behind. */
+typedef enum WebView { WEB_VIEW_CAR, WEB_VIEW_CHASE, WEB_VIEW_LOOK_BEHIND } WebView;
+static WebView s_selectedView, s_viewCurrent;
+/* Last pad sample's button bits, and a camera-button press not yet used. */
+static u16 s_padHeld;
+static int s_pendingCamera;
 
 static void ReleaseRace(void) {
     FreeClientRace(s_race);
@@ -156,6 +171,9 @@ EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int 
     s_pendingShiftUp = s_pendingShiftDown = 0;
     s_frame = 0;
     memset(&s_chase, 0, sizeof(s_chase));
+    s_selectedView = s_viewCurrent = WEB_VIEW_CAR;
+    s_padHeld = 0;
+    s_pendingCamera = 0;
     s_haveStep = s_lastTickStepped = 0;
     s_shadowValid = 0;
     return 1;
@@ -175,6 +193,92 @@ EMSCRIPTEN_KEEPALIVE void rw_set_input(int left, int right, int throttle, int br
     if (shiftDown) s_pendingShiftDown = 1;
 }
 
+/* ---- Controls: the desktop pad path --------------------------------------
+ * The browser reports PS1 button bits (the keyboard mapped as input_config.c's
+ * defaults, a gamepad as analog_pad.c's GamepadButtons) plus the gamepad's
+ * stick and triggers. Without a gamepad the car reads the digital pad through
+ * g_PadButtonPresets[0]; with one it reads analog_pad.c's emulated NeGcon
+ * through g_NegconButtonPresets[0] and the default OPTIONS calibration, as
+ * player_input.c does on the desktop. */
+enum {
+    DIGITAL_SHIFT_UP = PAD_R2 | PAD_R1,     /* g_PadButtonPresets[0][4] */
+    DIGITAL_SHIFT_DOWN = PAD_L2 | PAD_L1,   /* g_PadButtonPresets[0][5] */
+    NEGCON_SHIFT_UP = PAD_DOWN,             /* g_NegconButtonPresets[0][4] */
+    NEGCON_SHIFT_DOWN = PAD_UP,             /* g_NegconButtonPresets[0][5] */
+    CAMERA_BUTTON = PAD_TRIANGLE,           /* slot 6 of both presets */
+    NEGCON_ANALOG_MAX = 0x6A,
+    NEGCON_DEFAULT_STEER_RANGE = 25,        /* g_NegconSteerRange[g_NegconMaxTwist = 0] */
+    NEGCON_DEFAULT_DEAD_ZONE = 6,           /* g_NegconSteerDeadZone[g_NegconSteerPlay = 1] */
+    NEGCON_STEERING_SCALE = 13 * 512,
+    PEDAL_FULLY_PRESSED = 0x100,
+};
+
+/* analog_pad.c's AxisShaped with the default input.steering/throttle/brake
+ * curves (only steering has a linearity, 0.5). */
+static float AxisShapedDefault(int axis, float linearity) {
+    float magnitude = (float)(axis < 0 ? -axis : axis) / 32767.0f;
+    float shaped = AxisCurve(magnitude > 1.0f ? 1.0f : magnitude, 0.0f, 1.0f, linearity, 1.0f);
+    return axis < 0 ? -shaped : shaped;
+}
+
+/* init_pad.c's CalibrateNegconSteering with a centred neutral. */
+static s32 CalibrateNegconSteer(int twist) {
+    s32 delta = twist - 0x80, steering;
+    if (delta > 0) {
+        steering = delta - NEGCON_DEFAULT_DEAD_ZONE;
+        if (steering < 0) steering = 0;
+        if (steering > NEGCON_DEFAULT_STEER_RANGE) steering = NEGCON_DEFAULT_STEER_RANGE;
+    } else {
+        steering = delta + NEGCON_DEFAULT_DEAD_ZONE;
+        if (steering > 0) steering = 0;
+        if (steering < -NEGCON_DEFAULT_STEER_RANGE) steering = -NEGCON_DEFAULT_STEER_RANGE;
+    }
+    return steering;
+}
+
+static s16 NegconPedal(int pressure) {
+    return (s16)(pressure * PEDAL_FULLY_PRESSED / NEGCON_ANALOG_MAX);
+}
+
+/* One pad sample: `held` PS1 button bits, the gamepad's left stick x
+ * (-32768..32767) and triggers (0..32767), and whether a gamepad is active.
+ * Gear and camera requests are edges and stay pending until a tick uses them. */
+EMSCRIPTEN_KEEPALIVE void rw_set_pad(int held, int stickX, int rightTrigger, int leftTrigger,
+                                     int gamepad) {
+    const u16 buttons = (u16)held;
+    const u16 pressed = buttons & (u16)~s_padHeld;
+    s_padHeld = buttons;
+    if (pressed & CAMERA_BUTTON) s_pendingCamera = 1;
+    if (!gamepad) {
+        s_input.steering.mode = STEERING_DIGITAL;
+        s_input.steering.left = (buttons & PAD_LEFT) != 0;
+        s_input.steering.right = (buttons & PAD_RIGHT) != 0;
+        s_input.steering.angle = 0;
+        s_input.throttle = buttons & PAD_CROSS ? PEDAL_FULLY_PRESSED : 0;
+        s_input.brake = buttons & PAD_SQUARE ? PEDAL_FULLY_PRESSED : 0;
+        if (pressed & DIGITAL_SHIFT_UP) s_pendingShiftUp = 1;
+        if (pressed & DIGITAL_SHIFT_DOWN) s_pendingShiftDown = 1;
+        return;
+    }
+    {
+        const int twist = NegconTwist(AxisShapedDefault(stickX, 0.5f),
+                                      (buttons & PAD_LEFT) != 0, (buttons & PAD_RIGHT) != 0,
+                                      NEGCON_DEFAULT_STEER_RANGE);
+        int analogI = (int)(AxisShapedDefault(rightTrigger, 0.0f) * (float)NEGCON_ANALOG_MAX);
+        int analogII = (int)(AxisShapedDefault(leftTrigger, 0.0f) * (float)NEGCON_ANALOG_MAX);
+        if (buttons & PAD_CROSS) analogI = NEGCON_ANALOG_MAX;
+        if (buttons & PAD_SQUARE) analogII = NEGCON_ANALOG_MAX;
+        s_input.steering.mode = STEERING_ANALOG;
+        s_input.steering.left = s_input.steering.right = 0;
+        s_input.steering.angle = CalibrateNegconSteer(twist) * NEGCON_STEERING_SCALE /
+                                 NEGCON_DEFAULT_STEER_RANGE;
+        s_input.throttle = NegconPedal(analogI);
+        s_input.brake = NegconPedal(analogII);
+    }
+    if (pressed & NEGCON_SHIFT_UP) s_pendingShiftUp = 1;
+    if (pressed & NEGCON_SHIFT_DOWN) s_pendingShiftDown = 1;
+}
+
 static float Daylight(const ClientRace *race) {
     RenderCamera environment;
     memset(&environment, 0, sizeof(environment));
@@ -182,14 +286,17 @@ static float Daylight(const ClientRace *race) {
     return CarLightDaylight(environment.skyTopColor, environment.skyHorizonColor);
 }
 
-static RenderCamera BuildChaseCamera(const PlayerCarRuntime *car);
+static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView view);
 
-/* Snapshots poses and the retail chase camera whenever the field physics
- * stepped. The chase camera's yaw settling is tuned per game frame, so it
- * also advances only here, as in the retail loop. */
+/* Snapshots poses and the race camera whenever the field physics stepped.
+ * Retail reads the camera button and updates the camera once per game
+ * frame, and the chase camera's yaw settling is tuned per frame, so all of
+ * it advances only here. */
 static void RecordPresentation(void) {
     const RaceSim *sim = &s_race->sim;
     const u32 stepTick = sim->drivers[0].stepTick;
+    const int racing = sim->phase == SIM_RACING; /* CanToggleRaceCamera */
+    WebView view;
     RenderCamera camera;
     s_lastTickStepped = !s_haveStep || stepTick != s_lastStepTick;
     if (!s_lastTickStepped) return;
@@ -197,9 +304,16 @@ static void RecordPresentation(void) {
         s_posePrevious[seat] = s_haveStep ? s_poseCurrent[seat] : sim->drivers[seat].car;
         s_poseCurrent[seat] = sim->drivers[seat].car;
     }
-    camera = BuildChaseCamera(&s_poseCurrent[0]);
-    s_cameraPrevious = s_haveStep ? s_cameraCurrent : camera;
+    if (s_pendingCamera && racing)
+        s_selectedView = s_selectedView == WEB_VIEW_CAR ? WEB_VIEW_CHASE : WEB_VIEW_CAR;
+    s_pendingCamera = 0;
+    view = racing && s_selectedView == WEB_VIEW_CHASE && (s_padHeld & PAD_DOWN)
+               ? WEB_VIEW_LOOK_BEHIND : s_selectedView;
+    camera = BuildRaceCamera(&s_poseCurrent[0], view);
+    /* A new view cuts; only frames within one view are interpolated. */
+    s_cameraPrevious = s_haveStep && view == s_viewCurrent ? s_cameraCurrent : camera;
     s_cameraCurrent = camera;
+    s_viewCurrent = view;
     s_lastStepTick = stepTick;
     s_haveStep = 1;
 }
@@ -292,14 +406,16 @@ static void UpdateChaseYawStep(WebChase *chase, s32 targetYaw, s32 previousYaw) 
     }
 }
 
-static Vec3 ApplyMatrix(SceneMat3 m, float x, float y, float z) {
-    return SceneRotatePoint(m, x, y, z);
+static SceneMat3 CarRotation(const PlayerCarRuntime *car) {
+    return SceneMat3Multiply(SceneRotationZ(car->bodyRoll),
+                             SceneMat3Multiply(SceneRotationX(car->bodyPitch),
+                                               SceneRotationY(car->bodyYaw)));
 }
 
-/* Eye position and PS1 view angles, as CameraViewFromChaseCamera leaves them. */
-static void RetailChaseView(const PlayerCarRuntime *car, int preset, Vec3 *eye,
+/* Eye position and PS1 view angles, as CameraViewFromChaseCamera leaves them
+ * for chase preset 0 (eye 0x3A up, 0x118 back). */
+static void RetailChaseView(const PlayerCarRuntime *car, Vec3 *eye,
                             s32 *pitch, s32 *yaw, s32 *roll) {
-    static const s32 eyeY[3] = {0x3A, 0x59, 0x97}, eyeZ[3] = {0x118, 0x140, 0x190};
     WebChase *chase = &s_chase;
     s32 target = car->bodyYaw & ANGLE_MASK, settled, lag;
     SceneMat3 cameraRotation, object, inverseObject, work;
@@ -325,15 +441,13 @@ static void RetailChaseView(const PlayerCarRuntime *car, int preset, Vec3 *eye,
     chase->previousYaw = settled;
 
     cameraRotation = SceneMat3Multiply(SceneRotationX(-0x80), SceneRotationY(-lag));
-    object = SceneMat3Multiply(SceneRotationZ(car->bodyRoll),
-                               SceneMat3Multiply(SceneRotationX(car->bodyPitch),
-                                                 SceneRotationY(car->bodyYaw)));
+    object = CarRotation(car);
     inverseObject = SceneMat3Transpose(object);
     work = SceneMat3Transpose(SceneMat3Multiply(cameraRotation, object));
 
-    focus = ApplyMatrix(inverseObject, 0.0f, -0x3C, 0x32);
-    eyeWorld = ApplyMatrix(work, 0.0f, (float)ChaseCameraHeight(eyeY[preset]),
-                           (float)ChaseCameraDistance(eyeZ[preset]));
+    focus = SceneRotatePoint(inverseObject, 0.0f, -0x3C, 0x32);
+    eyeWorld = SceneRotatePoint(work, 0.0f, (float)ChaseCameraHeight(0x3A),
+                           (float)ChaseCameraDistance(0x118));
     eye->x = (float)car->x + focus.x - eyeWorld.x;
     eye->y = (float)car->y + focus.y - eyeWorld.y;
     eye->z = (float)car->z + focus.z - eyeWorld.z;
@@ -345,18 +459,55 @@ static void RetailChaseView(const PlayerCarRuntime *car, int preset, Vec3 *eye,
     angleX = 0x400 - (Atan2(Word((int64_t)ey + 0x28), distance) & ANGLE_MASK);
     *yaw = 0x400 - (Atan2(ex, ez) & ANGLE_MASK) + ChaseCameraYawOffset(car->steeringAngle);
     *roll = Word((int64_t)car->bodyRoll - car->bodyRollVelocity);
-    *pitch = angleX - (preset == 0 ? 0x90 : 0x60) + ChaseCameraPitchOffset();
+    *pitch = angleX - 0x90 + ChaseCameraPitchOffset();
+}
+
+/* Mode 0, CameraViewFromCarBlock: the car's own pose, lifted along its up
+ * axis and pitched by its tilt counter. */
+static void RetailCarView(const PlayerCarRuntime *car, Vec3 *eye, s32 *pitch, s32 *yaw, s32 *roll) {
+    const Vec3 lift = SceneRotatePoint(SceneMat3Transpose(CarRotation(car)), 0.0f, -0x1C0 / 16.0f, 0.0f);
+    eye->x = (float)car->x + lift.x;
+    eye->y = (float)car->y + lift.y;
+    eye->z = (float)car->z + lift.z;
+    *pitch = Word((int64_t)car->bodyPitch + car->tiltCounter);
+    *yaw = car->bodyYaw;
+    *roll = car->bodyRoll;
+}
+
+/* CameraViewFromLookBehind: the orbit camera turned round behind the car. */
+static void RetailLookBehindView(const PlayerCarRuntime *car, Vec3 *eye, s32 *pitch, s32 *yaw,
+                                 s32 *roll) {
+    enum { LOOK_BEHIND_YAW = 0x800, LOOK_BEHIND_DISTANCE = 0xE0, LOOK_BEHIND_HEIGHT = 0x50 };
+    const SceneMat3 object = CarRotation(car);
+    const SceneMat3 cameraToWorld =
+        SceneMat3Transpose(SceneMat3Multiply(SceneRotationY(-LOOK_BEHIND_YAW), object));
+    const Vec3 focus = SceneRotatePoint(SceneMat3Transpose(object), 0.0f, 0.0f, 0x32);
+    const Vec3 eyeWorld = SceneRotatePoint(cameraToWorld, 0.0f, LOOK_BEHIND_HEIGHT, LOOK_BEHIND_DISTANCE);
+    eye->x = (float)car->x + focus.x - eyeWorld.x;
+    eye->y = (float)car->y + focus.y - 0x28 - eyeWorld.y;
+    eye->z = (float)car->z + focus.z - eyeWorld.z;
+    *pitch = 0x400 - (Atan2((s32)lroundf(eyeWorld.y), LOOK_BEHIND_DISTANCE) & ANGLE_MASK);
+    *yaw = 0x400 - (Atan2((s32)lroundf(eyeWorld.x), (s32)lroundf(eyeWorld.z)) & ANGLE_MASK);
+    *roll = car->bodyRoll;
 }
 
 /* render_world_game.c's GameRenderWorldBuildCamera for the race view:
- * PAL 320x240 projection, near 1, the verified race depth limit. */
-static RenderCamera BuildChaseCamera(const PlayerCarRuntime *car) {
+ * PAL 320x240 projection, near 1, the verified race depth limit. The chase
+ * camera only settles while it is the view, as retail's previousMode check
+ * restarts it otherwise. */
+static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView selected) {
     RenderCamera camera;
     Vec3 eye;
     s32 pitch, yaw, roll;
     SceneMat3 view, converted;
 
-    RetailChaseView(car, s_chasePreset, &eye, &pitch, &yaw, &roll);
+    if (selected == WEB_VIEW_CHASE) {
+        RetailChaseView(car, &eye, &pitch, &yaw, &roll);
+    } else {
+        s_chase.active = 0;
+        if (selected == WEB_VIEW_LOOK_BEHIND) RetailLookBehindView(car, &eye, &pitch, &yaw, &roll);
+        else RetailCarView(car, &eye, &pitch, &yaw, &roll);
+    }
     memset(&camera, 0, sizeof(camera));
     camera.transform.position = (Vec3){eye.x, -eye.y, -eye.z};
     view = SceneMat3Multiply(SceneMat3Multiply(SceneRotationZ(roll), SceneRotationX(pitch)),
@@ -371,12 +522,6 @@ static RenderCamera BuildChaseCamera(const PlayerCarRuntime *car) {
     camera.nearPlane = 1.0f;
     camera.farPlane = 16384.0f;
     return camera;
-}
-
-/* Cycles the three retail chase distances (0 closest). */
-EMSCRIPTEN_KEEPALIVE int rw_cycle_camera(void) {
-    s_chasePreset = (s_chasePreset + 1) % 3;
-    return s_chasePreset;
 }
 
 /* Same rotation as modern_native_gpu.c's ModernNativeRotate. */
@@ -457,8 +602,11 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     RenderCamera camera;
     RenderShadowMap shadow;
     Vec3 shadowCenter;
-    const int page = 0;
+    int page;
     if (!s_race || !s_haveStep || !(aspect > 0.0f)) return -1;
+    page = s_poseCurrent[0].trackSection >= s_race->look.textureSectionLo &&
+           s_poseCurrent[0].trackSection < s_race->look.textureSectionHi;
+    s_page = page;
     t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
     RenderWorldBeginFrame(&s_world, ++s_frame);
     RenderInterpolateCamera(&s_cameraPrevious, &s_cameraCurrent, t, &camera);
@@ -485,6 +633,9 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
             RenderTransform mixed;
             RenderInterpolateTransform(&instance->previousTransform, &instance->transform, t, &mixed);
             instance->transform = mixed;
+            /* update_camera.c draws the player's car only outside the car view. */
+            if (instance->entity == 0 && s_viewCurrent == WEB_VIEW_CAR)
+                instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
         } else if (s_drawDistance > 1.0f) {
             instance->flags &= ~RAGE_RENDER_INSTANCE_RAY_ONLY;
         }
@@ -590,7 +741,7 @@ EMSCRIPTEN_KEEPALIVE int rw_decode_texture(int spanIndex, uint8_t *rgba) {
     instance.carPaintColor1 = span->carPaintColor1;
     instance.carPaintColor2 = span->carPaintColor2;
     instance.materialVariant = span->materialVariant;
-    return DecodeClientMaterial(s_race, &instance, span->material, 0, s_race->env.clut,
+    return DecodeClientMaterial(s_race, &instance, span->material, s_page, s_race->env.clut,
                                 rgba, WEB_TEXTURE_BYTES);
 }
 
@@ -606,6 +757,9 @@ EMSCRIPTEN_KEEPALIVE uint8_t *rw_decode_texture_mips(int spanIndex, uint8_t *scr
         return NULL;
     return s_mipChain;
 }
+
+/* 0 or 1: the track texture page of the last built frame. */
+EMSCRIPTEN_KEEPALIVE int rw_texture_page(void) { return s_page; }
 
 EMSCRIPTEN_KEEPALIVE int rw_texture_levels(void) { return RAGE_TEXTURE_ATLAS_MIP_LEVELS; }
 EMSCRIPTEN_KEEPALIVE int rw_texture_level_offset(int level) {

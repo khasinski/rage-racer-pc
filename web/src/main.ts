@@ -1,7 +1,7 @@
 import './style.css';
 import { chooseDataTrack, droppedFiles } from './disc';
-import { consumeKey, sampleDriver } from './input';
-import { PHASE_COUNTDOWN, PHASE_FINISHED, Rage, type Hud, type RaceOptions } from './rage';
+import { clearKeyEdges, consumeKey, PAD, samplePad } from './input';
+import { PHASE_COUNTDOWN, PHASE_FINISHED, PHASE_RACING, Rage, type Hud, type RaceOptions } from './rage';
 import { Renderer } from './renderer';
 
 const TICK_MS = 1000 / 50; // the simulation's fixed 50 Hz clock
@@ -105,6 +105,9 @@ setup.addEventListener('submit', async (event) => {
   resize();
   last = performance.now();
   accumulator = simTime = previousStep = currentStep = 0;
+  paused = startHeld = false;
+  phase = 0;
+  clearKeyEdges();
 });
 
 function resize() {
@@ -129,6 +132,7 @@ function drawHud(h: Hud) {
   const banner = $('hud-banner');
   if (h.phase === PHASE_COUNTDOWN) banner.textContent = String(Math.ceil(h.countdown / 50) || 'GO');
   else if (h.phase === PHASE_FINISHED || h.status === 2) banner.textContent = 'FINISH';
+  else if (paused) banner.textContent = 'PAUSE';
   else banner.textContent = '';
 }
 
@@ -139,22 +143,30 @@ let accumulator = 0;
 let simTime = 0;
 let previousStep = 0;
 let currentStep = 0;
+/* Start pauses during the countdown and the race (race_scene_rules.c CanPauseRace). */
+let paused = false;
+let startHeld = false;
+let phase = 0;
 function frame(now: number) {
   requestAnimationFrame(frame);
   if (!racing || !renderer) return;
-  if (consumeKey('KeyC')) rageSync?.cycleCamera();
   if (consumeKey('Escape')) {
     show('setup');
     $('start').focus();
     return;
   }
-  accumulator = Math.min(accumulator + (now - last), 250);
+  const pad = samplePad();
+  const start = (pad.held & PAD.START) !== 0;
+  if (start && !startHeld && (phase === PHASE_COUNTDOWN || phase === PHASE_RACING)) paused = !paused;
+  startHeld = start;
+  accumulator = paused ? 0 : Math.min(accumulator + (now - last), 250);
   last = now;
   const rage = rageSync;
   if (!rage) return;
+  rage.setPad(pad);
   while (accumulator >= TICK_MS) {
-    rage.setInput(sampleDriver());
-    if (rage.tick() < 0) {
+    phase = rage.tick();
+    if (phase < 0) {
       $('setup-status').textContent = 'The race stopped unexpectedly.';
       show('setup');
       return;

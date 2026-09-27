@@ -6,7 +6,7 @@
 // three.js never computes its own view.
 import * as THREE from 'three';
 import {
-  MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture,
+  ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture,
 } from './rage';
 import {
   shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
@@ -17,7 +17,6 @@ const VERTEX_CAPACITY = 600_000;
 const DECODES_PER_FRAME = 48;
 /* render_world.h RenderAssetSet: vehicles are model-bank meshes. */
 const ASSET_MODEL_BANK = 0;
-const ASSET_TRACK_MODEL_BANK_1 = 3;
 
 type Uniform<T> = { value: T };
 interface MaterialEntry {
@@ -41,6 +40,8 @@ export class Renderer {
   private readonly mainMaterials: THREE.RawShaderMaterial[] = [];
   private readonly shadowMaterials: THREE.RawShaderMaterial[] = [];
   private readonly entries = new Map<string, MaterialEntry>();
+  /* Last entry each material was drawn with, shown while a new page decodes. */
+  private readonly shown = new Map<string, MaterialEntry>();
   private readonly untextured: MaterialEntry;
   private readonly shadowTarget: THREE.WebGLRenderTarget;
   private readonly shared = {
@@ -54,6 +55,7 @@ export class Renderer {
     uShadowResolution: { value: 1 },
   };
   private paletteHash = 0;
+  private page = 0;
   private stale = new Set<string>();
   shadows = true;
 
@@ -167,25 +169,38 @@ export class Renderer {
     return texture;
   }
 
-  private static keyOf(spans: Uint32Array, f: number): string {
-    return `${spans[f + 3]}:${spans[f + 4]}:${spans[f + 5]}:${spans[f + 2]}:${spans[f + 6]}:` +
+  /* Track model banks decode against the current track texture page, which
+   * retail swaps by track section; terrain and course already carry the page
+   * in their material variant. */
+  private static keyOf(spans: Uint32Array, f: number, page: number): string {
+    const set = spans[f + 3];
+    const paged = set === ASSET_TRACK_MODEL_BANK_1 || set === ASSET_TRACK_MODEL_BANK_2;
+    return `${Renderer.identityOf(spans, f)}:${spans[f + 6]}:${paged ? page : 0}`;
+  }
+
+  /** The material regardless of page and variant. */
+  private static identityOf(spans: Uint32Array, f: number): string {
+    return `${spans[f + 3]}:${spans[f + 4]}:${spans[f + 5]}:${spans[f + 2]}:` +
            `${spans[f + 7]}:${spans[f + 8]}:${spans[f + 9]}`;
   }
 
   private entryFor(spans: Uint32Array, span: number, budget: { decodes: number }): MaterialEntry | null {
     const f = span * SPAN_FIELDS;
     if (spans[f + 2] === NO_MATERIAL) return this.untextured;
-    const key = Renderer.keyOf(spans, f);
+    const key = Renderer.keyOf(spans, f, this.page);
+    const identity = Renderer.identityOf(spans, f);
     const existing = this.entries.get(key);
     const palette = (spans[f + 11] & MATERIAL_ENV_CLUT) !== 0;
-    if (existing && !(palette && this.stale.has(key))) return existing;
-    if (budget.decodes <= 0) return existing ?? null;
+    if (existing && !(palette && this.stale.has(key))) return this.show(identity, existing);
+    // Out of budget: keep what this material showed last (the previous page
+    // or variant), as retail keeps drawing while it swaps VRAM rows.
+    if (budget.decodes <= 0) return existing ?? this.shown.get(identity) ?? null;
     budget.decodes--;
     const decoded = this.rage.decodeTexture(span);
     this.stale.delete(key);
     if (!decoded) {
       this.entries.set(key, this.untextured);
-      return this.untextured;
+      return this.show(identity, this.untextured);
     }
     const texture = Renderer.texture(decoded);
     if (existing && existing.texture) {
@@ -194,15 +209,21 @@ export class Renderer {
       existing.texture = texture;
       (this.mainMaterials[existing.main].uniforms.uMaterial as Uniform<THREE.Texture>).value = texture;
       (this.shadowMaterials[existing.shadow].uniforms.uMaterial as Uniform<THREE.Texture>).value = texture;
-      return existing;
+      return this.show(identity, existing);
     }
     const entry = this.addEntry(texture, decoded.transparent);
     this.entries.set(key, entry);
+    return this.show(identity, entry);
+  }
+
+  private show(identity: string, entry: MaterialEntry): MaterialEntry {
+    this.shown.set(identity, entry);
     return entry;
   }
 
   /** Uploads the frame the bridge just built with `vertexCount` vertices. */
   update(vertexCount: number) {
+    this.page = this.rage.texturePage();
     const hash = this.rage.paletteHash();
     if (hash !== this.paletteHash) {
       this.paletteHash = hash;

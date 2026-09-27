@@ -45,15 +45,31 @@ try {
   await page.waitForTimeout(1500);
   await page.screenshot({ path: join(out, '03-countdown.png') });
 
-  await page.keyboard.down('ArrowUp');
+  // Desktop keys (input_config.c): X is cross (accelerate), S triangle
+  // (camera), Enter start (pause), the arrows the D-pad.
+  const raceTime = () => page.evaluate(() => document.getElementById('hud-time')?.textContent);
+  await page.keyboard.down('KeyX');
   await page.waitForTimeout(6000);
-  await page.screenshot({ path: join(out, '04-racing.png') });
+  await page.screenshot({ path: join(out, '04-car-view.png') });
+  await page.keyboard.press('KeyS');
   await page.keyboard.down('ArrowLeft');
   await page.waitForTimeout(1200);
   await page.keyboard.up('ArrowLeft');
   await page.waitForTimeout(3000);
-  await page.screenshot({ path: join(out, '05-racing.png') });
-  await page.keyboard.up('ArrowUp');
+  await page.screenshot({ path: join(out, '05-chase-view.png') });
+  await page.keyboard.down('ArrowDown');
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: join(out, '06-look-behind.png') });
+  await page.keyboard.up('ArrowDown');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+  const pausedAt = await raceTime();
+  await page.waitForTimeout(1000);
+  if (await raceTime() !== pausedAt) failures.push('Enter did not pause the race');
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(1000);
+  if (await raceTime() === pausedAt) failures.push('Enter did not resume the race');
+  await page.keyboard.up('KeyX');
 
   const hud = await page.evaluate(() => ({
     place: document.getElementById('hud-place')?.textContent,
@@ -63,6 +79,7 @@ try {
     gear: document.getElementById('hud-gear')?.textContent,
   }));
   console.log('hud', JSON.stringify(hud));
+  if (!(Number(hud.speed) > 0)) failures.push('X did not accelerate the car');
   const blank = await page.evaluate(() => {
     const canvas = document.getElementById('view');
     const probe = document.createElement('canvas');
