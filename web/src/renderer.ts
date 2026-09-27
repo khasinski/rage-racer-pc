@@ -6,7 +6,7 @@
 // three.js never computes its own view.
 import * as THREE from 'three';
 import {
-  ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture,
+  ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture, type TextureLevel,
 } from './rage';
 import {
   shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
@@ -47,13 +47,21 @@ export class Renderer {
   private readonly shared = {
     uCameraPosition: vec4(), uViewRow0: vec4(), uViewRow1: vec4(), uViewRow2: vec4(),
     uProjection: vec4(), uLightDirection: vec4(), uAmbient: vec4(), uDiffuse: vec4(),
-    uSkyTop: vec4(), uSkyHorizon: vec4(), uSkyBottom: vec4(),
     uShadowPosition: vec4(), uShadowRow0: vec4(), uShadowRow1: vec4(), uShadowRow2: vec4(),
     uShadowProjection: vec4(),
     uShadowMap: { value: null } as Uniform<THREE.Texture | null>,
     uShadowEnabled: { value: 0 },
     uShadowResolution: { value: 1 },
   };
+  /* native_sky.frag.glsl's NativeSkyColors block and panorama. */
+  private readonly sky = {
+    uSkyTop: vec4(), uSkyMiddle: vec4(), uSkyHorizon: vec4(), uSkyBottom: vec4(),
+    uSkyGridOrigin: vec4(), uSkyGridBasis: vec4(), uSkyGridParams: vec4(),
+    uPanorama: { value: null } as Uniform<THREE.Texture | null>,
+  };
+  /* Without a panorama the native backend binds one transparent texel. */
+  private readonly noPanorama = Renderer.panorama({ data: new Uint8Array(4), width: 1, height: 1 });
+  private skyRevision: number | null = null;
   private paletteHash = 0;
   private page = 0;
   private stale = new Set<string>();
@@ -107,8 +115,9 @@ export class Renderer {
         'position', new THREE.Float32BufferAttribute([-1, -1, 0, 3, -1, 0, -1, 3, 0], 3)),
       new THREE.RawShaderMaterial({
         glslVersion: THREE.GLSL3, vertexShader: skyVertex, fragmentShader: skyFragment,
-        uniforms: this.shared, depthTest: false, depthWrite: false,
+        uniforms: { ...this.shared, ...this.sky }, depthTest: false, depthWrite: false,
       }));
+    this.sky.uPanorama.value = this.noPanorama;
     sky.frustumCulled = false;
     this.scene.add(sky, world);
   }
@@ -167,6 +176,32 @@ export class Renderer {
     texture.colorSpace = THREE.NoColorSpace;
     texture.needsUpdate = true;
     return texture;
+  }
+
+  /* The cloud sheet repeats round the turn but never upwards, and is sampled
+   * a texel at a time with no mips, as the native sky sampler does. */
+  private static panorama(image: TextureLevel): THREE.DataTexture {
+    const texture = new THREE.DataTexture(image.data, image.width, image.height, THREE.RGBAFormat);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+    texture.generateMipmaps = false;
+    texture.colorSpace = THREE.NoColorSpace;
+    texture.needsUpdate = true;
+    return texture;
+  }
+
+  /* ModernNativeEnsureSkyTexture: decode again whenever the palette, page or
+   * cloud row changes; a failed decode leaves only the gradient. */
+  private updatePanorama() {
+    const revision = this.rage.skyRevision();
+    if (revision === this.skyRevision) return;
+    this.skyRevision = revision;
+    const decoded = this.rage.decodeSky();
+    const previous = this.sky.uPanorama.value;
+    this.sky.uPanorama.value = decoded ? Renderer.panorama(decoded) : this.noPanorama;
+    if (previous && previous !== this.noPanorama) previous.dispose();
   }
 
   /* Track model banks decode against the current track texture page, which
@@ -267,9 +302,18 @@ export class Renderer {
     s.uLightDirection.value.fromArray(l, 0);
     s.uAmbient.value.fromArray(l, 4);
     s.uDiffuse.value.fromArray(l, 8);
-    s.uSkyTop.value.fromArray(l, 12);
-    s.uSkyHorizon.value.fromArray(l, 16);
-    s.uSkyBottom.value.fromArray(l, 20);
+    const sky = this.rage.sky();
+    const k = this.sky;
+    k.uSkyTop.value.fromArray(sky, 0);
+    k.uSkyMiddle.value.fromArray(sky, 4);
+    k.uSkyHorizon.value.fromArray(sky, 8);
+    k.uSkyBottom.value.fromArray(sky, 12);
+    k.uSkyGridOrigin.value.fromArray(sky, 16);
+    k.uSkyGridBasis.value.fromArray(sky, 20);
+    k.uSkyGridParams.value.fromArray(sky, 24);
+    // gl_FragCoord is in drawing-buffer pixels.
+    k.uSkyGridParams.value.w = this.webgl.getContext().drawingBufferHeight;
+    this.updatePanorama();
     const shadow = this.shadows ? this.rage.shadow() : null;
     s.uShadowEnabled.value = shadow ? 1 : 0;
     if (shadow) {

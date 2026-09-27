@@ -34,6 +34,7 @@
 #include "render/texture_mipmap.h"
 #include "scene_matrix.h"
 #include "web_rules.h"
+#include "web_sky.h"
 
 enum {
     WEB_INSTANCE_CAPACITY = 8192,
@@ -69,6 +70,7 @@ static uint64_t s_frame;
 static float s_camera[28];
 /* direction, ambient, diffuse, skyTop, skyHorizon, skyBottom. */
 static float s_light[24];
+static float s_sky[WEB_SKY_FLOATS];
 static int32_t s_hud[16];
 /* Presentation history at the simulation's physics steps (every second
  * 50 Hz tick): the browser draws between the last two, so motion is smooth
@@ -77,9 +79,6 @@ static PlayerCarRuntime s_posePrevious[DRIVER_SEAT_LIMIT], s_poseCurrent[DRIVER_
 static RenderCamera s_cameraPrevious, s_cameraCurrent;
 static u32 s_lastStepTick;
 static int s_haveStep, s_lastTickStepped;
-/* Retail far plane (16384) and fog scale; above 1 also draws cells the
- * retail visibility table hides (they stay in the scene as ray geometry). */
-static float s_drawDistance = 1.0f;
 /* Track texture page the frame was built with (render/track_textures.c:
  * retail swaps the upper VRAM rows while the player is inside the track's
  * texture section range). Terrain and course carry it in their material
@@ -376,10 +375,6 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
 /* 1 when the last tick produced a new presentation snapshot. */
 EMSCRIPTEN_KEEPALIVE int rw_last_tick_stepped(void) { return s_lastTickStepped; }
 
-EMSCRIPTEN_KEEPALIVE void rw_set_draw_distance(float multiplier) {
-    s_drawDistance = multiplier >= 1.0f && multiplier <= 16.0f ? multiplier : 1.0f;
-}
-
 /* ---- Retail chase camera (track/camera_chase.c, mode 1) ------------------
  * The yaw settling is the retail integer code verbatim. The eye/look-at
  * geometry uses the same offsets, matrix order and angle formulas, evaluated
@@ -561,6 +556,7 @@ static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView selecte
     camera.verticalFovDegrees = 41.112f;
     camera.nearPlane = 1.0f;
     camera.farPlane = 16384.0f;
+    WebSkySetCamera(&camera, s_race, (s32)lroundf(eye.y), pitch, yaw, roll);
     return camera;
 }
 
@@ -651,9 +647,6 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     RenderWorldBeginFrame(&s_world, ++s_frame);
     RenderInterpolateCamera(&s_cameraPrevious, &s_cameraCurrent, t, &camera);
     ApplyEnvironment(&camera, &s_race->env);
-    camera.farPlane *= s_drawDistance;
-    camera.fogNear *= s_drawDistance;
-    camera.fogFar *= s_drawDistance;
     RenderWorldSetCamera(&s_world, &camera);
     RenderDirectionalLightFromSky(&camera, &light);
     RenderWorldSetDirectionalLight(&s_world, &light);
@@ -676,8 +669,6 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
             /* update_camera.c draws the player's car only outside the car view. */
             if (instance->entity == (uint32_t)s_localSeat && s_viewCurrent == WEB_VIEW_CAR)
                 instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
-        } else if (s_drawDistance > 1.0f) {
-            instance->flags &= ~RAGE_RENDER_INSTANCE_RAY_ONLY;
         }
     }
     shadowCenter = RenderShadowCenter(&s_world);
@@ -722,8 +713,33 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     StoreVec3(&s_light[12], s_world.camera.skyTopColor);
     StoreVec3(&s_light[16], s_world.camera.skyHorizonColor);
     StoreVec3(&s_light[20], s_world.camera.skyBottomColor);
+    WebSkyUniform(&s_world.camera, aspect, s_sky);
     return (int)s_vertexCount;
 }
+
+/* The native sky uniform block (web_sky.h) for the last built frame. */
+EMSCRIPTEN_KEEPALIVE float *rw_sky(void) { return s_sky; }
+
+/* The 512x256 cloud panorama for the last built frame, as the native backend
+ * uploads it; 0 when it cannot be decoded (the gradient still draws). */
+EMSCRIPTEN_KEEPALIVE int rw_decode_sky(uint8_t *rgba) {
+    return s_race && s_haveStep &&
+           WebSkyDecode(s_race, &s_world.camera, s_page, rgba, WEB_SKY_WIDTH * WEB_SKY_HEIGHT * 4);
+}
+
+/* Changes whenever the panorama's inputs do (palette, texture page, cloud
+ * row), so the browser knows when to decode it again. */
+EMSCRIPTEN_KEEPALIVE uint32_t rw_sky_revision(void) {
+    uint32_t hash = 2166136261u;
+    const uint8_t *bytes;
+    if (!s_race) return 0;
+    bytes = (const uint8_t *)s_race->env.clut;
+    for (size_t i = 0; i < sizeof(s_race->env.clut); ++i) hash = (hash ^ bytes[i]) * 16777619u;
+    hash = (hash ^ (uint32_t)s_page) * 16777619u;
+    return (hash ^ s_world.camera.skyCloudRow) * 16777619u;
+}
+EMSCRIPTEN_KEEPALIVE int rw_sky_width(void) { return WEB_SKY_WIDTH; }
+EMSCRIPTEN_KEEPALIVE int rw_sky_height(void) { return WEB_SKY_HEIGHT; }
 
 EMSCRIPTEN_KEEPALIVE uint32_t *rw_spans(void) { return s_spanFields; }
 EMSCRIPTEN_KEEPALIVE int rw_span_count(void) { return (int)s_spanCount; }

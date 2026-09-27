@@ -1,9 +1,10 @@
 // GLSL ES 3.0 ports of the native modern renderer's shaders
 // (src/port/modern/shaders/native.vert.glsl, native_texture.frag.glsl,
-// native_color.frag.glsl and native_shadow*.glsl). Kept: world-to-view
-// camera rows, projection, depth-bias rule, CPU-reference fog, PS1 colour
-// modulation, zone lighting, the premultiplied atlas mip chain, and the
-// vehicle shadow map with its 2x2 filter and native shading weights. Left
+// native_color.frag.glsl, native_shadow*.glsl and native_sky.*.glsl). Kept:
+// world-to-view camera rows, projection, depth-bias rule, CPU-reference fog,
+// PS1 colour modulation, zone lighting, the premultiplied atlas mip chain,
+// the vehicle shadow map with its 2x2 filter and native shading weights, and
+// the sky gradient with the retail cloud panorama grid. Left
 // out: ray-traced visibility, clear coat/specular, lamps and spot lights.
 
 /* WebGL cannot limit a texture to four mip levels, so the chain is padded
@@ -180,35 +181,84 @@ void main() {
 }
 `;
 
-// Sky: the same three-band gradient the native shader reflects, evaluated
-// per pixel along the camera ray.
+// Sky (native_sky.vert.glsl / native_sky.frag.glsl): the environment
+// gradient along the camera ray, with the disc's cloud panorama placed on
+// the retail screen-space tile grid. One full-screen triangle, as natively.
 export const skyVertex = /* glsl */ `
 precision highp float;
 in vec3 position;
-out vec2 vNdc;
+uniform vec4 uViewRow0;
+uniform vec4 uViewRow1;
+uniform vec4 uViewRow2;
+uniform vec4 uProjection;
+out vec3 vWorldDirection;
 void main() {
-    vNdc = position.xy;
-    gl_Position = vec4(position.xy, 1.0, 1.0);
+    vec2 clip = position.xy;
+    vec3 viewDirection = vec3(clip.x / uProjection.x, clip.y / uProjection.y, -1.0);
+    vWorldDirection = uViewRow0.xyz * viewDirection.x +
+                      uViewRow1.xyz * viewDirection.y +
+                      uViewRow2.xyz * viewDirection.z;
+    gl_Position = vec4(clip, 1.0, 1.0);
 }
 `;
 
 export const skyFragment = /* glsl */ `
 precision highp float;
-uniform vec4 uViewRow0;
-uniform vec4 uViewRow1;
-uniform vec4 uViewRow2;
-uniform vec4 uProjection;
+precision highp sampler2D;
+uniform sampler2D uPanorama;
 uniform vec4 uSkyTop;
+uniform vec4 uSkyMiddle;
 uniform vec4 uSkyHorizon;
 uniform vec4 uSkyBottom;
-in vec2 vNdc;
+uniform vec4 uSkyGridOrigin;
+uniform vec4 uSkyGridBasis;
+uniform vec4 uSkyGridParams;
+in vec3 vWorldDirection;
 out vec4 outColor;
 void main() {
-    vec3 view = vec3(vNdc.x / uProjection.x, vNdc.y / uProjection.y, -1.0);
-    vec3 direction = normalize(uViewRow0.xyz * view.x + uViewRow1.xyz * view.y + uViewRow2.xyz * view.z);
-    vec3 color = direction.y >= 0.0
-        ? mix(uSkyHorizon.rgb, uSkyTop.rgb, smoothstep(0.0, 0.8, direction.y))
-        : mix(uSkyHorizon.rgb, uSkyBottom.rgb, smoothstep(0.0, 0.55, -direction.y));
+    vec3 direction = normalize(vWorldDirection);
+    float height = direction.y;
+    vec3 color;
+    // Above the horizon: horizon, through the middle, to the top colour.
+    // Below it the game draws a flat POLY_F4 in the bottom colour.
+    if (height >= 0.0) {
+        color = mix(uSkyHorizon.rgb, uSkyMiddle.rgb, smoothstep(0.0, 0.20, height));
+        color = mix(color, uSkyTop.rgb, smoothstep(0.20, 0.70, height));
+    } else {
+        color = uSkyBottom.rgb;
+    }
+    // The retail 64x128-pixel cloud grid in the 240-line logical viewport,
+    // from the GPU's bottom-left fragment coordinates to the PS1's top-left.
+    vec2 screenPixel = vec2(
+        gl_FragCoord.x * (240.0 / uSkyGridParams.w) - (uSkyGridOrigin.w - 320.0) * 0.5,
+        (uSkyGridParams.w - gl_FragCoord.y) * (240.0 / uSkyGridParams.w));
+    vec2 gridStart = uSkyGridParams.z == 1.0 ? uSkyGridParams.xy : uSkyGridOrigin.xy;
+    vec2 relative = screenPixel - gridStart;
+    vec2 columnAxis = uSkyGridBasis.xy;
+    vec2 rowAxis = uSkyGridBasis.zw;
+    float determinant = columnAxis.x * rowAxis.y - columnAxis.y * rowAxis.x;
+    float validGrid = step(0.0001, abs(determinant));
+    determinant = validGrid != 0.0 ? determinant : 1.0;
+    float cloudBand = (columnAxis.x * relative.y - columnAxis.y * relative.x) / determinant;
+    float panoramaHeight = float(textureSize(uPanorama, 0).y);
+    float panoramaV = fract(cloudBand);
+    if (panoramaHeight > 128.0) {
+        // Rows -3..1 above the origin alternate the two authored map rows.
+        float row = mod(-floor(cloudBand), 2.0);
+        panoramaV = (row + fract(cloudBand)) * 0.5;
+    }
+    // 32 tile columns per turn over an eight-column panorama, anchored to
+    // the world direction; at yaw zero the centre is 10.5 tiles in.
+    const float tau = 6.283185307179586;
+    float panoramaU = fract(atan(direction.x, -direction.z) * (4.0 / tau) + 0.3125);
+    vec4 authored = texture(uPanorama, vec2(panoramaU, panoramaV));
+    // The one-row horizon strip is bounded; the four-row sheet repeats.
+    float cloudCoverage = uSkyGridParams.z == 1.0
+        ? step(0.0, cloudBand) * step(cloudBand, 1.0) : 1.0;
+    // Course geometry belongs below the camera horizon.
+    cloudCoverage *= step(0.0, height) * validGrid;
+    color = mix(color, authored.rgb, authored.a * uSkyBottom.a * cloudCoverage);
     outColor = vec4(color, 1.0);
 }
 `;
+

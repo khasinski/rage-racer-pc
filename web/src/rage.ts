@@ -125,10 +125,6 @@ export class Rage {
   /** Whether the last tick advanced the field physics (a new snapshot). */
   lastTickStepped(): boolean { return this.call('rw_last_tick_stepped') === 1; }
 
-  setDrawDistance(multiplier: number): void {
-    this.m.ccall('rw_set_draw_distance', null, ['number'], [multiplier]);
-  }
-
   /** Vehicle shadow camera for the last frame, or null. */
   shadow(): Float32Array | null {
     const pointer = this.call('rw_shadow');
@@ -172,6 +168,25 @@ export class Rage {
       if (base[i] !== 0 && base[i] !== 255) { transparent = true; break; }
     }
     return { levels, transparent };
+  }
+
+  /** The native sky uniform block for the last frame: top, middle, horizon,
+   *  bottom colours, then grid origin, basis and parameters (vec4 each). */
+  sky(): Float32Array { return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_sky'), 28); }
+
+  /** Changes whenever the cloud panorama must be decoded again. */
+  skyRevision(): number { return this.call('rw_sky_revision') >>> 0; }
+
+  /** The last frame's cloud panorama (RGBA), or null when it has none. */
+  decodeSky(): TextureLevel | null {
+    const width = this.call('rw_sky_width'), height = this.call('rw_sky_height');
+    const scratch = this.m._malloc(width * height * 4);
+    try {
+      if (!this.call('rw_decode_sky', ['number'], [scratch])) return null;
+      return { data: this.m.HEAPU8.slice(scratch, scratch + width * height * 4), width, height };
+    } finally {
+      this.m._free(scratch);
+    }
   }
 
   paletteHash(): number { return this.call('rw_palette_hash') >>> 0; }
