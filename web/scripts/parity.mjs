@@ -10,7 +10,7 @@ const call = (name, ret, types, args) => rage.ccall(name, ret, types, args);
 rage.FS.mkdir('/disc');
 rage.FS.writeFile('/disc/track01.bin', readFileSync(binPath));
 if (!call('rw_load_disc', 'number', ['string'], ['/disc/track01.bin']) ||
-    !call('rw_start_race', 'number', Array(7).fill('number'), [0, 0, 0, 0, 0, 3, 1])) process.exit(1);
+    !call('rw_start_race', 'number', Array(7).fill('number'), [0, 0, 9, 0, 0, 3, 1])) process.exit(1);
 
 // Keep in step with ScriptedInput in web/wasm/parity_main.c.
 const scripted = (tick) => {

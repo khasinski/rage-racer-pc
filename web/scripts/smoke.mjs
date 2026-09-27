@@ -16,7 +16,7 @@ const call = (name, ret, types, args) => rage.ccall(name, ret, types, args);
 
 if (!call('rw_load_disc', 'number', ['string'], ['/disc/track01.bin'])) throw new Error('disc did not load');
 rage.FS.unlink('/disc/track01.bin');
-if (!call('rw_start_race', 'number', Array(7).fill('number'), [0, 0, 0, 0, 0, 3, 1])) throw new Error('race did not start');
+if (!call('rw_start_race', 'number', Array(7).fill('number'), [0, 0, 9, 0, 0, 3, 1])) throw new Error('race did not start');
 
 let phase = 0;
 for (let tick = 1; tick <= ticks; tick++) {

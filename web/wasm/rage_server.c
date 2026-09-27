@@ -119,7 +119,7 @@ EMSCRIPTEN_KEEPALIVE int rs_retire(int handle, int seat) {
     return race && seat >= 0 && seat < race->humans && RetireRaceDriver(&race->sim, seat);
 }
 
-/* Per seat: status (SimDriverStatus), place, race ms, best lap ms (-1 none). */
+/* Per seat: status (SimDriverStatus), place, race ms, best completed lap ms (-1 none). */
 EMSCRIPTEN_KEEPALIVE int rs_seat_status(int handle, int seat) {
     ServerRace *race = Race(handle);
     return race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? (int)race->sim.drivers[seat].status : -1;
@@ -136,7 +136,9 @@ EMSCRIPTEN_KEEPALIVE int rs_seat_best_lap(int handle, int seat) {
     ServerRace *race = Race(handle);
     int best = -1;
     if (!race) return -1;
-    for (int lap = 0; lap < race->sim.laps; ++lap) {
+    if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return -1;
+    /* Completed laps only: RaceLapTime also reports the lap in progress. */
+    for (int lap = 0; lap < race->sim.laps && race->sim.drivers[seat].car.lap > lap + 1; ++lap) {
         const int time = RaceLapTime(&race->sim, seat, lap);
         if (time >= 0 && (best < 0 || time < best)) best = time;
     }

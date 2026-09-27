@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     int ticks = 1000;
     if (argc < 2) { fprintf(stderr, "usage: parity <Track 01 BIN> [ticks]\n"); return 2; }
     if (argc > 2) sscanf(argv[2], "%d", &ticks);
-    if (!rw_load_disc(argv[1]) || !rw_start_race(0, 0, 0, 0, 0, 3, 1)) return 1;
+    if (!rw_load_disc(argv[1]) || !rw_start_race(0, 0, 9, 0, 0, 3, 1)) return 1;
     for (int tick = 1; tick <= ticks; ++tick) {
         int left, right, throttle, brake;
         ScriptedInput(tick, &left, &right, &throttle, &brake);

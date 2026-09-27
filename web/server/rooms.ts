@@ -15,7 +15,10 @@ import {
 
 const TICK_MS = 1000 / 50;
 const LOAD_TIMEOUT_MS = 30_000;
-const FINISH_GRACE_MS = 60_000; // after the first player finishes, the others get this long
+/* After the winner (player or rival) crosses the line, the rest of the field
+ * has this long: at least 90 s, or 30% of the winning time on long races. */
+const FINISH_GRACE_MS = Number(process.env.RAGE_FINISH_GRACE_MS ?? 90_000);
+const FINISH_GRACE_SHARE = 0.3;
 const END_DELAY_MS = 2_500; // lets the last finisher see the line before results
 const CHAT_LIMIT = 200;
 
@@ -43,7 +46,7 @@ interface RaceRun {
   started: boolean;
   laps: number[];
   status: number[];
-  firstFinishAt: number | null;
+  finishDeadline: number | null;
   endAt: number | null;
 }
 
@@ -314,7 +317,7 @@ export class Lobby {
       raceId: this.store.createRace(room.id, s), handle, seats,
       seatOf: new Map(members.map((m, seat) => [m.client.user.id, seat])),
       humans: members.length, loaded: new Set(), loadDeadline: Date.now() + LOAD_TIMEOUT_MS, started: false,
-      laps: seats.map(() => 0), status: seats.map(() => STATUS_DRIVING), firstFinishAt: null, endAt: null,
+      laps: seats.map(() => 0), status: seats.map(() => STATUS_DRIVING), finishDeadline: null, endAt: null,
     };
     room.race = run;
     for (const member of members) {
@@ -432,13 +435,15 @@ export class Lobby {
       run.laps[index] = state.lap;
       if (state.status === STATUS_FINISHED && run.status[index] !== STATUS_FINISHED) {
         this.raceEvent(room, { kind: 'finish', seat: index, name: seat.name, place: state.place, timeMs: state.timeMs });
-        if (!seat.ai && run.firstFinishAt === null) run.firstFinishAt = now;
+        if (run.finishDeadline === null) {
+          run.finishDeadline = now + Math.max(FINISH_GRACE_MS, state.timeMs * FINISH_GRACE_SHARE);
+        }
       }
       run.status[index] = state.status;
       if (!seat.ai && state.status === STATUS_DRIVING) humansDone = false;
     });
     if (humansDone && run.endAt === null) run.endAt = now + END_DELAY_MS;
-    if (run.firstFinishAt !== null && run.endAt === null && now - run.firstFinishAt > FINISH_GRACE_MS) run.endAt = now;
+    if (run.finishDeadline !== null && run.endAt === null && now >= run.finishDeadline) run.endAt = now;
   }
 
   private raceEvent(room: Room, event: RaceEvent): void {

@@ -10,7 +10,9 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit && tsc --noEmit -p server",
     "server": "node server/main.ts",
-    "seed": "node server/seed.ts"
+    "seed": "node server/seed.ts",
+    "test:server": "node scripts/server-test.mjs",
+    "test:e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "three": "^0.186.1",
