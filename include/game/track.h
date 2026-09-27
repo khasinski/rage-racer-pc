@@ -444,16 +444,6 @@ typedef struct FlybySceneryState {
 
 extern const SceneryMotionKeyframe *g_FlybySceneryKeyframe;
 extern s32 g_FogNear;
-typedef struct SceneryPlacement {
-    LVec position;
-    s32 yaw;
-} SceneryPlacement;
-
-typedef struct StaticSceneryState {
-    SceneryPlacement standard;
-    SceneryPlacement highClass;
-} StaticSceneryState;
-
 extern StaticSceneryState g_StaticSceneryState;
 extern s16 g_PathSceneryHalfDelta[3];
 typedef struct PathSceneryPositionKey {

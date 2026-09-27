@@ -143,7 +143,7 @@ s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
     }
     g_TrackRenderTable = blocks[SCENE_RENDER_TABLE].data;
     g_EnvPaletteTable = blocks[SCENE_ENVIRONMENT_PALETTE].data;
-    g_CourseObjects = (CourseObject *)checkedObjects.items;
+    g_CourseObjects = checkedObjects.items;
     g_CourseObjectCount = (s32)checkedObjects.count;
     TrackAssetIdentitySet(assetIndex);
     return 1;

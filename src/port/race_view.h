@@ -8,6 +8,8 @@
 #include "render/car_lights.h"
 #include "render/render_world.h"
 
+enum { RACE_VIEW_CATCHUP_LIMIT = SIM_TICK_RATE * 10 };
+
 typedef struct RaceCarLook {
     s32 variant;
     CarEntry paint;
@@ -46,4 +48,11 @@ int TickRaceView(RaceView *view, const RaceSim *race, float daylight);
  * explicitly selected 0..31 track car palette pack, independent of local seat. */
 int SubmitRaceView(const RaceSim *race, const RaceView *view,
                    const RivalLook *rivals, u32 trackAsset, u8 textureVariant, RenderWorld *world);
+/* Optional presentation poses indexed by seat; does not mutate simulation.
+ * Model identity and visibility still come from the authoritative field. */
+int SubmitRaceViewPoses(const RaceSim *race, const RaceView *view,
+                       const PlayerCarRuntime poses[DRIVER_SEAT_LIMIT],
+                       const PlayerCarRuntime previous[DRIVER_SEAT_LIMIT],
+                       const RivalLook *rivals, u32 trackAsset,
+                       u8 textureVariant, RenderWorld *world);
 #endif

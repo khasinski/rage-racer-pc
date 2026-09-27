@@ -31,10 +31,6 @@ StartGridSceneryStep g_StartGridSceneryStep[2] = {
         {72, 4},
         {-68, -14},
     };
-StaticSceneryState g_StaticSceneryState = {
-    {{40594, 6002, 11940}, 0x440},
-    {{29266, 6039, 45612}, 0x655},
-};
 Vec4 g_StartGridSceneryPos[2] = {
     {46685, 6010, 12495, 0},
     {39567, 5782, 11986, 0}

@@ -103,7 +103,8 @@ void MainLoop(void);
 void InitSubsystems(void);
 
 /* Controller layer. GameInitPad hands the BIOS the two 0x28-byte halves of
- * g_PadBuffers. UpdatePadState maintains the held / previous / newly-pressed
+ * g_PadBuffers and resets input/calibration/mappings to defaults.
+ * UpdatePadState maintains the held / previous / newly-pressed
  * halfwords in the block at g_PadState. */
 void GameInitPad(void);
 void UpdatePadState(void);

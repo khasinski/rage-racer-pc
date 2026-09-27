@@ -71,6 +71,8 @@ int StartRaceSim(RaceSim *race, u32 countdownTicks);
  * consumes them, including inputs received between the two 50 Hz ticks.
  * Flags must be 0/1; pedals 0..256; steering center/digital/analog, with angle
  * within +/-13*512. Invalid commands leave the complete race unchanged. */
+/* Pure command validation, also used before accepting network input. */
+int ValidDriverInput(const DriverInput *input);
 int SetRaceInput(RaceSim *race, s32 slot, const DriverInput *input);
 /* Returns 1 for an advanced tick, 0 in setup/finished or at clock overflow.
  * Retiring the last driver closes the race on the next tick, without results. */

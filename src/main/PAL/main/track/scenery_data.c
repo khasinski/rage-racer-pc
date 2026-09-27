@@ -38,3 +38,10 @@ int RetailSpinner(s32 index, SpinningSceneryPlacement *placement) {
     *placement = g_SpinningSceneryPlacements[index];
     return 1;
 }
+
+StaticSceneryState g_StaticSceneryState = {
+    {{40594, 6002, 11940}, 0x440},
+    {{29266, 6039, 45612}, 0x655},
+};
+
+StaticSceneryState RetailLandmarks(void) { return g_StaticSceneryState; }

@@ -16,6 +16,8 @@ typedef struct RaceData {
     /* Disc boot serial when identified; empty for a bare archive or an
      * unidentified disc. A serial alone does not distinguish all revisions. */
     char boot[16];
+    /* Fingerprint of the disc executable; zero when unavailable/bare archive. */
+    uint64_t executable;
 } RaceData;
 
 /* Validates the complete index and every nonempty range. Failure leaves the

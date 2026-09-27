@@ -6,12 +6,46 @@
 #include "game/render.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-/* Attach the two retail 0x28-byte pad buffers to the host input backend. */
+enum { DEFAULT_PAD_VALIDATION_FRAMES = 0x21 };
+
+static void ResetPadDefaults(void) {
+    memset(&g_PadState, 0, sizeof(g_PadState));
+    g_PadType = 0;
+    g_PadPrevHeld = 0;
+    g_PadHeld = 0;
+    g_PadPressed = 0;
+    g_PadPressedRepeat = 0;
+    g_PadRepeatTimer = 0;
+    g_NegconAnalogI = 0;
+    g_NegconAnalogII = 0;
+    g_NegconAnalogL = 0;
+    g_NegconSteer = 0;
+
+    g_NegconSteerPlay = 1;
+    g_PadMappingIndex = 0;
+    g_NegconMappingIndex = 0;
+    g_NegconSteerNeutral = 0;
+    g_NegconNeutralI = 0;
+    g_NegconNeutralII = 0;
+    g_NegconNeutralL = 0;
+    g_NegconMaxTwist = 0;
+    g_PadValidation.error = PAD_ERROR_STATE_NONE;
+    g_PadValidation.countdown = DEFAULT_PAD_VALIDATION_FRAMES;
+    g_PadValidation.holdBits = 0;
+    g_PadValidation.lastValidType = PAD_TYPE_DIGITAL;
+}
+
+
+
+/* Attach the BIOS buffers and establish a fresh, usable default input state. */
 void GameInitPad(void) {
     (void)InitPAD((char *)g_PadBuffers, PAD_PORT_BUFFER_SIZE,
                   (char *)g_PadBuffers + PAD_PORT_BUFFER_SIZE,
                   PAD_PORT_BUFFER_SIZE);
+    ResetPadDefaults();
+    LoadPadButtonMapping(g_PadMappingIndex, g_NegconMappingIndex);
 }
 
 /* The live mapping UpdatePadState reads: the pad's eight masks at +0,

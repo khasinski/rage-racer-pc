@@ -55,15 +55,26 @@ RaceData *LoadRaceDisc(const char *path) {
     u8 *data = NULL;
     size_t size = 0;
     char boot[16] = {0};
+    uint64_t executable = 0;
     if (DiscIsoOpen(&reader, DiscRawFileReadSector, &disc) &&
         DiscIsoFindFile(&reader, "RAGE.BIN", &entry)) {
         DiscReadBootName(&reader, boot, sizeof(boot));
         data = DiscIsoReadWholeFile(&reader, &entry);
         size = entry.size;
+        if (boot[0] && DiscIsoFindFile(&reader, boot, &entry)) {
+            u8 *code = DiscIsoReadWholeFile(&reader, &entry);
+            if (code != NULL) {
+                executable = ArchiveFingerprint(code, entry.size);
+                free(code);
+            }
+        }
     }
     fclose(disc.file);
     RaceData *archive = AdoptArchive(data, size);
-    if (archive != NULL) memcpy(archive->boot, boot, sizeof(boot));
+    if (archive != NULL) {
+        memcpy(archive->boot, boot, sizeof(boot));
+        archive->executable = executable;
+    }
     return archive;
 }
 

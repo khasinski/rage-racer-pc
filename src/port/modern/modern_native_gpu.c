@@ -994,16 +994,7 @@ static void Prepare(const RenderWorld *world, float aspect) {
     if (trace) copied = SDL_GetTicksNS();
     void *meshLookupContext = ModernNativePrepareMeshLookup(world);
     if (trace) lookupFinished = SDL_GetTicksNS();
-    shadowCenter = world->camera.transform.position;
-    for (instance = 0; instance < world->instanceCount; instance++) {
-        const RenderMeshInstance *candidate = &world->instances[instance];
-        if (candidate->pass == RAGE_RENDER_PASS_MAIN &&
-            candidate->entity == 11 && candidate->component == 0 &&
-            candidate->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
-            shadowCenter = candidate->transform.position;
-            break;
-        }
-    }
+    shadowCenter = RenderShadowCenter(world);
     s_haveShadowMap = RenderBuildDirectionalShadowMap(
         &shadowCenter, &world->light.direction,
         RAGE_RENDER_VEHICLE_SHADOW_EXTENT,

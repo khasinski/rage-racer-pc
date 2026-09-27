@@ -1,4 +1,5 @@
 #include "modern_renderer.h"
+#include "../client_frame.h"
 #include "modern_assets.h"
 #include "modern_native_gpu.h"
 #include "modern_sky_geometry.h"
@@ -1255,7 +1256,25 @@ void ModernFrameTexturesReady(void) {
             snapshot->frameCounter, captured != NULL);
 }
 
+static ClientFrame *s_clientFrame;
+
+int ModernPrepareClientPresentation(void) {
+    return ModernIsEnabled() && s_device && ModernEnsureResources();
+}
+
+int ModernQueueClientFrame(ClientFrame *frame) {
+    if (frame && !ModernIsEnabled()) return 0;
+    ClientFrame *retained = frame ? RetainClientFrame(frame) : NULL;
+    if (frame && !retained) return 0;
+    ClientFrame *previous = s_clientFrame;
+    s_clientFrame = retained;
+    FreeClientFrame(previous);
+    return 1;
+}
+
 static int ModernRender(const RageSceneSnapshot *snapshot) {
+    const uint32_t frame = snapshot ? snapshot->frameCounter : (uint32_t)s_clientFrame->scene.world.frame;
+    const int scene = snapshot ? snapshot->sceneId : 0;
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram;
     static Uint64 profileBuildNs, profileSubmitNs, profilePrepareNs;
@@ -1265,17 +1284,18 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     static unsigned long long profilePresented;
     static int profile = -1, profileTrace;
     Uint64 profileStart = 0, profileBuilt = 0;
-    vram = ModernVramSnapshotForFrame(
-        &s_sampledVram, snapshot->frameCounter,
+    vram = snapshot ? ModernVramSnapshotForFrame(
+        &s_sampledVram, frame,
         s_enabled ? ModernNativeGpuTextureRevision() : TrackAssetIdentityRevision(), ModernAssetsGeneration(),
-        ModernCaptureVramSnapshot, NULL);
-    if (vram == NULL) return 0;
+        ModernCaptureVramSnapshot, NULL) : NULL;
+    if (snapshot && vram == NULL) return 0;
     if (profile < 0) {
         profile = RuntimeConfigEnabled("diagnostics.performance");
         profileTrace = RuntimeConfigEnabled("diagnostics.performance_trace");
     }
     if (profile) profileStart = SDL_GetTicksNS();
-    if (s_enabled) ModernBuildOverlayFrame(snapshot);
+    if (!snapshot) ModernOverlayBatchesReset(&s_overlay, 0, MODERN_LAYER_HUD);
+    else if (s_enabled) ModernBuildOverlayFrame(snapshot);
     else ClassicBuildFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
@@ -1309,26 +1329,26 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     }
     if (s_enabled) {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
-        ModernRenderOverlaySelection(cmd, vram, 0,
+        if (snapshot) ModernRenderOverlaySelection(cmd, vram, 0,
                                      1u << MODERN_LAYER_SKY, 1);
-        ModernNativeGpuDraw(cmd, s_target, s_depth, 0, 0, s_targetH);
+        ModernNativeGpuDraw(cmd, s_target, s_depth, snapshot == NULL, snapshot == NULL, s_targetH);
         if (!ModernNativeGpuWorldComplete() &&
-            reportedIncompleteFrame != snapshot->frameCounter) {
-            reportedIncompleteFrame = snapshot->frameCounter;
+            reportedIncompleteFrame != frame) {
+            reportedIncompleteFrame = frame;
             fprintf(stderr,
                     "rage-port: incomplete native world at frame %u; "
                     "legacy 3D fallback is disabled\n",
-                    snapshot->frameCounter);
+                    frame);
         }
-        if (!s_skyOnlyDiagnostic)
+        if (snapshot && !s_skyOnlyDiagnostic)
             ModernRenderOverlaySelection(cmd, vram, 0,
                                          1u << MODERN_LAYER_HUD, 0);
-        if (!s_skyOnlyDiagnostic && ModernNativeGpuHasMirrorDraws()) {
+        if (snapshot && !s_skyOnlyDiagnostic && ModernNativeGpuHasMirrorDraws()) {
             ModernNativeGpuDrawMirror(cmd, s_mirrorTarget, s_mirrorDepth,
                                       s_mirrorTargetH);
             ModernCompositeNativeMirror(cmd);
         }
-        if (!s_skyOnlyDiagnostic)
+        if (snapshot && !s_skyOnlyDiagnostic)
             ModernRenderOverlaySelection(
                 cmd, vram, 1, 1u << MODERN_LAYER_MIRROR_FOREGROUND, 0);
     }
@@ -1351,7 +1371,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             ModernFullscreenPass(cmd, s_pipeComposite, s_finalTarget, sources, 1);
         }
     }
-    if (s_ringEnabled && s_ring[s_ringNext] != NULL) {
+    if (snapshot && s_ringEnabled && s_ring[s_ringNext] != NULL) {
         const SDL_GPUBlitInfo blit = {
             .source = {.texture = ModernPresentTexture(),
                        .w = (Uint32)s_targetW,
@@ -1363,17 +1383,17 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             .filter = SDL_GPU_FILTER_NEAREST,
         };
         SDL_BlitGPUTexture(cmd, &blit);
-        s_ringFrame[s_ringNext] = snapshot->frameCounter;
+        s_ringFrame[s_ringNext] = frame;
         if (!RenderWorldSnapshotCopy(&s_ringWorlds[s_ringNext], ModernNativeGpuPreparedWorld())) {
             RenderWorldSnapshotRelease(&s_ringWorlds[s_ringNext]);
             fprintf(stderr, "rage-port: cannot retain render world for history frame %u\n",
-                    snapshot->frameCounter);
+                    frame);
         }
         TrackTextureGenerationRelease(s_ringGenerations[s_ringNext]);
         s_ringGenerations[s_ringNext] = NativeAssetImporterRetainTextures(
             ModernNativeGpuTextureRevision());
         s_ringT[s_ringNext] = -1.0f;
-        if (s_ringScene != NULL) {
+        if (snapshot && s_ringScene != NULL) {
             memcpy(&s_ringScene[s_ringNext], snapshot, sizeof(*snapshot));
         }
         s_ringNext = (s_ringNext + 1) % MODERN_RING;
@@ -1392,14 +1412,14 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         failureConfigured = 1;
     }
     int inject = !injectedSubmitFailure && failureRequested &&
-                 requestedFrame == snapshot->frameCounter;
+                 requestedFrame == frame;
     int submitted;
     if (inject) {
         injectedSubmitFailure = 1;
         SDL_CancelGPUCommandBuffer(cmd);
         submitted = 0;
         fprintf(stderr, "rage-port: injected modern submit failure frame=%u\n",
-                snapshot->frameCounter);
+                frame);
     } else if (s_presentOffscreen) {
         /* SDL Vulkan normally retires completed command buffers during a
          * swapchain submission. With a claimed window but no swapchain work
@@ -1416,7 +1436,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     }
     if (!submitted) {
         fprintf(stderr, "rage-port: modern submit failed frame=%u; rebuilding presentation resources\n",
-                snapshot->frameCounter);
+                frame);
         ModernDestroyResources();
         return 0;
     }
@@ -1428,7 +1448,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             frameTiming = RuntimeConfigEnabled("diagnostics.frame_timing");
         if (frameTiming)
             fprintf(stderr, "benchmark-frame frame=%u scene=%d point=%d end_ns=%llu window_flags=%llx\n",
-                    snapshot->frameCounter, snapshot->sceneId,
+                    frame, scene,
                     g_PlayerCar.trackPointIndex, (unsigned long long)finished,
                     (unsigned long long)(s_window ? SDL_GetWindowFlags(s_window) : 0));
         if (!profileWindowStart) {
@@ -1445,7 +1465,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             fprintf(stderr,
                     "modern-frame frame=%u scene=%d point=%d interval_ms=%.3f "
                     "prepare_ms=%.3f build_ms=%.3f submit_ms=%.3f instances=%u end_ns=%llu\n",
-                    snapshot->frameCounter, snapshot->sceneId,
+                    frame, scene,
                     g_PlayerCar.trackPointIndex,
                     profileIntervals[profileFrames] / 1000000.0,
                     s_profilePrepareNs / 1000000.0,
@@ -1457,7 +1477,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         profileBuildNs += profileBuilt - profileStart;
         profilePrepareNs += s_profilePrepareNs;
         profileSubmitNs += finished - profileBuilt;
-        profileFaces += (Uint64)snapshot->faceCount;
+        profileFaces += (Uint64)(snapshot ? snapshot->faceCount : 0);
         profileVertices += (Uint64)s_overlay.vertexCount;
         profileSpans += (Uint64)s_overlay.spanCount;
         profileFrames++;
@@ -1575,6 +1595,26 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     int toggleDown;
     if (s_prev_present_source) {
         s_prev_present_source(info);
+    }
+    if (s_clientFrame) {
+        info->sync_to_display = s_config.modernFps == RAGE_MODERN_FPS_VSYNC;
+        if (!ModernPresentationActive() || !s_device || ModernWindowOccluded() ||
+            !ModernEnsureResources()) {
+            info->skip_present = true;
+            return;
+        }
+        s_presentOffscreen = 0;
+        PrepareClientFrameGpu(s_clientFrame, (float)s_targetW / (float)s_targetH);
+        if (!ModernNativeGpuWorldComplete() || !ModernRender(NULL)) {
+            info->skip_present = true;
+            return;
+        }
+        info->texture = ModernPresentTexture();
+        info->w = (Uint32)s_targetW;
+        info->h = (Uint32)s_targetH;
+        info->aspect = (4.0f / 3.0f) * (s_logicalW / 320.0f);
+        info->filter = s_config.modernTextureFilterLinear ? SDL_GPU_FILTER_LINEAR : SDL_GPU_FILTER_NEAREST;
+        return;
     }
     /* Opt-in lifecycle exercise at the host callback boundary, after PSY-Z
      * has submitted pending work and before it acquires a swapchain command. */
@@ -1889,6 +1929,7 @@ int ModernRestartPresentation(const RagePortConfig *config) {
 }
 
 void ModernShutdown(void) {
+    ModernQueueClientFrame(NULL);
     if (!s_shutdownNeeded) return;
     s_shutdownNeeded = 0;
     ModernDetachPresentation();

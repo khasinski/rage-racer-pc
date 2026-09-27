@@ -40,6 +40,8 @@ typedef struct ClientRace {
     int freezeScenery;
     Spinners spinners, previousSpinners;
     SpinningSceneryPlacement spinnerPlacements[4];
+    StaticSceneryState landmarks;
+    int ovalLandmark, highLandmark;
     u32 scenerySeed;
     int spinningScenery; /* 0 absent, 1 single, 2 group */
 } ClientRace;
@@ -76,11 +78,14 @@ int SubmitClientTerrain(const ClientRace *race, int page, RenderWorld *world);
 /* Replaces static owned course objects, preserving terrain/cars/dynamics.
  * Requires an explicit camera for wrapped-coordinate placement and visibility. */
 int SubmitClientScenery(const ClientRace *race, int page, RenderWorld *world);
-/* Called after each simulation tick. Repeated ticks are inert; skipped or
- * rewound ticks reject without changing scenery. Rendering never advances it. */
+enum { CLIENT_SCENERY_CATCHUP_LIMIT = RACE_VIEW_CATCHUP_LIMIT };
+/* Advances to the simulation clock, including missed snapshots up to ten seconds.
+ * Includes PAL environment cues at 25 Hz and scenery at the prototype clock.
+ * Repeated ticks are inert; rewind/long gaps reject atomically. No physics runs. */
 int TickClientScenery(ClientRace *race);
 /* Publishes current/previous shuttle poses without advancing animation.
  * Replaces only this semantic entity range; failure preserves the world. */
 int SubmitClientShuttles(const ClientRace *race, int page, RenderWorld *world);
 int SubmitClientSpinners(const ClientRace *race, int page, RenderWorld *world);
+int SubmitClientLandmarks(const ClientRace *race, int page, RenderWorld *world);
 #endif

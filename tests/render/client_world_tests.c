@@ -2,7 +2,46 @@
 #include <stdio.h>
 #include <string.h>
 #define CHECK(c) do { if (!(c)) { fprintf(stderr, "line %d: %s\n", __LINE__, #c); return 1; } } while (0)
+static int TestEnvironmentClock(void) {
+    struct { u32 skyRowBase, length; struct GameEnvironmentCue cues[3]; } script = {
+        .length = 30, .cues = {{.time = 0, .duration = 4},
+            {.time = 15, .duration = 6, .mode = 2}, {.time = -1}}};
+    script.cues[0].colors[ENV_FOG].bytes.r = 12;
+    script.cues[1].colors[ENV_FOG].bytes.r = 120;
+    EnvironmentPalette palettes[ENVIRONMENT_PALETTE_COUNT] = {0};
+    ClientRace race = {0};
+    CHECK(InitEnvironment(&race.env, (const void *)&script, sizeof(script), palettes, 0));
+    Environment expected = race.env;
+    const RaceSim untouched = race.sim;
+    race.sim.tick = 1;
+    CHECK(TickClientScenery(&race));
+    CHECK(memcmp(&race.env, &expected, sizeof(expected)) == 0);
+    race.sim.tick = 500;
+    for (int tick = 0; tick < 250; ++tick) CHECK(TickEnvironment(&expected));
+    CHECK(TickClientScenery(&race));
+    CHECK(memcmp(&race.env, &expected, sizeof(expected)) == 0);
+    RaceSim sim = untouched;
+    sim.tick = 500;
+    CHECK(memcmp(&race.sim, &sim, sizeof(sim)) == 0);
+    CHECK(TickClientScenery(&race));
+    CHECK(memcmp(&race.env, &expected, sizeof(expected)) == 0);
+    race.env.enabled = 0;
+    Environment disabled = race.env;
+    race.sim.tick += 2;
+    CHECK(TickClientScenery(&race));
+    CHECK(memcmp(&race.env, &disabled, sizeof(disabled)) == 0);
+    race.env.enabled = 1;
+    race.env.mode = ENVIRONMENT_PALETTE_COUNT;
+    ClientRace before = race;
+    race.sim.tick += 2;
+    before.sim.tick = race.sim.tick;
+    CHECK(!TickClientScenery(&race));
+    CHECK(memcmp(&race, &before, sizeof(race)) == 0);
+    return 0;
+}
+
 int main(void) {
+    CHECK(TestEnvironmentClock() == 0);
     u16 grid[1024];
     u32 visibility[32][32] = {{0}};
     for (unsigned i = 0; i < 1024; ++i) grid[i] = 0x3ff;
@@ -32,6 +71,15 @@ int main(void) {
     CHECK(SubmitClientTerrain(&race, 0, &world));
     CHECK(memcmp(storage, savedStorage, sizeof(storage)) == 0);
     CHECK(world.instanceCount == 3);
+    /* A texture bank replaces the same cells, rather than adding another terrain. */
+    CHECK(SubmitClientTerrain(&race, 1, &world));
+    CHECK(world.instanceCount == 3);
+    CHECK(storage[0].assetSet == RAGE_RENDER_ASSET_MODEL_BANK);
+    CHECK(storage[1].materialVariant == 2 && storage[2].materialVariant == 2);
+    CHECK(storage[1].entity == savedStorage[1].entity && storage[2].entity == savedStorage[2].entity);
+    CHECK(SubmitClientTerrain(&race, 0, &world));
+    CHECK(memcmp(storage, savedStorage, sizeof(storage)) == 0);
+
     grid[0] = 2;
     CHECK(!SubmitClientTerrain(&race, 0, &world));
     CHECK(memcmp(&saved, &world, sizeof(world)) == 0);
@@ -101,7 +149,7 @@ int main(void) {
     memcpy(old, race.shuttles, sizeof(old));
     CHECK(TickClientScenery(&race));
     CHECK(memcmp(old, race.shuttles, sizeof(old)) == 0);
-    race.sim.tick = 3;
+    race.sim.tick = CLIENT_SCENERY_CATCHUP_LIMIT + 2;
     CHECK(!TickClientScenery(&race) && race.sceneryTick == 1);
     CHECK(memcmp(old, race.shuttles, sizeof(old)) == 0);
     race.sim.tick = 2;
@@ -121,6 +169,22 @@ int main(void) {
     race.freezeScenery = 0;
     CHECK(TickClientScenery(&race) && race.sceneryTick == 0);
     CHECK(race.shuttles[0].travelStep == old[0].travelStep + 1);
+    ClientRace sequential = race, skipped = race;
+    sequential.sceneryTick = skipped.sceneryTick = 500;
+    sequential.sim.tick = skipped.sim.tick = 500;
+    for (u32 tick = 1; tick <= CLIENT_SCENERY_CATCHUP_LIMIT; ++tick) {
+        sequential.sim.tick = 500 + tick;
+        CHECK(TickClientScenery(&sequential));
+    }
+    skipped.sim.tick = 500 + CLIENT_SCENERY_CATCHUP_LIMIT;
+    CHECK(TickClientScenery(&skipped));
+    CHECK(memcmp(&sequential, &skipped, sizeof(skipped)) == 0);
+    ClientRace savedRace = skipped;
+    skipped.sim.tick--;
+    savedRace.sim.tick = skipped.sim.tick;
+    CHECK(!TickClientScenery(&skipped));
+    CHECK(memcmp(&skipped, &savedRace, sizeof(savedRace)) == 0);
+
     RenderMeshInstance moving[3] = {{0}};
     RenderWorld movingWorld;
     RenderWorldInit(&movingWorld, moving, 3);
@@ -182,5 +246,28 @@ int main(void) {
     CHECK(SubmitClientSpinners(&race, 0, &decorationsWorld));
     CHECK(decorationsWorld.instanceCount == 3);
     CHECK(memcmp(moving, decorations, sizeof(moving)) == 0);
+    race.landmarks = (StaticSceneryState){{{100, 200, 300}, 0}, {{400, 500, 600}, 1024}};
+    race.highLandmark = 1;
+    race.ovalLandmark = 1;
+    CHECK(SubmitClientLandmarks(&race, 1, &decorationsWorld));
+    CHECK(decorationsWorld.instanceCount == 5 && decorations[3].entity == 0x30000);
+    CHECK(decorations[3].mesh == 58 && decorations[4].mesh == 63);
+    CHECK(decorations[3].transform.position.z == -(300 + 0x5000));
+    CHECK(decorations[3].materialVariant == 4 && decorations[4].materialVariant == 5);
+    CHECK(!(decorations[3].flags & RAGE_RENDER_INSTANCE_ENABLE_FOG));
+    CHECK(memcmp(moving, decorations, sizeof(moving)) == 0);
+    race.env.mode4 = 0;
+    race.highLandmark = 0;
+    CHECK(SubmitClientLandmarks(&race, 0, &decorationsWorld));
+    CHECK(decorationsWorld.instanceCount == 4 && decorations[3].mesh == 57);
+    CHECK(decorations[3].flags & RAGE_RENDER_INSTANCE_ENABLE_FOG);
+    RenderMeshInstance landmarkSaved[8];
+    memcpy(landmarkSaved, decorations, sizeof(decorations));
+    race.highLandmark = 1;
+    decorationsWorld.instanceCapacity = 4;
+    const RenderWorld landmarkWorld = decorationsWorld;
+    CHECK(!SubmitClientLandmarks(&race, 0, &decorationsWorld));
+    CHECK(memcmp(&landmarkWorld, &decorationsWorld, sizeof(landmarkWorld)) == 0);
+    CHECK(memcmp(landmarkSaved, decorations, sizeof(decorations)) == 0);
     return 0;
 }

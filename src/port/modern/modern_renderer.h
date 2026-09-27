@@ -19,6 +19,14 @@ int ModernInit(const RagePortConfig *config);
  * the separate backend destroy hook and does not end the asset session. */
 void ModernShutdown(void);
 
+struct ClientFrame;
+/* Retain a complete owned race frame for this window. NULL clears it.
+ * Requires modern presentation; does not install legacy race globals. */
+int ModernQueueClientFrame(struct ClientFrame *frame);
+/* After the host creates its window, allocate the owned-frame backend.
+ * Returns 0 when device/pipelines are unavailable; no classic fallback. */
+int ModernPrepareClientPresentation(void);
+
 /* Recreate presentation resources/hooks while retaining the asset session.
  * Call between presentations on the render thread. This does not reset game
  * simulation, disc state or a completed asset session. Returns 0 on failure. */

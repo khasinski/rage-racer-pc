@@ -20,12 +20,15 @@ int main(void) {
     };
     for (size_t i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++) {
         const RaceSim before = race;
+        CHECK(!ValidDriverInput(&invalid[i]));
         CHECK(!SetRaceInput(&race, 3, &invalid[i]));
         CHECK(memcmp(&race, &before, sizeof(race)) == 0);
     }
     DriverInput input = {.steering = {.mode = STEERING_ANALOG,
         .angle = -13 * 512, .left = 1, .right = 1},
         .throttle = 256, .brake = 256, .shiftUp = 1};
+    CHECK(!ValidDriverInput(NULL));
+    CHECK(ValidDriverInput(&input));
     CHECK(SetRaceInput(&race, 3, &input));
     CHECK(memcmp(&race.drivers[3].input, &input, sizeof(input)) == 0);
     input = (DriverInput){.steering = {.mode = STEERING_DIGITAL,

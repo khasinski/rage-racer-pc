@@ -275,3 +275,22 @@ void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]) {
         }
     }
 }
+
+int RenderWorldFocus(RenderWorld *world, uint32_t entity) {
+    if (!world || world->instanceCount > world->instanceCapacity ||
+        (world->instanceCount && !world->instances)) return 0;
+    RenderMeshInstance *selected = NULL;
+    for (uint32_t i = 0; i < world->instanceCount; ++i) {
+        RenderMeshInstance *instance = &world->instances[i];
+        if (instance->entity == entity && instance->component == 0 &&
+            instance->pass == RAGE_RENDER_PASS_MAIN) {
+            selected = instance;
+            break;
+        }
+    }
+    if (!selected) return 0;
+    for (uint32_t i = 0; i < world->instanceCount; ++i)
+        world->instances[i].flags &= ~RAGE_RENDER_INSTANCE_FOCUS;
+    selected->flags |= RAGE_RENDER_INSTANCE_FOCUS;
+    return 1;
+}

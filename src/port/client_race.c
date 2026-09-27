@@ -32,6 +32,9 @@ ClientRace *LoadClientRace(const RaceData *archive, const RaceSetup *setup,
     if (!race) return NULL;
     race->references = 1;
     const GrandPrixClassDefinition *definition = GrandPrixContentClass(setup->classIndex);
+    race->landmarks = RetailLandmarks();
+    race->ovalLandmark = setup->courseIndex == 3;
+    race->highLandmark = setup->courseIndex == 0 && definition && definition->coastHighScenery;
     race->spinners = (Spinners){{0, 64, 128, 256}, {32, 64}};
     race->previousSpinners = race->spinners;
     for (s32 i = 0; i < 4; ++i)

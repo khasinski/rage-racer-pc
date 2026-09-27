@@ -1,3 +1,4 @@
+#include <string.h>
 #include "client_race.h"
 #include "native_visibility.h"
 #include "scene_matrix.h"
@@ -137,23 +138,33 @@ int TickClientScenery(ClientRace *race) {
         (u32)race->spinningScenery > 2) return 0;
     const u32 elapsed = race->sim.tick - race->sceneryTick;
     if (!elapsed) return 1;
-    if (elapsed != 1) return 0;
+    /* Bound work from remote clocks; larger gaps require session resync. */
+    if (elapsed > CLIENT_SCENERY_CATCHUP_LIMIT) return 0;
     GameShuttleScenery next[SHUTTLE_INSTANCE_COUNT];
-    for (u32 i = 0; i < race->shuttleCount; ++i) {
-        next[i] = race->shuttles[i];
-        const ShuttleConfig *config = &race->shuttlePaths[i];
-        if (!race->freezeScenery && !StepShuttle(&next[i], &config->path, config->travel, config->dwell))
-            return 0;
+    GameShuttleScenery previous[SHUTTLE_INSTANCE_COUNT];
+    memcpy(next, race->shuttles, sizeof(next));
+    Spinners spinners = race->spinners, previousSpinners = spinners;
+    Environment environment = race->env;
+    for (u32 step = 1; step <= elapsed; ++step) {
+        /* The prototype clock is 50 Hz; PAL environment advances at 25 Hz. */
+        if (((race->sceneryTick + step) & 1u) == 0 && environment.enabled &&
+            !TickEnvironment(&environment)) return 0;
+        memcpy(previous, next, sizeof(previous));
+        previousSpinners = spinners;
+        for (u32 i = 0; i < race->shuttleCount; ++i) {
+            const ShuttleConfig *config = &race->shuttlePaths[i];
+            if (!race->freezeScenery && !StepShuttle(&next[i], &config->path, config->travel, config->dwell))
+                return 0;
+        }
+        if (race->spinningScenery)
+            TickSpinners(&spinners, race->spinningScenery == 2, race->sceneryTick + step,
+                         race->scenerySeed, !race->freezeScenery);
     }
-    const Spinners previous = race->spinners;
-    if (race->spinningScenery)
-        TickSpinners(&race->spinners, race->spinningScenery == 2, race->sim.tick,
-                      race->scenerySeed, !race->freezeScenery);
-    race->previousSpinners = previous;
-    for (u32 i = 0; i < race->shuttleCount; ++i) {
-        race->previousShuttles[i] = race->shuttles[i];
-        race->shuttles[i] = next[i];
-    }
+    race->env = environment;
+    race->spinners = spinners;
+    race->previousSpinners = previousSpinners;
+    memcpy(race->shuttles, next, sizeof(next));
+    memcpy(race->previousShuttles, previous, sizeof(previous));
     race->sceneryTick = race->sim.tick;
     return 1;
 }
@@ -169,6 +180,11 @@ static RenderTransform CoursePose(const Vec4 *position, s32 yaw, s32 roll, const
     transform.hasOrientation = 1;
     transform.scale = (Vec3){0.25f, 0.25f, 0.25f};
     return transform;
+}
+
+static s32 CourseModel(const ClientRace *race, s32 desired) {
+    return desired < race->course.modelCount ? desired :
+        (race->course.modelCount > 1 ? 1 : -1);
 }
 
 static RenderMeshInstance CourseInstance(const ClientRace *race, u32 entity, u32 mesh, int page) {
@@ -220,10 +236,8 @@ int SubmitClientShuttles(const ClientRace *race, int page, RenderWorld *world) {
         const GameShuttleScenery *state = &race->shuttles[i];
         if ((u32)state->pathIndex >= SHUTTLE_PATH_COUNT ||
             race->previousShuttles[i].pathIndex != state->pathIndex) return 0;
-        s32 mesh = state->pathIndex == 0 ? 0x3f : 0x3c;
-        /* Retain the production drawer's authored model-1 fallback. */
-        if (mesh >= race->course.modelCount) mesh = 1;
-        if (mesh >= race->course.modelCount) return 0;
+        const s32 mesh = CourseModel(race, state->pathIndex == 0 ? 0x3f : 0x3c);
+        if (mesh < 0) return 0;
         const GameShuttleScenery *previous = &race->previousShuttles[i];
         RenderMeshInstance *instance = &staged[i];
         *instance = CourseInstance(race, 0x30110u + i, (u32)mesh, page);
@@ -242,9 +256,8 @@ int SubmitClientSpinners(const ClientRace *race, int page, RenderWorld *world) {
     RenderMeshInstance staged[4] = {{0}};
     const u32 first = race->spinningScenery == 2 ? 1u : 0u;
     const u32 limit = race->spinningScenery == 2 ? 4u : (race->spinningScenery ? 1u : 0u);
-    s32 mesh = 0x3e;
-    if (mesh >= race->course.modelCount) mesh = 1;
-    if (limit && mesh >= race->course.modelCount) return 0;
+    const s32 mesh = CourseModel(race, 0x3e);
+    if (limit && mesh < 0) return 0;
     for (u32 i = first; i < limit; ++i) {
         const SpinningSceneryPlacement *placement = &race->spinnerPlacements[i];
         const Vec4 position = {placement->position.x, placement->position.y, placement->position.z, 0};
@@ -255,4 +268,27 @@ int SubmitClientSpinners(const ClientRace *race, int page, RenderWorld *world) {
         instance->previousTransform = CoursePose(&position, placement->yaw, race->previousSpinners.angles[i], reference);
     }
     return ReplaceCourseEntities(world, staged, limit - first, 0x30100u, 0x30104u);
+}
+
+int SubmitClientLandmarks(const ClientRace *race, int page, RenderWorld *world) {
+    if (!race || !world || !world->hasCamera || page < 0 || page > 1 ||
+        world->instanceCount > world->instanceCapacity ||
+        (world->instanceCapacity && !world->instances)) return 0;
+    s32 reference[3];
+    if (!CameraReference(world, reference)) return 0;
+    const u32 count = race->highLandmark ? 2u : 1u;
+    RenderMeshInstance staged[2] = {{0}};
+    for (u32 i = 0; i < count; ++i) {
+        const SceneryPlacement *placement = i ? &race->landmarks.highClass : &race->landmarks.standard;
+        const s32 model = CourseModel(race, i ? 0x3f : (race->env.mode4 ? 0x3a : 0x39));
+        if (model < 0) return 0;
+        Vec4 position = {placement->position.x, placement->position.y, placement->position.z, 0};
+        if (!i && race->ovalLandmark) position.z = WrapSigned32((int64_t)position.z + 0x5000);
+        staged[i] = CourseInstance(race, 0x30000u + i, (u32)model, page);
+        staged[i].transform = CoursePose(&position, placement->yaw, 0, reference);
+        staged[i].previousTransform = staged[i].transform;
+        if (!race->env.mode4) staged[i].flags |= RAGE_RENDER_INSTANCE_ENABLE_FOG;
+        if (i && race->env.mode4) ++staged[i].materialVariant;
+    }
+    return ReplaceCourseEntities(world, staged, count, 0x30000u, 0x30002u);
 }

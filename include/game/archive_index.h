@@ -21,4 +21,7 @@ typedef struct RageArchiveIndexEntry {
 int RageArchiveDecodeIndex(const void *data, size_t dataSize,
                            RageArchiveIndexEntry *entries, size_t entryCount);
 
+/* Stable content fingerprint for accidental archive mismatches, not authentication. */
+uint64_t ArchiveFingerprint(const void *data, size_t size);
+
 #endif

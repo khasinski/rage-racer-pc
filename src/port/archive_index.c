@@ -32,3 +32,14 @@ int RageArchiveDecodeIndex(const void *data, size_t dataSize,
     memcpy(entries, decoded, entryCount * sizeof(decoded[0]));
     return 1;
 }
+
+uint64_t ArchiveFingerprint(const void *data, size_t size) {
+    if (!data && size) return 0;
+    const unsigned char *bytes = data;
+    uint64_t hash = UINT64_C(14695981039346656037);
+    for (size_t byte = 0; byte < size; ++byte) {
+        hash ^= bytes[byte];
+        hash *= UINT64_C(1099511628211);
+    }
+    return hash;
+}

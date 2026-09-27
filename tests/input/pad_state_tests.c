@@ -461,7 +461,25 @@ static void PadInitializationTests(void) {
     s_initPadLength0 = 0;
     s_initPadLength1 = 0;
 
+    memset(&g_PadState, 0xA5, sizeof(g_PadState));
+    g_PadHeld = g_PadPressed = g_PadPressedRepeat = 0xFFFF;
+    g_PadMappingIndex = g_NegconMappingIndex = 5;
+    g_NegconSteerPlay = 3;
+    g_NegconSteerNeutral = 17;
     GameInitPad();
+    PadState empty = {0};
+    Check("pad state is reset", memcmp(&g_PadState, &empty, sizeof(empty)) == 0, 1);
+    Check("held is reset", g_PadHeld, 0);
+    Check("pressed is reset", g_PadPressed, 0);
+    Check("repeat is reset", g_PadPressedRepeat, 0);
+    Check("calibration default", g_NegconSteerPlay, 1);
+    Check("neutral default", g_NegconSteerNeutral, 0);
+    Check("digital mapping default", g_PadMappingIndex, 0);
+    Check("analog mapping default", g_NegconMappingIndex, 0);
+    for (int button = 0; button < 8; ++button) {
+        Check("digital mapping initialized", g_PadButtonMapping[button], g_PadButtonPresets[0][button]);
+        Check("analog mapping initialized", g_PadButtonMapping[button + 8], g_NegconButtonPresets[0][button]);
+    }
 
     Check("first BIOS packet starts at the pad buffer",
           s_initPadBuffer0 == (char *)g_PadBuffers, 1);

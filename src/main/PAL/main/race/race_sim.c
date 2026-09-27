@@ -95,15 +95,19 @@ static int IsFlag(int value) {
     return value == 0 || value == 1;
 }
 
+int ValidDriverInput(const DriverInput *input) {
+    return input != NULL && input->throttle >= 0 && input->throttle <= 256 &&
+        input->brake >= 0 && input->brake <= 256 &&
+        input->steering.mode >= STEERING_CENTER && input->steering.mode <= STEERING_ANALOG &&
+        input->steering.angle >= -(13 * 512) && input->steering.angle <= 13 * 512 &&
+        IsFlag(input->steering.left) && IsFlag(input->steering.right) &&
+        IsFlag(input->shiftUp) && IsFlag(input->shiftDown);
+}
+
 int SetRaceInput(RaceSim *race, s32 slot, const DriverInput *input) {
-    if (race == NULL || input == NULL || (u32)slot >= DRIVER_SEAT_LIMIT ||
+    if (race == NULL || (u32)slot >= DRIVER_SEAT_LIMIT || !ValidDriverInput(input) ||
         race->phase == SIM_FINISHED || race->drivers[slot].status != SIM_DRIVING ||
-        race->drivers[slot].rival || race->drivers[slot].car.activeFlag == -1 ||
-        input->throttle < 0 || input->throttle > 256 || input->brake < 0 || input->brake > 256 ||
-        input->steering.mode < STEERING_CENTER || input->steering.mode > STEERING_ANALOG ||
-        input->steering.angle < -(13 * 512) || input->steering.angle > 13 * 512 ||
-        !IsFlag(input->steering.left) || !IsFlag(input->steering.right) ||
-        !IsFlag(input->shiftUp) || !IsFlag(input->shiftDown)) return 0;
+        race->drivers[slot].rival || race->drivers[slot].car.activeFlag == -1) return 0;
     SimDriver *driver = &race->drivers[slot];
     const int up = driver->input.shiftUp || input->shiftUp;
     const int down = driver->input.shiftDown || input->shiftDown;

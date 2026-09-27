@@ -247,6 +247,43 @@ endif()
 add_test(NAME random COMMAND random_tests)
 set_tests_properties(random PROPERTIES LABELS unit)
 
+    add_executable(mp_protocol_tests mp_protocol_tests.c
+        ${CMAKE_SOURCE_DIR}/src/port/mp_client.c
+        ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)
+    target_include_directories(mp_protocol_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+    if(NOT MSVC)
+        target_compile_options(mp_protocol_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    endif()
+    add_test(NAME mp_protocol COMMAND mp_protocol_tests)
+    set_tests_properties(mp_protocol PROPERTIES LABELS unit)
+    if(WIN32)
+        target_link_libraries(mp_protocol_tests PRIVATE ws2_32)
+    endif()
+if(NOT WIN32)
+    add_executable(mp_socket_tests mp_socket_tests.c
+        ${CMAKE_SOURCE_DIR}/src/port/archive_index.c)
+    target_include_directories(mp_socket_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+    target_compile_options(mp_socket_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    add_test(NAME mp_socket COMMAND mp_socket_tests)
+    set_tests_properties(mp_socket PROPERTIES LABELS unit TIMEOUT 5 SKIP_RETURN_CODE 77)
+    add_executable(mp_transport_tests mp_transport_tests.c)
+    target_include_directories(mp_transport_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/src)
+    if(NOT MSVC)
+        target_compile_options(mp_transport_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    endif()
+    add_dependencies(mp_transport_tests rage-mp-test-client)
+    add_test(NAME mp_transport COMMAND mp_transport_tests $<TARGET_FILE:rage-mp-test-client>)
+    set_tests_properties(mp_transport PROPERTIES LABELS integration TIMEOUT 15 SKIP_RETURN_CODE 77)
+    add_test(NAME mp_client_invalid_port COMMAND rage-mp-test-client 127.0.0.1 65536 driver)
+    add_test(NAME mp_client_invalid_count COMMAND rage-mp-test-client 127.0.0.1 7878 driver -1)
+    set_tests_properties(mp_client_invalid_port mp_client_invalid_count
+        PROPERTIES LABELS unit WILL_FAIL TRUE)
+
+endif()
+
 add_executable(game_logic_tests
     game_logic_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/input_config.c

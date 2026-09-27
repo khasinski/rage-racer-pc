@@ -70,6 +70,9 @@ static int ValidField(const RaceSim *race, const RaceView *view) {
 
 int TickRaceView(RaceView *view, const RaceSim *race, float daylight) {
     if (!isfinite(daylight) || daylight < 0 || daylight > 1 || !ValidField(race, view) || (view->tickSeen && race->tick <= view->tick)) return 0;
+    const u32 elapsed = view->tickSeen ? race->tick - view->tick : 1;
+    if (elapsed > RACE_VIEW_CATCHUP_LIMIT) return 0;
+    const float seconds = (float)elapsed / SIM_TICK_RATE;
     for (unsigned seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
         const SimDriver *driver = &race->drivers[seat];
         if (!Visible(driver)) { view->carSeen[seat] = 0; continue; }
@@ -81,25 +84,30 @@ int TickRaceView(RaceView *view, const RaceSim *race, float daylight) {
                                                          race->route.length, race->reverse);
         const float shelter = 1.0f - (float)zone.blend / 256.0f * 0.75f;
         UpdateCarLights(&view->lamps[seat], daylight, shelter,
-                        AsConstRivalCar(&driver->car)->brakeInput > 0, 1.0f / SIM_TICK_RATE);
+                        AsConstRivalCar(&driver->car)->brakeInput > 0, seconds);
         if (driver->rival) continue;
-        StepEngineSound(&view->engines[seat], &driver->car.drive,
-                        &driver->spec, race->tick, driver->random);
+        for (u32 step = 0; step < elapsed; ++step)
+            StepEngineSound(&view->engines[seat], &driver->car.drive,
+                            &driver->spec, race->tick - elapsed + 1 + step, driver->random);
     }
     view->tick = race->tick;
     view->tickSeen = 1;
     return 1;
 }
 
-int SubmitRaceView(const RaceSim *race, const RaceView *view,
-                   const RivalLook *rivals, u32 trackAsset, u8 textureVariant, RenderWorld *world) {
+int SubmitRaceViewPoses(const RaceSim *race, const RaceView *view,
+                       const PlayerCarRuntime poses[DRIVER_SEAT_LIMIT],
+                       const PlayerCarRuntime previous[DRIVER_SEAT_LIMIT],
+                       const RivalLook *rivals, u32 trackAsset,
+                       u8 textureVariant, RenderWorld *world) {
     if (!ValidField(race, view) || textureVariant >= CAR_MODEL_VARIANT_COUNT) return 0;
     RenderMeshInstance field[DRIVER_SEAT_LIMIT * CAR_PART_COUNT];
     u32 count = 0;
     for (unsigned seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
         const SimDriver *driver = &race->drivers[seat];
         if (!Visible(driver)) continue;
-        const GameCarRuntime *car = AsConstRivalCar(&driver->car);
+        const GameCarRuntime *source = AsConstRivalCar(&driver->car);
+        const GameCarRuntime *car = AsConstRivalCar(poses ? &poses[seat] : &driver->car);
         const TrackZoneEffect zone = ReadTrackZoneEffect(race->events, car->trackProgress,
                                                         race->route.length, race->reverse);
         float light[3];
@@ -110,8 +118,8 @@ int SubmitRaceView(const RaceSim *race, const RaceView *view,
         const CarShape *shape;
         u32 rear, front;
         if (driver->rival) {
-            if (!rivals || rivals[car->modelIndex].palette > 2) return 0;
-            const RivalLook *look = &rivals[car->modelIndex];
+            if (!rivals || rivals[source->modelIndex].palette > 2) return 0;
+            const RivalLook *look = &rivals[source->modelIndex];
             body.assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
             body.assetKey = trackAsset;
             body.mesh = look->bodyMesh;
@@ -128,13 +136,14 @@ int SubmitRaceView(const RaceSim *race, const RaceView *view,
                 body.carPaintColor1 = look->paint.paintColor1;
                 body.carPaintColor2 = look->paint.paintColor2;
             }
-            u32 wheel = (u32)car->renderDepth * 2;
+            u32 wheel = (u32)source->renderDepth * 2;
             if (car->wheelRotation & 0x1000) wheel += 10;
             if (wheel + 3 >= 22) wheel = 0;
             rear = wheel + 3; front = wheel + 2;
             shape = &view->models[look->variant]->shape;
         }
-        if (!BuildCarInstances(car, &view->previousCars[seat], shape, &body,
+        const GameCarRuntime *old = previous ? AsConstRivalCar(&previous[seat]) : &view->previousCars[seat];
+        if (!BuildCarInstances(car, old, shape, &body,
                                rear, front, &field[count])) return 0;
         count += CAR_PART_COUNT;
     }
@@ -142,4 +151,9 @@ int SubmitRaceView(const RaceSim *race, const RaceView *view,
         !RenderWorldBeginCarField(world, DRIVER_SEAT_LIMIT)) return 0;
     for (u32 part = 0; part < count; ++part) RenderWorldSubmitMesh(world, &field[part]);
     return 1;
+}
+
+int SubmitRaceView(const RaceSim *race, const RaceView *view,
+                   const RivalLook *rivals, u32 trackAsset, u8 textureVariant, RenderWorld *world) {
+    return SubmitRaceViewPoses(race, view, NULL, NULL, rivals, trackAsset, textureVariant, world);
 }

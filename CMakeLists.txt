@@ -282,10 +282,11 @@ add_library(rage-rmesh STATIC
 target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(rage-mesh-obj tools/rage_mesh_obj.c)
 target_link_libraries(rage-mesh-obj PRIVATE rage-rmesh)
-if(NOT WIN32)
-    # Minimal networking test client for rage-racer-server (see
-    # docs/multiplayer.md); sockets only, no game/renderer dependency.
-    add_executable(rage-mp-test-client tools/rage_mp_test_client.c)
+# Uses the game's protocol adapter without game/renderer dependencies.
+add_executable(rage-mp-test-client tools/rage_mp_test_client.c src/port/mp_client.c src/port/archive_index.c)
+target_include_directories(rage-mp-test-client PRIVATE include src)
+if(WIN32)
+    target_link_libraries(rage-mp-test-client PRIVATE ws2_32)
 endif()
 set(RAGE_HAS_AUTHORED_CARS 0)
 option(RAGE_EMBED_AUTHORED_CARS "Embed optional local authored car models" ON)
@@ -495,6 +496,8 @@ if(RAGE_BUILD_PORT)
         src/port/analog_pad.c
         src/port/multiplayer_session.c
         src/port/multiplayer_net.c
+        src/port/mp_client.c
+        src/port/mp_race_client.c
         src/port/force_feedback.c
         src/port/force_feedback_device.c
         src/port/axis_curve.c

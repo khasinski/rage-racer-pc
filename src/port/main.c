@@ -23,6 +23,7 @@
 #include "menu_music_runtime.h"
 #include "multiplayer_net.h"
 #include "multiplayer_session.h"
+#include "mp_race_client.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -156,6 +157,14 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-port: car catalog=%s\n", carCatalogPath);
     }
     CarCatalogApplyMetadata();
+    if (RuntimeConfigGet("multiplayer.connect_host") != NULL) {
+        /* Temporary command, not a menu entry yet (see docs/multiplayer.md,
+         * "Order of work" step 3): --set multiplayer.connect_host=<ip>. */
+        int ok = RunMultiplayerRaceClient(&portConfig);
+        Psyz_AudioDestroy();
+        ModernShutdown();
+        return ok ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
     if (!MenuMusicPrepare()) {
         Psyz_AudioDestroy();
         ModernShutdown();

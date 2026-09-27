@@ -971,7 +971,37 @@ static void test_explicit_car_field_replaces_only_main_car_seats(void) {
     EXPECT_EQ(0, memcmp(&world, &before, sizeof(world)));
 }
 
+static void test_shadow_focus_is_explicit_and_independent_of_seat_or_bank(void) {
+    RenderMeshInstance instances[3] = {
+        {.entity = 11, .transform.position = {11, 12, 13}},
+        {.entity = 0, .assetSet = RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
+         .transform.position = {20, 21, 22}},
+        {.entity = 0, .pass = RAGE_RENDER_PASS_MIRROR,
+         .transform.position = {30, 31, 32}},
+    };
+    RenderWorld world;
+    RenderWorldInit(&world, instances, 3);
+    world.instanceCount = 3;
+    world.camera.transform.position = (Vec3){40, 41, 42};
+    EXPECT_EQ(40, RenderShadowCenter(&world).x);
+    EXPECT_EQ(1, RenderWorldFocus(&world, 0));
+    EXPECT_EQ(20, RenderShadowCenter(&world).x);
+    EXPECT_EQ(0, instances[0].flags & RAGE_RENDER_INSTANCE_FOCUS);
+    EXPECT_EQ(0, instances[2].flags & RAGE_RENDER_INSTANCE_FOCUS);
+    RenderMeshInstance before[3];
+    memcpy(before, instances, sizeof(before));
+    EXPECT_EQ(0, RenderWorldFocus(&world, 99));
+    EXPECT_EQ(0, memcmp(before, instances, sizeof(before)));
+    EXPECT_EQ(1, RenderWorldFocus(&world, 11));
+    EXPECT_EQ(11, RenderShadowCenter(&world).x);
+    EXPECT_EQ(0, instances[1].flags & RAGE_RENDER_INSTANCE_FOCUS);
+    instances[0].transform.position.x = NAN;
+    EXPECT_EQ(40, RenderShadowCenter(&world).x);
+    EXPECT_EQ(0, RenderWorldFocus(NULL, 0));
+}
+
 int main(void) {
+    test_shadow_focus_is_explicit_and_independent_of_seat_or_bank();
     test_explicit_car_field_replaces_only_main_car_seats();
     test_spot_lights_validate_and_reset();
     test_frame_reset_preserves_storage_and_resets_overflow();

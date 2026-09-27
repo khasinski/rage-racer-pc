@@ -137,7 +137,8 @@ static void TestRoundTrip(void) {
     FillTransform(&instances[0].transform, 160);
     FillTransform(&instances[0].previousTransform, 180);
     instances[0].flags = RAGE_RENDER_INSTANCE_ENABLE_FOG |
-                         RAGE_RENDER_INSTANCE_DEPTH_DECAL;
+                         RAGE_RENDER_INSTANCE_DEPTH_DECAL |
+                         RAGE_RENDER_INSTANCE_FOCUS;
     instances[0].pass = RAGE_RENDER_PASS_MIRROR;
     instances[1] = instances[0];
     instances[1].entity = 21;

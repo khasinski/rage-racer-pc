@@ -183,6 +183,7 @@ int main(int argc, char **argv) {
                                 candidate->primaryMesh.cached.assetKey, 0, &terrainWorld));
             CHECK(SubmitClientShuttles(candidate, 0, &terrainWorld));
             CHECK(SubmitClientSpinners(candidate, 0, &terrainWorld));
+            CHECK(SubmitClientLandmarks(candidate, 0, &terrainWorld));
             ClientFrame *mixedFrame = CaptureClientFrame(candidate, &terrainWorld, 0);
             CHECK(mixedFrame && candidate->references == 2);
             free(terrain);

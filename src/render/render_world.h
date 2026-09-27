@@ -180,6 +180,8 @@ enum {
      * The in-car view keeps the player's headlights this way without the
      * invisible body casting a shadow or showing up in reflections. */
     RAGE_RENDER_INSTANCE_LAMPS_ONLY = 1u << 9,
+    /* Presentation subject selected by the producer, independent of seat or bank. */
+    RAGE_RENDER_INSTANCE_FOCUS = 1u << 10,
 };
 
 enum { RENDER_SPOT_LIGHT_CAPACITY = 72 }; /* Twelve cars, up to six lamps each. */
@@ -241,6 +243,8 @@ void RenderWorldSetMirrorCamera(RenderWorld *world,
                                     int active, float panelY);
 int RenderWorldSubmitMesh(RenderWorld *world,
                               const RenderMeshInstance *instance);
+/* Select an existing main-view entity body. Failure preserves all flags. */
+int RenderWorldFocus(RenderWorld *world, uint32_t entity);
 void RenderWorldDiscardPass(RenderWorld *world, RenderPass pass);
 void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
                                     RenderTransform *transform);

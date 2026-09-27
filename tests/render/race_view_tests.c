@@ -118,6 +118,21 @@ CHECK(view->engines[0].rpm == 3500 && view->engines[11].rpm == 1750);
 race.tick = 0;
 CHECK(!TickRaceView(view, &race, 1.0f));
 CHECK(memcmp(&presentationSource, &race, sizeof(race)) == 0);
+RaceView beforeGap = *view;
+/* Fade duration follows elapsed ticks when intermediate snapshots are dropped. */
+EngineSound expectedEngine = view->engines[0];
+for (u32 tick = 2; tick <= 6; ++tick)
+    CHECK(StepEngineSound(&expectedEngine, &race.drivers[0].car.drive, &race.drivers[0].spec, tick, race.drivers[0].random));
+race.tick = 6;
+CHECK(TickRaceView(view, &race, 0.0f));
+CHECK(memcmp(&view->engines[0], &expectedEngine, sizeof(expectedEngine)) == 0);
+CHECK(view->lamps[0].headlights > 0.69f && view->lamps[0].headlights < 0.71f);
+CHECK(memcmp(&presentationSource.drivers, &race.drivers, sizeof(race.drivers)) == 0);
+*view = beforeGap;
+race.tick = view->tick + RACE_VIEW_CATCHUP_LIMIT + 1;
+CHECK(!TickRaceView(view, &race, 0.0f));
+CHECK(memcmp(view, &beforeGap, sizeof(beforeGap)) == 0);
+
 race = saved;
 
     looks[0].variant = 5;
@@ -163,6 +178,24 @@ race = saved;
     CHECK(human->assetKey == (u32)CarVariantAssetIndex(ASSET_CAR_1ST_BASE, 2));
     CHECK(human->hasCarPaint && human->carPaintColor1 == 3 && human->carPaintColor2 == 8);
     CHECK(human->previousTransform.position.x == 100);
+    PlayerCarRuntime poses[DRIVER_SEAT_LIMIT];
+    for (unsigned seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat)
+        poses[seat] = race.drivers[seat].car;
+    float authoritativeX = human->transform.position.x;
+    poses[0].x += 200;
+    poses[1].modelIndex = INT16_MAX; /* Presentation cannot choose a model bank. */
+    CHECK(SubmitRaceViewPoses(&race, view, poses, poses, rivals, 88, 3, &world));
+    CHECK(instances[1].transform.position.x == authoritativeX + 200);
+    CHECK(instances[1].previousTransform.position.x == authoritativeX + 200);
+    PlayerCarRuntime previous[DRIVER_SEAT_LIMIT];
+    memcpy(previous, poses, sizeof(previous));
+    previous[0].x -= 150;
+    CHECK(SubmitRaceViewPoses(&race, view, poses, previous, rivals, 88, 3, &world));
+    CHECK(instances[1].transform.position.x == authoritativeX + 200);
+    CHECK(instances[1].previousTransform.position.x == authoritativeX + 50);
+    CHECK(memcmp(&race, &saved, sizeof(race)) == 0);
+    CHECK(SubmitRaceView(&race, view, rivals, 88, 3, &world));
+    CHECK(instances[1].transform.position.x == authoritativeX);
     CHECK(human->environmentLight.x == 1 && human->environmentLight.y == 0.5f);
     CHECK(human->environmentLight.z == 0.25f);
     CHECK(memcmp(&human->lamps, &view->lamps[0], sizeof(CarLights)) == 0);

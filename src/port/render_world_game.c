@@ -195,6 +195,8 @@ static void GameRenderWorldSubmitCarPart(uint32_t entity, uint32_t part,
     /* Cars are depth-cued like every other polygon on the PS1. */
     instance.flags = RAGE_RENDER_INSTANCE_ENABLE_LIGHTING |
                      RAGE_RENDER_INSTANCE_ENABLE_FOG;
+    if (entity == RAGE_PLAYER_CAR_ENTITY && part == 0 && !mirror_pass)
+        instance.flags |= RAGE_RENDER_INSTANCE_FOCUS;
     if (s_playerCarLampsOnly)
         instance.flags |= RAGE_RENDER_INSTANCE_LAMPS_ONLY;
     instance.environmentLight = environmentLight;

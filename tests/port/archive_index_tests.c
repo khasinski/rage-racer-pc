@@ -68,6 +68,11 @@ static int TestArguments(void) {
 }
 
 int main(void) {
+    CHECK(ArchiveFingerprint(NULL, 0) == UINT64_C(0xcbf29ce484222325));
+    CHECK(ArchiveFingerprint("hello", 5) == UINT64_C(0xa430d84680aabd0b));
+    CHECK(ArchiveFingerprint(NULL, 1) == 0);
+    const unsigned char binary[] = {0, 255, 128};
+    CHECK(ArchiveFingerprint(binary, sizeof(binary)) != ArchiveFingerprint(binary, 2));
     CHECK(TestDecode() == 0);
     CHECK(TestInvalidIndexIsAtomic() == 0);
     CHECK(TestArguments() == 0);

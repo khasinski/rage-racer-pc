@@ -24,12 +24,13 @@ static void BuildDisc(u8 *data, s32 offset) {
     record[32] = sizeof(name) - 1;
     memcpy(record + 33, name, sizeof(name) - 1);
     record += 44;
-    const char boot[] = "SCES_006.50;1";
+    const char *boot = offset == 16 ? "SCES_006.50;1" : "SLPS_009.00;1";
     record[0] = 46;
-    Word(record + 2, 18);
+    Word(record + 2, 13);
     Word(record + 10, 1);
-    record[32] = sizeof(boot) - 1;
-    memcpy(record + 33, boot, sizeof(boot) - 1);
+    record[32] = (u8)strlen(boot);
+    memcpy(record + 33, boot, strlen(boot));
+    data[13 * SECTOR_SIZE + offset] = 0x42;
     record += 46;
     const char configName[] = "SYSTEM.CNF;1";
     const char *config = offset == 16 ? "BOOT = cdrom:\\SCES_006.50;1\n"
@@ -74,6 +75,9 @@ int main(void) {
         RaceData *first = LoadRaceDisc(bin), *second = LoadRaceDisc(bin);
         CHECK(first != NULL && second != NULL && first->data != second->data);
         CHECK(strcmp(first->boot, boot) == 0 && strcmp(second->boot, first->boot) == 0);
+        const u8 code = 0x42;
+        CHECK(first->executable == ArchiveFingerprint(&code, 1));
+        CHECK(second->executable == first->executable);
         GameCarSpec spec;
         CHECK(ReadRaceCar(first, 0, &spec) && spec.topGear == 6);
         FreeRaceData(first);
@@ -87,6 +91,15 @@ int main(void) {
         RaceData *fromCue = LoadRaceDisc(cue);
         CHECK(fromCue != NULL && ReadRaceCar(fromCue, 0, &spec) && spec.topGear == 6);
         CHECK(strcmp(fromCue->boot, boot) == 0);
+        CHECK(fromCue->executable == ArchiveFingerprint(&code, 1));
+        disc[13 * SECTOR_SIZE + (mode == 1 ? 16 : 24)] ^= 1;
+        CHECK(WriteDisc(bin, disc, 2, SECTORS));
+        RaceData *revision = LoadRaceDisc(cue);
+        CHECK(revision != NULL && strcmp(revision->boot, fromCue->boot) == 0);
+        CHECK(revision->size == fromCue->size &&
+              memcmp(revision->data, fromCue->data, revision->size) == 0);
+        CHECK(revision->executable != fromCue->executable);
+        FreeRaceData(revision);
         FreeRaceData(fromCue);
         CHECK(WriteDisc(bin, disc, 2, SECTORS - 1));
         CHECK(LoadRaceDisc(cue) == NULL);
@@ -99,6 +112,7 @@ int main(void) {
     RaceData *unknown = LoadRaceDisc(bin);
     GameCarSpec unknownSpec;
     CHECK(unknown != NULL && unknown->boot[0] == '\0');
+    CHECK(unknown->executable == 0);
     CHECK(ReadRaceCar(unknown, 0, &unknownSpec) && unknownSpec.topGear == 6);
     FreeRaceData(unknown);
     CHECK(remove(bin) == 0);

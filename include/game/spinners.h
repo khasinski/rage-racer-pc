@@ -1,11 +1,8 @@
 #ifndef GAME_SPINNERS_H
 #define GAME_SPINNERS_H
 #include "common.h"
-#include "game/vector.h"
-typedef struct SpinningSceneryPlacement {
-    LVec position;
-    s32 yaw;
-} SpinningSceneryPlacement;
+#include "game/scenery.h"
+typedef SceneryPlacement SpinningSceneryPlacement;
 _Static_assert(sizeof(SpinningSceneryPlacement) == 16,
                "SpinningSceneryPlacement must match the retail layout");
 /* Copies authored placement; invalid input preserves output. */

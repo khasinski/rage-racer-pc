@@ -136,3 +136,17 @@ void RenderProjectShadowPoint(const RenderShadowMap *shadow,
     if (!RenderShadowVec3IsFinite(*out))
         *out = (Vec3){0.0f, 0.0f, 0.0f};
 }
+
+Vec3 RenderShadowCenter(const RenderWorld *world) {
+    if (!world) return (Vec3){0};
+    if (world->instanceCount <= world->instanceCapacity && world->instances) {
+        for (uint32_t i = 0; i < world->instanceCount; ++i) {
+            const RenderMeshInstance *instance = &world->instances[i];
+            if (instance->pass == RAGE_RENDER_PASS_MAIN &&
+                (instance->flags & RAGE_RENDER_INSTANCE_FOCUS) &&
+                RenderShadowVec3IsFinite(instance->transform.position))
+                return instance->transform.position;
+        }
+    }
+    return world->camera.transform.position;
+}
