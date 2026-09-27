@@ -27,15 +27,18 @@
 #include "render/car_lamps.h"
 #include "render/render_mesh_build.h"
 #include "render/render_projection.h"
+#include "render/render_shadow.h"
+#include "render/render_world_frame.h"
+#include "render/texture_mipmap.h"
 #include "scene_matrix.h"
 
 enum {
     WEB_INSTANCE_CAPACITY = 8192,
     WEB_VERTEX_CAPACITY = 600000,
     WEB_SPAN_CAPACITY = 32768,
-    WEB_SPAN_FIELDS = 12,
+    WEB_SPAN_FIELDS = 13,
     WEB_TEXTURE_BYTES = 256 * 256 * 4,
-    WEB_PACKED_FLOATS = 21,
+    WEB_PACKED_FLOATS = 22,
     WEB_COUNTDOWN_TICKS = 3 * SIM_TICK_RATE,
 };
 
@@ -63,6 +66,21 @@ static float s_camera[28];
 /* direction, ambient, diffuse, skyTop, skyHorizon, skyBottom. */
 static float s_light[24];
 static int32_t s_hud[16];
+/* Presentation history at the simulation's physics steps (every second
+ * 50 Hz tick): the browser draws between the last two, so motion is smooth
+ * at any display rate instead of stepping at 25 Hz. */
+static PlayerCarRuntime s_posePrevious[DRIVER_SEAT_LIMIT], s_poseCurrent[DRIVER_SEAT_LIMIT];
+static RenderCamera s_cameraPrevious, s_cameraCurrent;
+static u32 s_lastStepTick;
+static int s_haveStep, s_lastTickStepped;
+/* Retail far plane (16384) and fog scale; above 1 also draws cells the
+ * retail visibility table hides (they stay in the scene as ray geometry). */
+static float s_drawDistance = 1.0f;
+/* Vehicle shadow camera: position, rows 0..2, (scaleX, scaleY, depthScale,
+ * depthOffset); zero when no map could be built. */
+static float s_shadow[20];
+static int s_shadowValid;
+static uint8_t *s_mipChain;
 
 /* Retail chase camera state (see RetailChaseView). */
 typedef struct WebChase {
@@ -138,6 +156,8 @@ EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int 
     s_pendingShiftUp = s_pendingShiftDown = 0;
     s_frame = 0;
     memset(&s_chase, 0, sizeof(s_chase));
+    s_haveStep = s_lastTickStepped = 0;
+    s_shadowValid = 0;
     return 1;
 }
 
@@ -162,6 +182,28 @@ static float Daylight(const ClientRace *race) {
     return CarLightDaylight(environment.skyTopColor, environment.skyHorizonColor);
 }
 
+static RenderCamera BuildChaseCamera(const PlayerCarRuntime *car);
+
+/* Snapshots poses and the retail chase camera whenever the field physics
+ * stepped. The chase camera's yaw settling is tuned per game frame, so it
+ * also advances only here, as in the retail loop. */
+static void RecordPresentation(void) {
+    const RaceSim *sim = &s_race->sim;
+    const u32 stepTick = sim->drivers[0].stepTick;
+    RenderCamera camera;
+    s_lastTickStepped = !s_haveStep || stepTick != s_lastStepTick;
+    if (!s_lastTickStepped) return;
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        s_posePrevious[seat] = s_haveStep ? s_poseCurrent[seat] : sim->drivers[seat].car;
+        s_poseCurrent[seat] = sim->drivers[seat].car;
+    }
+    camera = BuildChaseCamera(&s_poseCurrent[0]);
+    s_cameraPrevious = s_haveStep ? s_cameraCurrent : camera;
+    s_cameraCurrent = camera;
+    s_lastStepTick = stepTick;
+    s_haveStep = 1;
+}
+
 /* One 50 Hz simulation tick. Returns the race phase, or -1 on failure. */
 EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     DriverInput input;
@@ -173,7 +215,15 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     StepRaceSim(&s_race->sim);
     if (!TickClientScenery(s_race)) return -1;
     TickRaceView(s_race->view, &s_race->sim, Daylight(s_race));
+    RecordPresentation();
     return (int)s_race->sim.phase;
+}
+
+/* 1 when the last tick produced a new presentation snapshot. */
+EMSCRIPTEN_KEEPALIVE int rw_last_tick_stepped(void) { return s_lastTickStepped; }
+
+EMSCRIPTEN_KEEPALIVE void rw_set_draw_distance(float multiplier) {
+    s_drawDistance = multiplier >= 1.0f && multiplier <= 16.0f ? multiplier : 1.0f;
 }
 
 /* ---- Retail chase camera (track/camera_chase.c, mode 1) ------------------
@@ -399,27 +449,61 @@ static void StoreVec3(float *out, Vec3 value) {
     out[0] = value.x; out[1] = value.y; out[2] = value.z; out[3] = 0.0f;
 }
 
-/* Builds this frame's scene with the native sequence and expands it into
+/* Builds the scene presented `t` (0..1) of the way from the previous physics
+ * step to the latest one, with the native sequence, and expands it into
  * world-space triangles. Returns the vertex count, or -1 on failure. */
-EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect) {
+EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     RenderDirectionalLight light;
     RenderCamera camera;
+    RenderShadowMap shadow;
+    Vec3 shadowCenter;
     const int page = 0;
-    if (!s_race || !(aspect > 0.0f)) return -1;
+    if (!s_race || !s_haveStep || !(aspect > 0.0f)) return -1;
+    t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
     RenderWorldBeginFrame(&s_world, ++s_frame);
-    camera = BuildChaseCamera(&s_race->sim.drivers[0].car);
+    RenderInterpolateCamera(&s_cameraPrevious, &s_cameraCurrent, t, &camera);
     ApplyEnvironment(&camera, &s_race->env);
+    camera.farPlane *= s_drawDistance;
+    camera.fogNear *= s_drawDistance;
+    camera.fogFar *= s_drawDistance;
     RenderWorldSetCamera(&s_world, &camera);
     RenderDirectionalLightFromSky(&camera, &light);
     RenderWorldSetDirectionalLight(&s_world, &light);
     if (!SubmitClientTerrain(s_race, page, &s_world) ||
         !SubmitClientScenery(s_race, page, &s_world) ||
-        !SubmitRaceView(&s_race->sim, s_race->view, s_race->rivals,
-                        s_race->primaryMesh.cached.assetKey, 0, &s_world) ||
+        !SubmitRaceViewPoses(&s_race->sim, s_race->view, s_poseCurrent, s_posePrevious,
+                             s_race->rivals, s_race->primaryMesh.cached.assetKey, 0, &s_world) ||
         !SubmitClientShuttles(s_race, page, &s_world) ||
         !SubmitClientSpinners(s_race, page, &s_world) ||
         !SubmitClientLandmarks(s_race, page, &s_world)) return -1;
     RenderWorldFocus(&s_world, 0);
+    for (uint32_t i = 0; i < s_world.instanceCount; ++i) {
+        RenderMeshInstance *instance = &s_world.instances[i];
+        if (instance->entity < DRIVER_SEAT_LIMIT) {
+            /* Vehicles carry the previous physics step as their previous
+             * transform; everything else animates per clock tick. */
+            RenderTransform mixed;
+            RenderInterpolateTransform(&instance->previousTransform, &instance->transform, t, &mixed);
+            instance->transform = mixed;
+        } else if (s_drawDistance > 1.0f) {
+            instance->flags &= ~RAGE_RENDER_INSTANCE_RAY_ONLY;
+        }
+    }
+    shadowCenter = RenderShadowCenter(&s_world);
+    s_shadowValid = RenderBuildDirectionalShadowMap(
+        &shadowCenter, &s_world.light.direction, RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
+        RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION, &shadow);
+    memset(s_shadow, 0, sizeof(s_shadow));
+    if (s_shadowValid) {
+        StoreVec3(&s_shadow[0], shadow.position);
+        StoreVec3(&s_shadow[4], shadow.row0);
+        StoreVec3(&s_shadow[8], shadow.row1);
+        StoreVec3(&s_shadow[12], shadow.row2);
+        s_shadow[16] = shadow.scaleX;
+        s_shadow[17] = shadow.scaleY;
+        s_shadow[18] = shadow.depthScale;
+        s_shadow[19] = shadow.depthOffset;
+    }
     s_vertexCount = RenderBuildNativePassDraws(
         &s_world, RAGE_RENDER_PASS_MAIN, aspect, ResolveMesh, s_race,
         s_vertices, WEB_VERTEX_CAPACITY, s_spans, WEB_SPAN_CAPACITY, &s_spanCount);
@@ -438,6 +522,7 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect) {
         out[9] = span->carPaintColor2;
         out[10] = span->instanceFlags;
         out[11] = span->materialFlags;
+        out[12] = span->depthDecal;
     }
     if (!BuildCameraUniform(&s_world.camera, aspect)) return -1;
     StoreVec3(&s_light[0], s_world.light.direction);
@@ -455,11 +540,13 @@ EMSCRIPTEN_KEEPALIVE int rw_span_fields(void) { return WEB_SPAN_FIELDS; }
 EMSCRIPTEN_KEEPALIVE float *rw_camera(void) { return s_camera; }
 EMSCRIPTEN_KEEPALIVE float *rw_light(void) { return s_light; }
 EMSCRIPTEN_KEEPALIVE int rw_packed_floats(void) { return WEB_PACKED_FLOATS; }
+EMSCRIPTEN_KEEPALIVE float *rw_shadow(void) { return s_shadowValid ? s_shadow : NULL; }
+EMSCRIPTEN_KEEPALIVE int rw_shadow_resolution(void) { return RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION; }
 
 /* The draw vertex mixes floats with a byte colour; WebGL wants one typed
  * buffer per upload, so this repacks the frame into floats only:
  * position 3, uv 2, colour 4 (0..255), normal 3, fog 4 (colour, weight),
- * lighting 1, environment light 3, depth bias 1. */
+ * lighting 1, environment light 3, depth bias 1, shadow reception 1. */
 EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
     for (uint32_t i = 0; i < s_vertexCount; ++i) {
         const RageNativeDrawVertex *v = &s_vertices[i];
@@ -472,6 +559,17 @@ EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
         out[16] = v->lighting;
         memcpy(out + 17, v->environmentLight, sizeof(v->environmentLight));
         out[20] = v->depthBias;
+        out[21] = v->shadowReception;
+    }
+    /* Vehicles cast the shadow map but do not sample it on themselves: the
+     * native backend traces those rays instead, and a map lookup on their
+     * low-poly surfaces is all acne (see RageNativeDrawVertex). */
+    for (uint32_t i = 0; i < s_spanCount; ++i) {
+        const RageNativeDrawSpan *span = &s_spans[i];
+        if (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
+            span->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) continue;
+        for (uint32_t v = 0; v < span->vertexCount; ++v)
+            s_packed[(size_t)(span->firstVertex + v) * WEB_PACKED_FLOATS + 21] = 0.0f;
     }
     return s_packed;
 }
@@ -494,6 +592,24 @@ EMSCRIPTEN_KEEPALIVE int rw_decode_texture(int spanIndex, uint8_t *rgba) {
     instance.materialVariant = span->materialVariant;
     return DecodeClientMaterial(s_race, &instance, span->material, 0, s_race->env.clut,
                                 rgba, WEB_TEXTURE_BYTES);
+}
+
+/* The same premultiplied atlas mip chain the native backend uploads: PS1
+ * material pages are dense atlases, so only RAGE_TEXTURE_ATLAS_MIP_LEVELS
+ * levels exist; smaller ones would blend unrelated entries. Returns the
+ * chain (levels back to back, see rw_texture_level_offset) or NULL. */
+EMSCRIPTEN_KEEPALIVE uint8_t *rw_decode_texture_mips(int spanIndex, uint8_t *scratch) {
+    const size_t size = TextureMipChainSizeRGBA8(256, 256, RAGE_TEXTURE_ATLAS_MIP_LEVELS);
+    if (!s_mipChain) s_mipChain = malloc(size);
+    if (!s_mipChain || !rw_decode_texture(spanIndex, scratch) ||
+        !TextureBuildMipChainRGBA8(scratch, 256, 256, RAGE_TEXTURE_ATLAS_MIP_LEVELS, s_mipChain, size))
+        return NULL;
+    return s_mipChain;
+}
+
+EMSCRIPTEN_KEEPALIVE int rw_texture_levels(void) { return RAGE_TEXTURE_ATLAS_MIP_LEVELS; }
+EMSCRIPTEN_KEEPALIVE int rw_texture_level_offset(int level) {
+    return (int)TextureMipLevelOffsetRGBA8(256, 256, (uint32_t)level);
 }
 
 /* Changes whenever the environment palette (time of day) changes, so the

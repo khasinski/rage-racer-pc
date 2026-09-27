@@ -29,7 +29,7 @@ for (let tick = 1; tick <= ticks; tick++) {
                 `speed=${hud[7]} gear=${hud[8]} time=${hud[6]}ms`);
   }
 }
-const vertices = call('rw_build_frame', 'number', ['number'], [16 / 9]);
+const vertices = call('rw_build_frame', 'number', ['number', 'number'], [16 / 9, 1]);
 const spans = call('rw_span_count', 'number', [], []);
 if (vertices <= 0 || spans <= 0) throw new Error(`empty frame: ${vertices} vertices, ${spans} spans`);
 const rgba = rage._malloc(256 * 256 * 4);

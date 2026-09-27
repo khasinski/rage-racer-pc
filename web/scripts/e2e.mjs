@@ -11,6 +11,8 @@ import { chromium } from 'playwright';
 
 const web = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
+const drawIndex = args.indexOf('--draw');
+const drawDistance = drawIndex >= 0 ? args.splice(drawIndex, 2)[1] : null;
 const outIndex = args.indexOf('--out');
 const out = resolve(outIndex >= 0 ? args.splice(outIndex, 2)[1] : join(web, 'e2e-output'));
 const discFiles = args.map((file) => resolve(file));
@@ -37,6 +39,7 @@ try {
   await page.waitForSelector('#setup:not([hidden])', { timeout: 120_000 });
   await page.screenshot({ path: join(out, '02-setup.png') });
 
+  if (drawDistance) await page.selectOption('select[name=drawDistance]', drawDistance);
   await page.click('#start');
   await page.waitForSelector('#view:not([hidden])', { timeout: 120_000 });
   await page.waitForTimeout(1500);

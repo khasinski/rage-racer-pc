@@ -99,10 +99,12 @@ setup.addEventListener('submit', async (event) => {
   }
   $('setup-status').textContent = '';
   renderer ??= new Renderer(canvas, rage);
+  rage.setDrawDistance(Number((setup.elements.namedItem('drawDistance') as HTMLSelectElement).value));
+  renderer.shadows = (setup.elements.namedItem('shadows') as HTMLInputElement).checked;
   show('race');
   resize();
   last = performance.now();
-  accumulator = 0;
+  accumulator = simTime = previousStep = currentStep = 0;
 });
 
 function resize() {
@@ -132,6 +134,11 @@ function drawHud(h: Hud) {
 
 let last = 0;
 let accumulator = 0;
+/* Simulated time (ms) and the times of the last two physics steps: frames
+ * are drawn between those two snapshots, one step behind the simulation. */
+let simTime = 0;
+let previousStep = 0;
+let currentStep = 0;
 function frame(now: number) {
   requestAnimationFrame(frame);
   if (!racing || !renderer) return;
@@ -143,7 +150,6 @@ function frame(now: number) {
   }
   accumulator = Math.min(accumulator + (now - last), 250);
   last = now;
-  let ticked = false;
   const rage = rageSync;
   if (!rage) return;
   while (accumulator >= TICK_MS) {
@@ -154,13 +160,17 @@ function frame(now: number) {
       return;
     }
     accumulator -= TICK_MS;
-    ticked = true;
+    simTime += TICK_MS;
+    if (rage.lastTickStepped()) {
+      previousStep = currentStep;
+      currentStep = simTime;
+    }
   }
-  if (ticked) {
-    const vertices = rage.buildFrame(renderer.aspect);
-    if (vertices >= 0) renderer.update(vertices);
-    drawHud(rage.hud());
-  }
+  const interval = Math.max(TICK_MS, currentStep - previousStep);
+  const t = Math.min(1, Math.max(0, (simTime + accumulator - currentStep) / interval));
+  const vertices = rage.buildFrame(renderer.aspect, t);
+  if (vertices >= 0) renderer.update(vertices);
+  drawHud(rage.hud());
   renderer.render();
 }
 

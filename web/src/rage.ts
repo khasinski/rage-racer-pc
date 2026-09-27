@@ -51,10 +51,13 @@ export interface Hud {
   tick: number;
 }
 
+export interface TextureLevel { data: Uint8Array; width: number; height: number }
+export interface DecodedTexture { levels: TextureLevel[]; transparent: boolean }
+
 export const PHASE_COUNTDOWN = 1;
 export const PHASE_RACING = 2;
 export const PHASE_FINISHED = 3;
-export const SPAN_FIELDS = 12;
+export const SPAN_FIELDS = 13;
 export const TEXTURE_SIZE = 256;
 export const NO_MATERIAL = 0xffffffff;
 /* rmesh.h RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT: decoded through the
@@ -117,8 +120,26 @@ export class Rage {
   /** One 50 Hz simulation tick; returns the race phase or -1. */
   tick(): number { return this.call('rw_tick'); }
 
-  /** Builds this frame; returns the vertex count or -1. */
-  buildFrame(aspect: number): number { return this.call('rw_build_frame', ['number'], [aspect]); }
+  /** Builds the frame shown `t` (0..1) between the last two physics steps;
+   *  returns the vertex count or -1. */
+  buildFrame(aspect: number, t: number): number {
+    return this.call('rw_build_frame', ['number', 'number'], [aspect, t]);
+  }
+
+  /** Whether the last tick advanced the field physics (a new snapshot). */
+  lastTickStepped(): boolean { return this.call('rw_last_tick_stepped') === 1; }
+
+  setDrawDistance(multiplier: number): void {
+    this.m.ccall('rw_set_draw_distance', null, ['number'], [multiplier]);
+  }
+
+  /** Vehicle shadow camera for the last frame, or null. */
+  shadow(): Float32Array | null {
+    const pointer = this.call('rw_shadow');
+    return pointer ? new Float32Array(this.m.HEAPU8.buffer, pointer, 20) : null;
+  }
+
+  shadowResolution(): number { return this.call('rw_shadow_resolution'); }
 
   packedVertices(count: number): Float32Array {
     const pointer = this.call('rw_pack_vertices');
@@ -137,9 +158,24 @@ export class Rage {
   light(): Float32Array { return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_light'), 24); }
 
   /** Decodes one span's 256x256 material; null when it has no image. */
-  decodeTexture(spanIndex: number): Uint8Array | null {
-    if (this.call('rw_decode_texture', ['number', 'number'], [spanIndex, this.textureScratch]) !== 1) return null;
-    return this.m.HEAPU8.slice(this.textureScratch, this.textureScratch + TEXTURE_SIZE * TEXTURE_SIZE * 4);
+  /** One span's material as the native backend uploads it: a premultiplied
+   *  atlas mip chain (RAGE_TEXTURE_ATLAS_MIP_LEVELS levels), plus whether it
+   *  has partial alpha (drawn blended, after everything opaque). */
+  decodeTexture(spanIndex: number): DecodedTexture | null {
+    const chain = this.call('rw_decode_texture_mips', ['number', 'number'], [spanIndex, this.textureScratch]);
+    if (!chain) return null;
+    const count = this.call('rw_texture_levels');
+    const levels: TextureLevel[] = [];
+    for (let level = 0, size = TEXTURE_SIZE; level < count; level++, size >>= 1) {
+      const offset = chain + this.call('rw_texture_level_offset', ['number'], [level]);
+      levels.push({ data: this.m.HEAPU8.slice(offset, offset + size * size * 4), width: size, height: size });
+    }
+    const base = levels[0].data;
+    let transparent = false;
+    for (let i = 3; i < base.length; i += 4) {
+      if (base[i] !== 0 && base[i] !== 255) { transparent = true; break; }
+    }
+    return { levels, transparent };
   }
 
   paletteHash(): number { return this.call('rw_palette_hash') >>> 0; }
