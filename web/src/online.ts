@@ -5,6 +5,7 @@ import { ACK_WORDS, type RaceEvent, type RoomState, type ServerMessage } from '.
 import { app, session, setHint, show, toast } from './app';
 import { TICK_MS } from './constants';
 import { Connection, FrameBuffer, type Frame } from './net';
+import { fromBase64 } from './logo';
 import { feed } from './overlay';
 import { beginRace, race, racing, stopRace, type RaceNet } from './race';
 import type { Rage } from './rage';
@@ -227,7 +228,11 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
   setHint('Preparing the course…');
   await new Promise(requestAnimationFrame);
   const players = message.seats.slice(0, message.humans);
-  players.forEach((seat, index) => rage.setPaint(index, seat.paint));
+  players.forEach((seat, index) => {
+    rage.setPaint(index, seat.paint);
+    rage.setLogo(index, seat.logo ? fromBase64(seat.logo) : null);
+    rage.setTag(index, seat.name);
+  });
   const ok = rage.startNetRace(message.settings, players.map(({ variant, manual }) => ({ variant, manual })),
                                message.localSeat);
   send({ t: 'loaded', ok });

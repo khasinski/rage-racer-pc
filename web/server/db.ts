@@ -32,6 +32,10 @@ CREATE TABLE IF NOT EXISTS car_paints (
   paint2 INTEGER NOT NULL,
   PRIMARY KEY (user_id, model)
 );
+CREATE TABLE IF NOT EXISTS car_logos (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  data BLOB NOT NULL
+);
 CREATE TABLE IF NOT EXISTS rooms (
   id INTEGER PRIMARY KEY,
   name TEXT NOT NULL,
@@ -223,6 +227,21 @@ export class Store {
     this.db.prepare(`INSERT INTO car_paints (user_id, model, paint1, paint2) VALUES (?, ?, ?, ?)
       ON CONFLICT (user_id, model) DO UPDATE SET paint1 = excluded.paint1, paint2 = excluded.paint2`)
       .run(userId, model, paint[0], paint[1]);
+  }
+
+  /** A player's team logo (LOGO_BYTES), or null. */
+  logo(userId: number): Buffer | null {
+    const row = this.db.prepare('SELECT data FROM car_logos WHERE user_id = ?').get(userId) as { data: Uint8Array } | undefined;
+    return row ? Buffer.from(row.data) : null;
+  }
+
+  setLogo(userId: number, data: Buffer | null): void {
+    if (!data) {
+      this.db.prepare('DELETE FROM car_logos WHERE user_id = ?').run(userId);
+      return;
+    }
+    this.db.prepare(`INSERT INTO car_logos (user_id, data) VALUES (?, ?)
+      ON CONFLICT (user_id) DO UPDATE SET data = excluded.data`).run(userId, data);
   }
 
   /** A player's recent races, newest first. */

@@ -148,16 +148,50 @@
       </section>
       <section class="panel garage-controls">
         <label>Car <select id="garage-car"></select></label>
-        <h2>First colour</h2>
-        <div id="paint-first" class="swatches"></div>
-        <h2>Second colour</h2>
-        <div id="paint-second" class="swatches"></div>
+        <div class="tabs" role="tablist">
+          <button type="button" role="tab" id="tab-paint" aria-selected="true">Paint</button>
+          <button type="button" role="tab" id="tab-logo" aria-selected="false">Logo</button>
+        </div>
+        <div id="pane-paint" role="tabpanel">
+          <h2>First colour</h2>
+          <div id="paint-first" class="swatches"></div>
+          <h2>Second colour</h2>
+          <div id="paint-second" class="swatches"></div>
+          <button type="button" id="garage-factory" class="secondary">Factory colours</button>
+          <p class="hint">Your colours are kept for the car, whatever its grade, and everyone in your races sees them.</p>
+        </div>
+        <div id="pane-logo" role="tabpanel" hidden>
+          <canvas id="logo-canvas" width="64" height="64" aria-label="Your team logo"></canvas>
+          <div class="row">
+            <button type="button" class="secondary tool" id="tool-pen" aria-pressed="true" title="Draw">Draw</button>
+            <button type="button" class="secondary tool" id="tool-fill" aria-pressed="false" title="Fill an area">Fill</button>
+            <button type="button" class="secondary tool" id="tool-pick" aria-pressed="false" title="Take a colour from the picture">Pick</button>
+            <label class="inline">Brush <select id="logo-brush"><option>1</option><option>2</option><option>3</option><option>5</option></select></label>
+          </div>
+          <div id="logo-palette" class="swatches palette"></div>
+          <label class="check inline">Colour <input type="color" id="logo-colour"></label>
+          <div class="row">
+            <button type="button" class="secondary" data-logo="flipH" title="Mirror left to right">⇋</button>
+            <button type="button" class="secondary" data-logo="flipV" title="Mirror top to bottom">⇅</button>
+            <button type="button" class="secondary" data-logo="turnCcw" title="Turn left">⟲</button>
+            <button type="button" class="secondary" data-logo="turnCw" title="Turn right">⟳</button>
+            <button type="button" class="secondary" data-logo="left" title="Move left">←</button>
+            <button type="button" class="secondary" data-logo="right" title="Move right">→</button>
+            <button type="button" class="secondary" data-logo="up" title="Move up">↑</button>
+            <button type="button" class="secondary" data-logo="down" title="Move down">↓</button>
+          </div>
+          <div class="row">
+            <button type="button" class="secondary" id="logo-undo" disabled>Undo</button>
+            <button type="button" class="secondary" id="logo-clear">Clear</button>
+            <label class="button secondary" for="logo-import">Import a picture…</label>
+            <input id="logo-import" type="file" accept="image/*" hidden>
+          </div>
+          <p class="hint">The logo goes on the bonnet of every car you race. The windscreen shows your name: <b id="logo-tag"></b></p>
+        </div>
         <div class="row">
           <button type="button" id="garage-save" disabled>Save</button>
-          <button type="button" id="garage-factory" class="secondary">Factory colours</button>
         </div>
         <p id="garage-status" class="status"></p>
-        <p class="hint">Your colours are kept for the car, whatever its grade, and everyone in your races sees them.</p>
       </section>
     </div>
   </section>

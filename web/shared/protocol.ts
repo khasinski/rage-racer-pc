@@ -73,12 +73,25 @@ export const PAINT_COLORS = 18; // RAGE_CAR_PAINT_COLOR_COUNT
  *  special cars) keep their factory colours. CUSTOM_PAINT_CAR_COUNT. */
 export const PAINTABLE_MODELS = 10;
 
+/** A team logo: 64x64 pixels of 4 bits (the left pixel in the low nibble) and a
+ *  16-colour palette of little-endian 15-bit colours (entry 0 is transparent),
+ *  LOGO_BYTES in all. Kept per player, drawn on the bonnet of every car they
+ *  race. On the wire and in the database it is these bytes, base64 in JSON. */
+export const LOGO_SIZE = 64;
+export const LOGO_PIXEL_BYTES = LOGO_SIZE * LOGO_SIZE / 2;
+export const LOGO_COLORS = 16;
+export const LOGO_BYTES = LOGO_PIXEL_BYTES + LOGO_COLORS * 2;
+
 /** A player's saved paints by car model (not variant: a car keeps its paint
  *  through its upgrades). Missing: the car's factory colours. */
 export type Garage = Record<number, Paint>;
 
 // userId null: a rival. paint null: the factory colours.
-export interface RaceSeat { userId: number | null; name: string; variant: number; manual: boolean; paint: Paint | null }
+export interface RaceSeat {
+  userId: number | null; name: string; variant: number; manual: boolean;
+  paint: Paint | null;
+  logo: string | null; // base64 of LOGO_BYTES, or null for none
+}
 
 export interface RaceResult {
   seat: number;

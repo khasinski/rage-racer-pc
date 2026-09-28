@@ -1,6 +1,7 @@
 #include "client_race.h"
 #include "render/car_paint.h"
 #include <stdlib.h>
+#include <string.h>
 
 const RageImportedMeshEntry *FindClientMesh(const ClientRace *race,
                                            const RenderMeshInstance *instance) {
@@ -42,13 +43,32 @@ int DecodeClientMaterial(const ClientRace *race, const RenderMeshInstance *insta
                                   instance->carPaintColor2 >= RAGE_CAR_PAINT_COLOR_COUNT))) return 0;
     TextureImage images[3];
     if (!CarTextureImages(entry->carSource, images)) return 0;
+    /* A player's logo and name are written into copies of the shared page
+     * and the logo palette, so the car's own model data stays as loaded. */
+    const CarCustom *custom = race->view && instance->entity < DRIVER_SEAT_LIMIT
+                                  ? race->view->looks[instance->entity].custom : NULL;
+    u16 *shared = NULL;
+    u16 logoClut[CAR_LOGO_COLORS];
+    if (custom && custom->hash) {
+        shared = malloc(sizeof(entry->carSource->sharedImage));
+        if (!shared) return 0;
+        memcpy(shared, entry->carSource->sharedImage, sizeof(entry->carSource->sharedImage));
+        memcpy(logoClut, entry->carSource->logoPalette, sizeof(logoClut));
+        CarCustomApply(custom, shared, logoClut);
+        images[1].words = shared;
+        images[2].words = logoClut;
+    }
     u8 *mask = instance->hasCarPaint ? malloc(256u * 256u) : NULL;
-    if (instance->hasCarPaint && !mask) return 0;
+    if (instance->hasCarPaint && !mask) {
+        free(shared);
+        return 0;
+    }
     int decoded = DecodeTexture(texture, texture->clut, images, rgba, size,
                                  mask, mask ? 256u * 256u : 0);
     if (decoded && mask)
         decoded = CarPaintApply(rgba, mask, 256u * 256u,
                                 instance->carPaintColor1, instance->carPaintColor2);
     free(mask);
+    free(shared);
     return decoded;
 }

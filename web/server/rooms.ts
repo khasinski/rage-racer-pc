@@ -362,6 +362,7 @@ export class Lobby {
     }, room.id, room.settings, members.map((m) => ({
       userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual,
       paint: this.paintOf(m.client.user.id, m.variant),
+      logo: this.store.logo(m.client.user.id)?.toString('base64') ?? null,
     })));
     if (!race) return this.fail(client, 'The server could not prepare this race.');
     room.race = race;

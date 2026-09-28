@@ -103,12 +103,28 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 
 @media (min-width: 821px) { .garage { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); } }
 #garage-view { width: 100%; aspect-ratio: 16 / 10; display: block; border-radius: 6px; background: #000; touch-action: none; cursor: grab; }
+@media (min-width: 821px) { .garage > .panel:first-child { position: sticky; top: 16px; } }
 .garage-controls { display: grid; gap: 12px; }
 .garage-controls h2 { margin: 6px 0 0; }
 .swatches { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; }
 .swatch { padding: 0; aspect-ratio: 1; border: 2px solid var(--line); border-radius: 6px; }
 .swatch:hover { border-color: var(--dim); }
 .swatch[aria-pressed=true], #garage-factory[aria-pressed=true] { border-color: var(--text); box-shadow: 0 0 0 2px var(--accent); }
+
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+.tabs button { background: transparent; color: var(--dim); border-radius: 6px 6px 0 0; border: 1px solid transparent; border-bottom: 0; }
+.tabs button[aria-selected=true] { color: var(--text); border-color: var(--line); background: var(--panel-2); }
+#pane-paint, #pane-logo { display: grid; gap: 12px; align-content: start; }
+#logo-canvas {
+  width: min(100%, 320px); aspect-ratio: 1; image-rendering: pixelated; border: 1px solid var(--line); border-radius: 4px;
+  cursor: crosshair; touch-action: none; justify-self: start;
+  background: repeating-conic-gradient(#2a333d 0% 25%, #1a2129 0% 50%) 0 0 / 16px 16px;
+}
+.palette { grid-template-columns: repeat(8, minmax(0, 1fr)); max-width: 320px; }
+.palette .swatch[data-index="0"] { background: repeating-conic-gradient(#2a333d 0% 25%, #1a2129 0% 50%) 0 0 / 10px 10px; }
+.tool[aria-pressed=true] { border-color: var(--text); box-shadow: 0 0 0 2px var(--accent); }
+label.inline { display: flex; align-items: center; gap: 8px; }
+input[type=color] { padding: 0; width: 44px; height: 30px; }
 
 #setup { position: absolute; inset: 0; margin: auto; width: min(560px, calc(100% - 32px)); height: fit-content;
   display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }

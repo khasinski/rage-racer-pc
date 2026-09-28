@@ -7,6 +7,7 @@
 #include "game/track_look.h"
 #include "render/car_lights.h"
 #include "render/render_world.h"
+#include "car_custom.h"
 
 enum { RACE_VIEW_CATCHUP_LIMIT = SIM_TICK_RATE * 10 };
 
@@ -14,6 +15,7 @@ typedef struct RaceCarLook {
     s32 variant;
     CarEntry paint;
     int hasPaint;
+    const CarCustom *custom; /* the logo and name, borrowed from the caller; NULL for none */
 } RaceCarLook;
 
 /* Owns copied human model/image sources, shared by variant within this view.

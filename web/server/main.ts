@@ -10,7 +10,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { extname, join, normalize, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { DEFAULT_PORT, PAINT_COLORS, PAINTABLE_MODELS, type Paint } from '../shared/protocol.ts';
+import { DEFAULT_PORT, LOGO_BYTES, PAINT_COLORS, PAINTABLE_MODELS, type Paint } from '../shared/protocol.ts';
 import { Store } from './db.ts';
 import { Lobby, type Client } from './rooms.ts';
 import { Simulation } from './sim.ts';
@@ -109,6 +109,20 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     }
     store.setPaint(user.id, model as number, paint as Paint | null);
     return json(res, 200, { paints: store.garage(user.id) });
+  }
+  if (path === '/api/logo' && req.method === 'GET') return json(res, 200, { logo: store.logo(user.id)?.toString('base64') ?? null });
+  if (path === '/api/logo' && req.method === 'PUT') {
+    let input: Record<string, unknown>;
+    try { input = await body(req); } catch { return json(res, 400, { error: 'Malformed request.' }); }
+    const { logo } = input;
+    if (logo !== null) {
+      const bytes = typeof logo === 'string' && /^[A-Za-z0-9+/]+=*$/.test(logo) ? Buffer.from(logo, 'base64') : null;
+      if (!bytes || bytes.length !== LOGO_BYTES) return json(res, 400, { error: 'A logo is 64 by 64 pixels with a 16-colour palette.' });
+      store.setLogo(user.id, bytes);
+    } else {
+      store.setLogo(user.id, null);
+    }
+    return json(res, 200, { logo: store.logo(user.id)?.toString('base64') ?? null });
   }
   if (path === '/api/logout' && req.method === 'POST') {
     store.deleteSession(token);

@@ -23,8 +23,29 @@ const browser = await launchBrowser();
 const carSpans = (page) => page.evaluate(() => {
   const { fields } = window.__race.rage.spans();
   let n = 0;
-  for (let i = 0; i + 14 <= fields.length; i += 14) if (fields[i + 3] === 0) n++;
+  for (let i = 0; i + 15 <= fields.length; i += 15) if (fields[i + 3] === 0) n++;
   return n;
+});
+
+/** The most pure-red pixels any car material shows in the bonnet logo's place
+ *  (0 when the logo is absent): the check logo is a red square. */
+const logoPixels = (page) => page.evaluate(() => {
+  const { rage } = window.__race;
+  const { fields } = rage.spans();
+  let most = 0;
+  for (let i = 0; i * 15 + 15 <= fields.length; i++) {
+    if (fields[i * 15 + 3] !== 0) continue;
+    const texture = rage.decodeTexture(i);
+    if (!texture) continue;
+    const { data, width } = texture.levels[0];
+    let red = 0;
+    for (let y = 48; y < 112; y++) for (let x = 64; x < 128; x++) {
+      const o = (y * width + x) * 4;
+      if (data[o] > 240 && data[o + 1] < 16 && data[o + 2] < 16 && data[o + 3] === 255) red++;
+    }
+    most = Math.max(most, red);
+  }
+  return most;
 });
 
 /** The paint colours of the car spans in the last built frame. */
@@ -32,7 +53,7 @@ const paintsDrawn = (page) => page.evaluate(() => {
   const { rage } = window.__race;
   const { fields } = rage.spans();
   const seen = new Set();
-  for (let i = 0; i + 14 <= fields.length; i += 14) if (fields[i + 3] === 0 && fields[i + 7]) seen.add(`${fields[i + 8]},${fields[i + 9]}`);
+  for (let i = 0; i + 15 <= fields.length; i += 15) if (fields[i + 3] === 0 && fields[i + 7]) seen.add(`${fields[i + 8]},${fields[i + 9]}`);
   return [...seen];
 });
 
@@ -91,8 +112,8 @@ try {
     const carTextures = () => {
       const { fields } = rage.spans();
       const list = [];
-      for (let i = 0; i * 14 + 14 <= fields.length; i++) {
-        const texture = fields[i * 14 + 3] === 0 && rage.decodeTexture(i);
+      for (let i = 0; i * 15 + 15 <= fields.length; i++) {
+        const texture = fields[i * 15 + 3] === 0 && rage.decodeTexture(i);
         if (texture) list.push(Uint8Array.from(texture.levels[0].data));
       }
       return list;
@@ -114,6 +135,28 @@ try {
   check(erriso >= 9, `the Erriso's roof is painted with its body (${erriso} of its materials change)`);
   check(unchanged.length === 0, `painting changes the pixels of every car (unchanged: ${unchanged.join(', ') || 'none'})`);
 
+  // The logo: drawn in the editor, shown on the car, saved and seen in a race.
+  await owner.selectOption('#garage-car', options[0].value);
+  await owner.waitForFunction(() => !document.querySelector('#garage-status').textContent.startsWith('Loading'), null, { timeout: 60_000 });
+  check(await logoPixels(owner) === 0, 'the car starts without a logo');
+  await owner.click('#tab-logo');
+  await owner.click('#logo-palette .swatch[data-index="3"]'); // 0x001f: red
+  await owner.click('#tool-fill');
+  await owner.click('#logo-canvas');
+  await wait(600);
+  const shown = await logoPixels(owner);
+  check(shown >= 4000, `the logo appears on the car in the preview (${shown} red pixels)`);
+  check(await owner.locator('#garage-save').isEnabled(), 'a drawn logo enables Save');
+  await owner.screenshot({ path: join(out, 'garage-logo.png') });
+  await owner.click('#logo-undo');
+  await wait(400);
+  check(await logoPixels(owner) === 0 && await owner.locator('#garage-save').isDisabled(), 'undo takes the logo away again');
+  await owner.click('#tool-fill');
+  await owner.click('#logo-canvas');
+  await owner.click('#garage-save');
+  await owner.waitForFunction(() => document.querySelector('#garage-status').textContent.startsWith('Saved'), null, { timeout: 10_000 });
+  check(await owner.locator('#logo-tag').textContent() === 'RAGE', 'the windscreen shows the name');
+
   // The server keeps it and validates it.
   const token = await owner.evaluate(() => localStorage.getItem('rage-racer.session'));
   const api = async (method, body) => {
@@ -126,6 +169,15 @@ try {
   check((await api('PUT', { model: 99, paint: [0, 0] })).status === 400, 'an unknown car is refused');
   check((await api('PUT', { model: 10, paint: [0, 0] })).status === 400, 'a car retail never let you repaint is refused');
   check((await api('PUT', { model: 0, paint: [1] })).status === 400, 'a paint with one colour is refused');
+  const logoApi = async (method, body) => {
+    const response = await fetch(`${base}/api/logo`, { method, headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: body && JSON.stringify(body) });
+    return { status: response.status, body: await response.json() };
+  };
+  const stored = (await logoApi('GET')).body.logo;
+  check(typeof stored === 'string' && Buffer.from(stored, 'base64').length === 2080, 'the server stores the logo');
+  check((await logoApi('PUT', { logo: 'AAAA' })).status === 400, 'a logo of the wrong size is refused');
+  check((await logoApi('PUT', { logo: 'not base64!' })).status === 400, 'a logo that is not base64 is refused');
+  check((await logoApi('PUT', { logo: 5 })).status === 400, 'a logo that is not text is refused');
 
   // In a race, the other player's client draws the painted car.
   const rival = await openPlayer(browser, { base, discFiles, onError: (e) => errors.push(e) });
@@ -149,6 +201,8 @@ try {
   await wait(1500);
   const seenByRival = await paintsDrawn(rival);
   check(seenByRival.includes('9,3'), `the other player sees the painted car in the race (${seenByRival})`);
+  const logoSeen = await logoPixels(rival);
+  check(logoSeen >= 4000, `the other player sees the logo on the car in the race (${logoSeen} red pixels)`);
   await rival.screenshot({ path: join(out, 'garage-race.png') });
 } finally {
   await browser.close();

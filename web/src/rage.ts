@@ -52,7 +52,7 @@ export interface DecodedTexture { levels: TextureLevel[]; transparent: boolean }
 export const PHASE_COUNTDOWN = 1;
 export const PHASE_RACING = 2;
 export const PHASE_FINISHED = 3;
-export const SPAN_FIELDS = 14;
+export const SPAN_FIELDS = 15;
 const TEXTURE_SIZE = 256;
 export const NO_MATERIAL = 0xffffffff;
 /* rmesh.h RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT: decoded through the
@@ -270,6 +270,31 @@ export class Rage {
    *  keeps the car's factory colours. */
   setPaint(seat: number, paint: Paint | null): void {
     this.call('rw_set_paint', ['number', 'number', 'number'], [seat, paint?.[0] ?? -1, paint?.[1] ?? -1]);
+  }
+
+  /** A human seat's team logo (LOGO_BYTES) and name for the next race prepared. */
+  setLogo(seat: number, logo: Uint8Array | null): void {
+    this.withBytes(logo, (pointer) => this.call('rw_set_logo', ['number', 'number'], [seat, pointer]));
+  }
+
+  setTag(seat: number, text: string): void {
+    this.m.ccall('rw_set_tag', null, ['number', 'string'], [seat, text]);
+  }
+
+  setShowroomLogo(logo: Uint8Array | null): void {
+    this.withBytes(logo, (pointer) => this.call('rw_set_showroom_logo', ['number'], [pointer]));
+  }
+
+  setShowroomTag(text: string): void {
+    this.m.ccall('rw_set_showroom_tag', null, ['string'], [text]);
+  }
+
+  /** Runs `use` with the bytes on the module's heap (0 for none). */
+  private withBytes(bytes: Uint8Array | null, use: (pointer: number) => void): void {
+    if (!bytes) return use(0);
+    const pointer = this.m._malloc(bytes.length);
+    this.m.HEAPU8.set(bytes, pointer);
+    try { use(pointer); } finally { this.m._free(pointer); }
   }
 
   /** Prepares the garage preview of a car: alone on the grid of a course its

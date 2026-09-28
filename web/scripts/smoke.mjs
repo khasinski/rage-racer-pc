@@ -35,7 +35,7 @@ const spans = call('rw_span_count', 'number', [], []);
 if (vertices <= 0 || spans <= 0) throw new Error(`empty frame: ${vertices} vertices, ${spans} spans`);
 const scratch = rage._malloc(256 * 256 * 4);
 let decoded = 0;
-const fields = 14; // SPAN_FIELDS in web/src/rage.ts
+const fields = 15; // SPAN_FIELDS in web/src/rage.ts
 for (let i = 0; i < spans; i++) {
   const material = new Uint32Array(rage.HEAPU8.buffer, call('rw_spans', 'number', [], []), spans * fields)[i * fields + 2];
   if (material === 0xffffffff) continue;

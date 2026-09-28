@@ -29,7 +29,15 @@ browser draws them with three.js.
   saved on the server per car model (`/api/garage`), sent to everyone with the
   race's seats and drawn by each client. It is presentation only: the
   simulation, the wire format and the checks that compare the native and
-  WebAssembly physics never see it. Tyres and further customizing come next.
+  WebAssembly physics never see it. Two more things the retail DESIGN mode
+  let you do are here: a **team logo** (a 64x64 picture with a 16-colour
+  palette, drawn in an editor with a pen, fill, colour picker, flips, turns,
+  moves and undo, or imported from any picture and reduced to fifteen colours)
+  goes on the bonnet, and your **name** (six characters of the game's font)
+  on the windscreen strip. The engine writes both into a copy of the car's
+  shared texture page when it decodes the materials (`engine/src/port/car_custom.c`),
+  so every client draws every player's logo and name. The logo is saved once
+  per player (`/api/logo`). Tyres come next.
 - **Practice offline** runs the same simulation locally against the rivals.
 - **Sound** is the retail race audio: the desktop's own sound code (engine
   layers pitched from the car's curves, tyre, impact and landing cues, the
@@ -53,7 +61,7 @@ npm run server -- --disc "/path/to/Rage Racer (Europe) (Track 01).bin"
 ```
 
 Open <http://localhost:7243/>. The server serves the client, the REST API
-(`/api/register`, `/api/login`, `/api/me`, `/api/history`, `/api/records`, `/api/garage`) and
+(`/api/register`, `/api/login`, `/api/me`, `/api/history`, `/api/records`, `/api/garage`, `/api/logo`) and
 the WebSocket (`/ws`). Options: `--port` (default 7243), `--host`, `--db`
 (default `server/data/rage.db`), `--static`. The server needs its own copy of
 the disc, and players must use the same release (the lobby compares the boot
@@ -120,6 +128,7 @@ npm run test:e2e -- "<disc>"      # two headless browsers race each other, then 
 npm run test:grid -- "<disc>"     # 8-player grid on every course variant
 npm run test:finish -- "<disc>"   # finish fade, spectator hand-over, finish deadline
 npm run test:garage -- "<disc>"   # the garage preview, saving paint, seeing it in a race
+node scripts/logo-test.mjs         # the logo editor's pure operations
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
 node scripts/audio-check.mjs "<disc.cue>"  # engine sound follows rpm; race tunes found
 # Native vs WebAssembly physics, tick by tick:

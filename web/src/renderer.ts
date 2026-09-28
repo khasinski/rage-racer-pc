@@ -29,7 +29,7 @@ const ASSET_MODEL_BANK = 0;
 /* Field offsets within one span of Rage.spans() (SPAN_FIELDS each). */
 const SPAN = {
   firstVertex: 0, count: 1, material: 2, assetSet: 3, assetSource: 4, assetKey: 5, materialVariant: 6,
-  hasCarPaint: 7, paint1: 8, paint2: 9, instanceFlags: 10, materialFlags: 11, depthDecal: 12, alpha: 13,
+  hasCarPaint: 7, paint1: 8, paint2: 9, instanceFlags: 10, materialFlags: 11, depthDecal: 12, alpha: 13, custom: 14,
 } as const;
 
 /* The mirror's place on the PAL screen (render/mirror_pass.c,
@@ -313,7 +313,7 @@ export class Renderer {
   private static identityOf(spans: Uint32Array, f: number): string {
     return `${spans[f + SPAN.assetSet]}:${spans[f + SPAN.assetSource]}:${spans[f + SPAN.assetKey]}:` +
            `${spans[f + SPAN.material]}:${spans[f + SPAN.hasCarPaint]}:` +
-           `${spans[f + SPAN.paint1]}:${spans[f + SPAN.paint2]}`;
+           `${spans[f + SPAN.paint1]}:${spans[f + SPAN.paint2]}:${spans[f + SPAN.custom]}`;
   }
 
   private entryFor(spans: Uint32Array, span: number, budget: { decodes: number }): MaterialEntry | null {

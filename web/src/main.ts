@@ -4,7 +4,7 @@ import './style.css';
 import { app, ragePromise, session, setHint, show } from './app';
 import { RaceAudio } from './audio';
 import { chooseDataTrack, droppedFiles } from './disc';
-import { enterGarage, loadGarage, paintOf } from './garage';
+import { enterGarage, loadGarage, paintOf, useOwnLook } from './garage';
 import { disconnect, enterLobby, send } from './online';
 import { beginRace, practiceRace, raceSettings, runRaceLoop } from './race';
 import { $, editSettings, fillPractice, readPractice } from './views';
@@ -119,6 +119,7 @@ setup.addEventListener('submit', async (event) => {
   $('setup-status').textContent = 'Preparing the course and cars…';
   await new Promise(requestAnimationFrame);
   rage.setPaint(0, paintOf(rage, options.car));
+  useOwnLook(rage, 0);
   if (!rage.startRace(options)) {
     $('setup-status').textContent = 'This course could not be prepared from the disc.';
     return;

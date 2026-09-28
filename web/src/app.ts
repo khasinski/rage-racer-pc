@@ -1,6 +1,7 @@
 // What the page's modules share: the WebAssembly module, the account
 // session, the screen on show and its status line.
 import type { Garage } from '../shared/protocol.ts';
+import type { Logo } from './logo';
 import type { RaceAudio } from './audio';
 import { Session } from './net';
 import { feed } from './overlay';
@@ -27,6 +28,8 @@ export const app = {
   automaticCars: [] as boolean[],
   /* The player's saved car paints (see garage.ts). */
   garage: {} as Garage,
+  /* The player's team logo, or null for none. */
+  logo: null as Logo | null,
   /* Round trips by user id from the server's latency message (null while
    * a player is reconnecting). */
   latency: {} as Record<number, number | null>,

@@ -94,6 +94,16 @@ export class Session {
     return (await request<{ paints: Garage }>('api/garage', {}, this.token)).paints;
   }
 
+  /** The signed-in player's team logo as base64 (see shared/protocol.ts), or null. */
+  async logo(): Promise<string | null> {
+    return (await request<{ logo: string | null }>('api/logo', {}, this.token)).logo;
+  }
+
+  async saveLogo(logo: string | null): Promise<string | null> {
+    return (await request<{ logo: string | null }>('api/logo',
+      { method: 'PUT', body: JSON.stringify({ logo }) }, this.token)).logo;
+  }
+
   /** Saves a car model's paint (null: back to the factory colours). */
   async savePaint(model: number, paint: Paint | null): Promise<Garage> {
     return (await request<{ paints: Garage }>('api/garage',

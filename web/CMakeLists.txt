@@ -164,6 +164,8 @@ set(CLIENT_SOURCES
     src/port/axis_curve.c
     src/port/car_parts.c
     src/port/chase_camera.c
+    src/port/car_custom.c
+    src/port/car_custom_font.c
     src/port/client_assets.c
     src/port/client_race.c
     src/port/client_world.c

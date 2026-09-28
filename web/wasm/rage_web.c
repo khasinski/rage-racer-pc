@@ -27,6 +27,7 @@
 #include "race_view.h"
 #include "rage/chase_camera.h"
 #include "render/car_lamps.h"
+#include "car_custom.h"
 #include "render/car_paint.h"
 #include "render/render_mesh_build.h"
 #include "render/render_projection.h"
@@ -43,8 +44,9 @@ enum {
     WEB_INSTANCE_CAPACITY = 8192,
     WEB_VERTEX_CAPACITY = 600000,
     WEB_SPAN_CAPACITY = 32768,
-    WEB_SPAN_FIELDS = 14,
+    WEB_SPAN_FIELDS = 15,
     WEB_SPAN_ALPHA = 13, /* span field: 255 opaque, less while its car fades out */
+    WEB_SPAN_CUSTOM = 14, /* span field: hash of its car's logo and name, 0 for none */
     WEB_TEXTURE_BYTES = 256 * 256 * 4,
     WEB_PACKED_FLOATS = 22,
 };
@@ -200,7 +202,34 @@ EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
     s_paint[seat][0] = valid ? first : -1;
     s_paint[seat][1] = valid ? second : -1;
 }
+
+/* The logo and team name each human seat races with: set before a race is
+ * prepared (s_pending), then kept here for the race's textures to read. Like
+ * paint they are presentation only. */
+static CarCustom s_pending[DRIVER_SEAT_LIMIT];
+static CarCustom s_custom[DRIVER_SEAT_LIMIT];
+
+/* A logo: CAR_LOGO_BYTES of 4-bit pixels, then CAR_LOGO_COLORS little-endian
+ * 15-bit colours (palette entry 0 is transparent); NULL removes it. */
+static void ReadLogo(CarCustom *custom, const uint8_t *data) {
+    uint16_t clut[CAR_LOGO_COLORS];
+    if (!data) {
+        CarCustomSetLogo(custom, NULL, NULL);
+        return;
+    }
+    for (int i = 0; i < CAR_LOGO_COLORS; ++i)
+        clut[i] = (uint16_t)(data[CAR_LOGO_BYTES + i * 2] | (data[CAR_LOGO_BYTES + i * 2 + 1] << 8));
+    CarCustomSetLogo(custom, data, clut);
+}
+EMSCRIPTEN_KEEPALIVE void rw_set_logo(int seat, const uint8_t *data) {
+    if (seat >= 0 && seat < DRIVER_SEAT_LIMIT) ReadLogo(&s_pending[seat], data);
+}
+EMSCRIPTEN_KEEPALIVE void rw_set_tag(int seat, const char *text) {
+    if (seat >= 0 && seat < DRIVER_SEAT_LIMIT) CarCustomSetTag(&s_pending[seat], text);
+}
+
 static void ClearPaint(void) { memset(s_paint, -1, sizeof(s_paint)); }
+static void ClearPending(void) { memset(s_pending, 0, sizeof(s_pending)); }
 
 /* The catalogue for a colour picker: how many colours, and one's RGB. */
 EMSCRIPTEN_KEEPALIVE int rw_paint_count(void) { return RAGE_CAR_PAINT_COLOR_COUNT; }
@@ -218,6 +247,7 @@ static void ReleaseRace(void) {
 EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
     ReleaseRace();
     ClearPaint();
+    ClearPending();
     FreeRaceData(s_archive);
     s_archive = LoadRaceDisc(path);
     return s_archive != NULL;
@@ -234,8 +264,13 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     ClearPaint();
     s_showroom.valid = 0;
     if (!s_archive || laps < 1 || laps > WEB_MAX_LAPS || localSeat < -1 ||
-        localSeat >= humanCount) return 0;
+        localSeat >= humanCount) {
+        ClearPending();
+        return 0;
+    }
     ReleaseRace();
+    memcpy(s_custom, s_pending, sizeof(s_custom)); /* the old race no longer reads them */
+    ClearPending();
     memset(&setup, 0, sizeof(setup));
     setup.classIndex = classIndex;
     setup.courseIndex = course;
@@ -245,6 +280,7 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
                        setup.entrants)) return 0;
     for (int seat = 0; seat < humanCount; ++seat) {
         setup.looks[seat].variant = humans[seat].variant;
+        setup.looks[seat].custom = &s_custom[seat];
         if (paint[seat][0] >= 0) {
             setup.looks[seat].hasPaint = 1;
             setup.looks[seat].paint.paintColor1 = (u8)paint[seat][0];
@@ -1089,6 +1125,8 @@ static void PackSpanFields(float t) {
         out[11] = span->materialFlags;
         out[12] = span->depthDecal;
         out[WEB_SPAN_ALPHA] = SpanAlpha(span, t);
+        out[WEB_SPAN_CUSTOM] = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK && span->sourceEntity < DRIVER_SEAT_LIMIT
+                                   ? s_custom[span->sourceEntity].hash : 0;
     }
 }
 
@@ -1175,6 +1213,10 @@ static void FindShowroomCentre(void) {
     s_showroom.centre = (Vec3){(low[0] + high[0]) / 2, -(low[1] + high[1]) / 2, -(low[2] + high[2]) / 2};
     s_showroom.valid = 1;
 }
+
+/* The preview's logo (see rw_set_logo) and team name, changed live. */
+EMSCRIPTEN_KEEPALIVE void rw_set_showroom_logo(const uint8_t *data) { ReadLogo(&s_custom[0], data); }
+EMSCRIPTEN_KEEPALIVE void rw_set_showroom_tag(const char *text) { CarCustomSetTag(&s_custom[0], text); }
 
 EMSCRIPTEN_KEEPALIVE int rw_build_showroom(float aspect, float angle) {
     enum { RADIUS = 330, HEIGHT = 105, FOCUS_HEIGHT = 30 };
@@ -1310,6 +1352,7 @@ static int DecodeSpanTexture(int spanIndex, uint8_t *rgba) {
     instance.hasCarPaint = span->hasCarPaint;
     instance.carPaintColor1 = span->carPaintColor1;
     instance.carPaintColor2 = span->carPaintColor2;
+    instance.entity = span->sourceEntity;
     instance.materialVariant = span->materialVariant;
     return DecodeClientMaterial(s_race, &instance, span->material, s_frame.page, s_race->env.clut,
                                 rgba, WEB_TEXTURE_BYTES);

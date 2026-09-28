@@ -28,7 +28,7 @@ const INPUT_LEAD_LIMIT = 25;
 
 interface PendingInput { sequence: number; tick: number; words: Int32Array }
 
-export interface Racer { userId: number; name: string; variant: number; manual: boolean; paint: Paint | null }
+export interface Racer { userId: number; name: string; variant: number; manual: boolean; paint: Paint | null; logo: string | null }
 
 /** What a race needs from its room. */
 export interface RaceRoom {
@@ -71,8 +71,8 @@ export class Race {
       if (sim.seat(handle, seat).status === STATUS_EMPTY) continue;
       const racer = racers[seat];
       this.seats.push(racer
-        ? { userId: racer.userId, name: racer.name, variant: racer.variant, manual: racer.manual, paint: racer.paint }
-        : { userId: null, name: `CPU ${seat - racers.length + 1}`, variant: -1, manual: false, paint: null });
+        ? { userId: racer.userId, name: racer.name, variant: racer.variant, manual: racer.manual, paint: racer.paint, logo: racer.logo }
+        : { userId: null, name: `CPU ${seat - racers.length + 1}`, variant: -1, manual: false, paint: null, logo: null });
     }
     this.seatOf = new Map(racers.map((racer, seat) => [racer.userId, seat]));
     this.acks = new Uint32Array(racers.length * ACK_WORDS);
