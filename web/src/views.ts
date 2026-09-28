@@ -1,14 +1,20 @@
-// DOM for the lobby, rooms, room settings and results. Car and course rules
+// DOM for the lobby, rooms, the race forms and results. Car and course rules
 // come from the WebAssembly module (web_rules.c), the same code the server
 // validates with.
 import type {
   RaceResult, RecordRow, RoomSettings, RoomState, RoomSummary, UserInfo,
 } from '../shared/protocol.ts';
-import type { Rage } from './rage';
+import type { HistoryRow } from './net';
+import type { Rage, RaceOptions } from './rage';
 
 export const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
-export const CLASS_NAMES = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Extra class'];
+const CLASS_NAMES = ['Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5', 'Extra class'];
+
+/** What a new room and the practice form start with. */
+const DEFAULT_SETTINGS: Readonly<RoomSettings> = {
+  name: '', classIndex: 2, course: 0, reverse: false, laps: 3, rivals: true, maxPlayers: 4,
+};
 
 export function formatTime(ms: number): string {
   if (ms < 0) return '--:--.--';
@@ -18,27 +24,35 @@ export function formatTime(ms: number): string {
   return `${minutes}:${String(seconds).padStart(2, '0')}.${String(hundredths).padStart(2, '0')}`;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {},
+export function el<K extends keyof HTMLElementTagNameMap>(tag: K, props: Partial<HTMLElementTagNameMap[K]> = {},
                                                    ...children: (Node | string)[]): HTMLElementTagNameMap[K] {
   const node = Object.assign(document.createElement(tag), props);
   node.append(...children);
   return node;
 }
 
+/** Sets an element's text only when it changes (for per-frame updates). */
+export function textWriter(node: HTMLElement): (text: string) => void {
+  let shown = node.textContent ?? '';
+  return (text) => {
+    if (text !== shown) node.textContent = shown = text;
+  };
+}
+
 function row(cells: (Node | string)[], header = false): HTMLTableRowElement {
   return el('tr', {}, ...cells.map((cell) => el(header ? 'th' : 'td', {}, cell)));
 }
 
-export function courseLabel(rage: Rage, course: number, reverse: boolean): string {
+function courseLabel(rage: Rage, course: number, reverse: boolean): string {
   return `${rage.courseName(course)}${reverse ? ' · reverse' : ''}`;
 }
 
-export function carLabel(rage: Rage, variant: number): string {
+function carLabel(rage: Rage, variant: number): string {
   return variant < 0 ? '—' : `${rage.carName(variant)} ${'I'.repeat(rage.carGrade(variant) + 1)}`;
 }
 
 /** Models a class offers, as (variant, label). */
-export function classCars(rage: Rage, classIndex: number): { variant: number; label: string }[] {
+function classCars(rage: Rage, classIndex: number): { variant: number; label: string }[] {
   const cars = [];
   for (let model = 0; model < rage.carModels(); model++) {
     const variant = rage.classCar(classIndex, model);
@@ -47,20 +61,121 @@ export function classCars(rage: Rage, classIndex: number): { variant: number; la
   return cars;
 }
 
-export function fillClasses(select: HTMLSelectElement): void {
-  select.replaceChildren(...CLASS_NAMES.map((name, index) => new Option(name, String(index))));
-}
+// ---- race forms (practice and room settings) --------------------------------
 
-/** Course options with the ones a class does not race disabled. */
-export function fillCourses(rage: Rage, select: HTMLSelectElement, classIndex: number): void {
-  const current = Number(select.value || 0);
+const field = <T>(form: HTMLFormElement, name: string) => form.elements.namedItem(name) as unknown as T;
+
+/** Course options with the ones a class does not race disabled; selects
+ *  `wanted` when the class races it. */
+function fillCourses(rage: Rage, select: HTMLSelectElement, classIndex: number, wanted: number): void {
   select.replaceChildren(...[0, 1, 2, 3].map((course) => {
     const option = new Option(rage.courseName(course), String(course));
     option.disabled = !rage.courseAllowed(classIndex, course);
     return option;
   }));
-  select.value = String(rage.courseAllowed(classIndex, current) ? current : 0);
+  select.value = String(rage.courseAllowed(classIndex, wanted) ? wanted : 0);
 }
+
+/** The class's models; the selection stays when the new list has it. */
+function fillCars(rage: Rage, select: HTMLSelectElement, classIndex: number): void {
+  const cars = classCars(rage, classIndex);
+  const key = cars.map((c) => c.variant).join(',');
+  if (select.dataset.cars === key) return;
+  const current = select.value;
+  select.replaceChildren(...cars.map((c) => new Option(c.label, String(c.variant))));
+  select.dataset.cars = key;
+  if (cars.some((c) => String(c.variant) === current)) select.value = current;
+}
+
+/** Automatic (the first option) only where the disc offers it for the car. */
+function syncTransmission(select: HTMLSelectElement, automatic: boolean): void {
+  select.options[0].disabled = !automatic;
+  if (!automatic) select.value = 'manual';
+}
+
+/** Puts settings into the fields both race forms share. */
+function writeRaceFields(rage: Rage, form: HTMLFormElement, s: Readonly<RoomSettings>): void {
+  const classSelect = field<HTMLSelectElement>(form, 'class');
+  classSelect.replaceChildren(...CLASS_NAMES.map((name, index) => new Option(name, String(index))));
+  classSelect.value = String(s.classIndex);
+  fillCourses(rage, field(form, 'course'), s.classIndex, s.course);
+  field<HTMLSelectElement>(form, 'reverse').value = s.reverse ? '1' : '0';
+  field<HTMLSelectElement>(form, 'laps').value = String(s.laps);
+  field<HTMLInputElement>(form, 'rivals').checked = s.rivals;
+}
+
+function readRaceFields(form: HTMLFormElement): Omit<RoomSettings, 'name' | 'maxPlayers'> {
+  const value = (name: string) => field<HTMLSelectElement>(form, name).value;
+  return {
+    classIndex: Number(value('class')), course: Number(value('course')), reverse: value('reverse') === '1',
+    laps: Number(value('laps')), rivals: field<HTMLInputElement>(form, 'rivals').checked,
+  };
+}
+
+/** Offline practice against the retail field. */
+export function fillPractice(rage: Rage, form: HTMLFormElement, automatic: boolean[]): void {
+  const classSelect = field<HTMLSelectElement>(form, 'class');
+  const course = field<HTMLSelectElement>(form, 'course');
+  const car = field<HTMLSelectElement>(form, 'car');
+  const syncCar = () => syncTransmission(field(form, 'transmission'), automatic[Number(car.value)] !== false);
+  const syncClass = () => {
+    const classIndex = Number(classSelect.value);
+    fillCourses(rage, course, classIndex, Number(course.value));
+    fillCars(rage, car, classIndex);
+    syncCar();
+  };
+  writeRaceFields(rage, form, DEFAULT_SETTINGS);
+  classSelect.onchange = syncClass;
+  car.onchange = syncCar;
+  syncClass();
+}
+
+export function readPractice(form: HTMLFormElement): RaceOptions & { shadows: boolean } {
+  return {
+    ...readRaceFields(form),
+    car: Number(field<HTMLSelectElement>(form, 'car').value),
+    manual: field<HTMLSelectElement>(form, 'transmission').value === 'manual',
+    shadows: field<HTMLInputElement>(form, 'shadows').checked,
+  };
+}
+
+/** Opens the room settings dialog; resolves with the settings or null. */
+export function editSettings(rage: Rage, initial: RoomSettings | null, minPlayers: number): Promise<RoomSettings | null> {
+  const dialog = $<HTMLDialogElement>('settings-dialog');
+  const form = $<HTMLFormElement>('settings-form');
+  const classSelect = field<HTMLSelectElement>(form, 'class');
+  const course = field<HTMLSelectElement>(form, 'course');
+  const reverse = field<HTMLSelectElement>(form, 'reverse');
+  const players = field<HTMLSelectElement>(form, 'maxPlayers');
+  const name = field<HTMLInputElement>(form, 'name');
+  $('settings-title').textContent = initial ? 'Room settings' : 'Create room';
+  $('settings-submit').textContent = initial ? 'Save' : 'Create';
+  const s = initial ?? DEFAULT_SETTINGS;
+  name.value = s.name;
+  writeRaceFields(rage, form, s);
+
+  const sync = (wantedPlayers = Number(players.value)) => {
+    const classIndex = Number(classSelect.value);
+    fillCourses(rage, course, classIndex, Number(course.value));
+    const most = Math.max(1, rage.maxHumans(classIndex, Number(course.value), reverse.value === '1'));
+    players.replaceChildren(...Array.from({ length: most - minPlayers + 1 }, (_, i) => new Option(String(minPlayers + i))));
+    players.value = String(Math.min(most, Math.max(minPlayers, wantedPlayers)));
+    $('settings-cars').textContent = `Cars in ${CLASS_NAMES[classIndex]}: ${classCars(rage, classIndex).map((c) => c.label).join(', ')}.`;
+  };
+  sync(s.maxPlayers);
+  classSelect.onchange = course.onchange = reverse.onchange = () => sync();
+
+  dialog.showModal();
+  name.focus();
+  return new Promise((resolve) => {
+    dialog.onclose = () => {
+      if (dialog.returnValue !== 'ok') return resolve(null);
+      resolve({ ...readRaceFields(form), name: name.value.trim(), maxPlayers: Number(players.value) });
+    };
+  });
+}
+
+// ---- lobby, room and results --------------------------------------------------
 
 export function renderRooms(rage: Rage, rooms: RoomSummary[], join: (id: number) => void): void {
   const list = $<HTMLUListElement>('room-list');
@@ -92,8 +207,7 @@ export function renderRecords(rage: Rage, records: RecordRow[]): void {
   if (!records.length) table.append(el('tr', {}, el('td', { colSpan: 5, className: 'dim' }, 'No laps recorded yet.')));
 }
 
-export function renderHistory(rage: Rage, history: Array<{ course: number; reverse: boolean; classIndex: number;
-    place: number; entrants: number; timeMs: number; bestLapMs: number; status: string }>): void {
+export function renderHistory(rage: Rage, history: HistoryRow[]): void {
   const table = $<HTMLTableElement>('history');
   table.replaceChildren(row(['Course', 'Class', 'Place', 'Time', 'Best lap'], true),
     ...history.map((h) => row([courseLabel(rage, h.course, h.reverse), CLASS_NAMES[h.classIndex],
@@ -102,11 +216,14 @@ export function renderHistory(rage: Rage, history: Array<{ course: number; rever
   if (!history.length) table.append(el('tr', {}, el('td', { colSpan: 5, className: 'dim' }, 'Your races will show up here.')));
 }
 
-export interface RoomHandlers {
-  setCar(variant: number, manual: boolean): void;
+/** A round trip for the ping columns (null while reconnecting, undefined
+ *  before the first measurement). */
+export function pingLabel(ms: number | null | undefined, online = ms !== null): string {
+  return !online ? 'offline' : ms == null ? '' : `${ms} ms`;
 }
 
-export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic: boolean[]): void {
+export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic: boolean[],
+                           latency: Record<number, number | null>): void {
   const s = room.settings;
   const host = room.members.find((m) => m.host);
   const mine = room.members.find((m) => m.userId === me.id);
@@ -120,12 +237,11 @@ export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic:
   const racers = room.members.filter((m) => !m.spectator);
   const watchers = room.members.filter((m) => m.spectator);
   const players = $<HTMLTableElement>('room-players');
-  const ping = (m: { online: boolean; latencyMs: number | null }) =>
-    el('span', { className: 'dim' }, !m.online ? 'offline' : m.latencyMs === null ? '' : `${m.latencyMs} ms`);
   players.replaceChildren(row(['#', 'Driver', 'Car', 'Gearbox', '', 'Ping'], true),
     ...racers.map((m, index) => row([String(index + 1), `${m.name}${m.host ? ' ★' : ''}`,
       carLabel(rage, m.variant), m.manual ? 'MT' : 'AT',
-      el('span', { className: m.ready ? 'ok' : 'dim' }, m.ready ? 'ready' : 'choosing'), ping(m)])));
+      el('span', { className: m.ready ? 'ok' : 'dim' }, m.ready ? 'ready' : 'choosing'),
+      el('span', { className: 'dim' }, pingLabel(latency[m.userId], m.online))])));
   if (watchers.length) {
     players.append(el('tr', {}, el('td', { colSpan: 6, className: 'dim' },
       `Watching: ${watchers.map((m) => `${m.name}${m.host ? ' ★' : ''}`).join(', ')}`)));
@@ -138,16 +254,10 @@ export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic:
   // Car picker: the class's models; automatic only where the disc offers it.
   const model = $<HTMLSelectElement>('car-model');
   const transmission = $<HTMLSelectElement>('car-transmission');
-  const cars = classCars(rage, s.classIndex);
-  const key = cars.map((c) => c.variant).join(',');
-  if (model.dataset.cars !== key) {
-    model.replaceChildren(...cars.map((c) => new Option(c.label, String(c.variant))));
-    model.dataset.cars = key;
-  }
+  fillCars(rage, model, s.classIndex);
   if (mine && mine.variant >= 0) model.value = String(mine.variant);
-  const autoOption = transmission.options[0];
-  autoOption.disabled = automatic[Number(model.value)] === false;
-  transmission.value = mine?.manual || autoOption.disabled ? 'manual' : 'auto';
+  transmission.value = mine?.manual ? 'manual' : 'auto';
+  syncTransmission(transmission, automatic[Number(model.value)] !== false);
   const racing = room.status !== 'lobby';
   const watching = mine?.spectator === true;
   model.disabled = transmission.disabled = racing || watching;
@@ -169,6 +279,14 @@ export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic:
     : waiting.length ? `Waiting for ${waiting.join(', ')}.` : isHost ? 'Everyone is ready.' : 'Waiting for the host to start.';
 }
 
+/** The room's car picker changed: the choice to send, Automatic only where offered. */
+export function readRoomCar(automatic: boolean[]): { variant: number; manual: boolean } {
+  const variant = Number($<HTMLSelectElement>('car-model').value);
+  const transmission = $<HTMLSelectElement>('car-transmission');
+  syncTransmission(transmission, automatic[variant] !== false);
+  return { variant, manual: transmission.value === 'manual' };
+}
+
 export function appendChat(from: string, text: string, at: number): void {
   const log = $<HTMLOListElement>('chat-log');
   const time = new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -177,56 +295,6 @@ export function appendChat(from: string, text: string, at: number): void {
     : el('li', { className: 'system' }, `${time} ${text}`));
   while (log.children.length > 200) log.firstElementChild!.remove();
   log.scrollTop = log.scrollHeight;
-}
-
-/** Opens the room settings dialog; resolves with the settings or null. */
-export function editSettings(rage: Rage, initial: RoomSettings | null, minPlayers: number): Promise<RoomSettings | null> {
-  const dialog = $<HTMLDialogElement>('settings-dialog');
-  const form = $<HTMLFormElement>('settings-form');
-  const field = <T extends HTMLElement>(name: string) => form.elements.namedItem(name) as unknown as T;
-  const classSelect = field<HTMLSelectElement>('class');
-  const course = field<HTMLSelectElement>('course');
-  const reverse = field<HTMLSelectElement>('reverse');
-  const players = field<HTMLSelectElement>('maxPlayers');
-  $('settings-title').textContent = initial ? 'Room settings' : 'Create room';
-  $('settings-submit').textContent = initial ? 'Save' : 'Create';
-  fillClasses(classSelect);
-  const s = initial ?? { name: '', classIndex: 2, course: 0, reverse: false, laps: 3, rivals: true, maxPlayers: 4 };
-  field<HTMLInputElement>('name').value = s.name;
-  classSelect.value = String(s.classIndex);
-  course.value = String(s.course);
-  fillCourses(rage, course, s.classIndex);
-  course.value = String(rage.courseAllowed(s.classIndex, s.course) ? s.course : 0);
-  reverse.value = s.reverse ? '1' : '0';
-  field<HTMLSelectElement>('laps').value = String(s.laps);
-  field<HTMLInputElement>('rivals').checked = s.rivals;
-
-  const sync = () => {
-    const classIndex = Number(classSelect.value);
-    fillCourses(rage, course, classIndex);
-    const most = Math.max(1, rage.maxHumans(classIndex, Number(course.value), reverse.value === '1'));
-    const wanted = Number(players.value || s.maxPlayers);
-    players.replaceChildren(...Array.from({ length: most - minPlayers + 1 }, (_, i) => new Option(String(minPlayers + i))));
-    players.value = String(Math.min(most, Math.max(minPlayers, wanted)));
-    $('settings-cars').textContent = `Cars in ${CLASS_NAMES[classIndex]}: ${classCars(rage, classIndex).map((c) => c.label).join(', ')}.`;
-  };
-  players.replaceChildren(new Option(String(s.maxPlayers)));
-  players.value = String(s.maxPlayers);
-  sync();
-  classSelect.onchange = course.onchange = reverse.onchange = sync;
-
-  dialog.showModal();
-  field<HTMLInputElement>('name').focus();
-  return new Promise((resolve) => {
-    dialog.onclose = () => {
-      if (dialog.returnValue !== 'ok') return resolve(null);
-      resolve({
-        name: field<HTMLInputElement>('name').value.trim(), classIndex: Number(classSelect.value),
-        course: Number(course.value), reverse: reverse.value === '1', laps: Number(field<HTMLSelectElement>('laps').value),
-        rivals: field<HTMLInputElement>('rivals').checked, maxPlayers: Number(players.value),
-      });
-    };
-  });
 }
 
 export function renderResults(rage: Rage, results: RaceResult[], me: UserInfo): void {

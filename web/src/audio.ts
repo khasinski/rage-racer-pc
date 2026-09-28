@@ -5,8 +5,8 @@
 // SPU output. Browsers only start audio after a user gesture, so the output
 // opens on the first click or key press. M mutes.
 import { BGM_TRACK_COUNT, bgmCdTrack, discAudioTracks, readTrackPcm, type AudioTrack, type DiscFile } from './cdda';
-import type { Hud, Rage } from './rage';
-import { PHASE_FINISHED, PHASE_RACING } from './rage';
+import { SEAT_FINISHED, SEAT_RETIRED } from './constants';
+import { PHASE_FINISHED, PHASE_RACING, type Hud, type Rage } from './rage';
 
 const RATE = 44100;
 /* One second of CD audio: 75 sectors. */
@@ -109,9 +109,6 @@ export class RaceAudio {
     this.bag = [];
   }
 
-  /** Whether the disc's race tunes were found. */
-  get hasMusic(): boolean { return this.tunes().length > 0; }
-
   private tunes(): AudioTrack[] {
     return Array.from({ length: BGM_TRACK_COUNT }, (_, i) => this.tracks.get(bgmCdTrack(i)))
       .filter((track): track is AudioTrack => track !== undefined);
@@ -192,7 +189,7 @@ export class RaceAudio {
     if (this.context && this.context.state === 'running' && paused) void this.context.suspend();
     else if (this.context && this.context.state === 'suspended' && !paused && navigator.userActivation?.hasBeenActive !== false) void this.context.resume();
     if (pcm.length && this.node) this.post({ type: 'sfx', pcm }, [pcm.buffer]);
-    const finished = hud.phase === PHASE_FINISHED || hud.status === 2 || hud.status === 3;
+    const finished = hud.phase === PHASE_FINISHED || hud.status === SEAT_FINISHED || hud.status === SEAT_RETIRED;
     if (this.music === 'waiting' && hud.phase === PHASE_RACING && !finished) {
       /* race_scene.c StartCdAudio at the start of the race. */
       this.music = 'playing';

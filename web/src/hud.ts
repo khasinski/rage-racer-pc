@@ -4,10 +4,9 @@
 // retail builds them each game frame; this only rasterises them on the PAL
 // 320x240 screen, scaled to the canvas height and centred like the mirror,
 // with nearest filtering so the pixel art stays crisp.
+import { PAL_HEIGHT, PAL_WIDTH } from './constants';
 import type { Rage } from './rage';
 
-const PAL_WIDTH = 320;
-const PAL_HEIGHT = 240;
 /* Atlas layout (web_hud.c): normal and dark faces side by side, then the
  * manual and automatic digit strips, 8x8 per digit. */
 const DIGITS_Y = 96;

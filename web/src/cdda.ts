@@ -63,7 +63,7 @@ export function cueAudioTracks(cue: string, files: DiscFile[]): Map<number, Audi
 
 /** Without a cue sheet: Redump-style "(Track NN).bin" files, each audio
  *  track opening with its two-second pregap. */
-export function namedAudioTracks(files: DiscFile[]): Map<number, AudioTrack> {
+function namedAudioTracks(files: DiscFile[]): Map<number, AudioTrack> {
   const tracks = new Map<number, AudioTrack>();
   for (const file of files) {
     const match = /track\s*0*(\d+)\)?\.(bin|img)$/i.exec(file.name);

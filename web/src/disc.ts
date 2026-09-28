@@ -3,14 +3,14 @@
 // folder. The CUE names the data track; without one, the Track 01 (or only)
 // BIN is used. Nothing else is ever asked of the player.
 
-export type DiscChoice = { file: File } | { error: string };
+type DiscChoice = { file: File } | { error: string };
 
 const lower = (name: string) => name.toLowerCase();
 const isCue = (file: File) => lower(file.name).endsWith('.cue');
 const isBin = (file: File) => /\.(bin|img)$/.test(lower(file.name));
 
 /** File name of the data track (TRACK 01) referenced by a cue sheet. */
-export function cueDataTrack(cue: string): string | null {
+function cueDataTrack(cue: string): string | null {
   let current: string | null = null;
   for (const raw of cue.split(/\r?\n/)) {
     const line = raw.trim();

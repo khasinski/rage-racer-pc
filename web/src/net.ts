@@ -26,6 +26,18 @@ async function request<T>(path: string, init: RequestInit = {}, token?: string |
   return body;
 }
 
+/** One of the player's recent races (GET api/history). */
+export interface HistoryRow {
+  course: number;
+  reverse: boolean;
+  classIndex: number;
+  place: number;
+  entrants: number;
+  timeMs: number;
+  bestLapMs: number;
+  status: string;
+}
+
 export class Session {
   token: string | null = storedToken();
   user: UserInfo | null = null;
@@ -45,18 +57,19 @@ export class Session {
     }
   }
 
-  async login(name: string, password: string, register: boolean): Promise<void> {
-    const result = await request<{ token: string; user: UserInfo }>(register ? 'api/register' : 'api/login',
-      { method: 'POST', body: JSON.stringify({ name, password }) });
-    this.token = result.token;
-    this.user = result.user;
-    storeToken(result.token);
-    await this.resume();
+  login(name: string, password: string, register: boolean): Promise<void> {
+    return this.adopt(request(register ? 'api/register' : 'api/login',
+      { method: 'POST', body: JSON.stringify({ name, password }) }));
   }
 
   /** Plays as a new guest account ("Guest #n"). */
-  async guest(): Promise<void> {
-    const result = await request<{ token: string; user: UserInfo }>('api/guest', { method: 'POST' });
+  guest(): Promise<void> {
+    return this.adopt(request('api/guest', { method: 'POST' }));
+  }
+
+  /* Keeps the session a login or guest request answered with. */
+  private async adopt(answer: Promise<{ token: string; user: UserInfo }>): Promise<void> {
+    const result = await answer;
     this.token = result.token;
     this.user = result.user;
     storeToken(result.token);
@@ -75,6 +88,9 @@ export class Session {
   }
 
   records(): Promise<{ records: RecordRow[] }> { return request('api/records'); }
+
+  /** The signed-in player's recent races. */
+  history(): Promise<{ history: HistoryRow[] }> { return request('api/history', {}, this.token); }
 }
 
 /** A race frame as received: the server tick it describes and its bytes. */
@@ -131,8 +147,9 @@ export class Connection {
 }
 
 /**
- * Plays server frames back a fixed number of ticks behind the newest one, so
- * network jitter does not show as stutter. Frames arrive every second tick
+ * A spectator's view of the race: plays server frames back a fixed number
+ * of ticks behind the newest one, so network jitter does not show as
+ * stutter. (Players predict from the newest frame alone.) Frames arrive every second tick
  * (the field's 25 Hz motion); the playback clock follows the local 50 Hz
  * loop and eases towards the target delay instead of jumping.
  */
@@ -160,14 +177,6 @@ export class FrameBuffer {
     let due: Frame | null = null;
     while (this.frames.length && this.frames[0].tick <= this.play) due = this.frames.shift()!;
     return due;
-  }
-
-  /** The newest frame received since the last call, dropping older ones
-   *  (a predicting player only needs the latest authoritative state). */
-  takeLatest(): Frame | null {
-    const latest = this.frames.pop() ?? null;
-    this.frames = [];
-    return latest;
   }
 
   reset(): void {

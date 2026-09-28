@@ -5,6 +5,7 @@
 // Camera, projection, fog and the shadow camera come from the bridge, so
 // three.js never computes its own view.
 import * as THREE from 'three';
+import { PAL_HEIGHT, PAL_WIDTH } from './constants';
 import {
   ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture, type TextureLevel,
 } from './rage';
@@ -25,11 +26,14 @@ const OPAQUE = 0;
 const TRANSPARENT = 1;
 /* render_world.h RenderAssetSet: vehicles are model-bank meshes. */
 const ASSET_MODEL_BANK = 0;
+/* Field offsets within one span of Rage.spans() (SPAN_FIELDS each). */
+const SPAN = {
+  firstVertex: 0, count: 1, material: 2, assetSet: 3, assetSource: 4, assetKey: 5, materialVariant: 6,
+  hasCarPaint: 7, paint1: 8, paint2: 9, instanceFlags: 10, materialFlags: 11, depthDecal: 12, alpha: 13,
+} as const;
 
-/* The PAL screen layout the mirror is placed in (render/mirror_pass.c,
+/* The mirror's place on the PAL screen (render/mirror_pass.c,
  * render/rear_view_mirror.c): 240 lines tall, centred horizontally. */
-const PAL_WIDTH = 320;
-const PAL_HEIGHT = 240;
 const MIRROR_X = 0x56;
 const MIRROR_WIDTH = 0x94;
 const MIRROR_HEIGHT = 0x24;
@@ -60,7 +64,7 @@ interface MaterialEntry {
 const vec4 = () => ({ value: new THREE.Vector4() });
 
 export class Renderer {
-  readonly webgl: THREE.WebGLRenderer;
+  private readonly webgl: THREE.WebGLRenderer;
   private readonly scene = new THREE.Scene();
   private readonly shadowScene = new THREE.Scene();
   private readonly camera = new THREE.Camera();
@@ -300,24 +304,25 @@ export class Renderer {
    * retail swaps by track section; terrain and course already carry the page
    * in their material variant. */
   private static keyOf(spans: Uint32Array, f: number, page: number): string {
-    const set = spans[f + 3];
+    const set = spans[f + SPAN.assetSet];
     const paged = set === ASSET_TRACK_MODEL_BANK_1 || set === ASSET_TRACK_MODEL_BANK_2;
-    return `${Renderer.identityOf(spans, f)}:${spans[f + 6]}:${paged ? page : 0}`;
+    return `${Renderer.identityOf(spans, f)}:${spans[f + SPAN.materialVariant]}:${paged ? page : 0}`;
   }
 
   /** The material regardless of page and variant. */
   private static identityOf(spans: Uint32Array, f: number): string {
-    return `${spans[f + 3]}:${spans[f + 4]}:${spans[f + 5]}:${spans[f + 2]}:` +
-           `${spans[f + 7]}:${spans[f + 8]}:${spans[f + 9]}`;
+    return `${spans[f + SPAN.assetSet]}:${spans[f + SPAN.assetSource]}:${spans[f + SPAN.assetKey]}:` +
+           `${spans[f + SPAN.material]}:${spans[f + SPAN.hasCarPaint]}:` +
+           `${spans[f + SPAN.paint1]}:${spans[f + SPAN.paint2]}`;
   }
 
   private entryFor(spans: Uint32Array, span: number, budget: { decodes: number }): MaterialEntry | null {
     const f = span * SPAN_FIELDS;
-    if (spans[f + 2] === NO_MATERIAL) return this.untextured;
+    if (spans[f + SPAN.material] === NO_MATERIAL) return this.untextured;
     const key = Renderer.keyOf(spans, f, this.page);
     const identity = Renderer.identityOf(spans, f);
     const existing = this.entries.get(key);
-    const palette = (spans[f + 11] & MATERIAL_ENV_CLUT) !== 0;
+    const palette = (spans[f + SPAN.materialFlags] & MATERIAL_ENV_CLUT) !== 0;
     if (existing && !(palette && this.stale.has(key))) return this.show(identity, existing);
     // Out of budget: keep what this material showed last (the previous page
     // or variant), as retail keeps drawing while it swaps VRAM rows.
@@ -374,12 +379,13 @@ export class Renderer {
       const f = span * SPAN_FIELDS;
       const entry = this.entryFor(spans, span, budget);
       if (!entry) continue;
-      const vehicle = spans[f + 3] === ASSET_MODEL_BANK || spans[f + 3] === ASSET_TRACK_MODEL_BANK_1;
+      const set = spans[f + SPAN.assetSet];
+      const vehicle = set === ASSET_MODEL_BANK || set === ASSET_TRACK_MODEL_BANK_1;
       // A car fading out past the finish is drawn blended and casts no shadow.
-      const fading = spans[f + 13] < 255;
-      const phase = entry.transparent || fading ? 3 : spans[f + 12] ? 1 : vehicle ? 2 : 0;
+      const fading = spans[f + SPAN.alpha] < 255;
+      const phase = entry.transparent || fading ? 3 : spans[f + SPAN.depthDecal] ? 1 : vehicle ? 2 : 0;
       (span >= mainSpans ? mirrorPhases : phases)[phase].push({
-        start: spans[f], count: spans[f + 1], entry, vehicle: vehicle && !fading, blended: entry.transparent || fading });
+        start: spans[f + SPAN.firstVertex], count: spans[f + SPAN.count], entry, vehicle: vehicle && !fading, blended: entry.transparent || fading });
     }
     const floats = this.rage.packedFloats;
     let written = 0;
