@@ -194,7 +194,7 @@ const RaceData *WebLoadedArchive(void) { return s_archive; }
 static int s_paint[DRIVER_SEAT_LIMIT][2];
 /* The garage preview's pivot (see FindShowroomCentre). */
 static struct { int valid; Vec3 centre; } s_showroom;
-enum { LOGO_LIFT = 2 }; /* world units the bonnet logo floats above the bonnet (the engine's own decal lift) */
+enum { LOGO_DEPTH_BIAS = 6000 }; /* renderer depth-bias units (negative: nearer) */
 
 EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
     if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
@@ -1167,13 +1167,14 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
 
 /* The bonnet logo is a quad that retail lays over the bonnet purely by draw
  * order. With a depth buffer it sinks into a curved bonnet (part of it cut
- * off, the rest flickering), so its corners are lifted a little off the
- * surface along their normals, as the engine does for authored hood decals. The quad is the one sampling
- * the logo's rectangle of the shared texture page (page 640, u 64..127,
- * v 48..111). */
+ * off, the rest flickering). Moving it off the surface makes it hover, so its
+ * triangles keep their place and get a depth bias that wins the depth test
+ * (the renderer's shader turns it into a nearer depth, nothing on screen
+ * moves). The quad is the one sampling the logo's rectangle of the shared
+ * texture page (page 640, u 64..127, v 48..111). */
 static int s_logoQuads; /* triangles biased in the last frame, for the checks */
 
-static void LiftLogoQuads(void) {
+static void BiasLogoQuads(void) {
     enum { SHARED_PAGE = 10 };
     const float low[2] = {64.0f / 256.0f - 0.004f, 48.0f / 256.0f - 0.004f};
     const float high[2] = {128.0f / 256.0f + 0.004f, 112.0f / 256.0f + 0.004f};
@@ -1196,12 +1197,7 @@ static void LiftLogoQuads(void) {
                 for (int axis = 0; axis < 2; ++axis)
                     if (triangle[corner].uv[axis] < low[axis] || triangle[corner].uv[axis] > high[axis]) inside = 0;
             if (!inside) continue;
-            for (int corner = 0; corner < 3; ++corner) {
-                const float *n = triangle[corner].normal;
-                const float length = sqrtf(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
-                if (length <= 0.0f) continue;
-                for (int axis = 0; axis < 3; ++axis) triangle[corner].position[axis] += n[axis] * (LOGO_LIFT / length);
-            }
+            for (int corner = 0; corner < 3; ++corner) triangle[corner].depthBias -= LOGO_DEPTH_BIAS;
             ++s_logoQuads;
         }
     }
@@ -1216,7 +1212,7 @@ static int DrawSubmitted(float aspect, float t, int withMirror) {
         &s_world, RAGE_RENDER_PASS_MAIN, aspect, ResolveMesh, s_race,
         s_vertices, WEB_VERTEX_CAPACITY, s_spans, WEB_SPAN_CAPACITY, &s_frame.spanCount);
     if (withMirror) BuildMirror(t);
-    LiftLogoQuads();
+    BiasLogoQuads();
     PackSpanFields(t);
     if (!BuildCameraUniform(&s_world.camera, aspect, s_frame.camera)) return -1;
     StoreLight();
