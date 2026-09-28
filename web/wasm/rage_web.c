@@ -43,6 +43,7 @@ enum {
     WEB_VERTEX_CAPACITY = 600000,
     WEB_SPAN_CAPACITY = 32768,
     WEB_SPAN_FIELDS = 14,
+    WEB_SPAN_ALPHA = 13, /* span field: 255 opaque, less while its car fades out */
     WEB_TEXTURE_BYTES = 256 * 256 * 4,
     WEB_PACKED_FLOATS = 22,
 };
@@ -54,22 +55,13 @@ int RuntimeConfigEnabled(const char *key);
 const char *RuntimeConfigGet(const char *key) { (void)key; return NULL; }
 int RuntimeConfigEnabled(const char *key) { (void)key; return 0; }
 
+/* ---- race state ---------------------------------------------------------- */
 static RaceData *s_archive;
-/* The seat this player drives, and whether a server steps the race. */
+static ClientRace *s_race;
+/* The seat this player drives (-1 for a spectator, who has no car of its
+ * own), and whether a server steps the race. */
 static int s_localSeat, s_net;
-/* The seat the camera and HUD follow: the local car, or another one while
- * spectating. A spectator has no car of its own (s_localSeat == -1). */
-static int s_viewSeat, s_viewCut;
-/* Past the line a car drives on, easing off, and fades out over this many
- * physics steps (2.5 s); presentation only, as the simulation keeps a
- * finished car where it crossed the line. */
-enum { FINISH_FADE_STEPS = 62 };
-typedef struct FinishRun {
-    int steps;             /* physics steps since the finish, 0 while racing */
-    float vx, vy, vz;      /* its last step's motion */
-    float ox, oy, oz;      /* distance travelled past the line */
-} FinishRun;
-static FinishRun s_run[DRIVER_SEAT_LIMIT];
+
 /* Client-side prediction. A player's client steps the race itself with its
  * own controls, so its car answers at once; each server frame rewinds the
  * race to the authoritative state and replays the controls the server had
@@ -80,64 +72,60 @@ typedef struct SentInput {
     DriverInput input;
     u32 tick; /* the local race tick it was used for */
 } SentInput;
-static SentInput s_sent[INPUT_HISTORY];
-static u32 s_inputSeq;         /* last sequence number handed out */
-static int s_predicting;       /* stepping locally since the first frame */
-static DriverInput s_tickInput;
-static int s_tickInputReady;
-static float s_lastMotion[DRIVER_SEAT_LIMIT][3];
-/* Per drawn span: 255 opaque, less while its car fades out. */
-static uint8_t s_spanAlpha[WEB_SPAN_CAPACITY];
-static ClientRace *s_race;
-static DriverInput s_input;
-static int s_pendingShiftUp, s_pendingShiftDown;
-static RenderMeshInstance *s_instances;
-static RenderWorld s_world;
-static RageNativeDrawVertex *s_vertices;
-static RageNativeDrawSpan *s_spans;
-static uint32_t s_vertexCount, s_spanCount;
-static uint32_t s_spanFields[WEB_SPAN_CAPACITY * WEB_SPAN_FIELDS];
-static float *s_packed;
-static uint64_t s_frame;
-/* position, viewRow0, viewRow1, viewRow2, projection, fogColor, fogRange. */
-static float s_camera[28];
-/* direction, ambient, diffuse, skyTop, skyHorizon, skyBottom. */
-static float s_light[24];
-static float s_sky[WEB_SKY_FLOATS];
-static int32_t s_hud[16];
-/* Presentation history at the simulation's physics steps (every second
- * 50 Hz tick): the browser draws between the last two, so motion is smooth
- * at any display rate instead of stepping at 25 Hz. */
-static PlayerCarRuntime s_posePrevious[DRIVER_SEAT_LIMIT], s_poseCurrent[DRIVER_SEAT_LIMIT];
-static RenderCamera s_cameraPrevious, s_cameraCurrent;
-static u32 s_lastStepTick;
-static int s_haveStep, s_lastTickStepped;
-/* Track texture page the frame was built with (render/track_textures.c:
- * retail swaps the upper VRAM rows while the player is inside the track's
- * texture section range). Terrain and course carry it in their material
- * variant; track model banks decode against it directly. */
-static int s_page;
-/* Vehicle shadow camera: position, rows 0..2, (scaleX, scaleY, depthScale,
- * depthOffset); zero when no map could be built. */
-static float s_shadow[20];
-static int s_shadowValid;
-static uint8_t *s_mipChain;
+static struct Prediction {
+    SentInput sent[INPUT_HISTORY];
+    u32 inputSeq;          /* last sequence number handed out */
+    int predicting;        /* stepping locally since the first frame */
+    DriverInput tickInput; /* this tick's controls (rw_take_input) */
+    int tickInputReady;
+} s_predict;
+
+/* The local controls. Gear, camera and mirror requests are edges: they stay
+ * pending until a tick (or game frame) uses them. */
+static struct Controls {
+    DriverInput input;
+    int pendingShiftUp, pendingShiftDown;
+    u16 padHeld;       /* last pad sample's button bits */
+    int pendingCamera; /* a camera-button press not yet used */
+    int pendingMirror; /* +1 on, -1 off */
+} s_controls;
+
+/* Past the line a car drives on, easing off, and fades out over this many
+ * physics steps (2.5 s); presentation only, as the simulation keeps a
+ * finished car where it crossed the line. */
+enum { FINISH_FADE_STEPS = 62 };
+typedef struct FinishRun {
+    int steps;          /* physics steps since the finish, 0 while racing */
+    float motion[3];    /* its last step's motion while driving */
+    float ox, oy, oz;   /* distance travelled past the line */
+} FinishRun;
 
 /* Retail chase camera state (see RetailChaseView). */
 typedef struct WebChase {
     s32 previousYaw, rampNeg, rampPos, yawLag, damping, stepLimit, step;
     int active;
 } WebChase;
-static WebChase s_chase;
 
 /* race_scene.c: the race starts in the car view; the camera button swaps it
  * with the chase view (chase preset 0, the only one retail selects), and
  * holding down in the chase view looks behind. */
 typedef enum WebView { WEB_VIEW_CAR, WEB_VIEW_CHASE, WEB_VIEW_LOOK_BEHIND } WebView;
-static WebView s_selectedView, s_viewCurrent;
-/* Last pad sample's button bits, and a camera-button press not yet used. */
-static u16 s_padHeld;
-static int s_pendingCamera;
+
+/* Presentation history at the simulation's physics steps (every second
+ * 50 Hz tick): the browser draws between the last two, so motion is smooth
+ * at any display rate instead of stepping at 25 Hz. */
+static struct Presentation {
+    /* The seat the camera and HUD follow: the local car, or another one
+     * while spectating; a new one cuts on the next snapshot. */
+    int viewSeat, viewCut;
+    PlayerCarRuntime posePrevious[DRIVER_SEAT_LIMIT], poseCurrent[DRIVER_SEAT_LIMIT];
+    FinishRun run[DRIVER_SEAT_LIMIT];
+    RenderCamera cameraPrevious, cameraCurrent;
+    WebChase chase;
+    WebView selectedView, viewCurrent;
+    u32 lastStepTick;
+    int haveStep, lastTickStepped;
+} s_view;
 
 /* Rear-view mirror (render/mirror_pass.c, render/rear_view_mirror.c). Its
  * panel slides one PAL line per game frame between hidden and visible; the
@@ -148,10 +136,43 @@ enum { MIRROR_PANEL_HIDDEN_Y = -44, MIRROR_PANEL_VISIBLE_Y = 18 };
 #define MIRROR_FOV_DEGREES 20.0f
 /* 148x36 PAL pixels (mirror_pass.c MIRROR_WIDTH x MIRROR_HEIGHT). */
 #define MIRROR_ASPECT (148.0f / 36.0f)
-static int s_mirrorEnabled, s_pendingMirror;
-static s32 s_mirrorPanelPrevious, s_mirrorPanelCurrent;
-static int s_mirrorDraw;
-static RenderCamera s_mirrorPrevious, s_mirrorCurrent;
+static struct Mirror {
+    int enabled, draw;
+    s32 panelPrevious, panelCurrent;
+    RenderCamera previous, current;
+    /* The last built frame's mirror: its draws follow the main view's. */
+    uint32_t vertexCount, spanCount;
+    float uniform[28], sky[WEB_SKY_FLOATS];
+    float state[4]; /* drawn, panel top (PAL lines, may be negative), first vertex, vertex count */
+} s_mirror;
+
+/* ---- the last built frame -------------------------------------------------- */
+static RenderMeshInstance *s_instances;
+static RenderWorld s_world;
+static RageNativeDrawVertex *s_vertices;
+static RageNativeDrawSpan *s_spans;
+static uint32_t s_spanFields[WEB_SPAN_CAPACITY * WEB_SPAN_FIELDS];
+static float *s_packed;
+static uint8_t *s_mipChain;
+static struct Frame {
+    uint64_t number;
+    uint32_t vertexCount, spanCount;
+    /* Track texture page the frame was built with (render/track_textures.c:
+     * retail swaps the upper VRAM rows while the player is inside the
+     * track's texture section range). Terrain and course carry it in their
+     * material variant; track model banks decode against it directly. */
+    int page;
+    /* position, viewRow0, viewRow1, viewRow2, projection, fogColor, fogRange. */
+    float camera[28];
+    /* direction, ambient, diffuse, skyTop, skyHorizon, skyBottom. */
+    float light[24];
+    float sky[WEB_SKY_FLOATS];
+    /* Vehicle shadow camera: position, rows 0..2, (scaleX, scaleY,
+     * depthScale, depthOffset); zero when no map could be built. */
+    float shadow[20];
+    int shadowValid;
+} s_frame;
+static int32_t s_hud[16];
 
 const RaceData *WebLoadedArchive(void) { return s_archive; }
 
@@ -166,12 +187,6 @@ EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
     FreeRaceData(s_archive);
     s_archive = LoadRaceDisc(path);
     return s_archive != NULL;
-}
-
-/* Frees the imported disc copy; a prepared race keeps its own data. */
-EMSCRIPTEN_KEEPALIVE void rw_release_disc(void) {
-    FreeRaceData(s_archive);
-    s_archive = NULL;
 }
 
 /* Loads the field in setup and prepares the local presentation. The server
@@ -192,22 +207,12 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     for (int seat = 0; seat < humanCount; ++seat) setup.looks[seat].variant = humans[seat].variant;
     s_race = LoadClientRace(s_archive, &setup, NULL);
     if (!s_race) return 0;
-    if (!WebHudPrepare(s_archive, humans[localSeat].variant)) {
+    /* A spectator has no tachometer (rw_tachometer stays invisible). */
+    if ((localSeat >= 0 && !WebHudPrepare(s_archive, humans[localSeat].variant)) ||
+        !StartRaceSim(&s_race->sim, WEB_COUNTDOWN_TICKS)) {
         ReleaseRace();
         return 0;
     }
-    if (!StartRaceSim(&s_race->sim, WEB_COUNTDOWN_TICKS)) {
-        ReleaseRace();
-        return 0;
-    }
-    s_localSeat = localSeat;
-    s_viewSeat = localSeat >= 0 ? localSeat : 0;
-    s_viewCut = 0;
-    memset(s_run, 0, sizeof(s_run));
-    memset(s_lastMotion, 0, sizeof(s_lastMotion));
-    s_inputSeq = 0;
-    s_predicting = 0;
-    s_tickInputReady = 0;
     if (!s_instances) s_instances = calloc(WEB_INSTANCE_CAPACITY, sizeof(*s_instances));
     if (!s_vertices) s_vertices = calloc(WEB_VERTEX_CAPACITY, sizeof(*s_vertices));
     if (!s_spans) s_spans = calloc(WEB_SPAN_CAPACITY, sizeof(*s_spans));
@@ -217,21 +222,17 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
         return 0;
     }
     RenderWorldInit(&s_world, s_instances, WEB_INSTANCE_CAPACITY);
-    memset(&s_input, 0, sizeof(s_input));
-    s_input.steering.mode = STEERING_DIGITAL;
-    s_pendingShiftUp = s_pendingShiftDown = 0;
-    s_frame = 0;
-    memset(&s_chase, 0, sizeof(s_chase));
-    s_selectedView = s_viewCurrent = WEB_VIEW_CAR;
-    s_padHeld = 0;
-    s_pendingCamera = 0;
+    s_localSeat = localSeat;
+    memset(&s_predict, 0, sizeof(s_predict));
+    memset(&s_controls, 0, sizeof(s_controls));
+    s_controls.input.steering.mode = STEERING_DIGITAL;
+    memset(&s_view, 0, sizeof(s_view)); /* the car view, no snapshot yet */
+    s_view.viewSeat = localSeat >= 0 ? localSeat : 0;
     /* mirror_pass.c ResetMirrorState. */
-    s_mirrorEnabled = 1;
-    s_pendingMirror = 0;
-    s_mirrorPanelPrevious = s_mirrorPanelCurrent = MIRROR_PANEL_HIDDEN_Y;
-    s_mirrorDraw = 0;
-    s_haveStep = s_lastTickStepped = 0;
-    s_shadowValid = 0;
+    memset(&s_mirror, 0, sizeof(s_mirror));
+    s_mirror.enabled = 1;
+    s_mirror.panelPrevious = s_mirror.panelCurrent = MIRROR_PANEL_HIDDEN_Y;
+    memset(&s_frame, 0, sizeof(s_frame));
     /* Sound is presentation only: a race without its banks still runs. */
     WebAudioStartRace(s_archive, &s_race->sim, localSeat, classIndex);
     return 1;
@@ -240,7 +241,7 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
 /* Offline race: the local player alone, with or without the retail AI. */
 EMSCRIPTEN_KEEPALIVE int rw_start_race(int classIndex, int course, int car, int manual,
                                        int reverse, int laps, int rivals) {
-    const WebSeat human = {RACE_SEAT_HUMAN, car, manual ? 1 : 0};
+    const WebSeat human = {car, manual ? 1 : 0};
     s_net = 0;
     return PrepareRace(classIndex, course, reverse, laps, rivals, &human, 1, 0);
 }
@@ -251,21 +252,10 @@ EMSCRIPTEN_KEEPALIVE int rw_start_net_race(int classIndex, int course, int rever
                                            int rivals, int humanCount, const int32_t *humanSeats,
                                            int localSeat) {
     WebSeat humans[DRIVER_SEAT_LIMIT];
-    if (!humanSeats || humanCount < 1 || humanCount > DRIVER_SEAT_LIMIT) return 0;
-    for (int seat = 0; seat < humanCount; ++seat)
-        humans[seat] = (WebSeat){RACE_SEAT_HUMAN, humanSeats[seat * 2], humanSeats[seat * 2 + 1]};
+    if (!WebReadSeats(humanSeats, humanCount, humans)) return 0;
     s_net = 1;
     return PrepareRace(classIndex, course, reverse, laps, rivals, humans, humanCount, localSeat);
 }
-
-/* Restores the server's authoritative RaceFrame into the local race. */
-EMSCRIPTEN_KEEPALIVE int rw_apply_frame(const uint8_t *wire, int size) {
-    static RaceFrame frame;
-    if (!s_race || !s_net || !wire || size != RACE_FRAME_WIRE_SIZE ||
-        !DecodeRaceFrame(&s_race->sim, wire, (size_t)size, &frame)) return 0;
-    return RestoreRaceFrame(&s_race->sim, &frame);
-}
-EMSCRIPTEN_KEEPALIVE int rw_frame_size(void) { return RACE_FRAME_WIRE_SIZE; }
 
 /* The local controls for this tick, to send (web_rules.h wire words) under
  * sequence number rw_input_seq(); gear edges are handed over once, as the
@@ -273,52 +263,53 @@ EMSCRIPTEN_KEEPALIVE int rw_frame_size(void) { return RACE_FRAME_WIRE_SIZE; }
  * prediction on this tick. */
 EMSCRIPTEN_KEEPALIVE int32_t *rw_take_input(void) {
     static int32_t words[WEB_INPUT_WORDS];
-    DriverInput input = s_input;
-    input.shiftUp = s_pendingShiftUp;
-    input.shiftDown = s_pendingShiftDown;
-    s_pendingShiftUp = s_pendingShiftDown = 0;
+    DriverInput input = s_controls.input;
+    input.shiftUp = s_controls.pendingShiftUp;
+    input.shiftDown = s_controls.pendingShiftDown;
+    s_controls.pendingShiftUp = s_controls.pendingShiftDown = 0;
     WebEncodeInput(&input, words);
     if (s_race && s_net && s_localSeat >= 0) {
-        ++s_inputSeq;
-        s_sent[s_inputSeq % INPUT_HISTORY] = (SentInput){input, s_race->sim.tick + 1};
-        s_tickInput = input;
-        s_tickInputReady = 1;
+        ++s_predict.inputSeq;
+        s_predict.sent[s_predict.inputSeq % INPUT_HISTORY] = (SentInput){input, s_race->sim.tick + 1};
+        s_predict.tickInput = input;
+        s_predict.tickInputReady = 1;
     }
     return words;
 }
-EMSCRIPTEN_KEEPALIVE uint32_t rw_input_seq(void) { return s_inputSeq; }
+EMSCRIPTEN_KEEPALIVE uint32_t rw_input_seq(void) { return s_predict.inputSeq; }
 
-/* Rewinds to the server's frame and replays the unconsumed controls up to
- * the local present. ackSeq is the last input the server had received and
+/* Applies one authoritative RaceFrame from the server. A spectator only
+ * restores it. A player rewinds to it and replays the unconsumed controls up
+ * to the local present: ackSeq is the last input the server had received and
  * arrivalTick the server tick that first used it. Returns how many ticks
- * later than predicted that input was used (the client clock's error), or
- * INT32_MIN when the frame does not fit the race. */
-EMSCRIPTEN_KEEPALIVE int32_t rw_apply_predicted(const uint8_t *wire, int size, uint32_t ackSeq,
-                                                uint32_t arrivalTick) {
+ * later than predicted that input was used (the client clock's error; 0 for
+ * a spectator), or INT32_MIN when the frame does not fit the race. */
+EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint32_t ackSeq,
+                                            uint32_t arrivalTick) {
     static RaceFrame frame;
-    if (!s_race || !s_net || s_localSeat < 0 || !wire || size != RACE_FRAME_WIRE_SIZE ||
+    struct Prediction *p = &s_predict;
+    if (!s_race || !s_net || !wire || size != RACE_FRAME_WIRE_SIZE ||
         !DecodeRaceFrame(&s_race->sim, wire, (size_t)size, &frame)) return INT32_MIN;
     const u32 present = s_race->sim.tick;
     if (!RestoreRaceFrame(&s_race->sim, &frame)) return INT32_MIN;
-    const int known = ackSeq && ackSeq <= s_inputSeq && s_inputSeq - ackSeq < INPUT_HISTORY;
-    const int32_t error = known ? (int32_t)(arrivalTick - s_sent[ackSeq % INPUT_HISTORY].tick) : 0;
-    if (!s_predicting) {
-        s_predicting = 1; /* the local race starts at the server's present */
+    if (s_localSeat < 0) return 0;
+    const int known = ackSeq && ackSeq <= p->inputSeq && p->inputSeq - ackSeq < INPUT_HISTORY;
+    const int32_t error = known ? (int32_t)(arrivalTick - p->sent[ackSeq % INPUT_HISTORY].tick) : 0;
+    if (!p->predicting) {
+        p->predicting = 1; /* the local race starts at the server's present */
         return error;
     }
-    const u32 oldest = s_inputSeq >= INPUT_HISTORY ? s_inputSeq - INPUT_HISTORY + 1 : 1;
+    const u32 oldest = p->inputSeq >= INPUT_HISTORY ? p->inputSeq - INPUT_HISTORY + 1 : 1;
     while (s_race->sim.tick < present) {
         const u32 next = s_race->sim.tick + 1;
-        for (u32 seq = ackSeq + 1 > oldest ? ackSeq + 1 : oldest; seq <= s_inputSeq; ++seq) {
-            if (s_sent[seq % INPUT_HISTORY].tick == next)
-                SetRaceInput(&s_race->sim, s_localSeat, &s_sent[seq % INPUT_HISTORY].input);
+        for (u32 seq = ackSeq + 1 > oldest ? ackSeq + 1 : oldest; seq <= p->inputSeq; ++seq) {
+            if (p->sent[seq % INPUT_HISTORY].tick == next)
+                SetRaceInput(&s_race->sim, s_localSeat, &p->sent[seq % INPUT_HISTORY].input);
         }
         if (!StepRaceSim(&s_race->sim)) break;
     }
     return error;
 }
-
-EMSCRIPTEN_KEEPALIVE int rw_local_seat(void) { return s_localSeat; }
 
 /* ---- spectating --------------------------------------------------------------
  * The camera and HUD can follow any car in the field; the next snapshot cuts
@@ -326,34 +317,20 @@ EMSCRIPTEN_KEEPALIVE int rw_local_seat(void) { return s_localSeat; }
 EMSCRIPTEN_KEEPALIVE int rw_set_view_seat(int seat) {
     if (!s_race || seat < 0 || seat >= DRIVER_SEAT_LIMIT ||
         s_race->sim.drivers[seat].status == SIM_EMPTY) return 0;
-    if (seat != s_viewSeat) {
-        s_viewSeat = seat;
-        s_viewCut = 1;
-        memset(&s_chase, 0, sizeof(s_chase));
+    if (seat != s_view.viewSeat) {
+        s_view.viewSeat = seat;
+        s_view.viewCut = 1;
+        memset(&s_view.chase, 0, sizeof(s_view.chase));
     }
     return 1;
 }
-EMSCRIPTEN_KEEPALIVE int rw_view_seat(void) { return s_viewSeat; }
+EMSCRIPTEN_KEEPALIVE int rw_view_seat(void) { return s_view.viewSeat; }
 /* 1 once a seat's car has left the picture: retired, or finished and faded. */
 EMSCRIPTEN_KEEPALIVE int rw_seat_gone(int seat) {
     if (!s_race || seat < 0 || seat >= DRIVER_SEAT_LIMIT) return 1;
     const SimDriverStatus status = s_race->sim.drivers[seat].status;
     return status == SIM_EMPTY || status == SIM_RETIRED ||
-           (status == SIM_DRIVER_FINISHED && s_run[seat].steps > FINISH_FADE_STEPS);
-}
-
-/* Keyboard levels for the local seat. Gear requests are edges: they stay
- * pending until the next simulation tick consumes them. */
-EMSCRIPTEN_KEEPALIVE void rw_set_input(int left, int right, int throttle, int brake,
-                                       int shiftUp, int shiftDown) {
-    s_input.steering.mode = STEERING_DIGITAL;
-    s_input.steering.left = left ? 1 : 0;
-    s_input.steering.right = right ? 1 : 0;
-    s_input.steering.angle = 0;
-    s_input.throttle = (s16)(throttle < 0 ? 0 : throttle > 256 ? 256 : throttle);
-    s_input.brake = (s16)(brake < 0 ? 0 : brake > 256 ? 256 : brake);
-    if (shiftUp) s_pendingShiftUp = 1;
-    if (shiftDown) s_pendingShiftDown = 1;
+           (status == SIM_DRIVER_FINISHED && s_view.run[seat].steps > FINISH_FADE_STEPS);
 }
 
 /* ---- Controls: the desktop pad path --------------------------------------
@@ -409,22 +386,22 @@ static s16 NegconPedal(int pressure) {
 EMSCRIPTEN_KEEPALIVE void rw_set_pad(int held, int stickX, int rightTrigger, int leftTrigger,
                                      int gamepad) {
     const u16 buttons = (u16)held;
-    const u16 pressed = buttons & (u16)~s_padHeld;
-    s_padHeld = buttons;
-    if (pressed & CAMERA_BUTTON) s_pendingCamera = 1;
+    const u16 pressed = buttons & (u16)~s_controls.padHeld;
+    s_controls.padHeld = buttons;
+    if (pressed & CAMERA_BUTTON) s_controls.pendingCamera = 1;
     if (buttons & CAMERA_BUTTON) {
-        if (pressed & PAD_R1) s_pendingMirror = 1;
-        else if (pressed & PAD_L1) s_pendingMirror = -1;
+        if (pressed & PAD_R1) s_controls.pendingMirror = 1;
+        else if (pressed & PAD_L1) s_controls.pendingMirror = -1;
     }
     if (!gamepad) {
-        s_input.steering.mode = STEERING_DIGITAL;
-        s_input.steering.left = (buttons & PAD_LEFT) != 0;
-        s_input.steering.right = (buttons & PAD_RIGHT) != 0;
-        s_input.steering.angle = 0;
-        s_input.throttle = buttons & PAD_CROSS ? PEDAL_FULLY_PRESSED : 0;
-        s_input.brake = buttons & PAD_SQUARE ? PEDAL_FULLY_PRESSED : 0;
-        if (pressed & DIGITAL_SHIFT_UP) s_pendingShiftUp = 1;
-        if (pressed & DIGITAL_SHIFT_DOWN) s_pendingShiftDown = 1;
+        s_controls.input.steering.mode = STEERING_DIGITAL;
+        s_controls.input.steering.left = (buttons & PAD_LEFT) != 0;
+        s_controls.input.steering.right = (buttons & PAD_RIGHT) != 0;
+        s_controls.input.steering.angle = 0;
+        s_controls.input.throttle = buttons & PAD_CROSS ? PEDAL_FULLY_PRESSED : 0;
+        s_controls.input.brake = buttons & PAD_SQUARE ? PEDAL_FULLY_PRESSED : 0;
+        if (pressed & DIGITAL_SHIFT_UP) s_controls.pendingShiftUp = 1;
+        if (pressed & DIGITAL_SHIFT_DOWN) s_controls.pendingShiftDown = 1;
         return;
     }
     {
@@ -435,16 +412,17 @@ EMSCRIPTEN_KEEPALIVE void rw_set_pad(int held, int stickX, int rightTrigger, int
         int analogII = (int)(AxisShapedDefault(leftTrigger, 0.0f) * (float)NEGCON_ANALOG_MAX);
         if (buttons & PAD_CROSS) analogI = NEGCON_ANALOG_MAX;
         if (buttons & PAD_SQUARE) analogII = NEGCON_ANALOG_MAX;
-        s_input.steering.mode = STEERING_ANALOG;
-        s_input.steering.left = s_input.steering.right = 0;
-        s_input.steering.angle = CalibrateNegconSteer(twist) * NEGCON_STEERING_SCALE /
+        s_controls.input.steering.mode = STEERING_ANALOG;
+        s_controls.input.steering.left = s_controls.input.steering.right = 0;
+        s_controls.input.steering.angle = CalibrateNegconSteer(twist) * NEGCON_STEERING_SCALE /
                                  NEGCON_DEFAULT_STEER_RANGE;
-        s_input.throttle = NegconPedal(analogI);
-        s_input.brake = NegconPedal(analogII);
+        s_controls.input.throttle = NegconPedal(analogI);
+        s_controls.input.brake = NegconPedal(analogII);
     }
-    if (pressed & NEGCON_SHIFT_UP) s_pendingShiftUp = 1;
-    if (pressed & NEGCON_SHIFT_DOWN) s_pendingShiftDown = 1;
+    if (pressed & NEGCON_SHIFT_UP) s_controls.pendingShiftUp = 1;
+    if (pressed & NEGCON_SHIFT_DOWN) s_controls.pendingShiftDown = 1;
 }
+
 
 static float Daylight(const ClientRace *race) {
     RenderCamera environment;
@@ -459,25 +437,69 @@ static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView view,
 /* One game frame of the mirror panel (car_render_rules.c AdvanceMirrorPanelY
  * as rear_view_mirror.c drives it) and its on/off switches. */
 static void AdvanceMirror(const RaceSim *sim, WebView view) {
-    const int racing = sim->phase == SIM_RACING && s_localSeat >= 0 && s_viewSeat == s_localSeat &&
+    struct Mirror *m = &s_mirror;
+    const int racing = sim->phase == SIM_RACING && s_localSeat >= 0 && s_view.viewSeat == s_localSeat &&
                        sim->drivers[s_localSeat].status == SIM_DRIVING;
-    if (s_pendingMirror && racing && view == WEB_VIEW_CAR) s_mirrorEnabled = s_pendingMirror > 0;
-    s_pendingMirror = 0;
+    if (s_controls.pendingMirror && racing && view == WEB_VIEW_CAR) m->enabled = s_controls.pendingMirror > 0;
+    s_controls.pendingMirror = 0;
     if (sim->phase >= SIM_RACING && !racing)
-        s_mirrorEnabled = 0; /* lap_and_finish.c: the finish turns it off. */
-    s_mirrorPanelPrevious = s_haveStep ? s_mirrorPanelCurrent : MIRROR_PANEL_HIDDEN_Y;
+        m->enabled = 0; /* lap_and_finish.c: the finish turns it off. */
+    m->panelPrevious = s_view.haveStep ? m->panelCurrent : MIRROR_PANEL_HIDDEN_Y;
     /* The panel starts moving with the race, as retail's unlock comes after
      * the start; it is hidden behind the countdown otherwise. */
     if (sim->phase >= SIM_RACING) {
-        if (s_mirrorEnabled) {
-            if (s_mirrorPanelCurrent < MIRROR_PANEL_VISIBLE_Y) ++s_mirrorPanelCurrent;
-        } else if (s_mirrorPanelCurrent > MIRROR_PANEL_HIDDEN_Y) {
-            --s_mirrorPanelCurrent;
+        if (m->enabled) {
+            if (m->panelCurrent < MIRROR_PANEL_VISIBLE_Y) ++m->panelCurrent;
+        } else if (m->panelCurrent > MIRROR_PANEL_HIDDEN_Y) {
+            --m->panelCurrent;
         }
     }
     /* mirror_pass.c MirrorPassIsAvailable, without the unlock and Grand Prix
      * conditions. */
-    s_mirrorDraw = s_mirrorEnabled && view == WEB_VIEW_CAR && racing;
+    m->draw = m->enabled && view == WEB_VIEW_CAR && racing;
+}
+
+/* Snapshots every car's pose; a finished car drives on past the line. */
+static void AdvanceFinishRuns(const RaceSim *sim) {
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        const SimDriver *driver = &sim->drivers[seat];
+        PlayerCarRuntime pose = driver->car;
+        FinishRun *run = &s_view.run[seat];
+        if (driver->status != SIM_DRIVER_FINISHED && run->steps) {
+            run->steps = 0;
+            run->ox = run->oy = run->oz = 0.0f;
+        }
+        if (driver->status == SIM_DRIVER_FINISHED) {
+            if (run->steps <= FINISH_FADE_STEPS) {
+                /* Ease off to about a third of the speed as it fades. */
+                const float pace = 1.0f - 0.65f * (float)run->steps / FINISH_FADE_STEPS;
+                ++run->steps;
+                run->ox += run->motion[0] * pace;
+                run->oy += run->motion[1] * pace;
+                run->oz += run->motion[2] * pace;
+            }
+            pose.x += (s32)lroundf(run->ox);
+            pose.y += (s32)lroundf(run->oy);
+            pose.z += (s32)lroundf(run->oz);
+        } else if (driver->status == SIM_DRIVING && s_view.haveStep) {
+            run->motion[0] = (float)(pose.x - s_view.poseCurrent[seat].x);
+            run->motion[1] = (float)(pose.y - s_view.poseCurrent[seat].y);
+            run->motion[2] = (float)(pose.z - s_view.poseCurrent[seat].z);
+        }
+        s_view.posePrevious[seat] = s_view.haveStep ? s_view.poseCurrent[seat] : pose;
+        s_view.poseCurrent[seat] = pose;
+    }
+}
+
+/* The camera button and look-behind, as race_scene.c reads them once per
+ * game frame; spectating someone else follows their car from behind. */
+static WebView SelectView(int racing) {
+    if (s_controls.pendingCamera && racing)
+        s_view.selectedView = s_view.selectedView == WEB_VIEW_CAR ? WEB_VIEW_CHASE : WEB_VIEW_CAR;
+    s_controls.pendingCamera = 0;
+    if (s_view.viewSeat != s_localSeat) return WEB_VIEW_CHASE;
+    return racing && s_view.selectedView == WEB_VIEW_CHASE && (s_controls.padHeld & PAD_DOWN)
+               ? WEB_VIEW_LOOK_BEHIND : s_view.selectedView;
 }
 
 /* Snapshots poses and the race camera whenever the field physics stepped.
@@ -486,80 +508,46 @@ static void AdvanceMirror(const RaceSim *sim, WebView view) {
  * it advances only here. */
 static void RecordPresentation(void) {
     const RaceSim *sim = &s_race->sim;
+    struct Presentation *v = &s_view;
     /* The field moves every second clock tick while racing; the key follows
      * the race clock, so finished and spectated cars keep being presented. */
     const u32 stepTick = sim->phase >= SIM_RACING ? sim->elapsed / SIM_PHYSICS_INTERVAL + 1 : 0;
-    const int racing = sim->phase == SIM_RACING; /* CanToggleRaceCamera */
-    WebView view;
     RenderCamera camera, mirror;
-    s_lastTickStepped = !s_haveStep || stepTick != s_lastStepTick;
-    if (!s_lastTickStepped) return;
-    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
-        const SimDriver *driver = &sim->drivers[seat];
-        PlayerCarRuntime pose = driver->car;
-        FinishRun *run = &s_run[seat];
-        if (driver->status != SIM_DRIVER_FINISHED && run->steps) memset(run, 0, sizeof(*run));
-        if (driver->status == SIM_DRIVER_FINISHED) {
-            if (!run->steps) {
-                run->vx = s_lastMotion[seat][0];
-                run->vy = s_lastMotion[seat][1];
-                run->vz = s_lastMotion[seat][2];
-            }
-            if (run->steps <= FINISH_FADE_STEPS) {
-                /* Ease off to about a third of the speed as it fades. */
-                const float pace = 1.0f - 0.65f * (float)run->steps / FINISH_FADE_STEPS;
-                ++run->steps;
-                run->ox += run->vx * pace;
-                run->oy += run->vy * pace;
-                run->oz += run->vz * pace;
-            }
-            pose.x += (s32)lroundf(run->ox);
-            pose.y += (s32)lroundf(run->oy);
-            pose.z += (s32)lroundf(run->oz);
-        } else if (driver->status == SIM_DRIVING && s_haveStep) {
-            s_lastMotion[seat][0] = (float)(pose.x - s_poseCurrent[seat].x);
-            s_lastMotion[seat][1] = (float)(pose.y - s_poseCurrent[seat].y);
-            s_lastMotion[seat][2] = (float)(pose.z - s_poseCurrent[seat].z);
-        }
-        s_posePrevious[seat] = s_haveStep ? s_poseCurrent[seat] : pose;
-        s_poseCurrent[seat] = pose;
-    }
-    if (s_pendingCamera && racing)
-        s_selectedView = s_selectedView == WEB_VIEW_CAR ? WEB_VIEW_CHASE : WEB_VIEW_CAR;
-    s_pendingCamera = 0;
-    view = racing && s_selectedView == WEB_VIEW_CHASE && (s_padHeld & PAD_DOWN)
-               ? WEB_VIEW_LOOK_BEHIND : s_selectedView;
-    /* Spectating someone else follows their car from behind. */
-    if (s_viewSeat != s_localSeat) view = WEB_VIEW_CHASE;
-    camera = BuildRaceCamera(&s_poseCurrent[s_viewSeat], view, &mirror);
+    v->lastTickStepped = !v->haveStep || stepTick != v->lastStepTick;
+    if (!v->lastTickStepped) return;
+    AdvanceFinishRuns(sim);
+    const WebView view = SelectView(sim->phase == SIM_RACING /* CanToggleRaceCamera */);
+    camera = BuildRaceCamera(&v->poseCurrent[v->viewSeat], view, &mirror);
     AdvanceMirror(sim, view);
     /* A new view or car cuts; only frames within one view are interpolated. */
-    if (s_viewCut) s_haveStep = 0;
-    s_viewCut = 0;
-    s_cameraPrevious = s_haveStep && view == s_viewCurrent ? s_cameraCurrent : camera;
-    s_cameraCurrent = camera;
-    s_mirrorPrevious = s_haveStep && view == s_viewCurrent ? s_mirrorCurrent : mirror;
-    s_mirrorCurrent = mirror;
-    s_viewCurrent = view;
-    s_lastStepTick = stepTick;
-    s_haveStep = 1;
+    if (v->viewCut) v->haveStep = 0;
+    v->viewCut = 0;
+    const int continuous = v->haveStep && view == v->viewCurrent;
+    v->cameraPrevious = continuous ? v->cameraCurrent : camera;
+    v->cameraCurrent = camera;
+    s_mirror.previous = continuous ? s_mirror.current : mirror;
+    s_mirror.current = mirror;
+    v->viewCurrent = view;
+    v->lastStepTick = stepTick;
+    v->haveStep = 1;
 }
 
 /* One 50 Hz simulation tick. Returns the race phase, or -1 on failure. */
 EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     DriverInput input;
     if (!s_race) return -1;
-    input = s_input;
-    input.shiftUp = s_pendingShiftUp;
-    input.shiftDown = s_pendingShiftDown;
+    input = s_controls.input;
+    input.shiftUp = s_controls.pendingShiftUp;
+    input.shiftDown = s_controls.pendingShiftDown;
     if (!s_net) {
-        if (SetRaceInput(&s_race->sim, s_localSeat, &input)) s_pendingShiftUp = s_pendingShiftDown = 0;
+        if (SetRaceInput(&s_race->sim, s_localSeat, &input))
+            s_controls.pendingShiftUp = s_controls.pendingShiftDown = 0;
         StepRaceSim(&s_race->sim);
-    } else if (s_predicting) {
+    } else if (s_predict.predicting) {
         /* A player predicts with this tick's controls (rw_take_input); a
          * spectator only shows the server's frames (rw_apply_frame). */
-        if (s_tickInputReady) SetRaceInput(&s_race->sim, s_localSeat, &s_tickInput);
-        s_tickInputReady = 0;
+        if (s_predict.tickInputReady) SetRaceInput(&s_race->sim, s_localSeat, &s_predict.tickInput);
+        s_predict.tickInputReady = 0;
         StepRaceSim(&s_race->sim);
     }
     if (!TickClientScenery(s_race)) return -1;
@@ -570,7 +558,7 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
 }
 
 /* 1 when the last tick produced a new presentation snapshot. */
-EMSCRIPTEN_KEEPALIVE int rw_last_tick_stepped(void) { return s_lastTickStepped; }
+EMSCRIPTEN_KEEPALIVE int rw_last_tick_stepped(void) { return s_view.lastTickStepped; }
 
 /* ---- Retail chase camera (track/camera_chase.c, mode 1) ------------------
  * The yaw settling is the retail integer code verbatim. The eye/look-at
@@ -648,7 +636,7 @@ static SceneMat3 CarRotation(const PlayerCarRuntime *car) {
  * for chase preset 0 (eye 0x3A up, 0x118 back). */
 static void RetailChaseView(const PlayerCarRuntime *car, Vec3 *eye,
                             s32 *pitch, s32 *yaw, s32 *roll) {
-    WebChase *chase = &s_chase;
+    WebChase *chase = &s_view.chase;
     s32 target = car->bodyYaw & ANGLE_MASK, settled, lag;
     SceneMat3 cameraRotation, object, inverseObject, work;
     Vec3 focus, eyeWorld;
@@ -762,7 +750,7 @@ static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView selecte
     if (selected == WEB_VIEW_CHASE) {
         RetailChaseView(car, &eye, &pitch, &yaw, &roll);
     } else {
-        s_chase.active = 0;
+        s_view.chase.active = 0;
         if (selected == WEB_VIEW_LOOK_BEHIND) RetailLookBehindView(car, &eye, &pitch, &yaw, &roll);
         else RetailCarView(car, &eye, &pitch, &yaw, &roll);
     }
@@ -845,18 +833,14 @@ static void StoreVec3(float *out, Vec3 value) {
  * the same world again from the rear camera, with the mirror's own aspect and
  * doubled fog range, built after the main view in the same vertex and span
  * buffers. The browser flips it into the 148x36 panel. */
-static uint32_t s_mirrorVertexCount, s_mirrorSpanCount;
-static float s_mirrorUniform[28], s_mirrorSky[WEB_SKY_FLOATS];
-/* drawn, panel top (PAL lines, may be negative), first vertex, vertex count. */
-static float s_mirrorState[4];
-
 static void BuildMirror(float t) {
+    struct Mirror *m = &s_mirror;
     RenderWorld mirrorWorld;
     RenderCamera mirror;
-    s_mirrorVertexCount = s_mirrorSpanCount = 0;
-    memset(s_mirrorState, 0, sizeof(s_mirrorState));
-    if (!s_mirrorDraw) return;
-    RenderInterpolateCamera(&s_mirrorPrevious, &s_mirrorCurrent, t, &mirror);
+    m->vertexCount = m->spanCount = 0;
+    memset(m->state, 0, sizeof(m->state));
+    if (!m->draw) return;
+    RenderInterpolateCamera(&m->previous, &m->current, t, &mirror);
     ApplyEnvironment(&mirror, &s_race->env);
     /* render_world_game.c: the tiny mirror keeps useful silhouettes by
      * reaching twice as far into the fog as the main view. */
@@ -864,21 +848,20 @@ static void BuildMirror(float t) {
     mirror.fogFar *= 2.0f;
     mirrorWorld = s_world;
     mirrorWorld.camera = mirror;
-    s_mirrorVertexCount = RenderBuildNativePassDraws(
+    m->vertexCount = RenderBuildNativePassDraws(
         &mirrorWorld, RAGE_RENDER_PASS_MAIN, MIRROR_ASPECT, ResolveMesh, s_race,
-        s_vertices + s_vertexCount, WEB_VERTEX_CAPACITY - s_vertexCount,
-        s_spans + s_spanCount, WEB_SPAN_CAPACITY - s_spanCount, &s_mirrorSpanCount);
-    for (uint32_t i = 0; i < s_mirrorSpanCount; ++i) s_spans[s_spanCount + i].firstVertex += s_vertexCount;
-    if (!BuildCameraUniform(&mirror, MIRROR_ASPECT, s_mirrorUniform)) {
-        s_mirrorVertexCount = s_mirrorSpanCount = 0;
+        s_vertices + s_frame.vertexCount, WEB_VERTEX_CAPACITY - s_frame.vertexCount,
+        s_spans + s_frame.spanCount, WEB_SPAN_CAPACITY - s_frame.spanCount, &m->spanCount);
+    for (uint32_t i = 0; i < m->spanCount; ++i) s_spans[s_frame.spanCount + i].firstVertex += s_frame.vertexCount;
+    if (!BuildCameraUniform(&mirror, MIRROR_ASPECT, m->uniform)) {
+        m->vertexCount = m->spanCount = 0;
         return;
     }
-    WebSkyUniform(&mirror, MIRROR_ASPECT, s_mirrorSky);
-    s_mirrorState[0] = 1.0f;
-    s_mirrorState[1] = (float)s_mirrorPanelPrevious +
-                       (float)(s_mirrorPanelCurrent - s_mirrorPanelPrevious) * t;
-    s_mirrorState[2] = (float)s_vertexCount;
-    s_mirrorState[3] = (float)s_mirrorVertexCount;
+    WebSkyUniform(&mirror, MIRROR_ASPECT, m->sky);
+    m->state[0] = 1.0f;
+    m->state[1] = (float)m->panelPrevious + (float)(m->panelCurrent - m->panelPrevious) * t;
+    m->state[2] = (float)s_frame.vertexCount;
+    m->state[3] = (float)m->vertexCount;
 }
 
 /* 255 for a span of anything but a fading car; less as its car fades out,
@@ -886,76 +869,63 @@ static void BuildMirror(float t) {
 static uint8_t SpanAlpha(const RageNativeDrawSpan *span, float t) {
     /* sourceEntity is the drawn instance (entity is 0 outside model banks). */
     const uint32_t seat = span->sourceEntity;
-    if (seat >= DRIVER_SEAT_LIMIT || !s_run[seat].steps) return 255;
-    const float faded = ((float)s_run[seat].steps - 1.0f + t) / FINISH_FADE_STEPS;
+    if (seat >= DRIVER_SEAT_LIMIT || !s_view.run[seat].steps) return 255;
+    const float faded = ((float)s_view.run[seat].steps - 1.0f + t) / FINISH_FADE_STEPS;
     const float alpha = 1.0f - (faded < 0.0f ? 0.0f : faded > 1.0f ? 1.0f : faded);
     return (uint8_t)lroundf(alpha * 254.0f);
 }
 
-/* Builds the scene presented `t` (0..1) of the way from the previous physics
- * step to the latest one, with the native sequence, and expands it into
- * world-space triangles. Returns the vertex count, or -1 on failure. */
-EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
-    RenderDirectionalLight light;
-    RenderCamera camera;
-    RenderShadowMap shadow;
-    Vec3 shadowCenter;
-    int page;
-    if (!s_race || !s_haveStep || !(aspect > 0.0f)) return -1;
-    page = s_poseCurrent[s_viewSeat].trackSection >= s_race->look.textureSectionLo &&
-           s_poseCurrent[s_viewSeat].trackSection < s_race->look.textureSectionHi;
-    s_page = page;
-    t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
-    RenderWorldBeginFrame(&s_world, ++s_frame);
-    RenderInterpolateCamera(&s_cameraPrevious, &s_cameraCurrent, t, &camera);
-    ApplyEnvironment(&camera, &s_race->env);
-    RenderWorldSetCamera(&s_world, &camera);
-    RenderDirectionalLightFromSky(&camera, &light);
-    RenderWorldSetDirectionalLight(&s_world, &light);
-    if (!SubmitClientTerrain(s_race, page, &s_world) ||
-        !SubmitClientScenery(s_race, page, &s_world) ||
-        !SubmitRaceViewPoses(&s_race->sim, s_race->view, s_poseCurrent, s_posePrevious,
-                             s_race->rivals, s_race->primaryMesh.cached.assetKey, 0, &s_world) ||
-        !SubmitClientShuttles(s_race, page, &s_world) ||
-        !SubmitClientSpinners(s_race, page, &s_world) ||
-        !SubmitClientLandmarks(s_race, page, &s_world)) return -1;
-    RenderWorldFocus(&s_world, (uint32_t)s_viewSeat);
+static uint32_t SpanTotal(void) { return s_frame.spanCount + s_mirror.spanCount; }
+
+/* The whole scene, as the native client submits it. */
+static int SubmitScene(int page) {
+    return SubmitClientTerrain(s_race, page, &s_world) &&
+           SubmitClientScenery(s_race, page, &s_world) &&
+           SubmitRaceViewPoses(&s_race->sim, s_race->view, s_view.poseCurrent, s_view.posePrevious,
+                               s_race->rivals, s_race->primaryMesh.cached.assetKey, 0, &s_world) &&
+           SubmitClientShuttles(s_race, page, &s_world) &&
+           SubmitClientSpinners(s_race, page, &s_world) &&
+           SubmitClientLandmarks(s_race, page, &s_world);
+}
+
+/* Vehicles carry the previous physics step as their previous transform;
+ * everything else animates per clock tick. */
+static void InterpolateVehicles(float t) {
     for (uint32_t i = 0; i < s_world.instanceCount; ++i) {
         RenderMeshInstance *instance = &s_world.instances[i];
-        if (instance->entity < DRIVER_SEAT_LIMIT) {
-            /* Vehicles carry the previous physics step as their previous
-             * transform; everything else animates per clock tick. */
-            RenderTransform mixed;
-            RenderInterpolateTransform(&instance->previousTransform, &instance->transform, t, &mixed);
-            instance->transform = mixed;
-            /* update_camera.c draws the player's car only outside the car view. */
-            if (instance->entity == (uint32_t)s_viewSeat && s_viewCurrent == WEB_VIEW_CAR)
-                instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
-            /* A finished car is gone once it has faded out. */
-            if (s_run[instance->entity].steps > FINISH_FADE_STEPS)
-                instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
-        }
+        if (instance->entity >= DRIVER_SEAT_LIMIT) continue;
+        RenderTransform mixed;
+        RenderInterpolateTransform(&instance->previousTransform, &instance->transform, t, &mixed);
+        instance->transform = mixed;
+        /* update_camera.c draws the player's car only outside the car view. */
+        if (instance->entity == (uint32_t)s_view.viewSeat && s_view.viewCurrent == WEB_VIEW_CAR)
+            instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
+        /* A finished car is gone once it has faded out. */
+        if (s_view.run[instance->entity].steps > FINISH_FADE_STEPS)
+            instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
     }
-    shadowCenter = RenderShadowCenter(&s_world);
-    s_shadowValid = RenderBuildDirectionalShadowMap(
-        &shadowCenter, &s_world.light.direction, RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
+}
+
+static void StoreShadow(void) {
+    RenderShadowMap shadow;
+    const Vec3 center = RenderShadowCenter(&s_world);
+    s_frame.shadowValid = RenderBuildDirectionalShadowMap(
+        &center, &s_world.light.direction, RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
         RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION, &shadow);
-    memset(s_shadow, 0, sizeof(s_shadow));
-    if (s_shadowValid) {
-        StoreVec3(&s_shadow[0], shadow.position);
-        StoreVec3(&s_shadow[4], shadow.row0);
-        StoreVec3(&s_shadow[8], shadow.row1);
-        StoreVec3(&s_shadow[12], shadow.row2);
-        s_shadow[16] = shadow.scaleX;
-        s_shadow[17] = shadow.scaleY;
-        s_shadow[18] = shadow.depthScale;
-        s_shadow[19] = shadow.depthOffset;
-    }
-    s_vertexCount = RenderBuildNativePassDraws(
-        &s_world, RAGE_RENDER_PASS_MAIN, aspect, ResolveMesh, s_race,
-        s_vertices, WEB_VERTEX_CAPACITY, s_spans, WEB_SPAN_CAPACITY, &s_spanCount);
-    BuildMirror(t);
-    for (uint32_t i = 0; i < s_spanCount + s_mirrorSpanCount; ++i) {
+    memset(s_frame.shadow, 0, sizeof(s_frame.shadow));
+    if (!s_frame.shadowValid) return;
+    StoreVec3(&s_frame.shadow[0], shadow.position);
+    StoreVec3(&s_frame.shadow[4], shadow.row0);
+    StoreVec3(&s_frame.shadow[8], shadow.row1);
+    StoreVec3(&s_frame.shadow[12], shadow.row2);
+    s_frame.shadow[16] = shadow.scaleX;
+    s_frame.shadow[17] = shadow.scaleY;
+    s_frame.shadow[18] = shadow.depthScale;
+    s_frame.shadow[19] = shadow.depthOffset;
+}
+
+static void PackSpanFields(float t) {
+    for (uint32_t i = 0; i < SpanTotal(); ++i) {
         const RageNativeDrawSpan *span = &s_spans[i];
         uint32_t *out = &s_spanFields[i * WEB_SPAN_FIELDS];
         out[0] = span->firstVertex;
@@ -971,59 +941,93 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
         out[10] = span->instanceFlags;
         out[11] = span->materialFlags;
         out[12] = span->depthDecal;
-        s_spanAlpha[i] = SpanAlpha(span, t);
-        out[13] = s_spanAlpha[i];
+        out[WEB_SPAN_ALPHA] = SpanAlpha(span, t);
     }
-    if (!BuildCameraUniform(&s_world.camera, aspect, s_camera)) return -1;
-    StoreVec3(&s_light[0], s_world.light.direction);
-    StoreVec3(&s_light[4], s_world.light.ambientColor);
-    StoreVec3(&s_light[8], s_world.light.diffuseColor);
-    StoreVec3(&s_light[12], s_world.camera.skyTopColor);
-    StoreVec3(&s_light[16], s_world.camera.skyHorizonColor);
-    StoreVec3(&s_light[20], s_world.camera.skyBottomColor);
-    WebSkyUniform(&s_world.camera, aspect, s_sky);
-    return (int)s_vertexCount;
+}
+
+static void StoreLight(void) {
+    StoreVec3(&s_frame.light[0], s_world.light.direction);
+    StoreVec3(&s_frame.light[4], s_world.light.ambientColor);
+    StoreVec3(&s_frame.light[8], s_world.light.diffuseColor);
+    StoreVec3(&s_frame.light[12], s_world.camera.skyTopColor);
+    StoreVec3(&s_frame.light[16], s_world.camera.skyHorizonColor);
+    StoreVec3(&s_frame.light[20], s_world.camera.skyBottomColor);
+}
+
+/* Builds the scene presented `t` (0..1) of the way from the previous physics
+ * step to the latest one, with the native sequence, and expands it into
+ * world-space triangles. Returns the vertex count, or -1 on failure. */
+EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
+    RenderDirectionalLight light;
+    RenderCamera camera;
+    if (!s_race || !s_view.haveStep || !(aspect > 0.0f)) return -1;
+    const PlayerCarRuntime *viewed = &s_view.poseCurrent[s_view.viewSeat];
+    s_frame.page = viewed->trackSection >= s_race->look.textureSectionLo &&
+                   viewed->trackSection < s_race->look.textureSectionHi;
+    t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
+    RenderWorldBeginFrame(&s_world, ++s_frame.number);
+    RenderInterpolateCamera(&s_view.cameraPrevious, &s_view.cameraCurrent, t, &camera);
+    ApplyEnvironment(&camera, &s_race->env);
+    RenderWorldSetCamera(&s_world, &camera);
+    RenderDirectionalLightFromSky(&camera, &light);
+    RenderWorldSetDirectionalLight(&s_world, &light);
+    if (!SubmitScene(s_frame.page)) return -1;
+    RenderWorldFocus(&s_world, (uint32_t)s_view.viewSeat);
+    InterpolateVehicles(t);
+    StoreShadow();
+    s_frame.vertexCount = RenderBuildNativePassDraws(
+        &s_world, RAGE_RENDER_PASS_MAIN, aspect, ResolveMesh, s_race,
+        s_vertices, WEB_VERTEX_CAPACITY, s_spans, WEB_SPAN_CAPACITY, &s_frame.spanCount);
+    BuildMirror(t);
+    PackSpanFields(t);
+    if (!BuildCameraUniform(&s_world.camera, aspect, s_frame.camera)) return -1;
+    StoreLight();
+    WebSkyUniform(&s_world.camera, aspect, s_frame.sky);
+    return (int)s_frame.vertexCount;
+}
+
+/* FNV-1a step. */
+static uint32_t FnvMix(uint32_t hash, uint32_t value) { return (hash ^ value) * 16777619u; }
+
+static uint32_t PaletteHash(void) {
+    const uint8_t *bytes = (const uint8_t *)s_race->env.clut;
+    uint32_t hash = 2166136261u;
+    for (size_t i = 0; i < sizeof(s_race->env.clut); ++i) hash = FnvMix(hash, bytes[i]);
+    return hash;
 }
 
 /* The native sky uniform block (web_sky.h) for the last built frame. */
-EMSCRIPTEN_KEEPALIVE float *rw_sky(void) { return s_sky; }
+EMSCRIPTEN_KEEPALIVE float *rw_sky(void) { return s_frame.sky; }
 
 /* The 512x256 cloud panorama for the last built frame, as the native backend
  * uploads it; 0 when it cannot be decoded (the gradient still draws). */
 EMSCRIPTEN_KEEPALIVE int rw_decode_sky(uint8_t *rgba) {
-    return s_race && s_haveStep &&
-           WebSkyDecode(s_race, &s_world.camera, s_page, rgba, WEB_SKY_WIDTH * WEB_SKY_HEIGHT * 4);
+    return s_race && s_view.haveStep &&
+           WebSkyDecode(s_race, &s_world.camera, s_frame.page, rgba, WEB_SKY_WIDTH * WEB_SKY_HEIGHT * 4);
 }
 
 /* Changes whenever the panorama's inputs do (palette, texture page, cloud
  * row), so the browser knows when to decode it again. */
 EMSCRIPTEN_KEEPALIVE uint32_t rw_sky_revision(void) {
-    uint32_t hash = 2166136261u;
-    const uint8_t *bytes;
-    if (!s_race) return 0;
-    bytes = (const uint8_t *)s_race->env.clut;
-    for (size_t i = 0; i < sizeof(s_race->env.clut); ++i) hash = (hash ^ bytes[i]) * 16777619u;
-    hash = (hash ^ (uint32_t)s_page) * 16777619u;
-    return (hash ^ s_world.camera.skyCloudRow) * 16777619u;
+    return s_race ? FnvMix(FnvMix(PaletteHash(), (uint32_t)s_frame.page), s_world.camera.skyCloudRow) : 0;
 }
 EMSCRIPTEN_KEEPALIVE int rw_sky_width(void) { return WEB_SKY_WIDTH; }
 EMSCRIPTEN_KEEPALIVE int rw_sky_height(void) { return WEB_SKY_HEIGHT; }
 
-/* Span fields of the main view, followed by the mirror's (rw_mirror_span_count;
- * rw_decode_texture takes indices into both). */
+/* WEB_SPAN_FIELDS words per span of the main view, followed by the mirror's
+ * (rw_mirror_span_count; rw_decode_texture_mips takes indices into both). */
 EMSCRIPTEN_KEEPALIVE uint32_t *rw_spans(void) { return s_spanFields; }
-EMSCRIPTEN_KEEPALIVE int rw_span_count(void) { return (int)s_spanCount; }
-EMSCRIPTEN_KEEPALIVE int rw_mirror_span_count(void) { return (int)s_mirrorSpanCount; }
-/* Mirror state of the last built frame (see s_mirrorState), its camera
+EMSCRIPTEN_KEEPALIVE int rw_span_count(void) { return (int)s_frame.spanCount; }
+EMSCRIPTEN_KEEPALIVE int rw_mirror_span_count(void) { return (int)s_mirror.spanCount; }
+/* Mirror state of the last built frame (see struct Mirror), its camera
  * uniform (as rw_camera) and sky uniform (as rw_sky, for the mirror target). */
-EMSCRIPTEN_KEEPALIVE float *rw_mirror(void) { return s_mirrorState; }
-EMSCRIPTEN_KEEPALIVE float *rw_mirror_camera(void) { return s_mirrorUniform; }
-EMSCRIPTEN_KEEPALIVE float *rw_mirror_sky(void) { return s_mirrorSky; }
-EMSCRIPTEN_KEEPALIVE int rw_span_fields(void) { return WEB_SPAN_FIELDS; }
-EMSCRIPTEN_KEEPALIVE float *rw_camera(void) { return s_camera; }
-EMSCRIPTEN_KEEPALIVE float *rw_light(void) { return s_light; }
+EMSCRIPTEN_KEEPALIVE float *rw_mirror(void) { return s_mirror.state; }
+EMSCRIPTEN_KEEPALIVE float *rw_mirror_camera(void) { return s_mirror.uniform; }
+EMSCRIPTEN_KEEPALIVE float *rw_mirror_sky(void) { return s_mirror.sky; }
+EMSCRIPTEN_KEEPALIVE float *rw_camera(void) { return s_frame.camera; }
+EMSCRIPTEN_KEEPALIVE float *rw_light(void) { return s_frame.light; }
 EMSCRIPTEN_KEEPALIVE int rw_packed_floats(void) { return WEB_PACKED_FLOATS; }
-EMSCRIPTEN_KEEPALIVE float *rw_shadow(void) { return s_shadowValid ? s_shadow : NULL; }
+EMSCRIPTEN_KEEPALIVE float *rw_shadow(void) { return s_frame.shadowValid ? s_frame.shadow : NULL; }
 EMSCRIPTEN_KEEPALIVE int rw_shadow_resolution(void) { return RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION; }
 
 /* The draw vertex mixes floats with a byte colour; WebGL wants one typed
@@ -1031,7 +1035,7 @@ EMSCRIPTEN_KEEPALIVE int rw_shadow_resolution(void) { return RAGE_RENDER_VEHICLE
  * position 3, uv 2, colour 4 (0..255), normal 3, fog 4 (colour, weight),
  * lighting 1, environment light 3, depth bias 1, shadow reception 1. */
 EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
-    for (uint32_t i = 0; i < s_vertexCount + s_mirrorVertexCount; ++i) {
+    for (uint32_t i = 0; i < s_frame.vertexCount + s_mirror.vertexCount; ++i) {
         const RageNativeDrawVertex *v = &s_vertices[i];
         float *out = &s_packed[(size_t)i * WEB_PACKED_FLOATS];
         memcpy(out, v->position, sizeof(v->position));
@@ -1044,33 +1048,31 @@ EMSCRIPTEN_KEEPALIVE float *rw_pack_vertices(void) {
         out[20] = v->depthBias;
         out[21] = v->shadowReception;
     }
-    /* Vehicles cast the shadow map but do not sample it on themselves: the
-     * native backend traces those rays instead, and a map lookup on their
-     * low-poly surfaces is all acne (see RageNativeDrawVertex). */
-    /* Fading cars: their colour alpha scales every texel (drawn blended). */
-    for (uint32_t i = 0; i < s_spanCount + s_mirrorSpanCount; ++i) {
+    for (uint32_t i = 0; i < SpanTotal(); ++i) {
         const RageNativeDrawSpan *span = &s_spans[i];
-        if (s_spanAlpha[i] == 255) continue;
-        for (uint32_t v = 0; v < span->vertexCount; ++v)
-            s_packed[(size_t)(span->firstVertex + v) * WEB_PACKED_FLOATS + 8] *= s_spanAlpha[i] / 255.0f;
-    }
-    for (uint32_t i = 0; i < s_spanCount + s_mirrorSpanCount; ++i) {
-        const RageNativeDrawSpan *span = &s_spans[i];
-        if (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
-            span->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) continue;
-        for (uint32_t v = 0; v < span->vertexCount; ++v)
-            s_packed[(size_t)(span->firstVertex + v) * WEB_PACKED_FLOATS + 21] = 0.0f;
+        /* Fading cars: their colour alpha scales every texel (drawn blended). */
+        const uint32_t alpha = s_spanFields[i * WEB_SPAN_FIELDS + WEB_SPAN_ALPHA];
+        /* Vehicles cast the shadow map but do not sample it on themselves:
+         * the native backend traces those rays instead, and a map lookup on
+         * their low-poly surfaces is all acne (see RageNativeDrawVertex). */
+        const int vehicle = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+                            span->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1;
+        if (alpha == 255 && !vehicle) continue;
+        for (uint32_t v = 0; v < span->vertexCount; ++v) {
+            float *out = &s_packed[(size_t)(span->firstVertex + v) * WEB_PACKED_FLOATS];
+            if (alpha != 255) out[8] *= (float)alpha / 255.0f;
+            if (vehicle) out[21] = 0.0f;
+        }
     }
     return s_packed;
 }
 
 /* 256x256 RGBA for one span's material, exactly as the native backend
  * reconstructs it; the palette is the race's current environment CLUT. */
-EMSCRIPTEN_KEEPALIVE int rw_decode_texture(int spanIndex, uint8_t *rgba) {
+static int DecodeSpanTexture(int spanIndex, uint8_t *rgba) {
     RenderMeshInstance instance;
     const RageNativeDrawSpan *span;
-    if (!s_race || spanIndex < 0 || (uint32_t)spanIndex >= s_spanCount + s_mirrorSpanCount ||
-        !rgba) return 0;
+    if (!s_race || spanIndex < 0 || (uint32_t)spanIndex >= SpanTotal() || !rgba) return 0;
     span = &s_spans[spanIndex];
     if (span->material == UINT32_MAX) return 0;
     memset(&instance, 0, sizeof(instance));
@@ -1081,25 +1083,26 @@ EMSCRIPTEN_KEEPALIVE int rw_decode_texture(int spanIndex, uint8_t *rgba) {
     instance.carPaintColor1 = span->carPaintColor1;
     instance.carPaintColor2 = span->carPaintColor2;
     instance.materialVariant = span->materialVariant;
-    return DecodeClientMaterial(s_race, &instance, span->material, s_page, s_race->env.clut,
+    return DecodeClientMaterial(s_race, &instance, span->material, s_frame.page, s_race->env.clut,
                                 rgba, WEB_TEXTURE_BYTES);
 }
 
 /* The same premultiplied atlas mip chain the native backend uploads: PS1
  * material pages are dense atlases, so only RAGE_TEXTURE_ATLAS_MIP_LEVELS
- * levels exist; smaller ones would blend unrelated entries. Returns the
- * chain (levels back to back, see rw_texture_level_offset) or NULL. */
+ * levels exist; smaller ones would blend unrelated entries. `scratch` takes
+ * the 256x256 RGBA base level. Returns the chain (levels back to back, see
+ * rw_texture_level_offset) or NULL. */
 EMSCRIPTEN_KEEPALIVE uint8_t *rw_decode_texture_mips(int spanIndex, uint8_t *scratch) {
     const size_t size = TextureMipChainSizeRGBA8(256, 256, RAGE_TEXTURE_ATLAS_MIP_LEVELS);
     if (!s_mipChain) s_mipChain = malloc(size);
-    if (!s_mipChain || !rw_decode_texture(spanIndex, scratch) ||
+    if (!s_mipChain || !DecodeSpanTexture(spanIndex, scratch) ||
         !TextureBuildMipChainRGBA8(scratch, 256, 256, RAGE_TEXTURE_ATLAS_MIP_LEVELS, s_mipChain, size))
         return NULL;
     return s_mipChain;
 }
 
 /* 0 or 1: the track texture page of the last built frame. */
-EMSCRIPTEN_KEEPALIVE int rw_texture_page(void) { return s_page; }
+EMSCRIPTEN_KEEPALIVE int rw_texture_page(void) { return s_frame.page; }
 
 EMSCRIPTEN_KEEPALIVE int rw_texture_levels(void) { return RAGE_TEXTURE_ATLAS_MIP_LEVELS; }
 EMSCRIPTEN_KEEPALIVE int rw_texture_level_offset(int level) {
@@ -1108,35 +1111,33 @@ EMSCRIPTEN_KEEPALIVE int rw_texture_level_offset(int level) {
 
 /* Changes whenever the environment palette (time of day) changes, so the
  * browser knows when palette-dependent textures must be decoded again. */
-EMSCRIPTEN_KEEPALIVE uint32_t rw_palette_hash(void) {
-    uint32_t hash = 2166136261u;
-    const uint8_t *bytes;
-    if (!s_race) return 0;
-    bytes = (const uint8_t *)s_race->env.clut;
-    for (size_t i = 0; i < sizeof(s_race->env.clut); ++i) {
-        hash ^= bytes[i];
-        hash *= 16777619u;
-    }
-    return hash;
+EMSCRIPTEN_KEEPALIVE uint32_t rw_palette_hash(void) { return s_race ? PaletteHash() : 0; }
+
+/* A seat's current lap, capped at the race's laps once it has finished. */
+static int SeatLap(int seat) {
+    const int lap = s_race->sim.drivers[seat].car.lap;
+    return lap > s_race->sim.laps ? s_race->sim.laps : lap;
 }
 
 /* phase, countdown ticks left, lap, laps, place, entrants, race time ms,
- * speed (retail units), gear, status, finish place, tick, then the local
- * car's exact x, y, z and body yaw (used to check physics parity). */
+ * speed (retail units), gear, status, finish place (unused by the browser),
+ * tick, then the viewed car's exact x, y, z and body yaw (used to check
+ * physics parity). */
 EMSCRIPTEN_KEEPALIVE int32_t *rw_hud(void) {
     const SimDriver *driver;
+    const int seat = s_view.viewSeat;
     int entrants = 0;
     if (!s_race) return NULL;
-    driver = &s_race->sim.drivers[s_viewSeat];
-    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat)
-        entrants += s_race->sim.drivers[seat].status != SIM_EMPTY;
+    driver = &s_race->sim.drivers[seat];
+    for (int other = 0; other < DRIVER_SEAT_LIMIT; ++other)
+        entrants += s_race->sim.drivers[other].status != SIM_EMPTY;
     s_hud[0] = (int32_t)s_race->sim.phase;
     s_hud[1] = (int32_t)s_race->sim.countdown;
-    s_hud[2] = driver->car.lap > s_race->sim.laps ? s_race->sim.laps : driver->car.lap;
+    s_hud[2] = SeatLap(seat);
     s_hud[3] = s_race->sim.laps;
-    s_hud[4] = RacePosition(&s_race->sim, s_viewSeat);
+    s_hud[4] = RacePosition(&s_race->sim, seat);
     s_hud[5] = entrants;
-    s_hud[6] = RaceTime(&s_race->sim, s_viewSeat);
+    s_hud[6] = RaceTime(&s_race->sim, seat);
     s_hud[7] = driver->car.speed * 160 / 1168; /* km/h, as the retail readout */
     s_hud[8] = driver->car.drive.gear;
     s_hud[9] = (int32_t)driver->status;
@@ -1149,7 +1150,6 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_hud(void) {
     return s_hud;
 }
 
-
 EMSCRIPTEN_KEEPALIVE int rw_car_variants(void) { return CAR_MODEL_VARIANT_COUNT; }
 
 /* Standings for any seat: place (1-based, 0 when out), current lap and
@@ -1158,9 +1158,7 @@ EMSCRIPTEN_KEEPALIVE int rw_seat_place(int seat) {
     return s_race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? RacePosition(&s_race->sim, seat) : 0;
 }
 EMSCRIPTEN_KEEPALIVE int rw_seat_lap(int seat) {
-    if (!s_race || seat < 0 || seat >= DRIVER_SEAT_LIMIT) return 0;
-    const int lap = s_race->sim.drivers[seat].car.lap;
-    return lap > s_race->sim.laps ? s_race->sim.laps : lap;
+    return s_race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? SeatLap(seat) : 0;
 }
 EMSCRIPTEN_KEEPALIVE int rw_seat_status(int seat) {
     return s_race && seat >= 0 && seat < DRIVER_SEAT_LIMIT ? (int)s_race->sim.drivers[seat].status : 0;
@@ -1172,7 +1170,7 @@ EMSCRIPTEN_KEEPALIVE const uint8_t *rw_hud_atlas(void) { return WebHudAtlas(); }
 EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_width(void) { return WEB_HUD_ATLAS_WIDTH; }
 EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_height(void) { return WEB_HUD_ATLAS_HEIGHT; }
 EMSCRIPTEN_KEEPALIVE const int32_t *rw_tachometer(void) {
-    return WebHudTachometer(s_race, s_viewSeat == s_localSeat ? s_localSeat : -1);
+    return WebHudTachometer(s_race, s_view.viewSeat == s_localSeat ? s_localSeat : -1);
 }
 EMSCRIPTEN_KEEPALIVE int rw_tachometer_words(void) { return WEB_HUD_TACHO_WORDS; }
 

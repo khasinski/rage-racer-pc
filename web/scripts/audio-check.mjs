@@ -51,8 +51,8 @@ const flush = (label) => {
 };
 for (let tick = 1; tick <= 50 * 14; tick++) {
   const phase = call('rw_hud') && new Int32Array(rage.HEAPU8.buffer, call('rw_hud'), 16)[0];
-  const throttle = phase === 2 ? 256 : 0;
-  rage.ccall('rw_set_input', null, Array(6).fill('number'), [0, 0, throttle, 0, 0, 0]);
+  const PAD_CROSS = 0x40; // full throttle on the digital pad
+  rage.ccall('rw_set_pad', null, Array(5).fill('number'), [phase === 2 ? PAD_CROSS : 0, 0, 0, 0, 0]);
   if (call('rw_tick') < 0) { expect(false, 'race ticks'); break; }
   const frames = call('rw_audio_take');
   const data = new Int16Array(rage.HEAPU8.buffer, call('rw_audio_data'), frames * 2);

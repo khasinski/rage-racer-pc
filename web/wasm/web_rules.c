@@ -4,14 +4,11 @@
 #include <string.h>
 
 #include "game/car.h"
+#include "game/car_catalog.h"
 #include "game/car_track_internal.h"
 
-/* First retail variant of each model (catalog_parse.c kFirstVariant) and the
- * class each model's first grade is bought in (host_state_car_catalog.c
- * g_CarModelUnlockBase). */
-static const unsigned char kFirstVariant[GAME_CAR_COUNT] = {
-    0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31
-};
+/* The class each model's first grade is bought in (host_state_car_catalog.c
+ * g_CarModelUnlockBase); its variants are the car catalog's. */
 static const unsigned char kUnlockBase[GAME_CAR_COUNT] = {
     1, 2, 3, 0, 1, 2, 3, 2, 3, 4, 5, 5, 5
 };
@@ -25,29 +22,27 @@ static const char *const kCourseNames[WEB_COURSE_COUNT] = {
 };
 enum { OVAL_COURSE = 3, OVAL_MINIMUM_CLASS = 2 };
 
-static int GradeCount(int model) {
-    const int end = model + 1 < GAME_CAR_COUNT ? kFirstVariant[model + 1] : CAR_MODEL_VARIANT_COUNT;
-    return end - kFirstVariant[model];
-}
-
 int WebClassCar(int classIndex, int model) {
     if ((unsigned)classIndex >= WEB_CLASS_COUNT || (unsigned)model >= GAME_CAR_COUNT ||
         kUnlockBase[model] > classIndex) return -1;
-    int grade = classIndex - kUnlockBase[model];
-    if (grade >= GradeCount(model)) grade = GradeCount(model) - 1;
-    return kFirstVariant[model] + grade;
+    /* The class's grade, or the model's best when it has fewer grades. */
+    for (int grade = classIndex - kUnlockBase[model]; grade >= 0; --grade) {
+        const int variant = CarCatalogVariant(model, grade);
+        if (variant >= 0) return variant;
+    }
+    return -1;
 }
 
 int WebCarModel(int variant) {
     if ((unsigned)variant >= CAR_MODEL_VARIANT_COUNT) return -1;
     int model = GAME_CAR_COUNT - 1;
-    while (kFirstVariant[model] > variant) --model;
+    while (CarCatalogVariant(model, 0) > variant) --model;
     return model;
 }
 
 int WebCarGrade(int variant) {
     const int model = WebCarModel(variant);
-    return model < 0 ? -1 : variant - kFirstVariant[model];
+    return model < 0 ? -1 : variant - CarCatalogVariant(model, 0);
 }
 
 int WebCarAllowed(int classIndex, int variant) {
@@ -193,6 +188,13 @@ static int GridOrder(const TrackData *track, int classIndex, int reverse, s32 gr
     return count;
 }
 
+int WebReadSeats(const int32_t *words, int humanCount, WebSeat humans[DRIVER_SEAT_LIMIT]) {
+    if (!words || humanCount < 1 || humanCount > DRIVER_SEAT_LIMIT) return 0;
+    for (int seat = 0; seat < humanCount; ++seat)
+        humans[seat] = (WebSeat){words[seat * 2], words[seat * 2 + 1]};
+    return 1;
+}
+
 int WebMaxHumans(const RaceData *archive, int classIndex, int course, int reverse) {
     (void)reverse;
     return archive && WebCourseAllowed(classIndex, course) ? WEB_MAX_PLAYERS : 0;
@@ -209,7 +211,7 @@ int WebBuildField(const RaceData *archive, int classIndex, int course, int rever
     for (int seat = 0; seat < humanCount; ++seat) {
         const WebSeat *human = &humans[seat];
         int automatic = 0;
-        if (human->kind != RACE_SEAT_HUMAN || !WebCarAllowed(classIndex, human->variant) ||
+        if (!WebCarAllowed(classIndex, human->variant) ||
             (!human->manual && (!ReadRaceCarTransmission(archive, human->variant, &automatic) ||
                                 !automatic))) return 0;
     }

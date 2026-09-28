@@ -29,12 +29,14 @@ const char *WebCourseName(int course);
 /* The Extreme Oval exists from the third class up (custom_race.c). */
 int WebCourseAllowed(int classIndex, int course);
 
-/* Seat description exchanged between server and clients. */
+/* A human seat as exchanged between server and clients. */
 typedef struct WebSeat {
-    int kind;    /* RaceSeatKind */
-    int variant; /* human car variant */
-    int manual;  /* human transmission */
+    int variant; /* car variant */
+    int manual;  /* transmission */
 } WebSeat;
+/* Reads humanCount (variant, manual) word pairs, in seat order. Returns 0
+ * for an impossible count. */
+int WebReadSeats(const int32_t *words, int humanCount, WebSeat humans[DRIVER_SEAT_LIMIT]);
 
 /* Builds the field: humans in seats 0..humanCount-1 on the players' grid
  * (the retail player start, then two lanes behind it, all before the line)

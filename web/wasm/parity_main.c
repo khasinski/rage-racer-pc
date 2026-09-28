@@ -5,18 +5,21 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "game/state.h"
+
 int rw_load_disc(const char *path);
 int rw_start_race(int classIndex, int course, int car, int manual, int reverse, int laps, int rivals);
-void rw_set_input(int left, int right, int throttle, int brake, int shiftUp, int shiftDown);
+void rw_set_pad(int held, int stickX, int rightTrigger, int leftTrigger, int gamepad);
 int rw_tick(void);
 int32_t *rw_hud(void);
 
-/* Keep in step with web/scripts/parity.mjs. */
-static void ScriptedInput(int tick, int *left, int *right, int *throttle, int *brake) {
-    *left = tick >= 300 && tick < 340;
-    *right = (tick >= 400 && tick < 460) || (tick >= 700 && tick < 720);
-    *brake = tick >= 520 && tick < 545 ? 256 : 0;
-    *throttle = *brake ? 0 : 256;
+/* The digital pad (no gamepad): CROSS is full throttle, SQUARE full brake.
+ * Keep in step with web/scripts/parity.mjs. */
+static int ScriptedPad(int tick) {
+    const int brake = tick >= 520 && tick < 545;
+    return (tick >= 300 && tick < 340 ? PAD_LEFT : 0) |
+           ((tick >= 400 && tick < 460) || (tick >= 700 && tick < 720) ? PAD_RIGHT : 0) |
+           (brake ? PAD_SQUARE : PAD_CROSS);
 }
 
 int main(int argc, char **argv) {
@@ -25,9 +28,7 @@ int main(int argc, char **argv) {
     if (argc > 2) sscanf(argv[2], "%d", &ticks);
     if (!rw_load_disc(argv[1]) || !rw_start_race(0, 0, 9, 0, 0, 3, 1)) return 1;
     for (int tick = 1; tick <= ticks; ++tick) {
-        int left, right, throttle, brake;
-        ScriptedInput(tick, &left, &right, &throttle, &brake);
-        rw_set_input(left, right, throttle, brake, 0, 0);
+        rw_set_pad(ScriptedPad(tick), 0, 0, 0, 0);
         if (rw_tick() < 0) return 1;
         if (tick % 10 == 0) {
             const int32_t *h = rw_hud();

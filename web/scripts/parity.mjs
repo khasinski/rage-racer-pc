@@ -12,17 +12,18 @@ rage.FS.writeFile('/disc/track01.bin', readFileSync(binPath));
 if (!call('rw_load_disc', 'number', ['string'], ['/disc/track01.bin']) ||
     !call('rw_start_race', 'number', Array(7).fill('number'), [0, 0, 9, 0, 0, 3, 1])) process.exit(1);
 
-// Keep in step with ScriptedInput in web/wasm/parity_main.c.
+// PS1 pad bits (game/state.h) on the digital pad: CROSS is full throttle,
+// SQUARE full brake. Keep in step with ScriptedPad in web/wasm/parity_main.c.
+const PAD_RIGHT = 0x2000, PAD_LEFT = 0x8000, PAD_CROSS = 0x40, PAD_SQUARE = 0x80;
 const scripted = (tick) => {
-  const left = tick >= 300 && tick < 340 ? 1 : 0;
-  const right = (tick >= 400 && tick < 460) || (tick >= 700 && tick < 720) ? 1 : 0;
-  const brake = tick >= 520 && tick < 545 ? 256 : 0;
-  return [left, right, brake ? 0 : 256, brake];
+  const brake = tick >= 520 && tick < 545;
+  return (tick >= 300 && tick < 340 ? PAD_LEFT : 0) |
+         ((tick >= 400 && tick < 460) || (tick >= 700 && tick < 720) ? PAD_RIGHT : 0) |
+         (brake ? PAD_SQUARE : PAD_CROSS);
 };
 const lines = [];
 for (let tick = 1; tick <= ticks; tick++) {
-  const [left, right, throttle, brake] = scripted(tick);
-  call('rw_set_input', null, Array(6).fill('number'), [left, right, throttle, brake, 0, 0]);
+  call('rw_set_pad', null, Array(5).fill('number'), [scripted(tick), 0, 0, 0, 0]);
   if (call('rw_tick', 'number', [], []) < 0) process.exit(1);
   if (tick % 10 === 0) {
     const h = new Int32Array(rage.HEAPU8.buffer, call('rw_hud', 'number', [], []), 16);

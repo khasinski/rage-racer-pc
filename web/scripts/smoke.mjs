@@ -18,9 +18,10 @@ if (!call('rw_load_disc', 'number', ['string'], ['/disc/track01.bin'])) throw ne
 rage.FS.unlink('/disc/track01.bin');
 if (!call('rw_start_race', 'number', Array(7).fill('number'), [0, 0, 9, 0, 0, 3, 1])) throw new Error('race did not start');
 
+const PAD_CROSS = 0x40; // full throttle on the digital pad
 let phase = 0;
 for (let tick = 1; tick <= ticks; tick++) {
-  call('rw_set_input', null, Array(6).fill('number'), [0, 0, 256, 0, 0, 0]);
+  call('rw_set_pad', null, Array(5).fill('number'), [PAD_CROSS, 0, 0, 0, 0]);
   phase = call('rw_tick', 'number', [], []);
   if (phase < 0) throw new Error(`tick ${tick} failed`);
   if (tick % 100 === 0) {
@@ -32,13 +33,13 @@ for (let tick = 1; tick <= ticks; tick++) {
 const vertices = call('rw_build_frame', 'number', ['number', 'number'], [16 / 9, 1]);
 const spans = call('rw_span_count', 'number', [], []);
 if (vertices <= 0 || spans <= 0) throw new Error(`empty frame: ${vertices} vertices, ${spans} spans`);
-const rgba = rage._malloc(256 * 256 * 4);
+const scratch = rage._malloc(256 * 256 * 4);
 let decoded = 0;
-const fields = call('rw_span_fields', 'number', [], []);
-const spanData = new Uint32Array(rage.HEAPU8.buffer, call('rw_spans', 'number', [], []), spans * fields);
+const fields = 14; // SPAN_FIELDS in web/src/rage.ts
 for (let i = 0; i < spans; i++) {
-  if (spanData[i * fields + 2] === 0xffffffff) continue;
-  if (call('rw_decode_texture', 'number', ['number', 'number'], [i, rgba])) decoded++;
+  const material = new Uint32Array(rage.HEAPU8.buffer, call('rw_spans', 'number', [], []), spans * fields)[i * fields + 2];
+  if (material === 0xffffffff) continue;
+  if (call('rw_decode_texture_mips', 'number', ['number', 'number'], [i, scratch])) decoded++;
 }
-rage._free(rgba);
+rage._free(scratch);
 console.log(`frame: ${vertices} vertices, ${spans} spans, ${decoded} textured spans decoded`);

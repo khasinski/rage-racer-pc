@@ -49,12 +49,10 @@ EMSCRIPTEN_KEEPALIVE int rs_create_race(int classIndex, int course, int reverse,
     WebSeat humans[DRIVER_SEAT_LIMIT];
     RaceEntrant entrants[DRIVER_SEAT_LIMIT];
     int handle = 1;
-    if (!s_archive || !humanSeats || humanCount < 1 || humanCount > DRIVER_SEAT_LIMIT ||
+    if (!s_archive || !WebReadSeats(humanSeats, humanCount, humans) ||
         laps < 1 || laps > WEB_MAX_LAPS) return 0;
     while (handle <= SERVER_RACE_LIMIT && s_races[handle]) ++handle;
     if (handle > SERVER_RACE_LIMIT) return 0;
-    for (int seat = 0; seat < humanCount; ++seat)
-        humans[seat] = (WebSeat){RACE_SEAT_HUMAN, humanSeats[seat * 2], humanSeats[seat * 2 + 1]};
     if (!WebBuildField(s_archive, classIndex, course, reverse, humans, humanCount, rivals,
                        entrants)) return 0;
     ServerRace *race = calloc(1, sizeof(*race));

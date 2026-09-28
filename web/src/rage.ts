@@ -50,7 +50,7 @@ export const PHASE_COUNTDOWN = 1;
 export const PHASE_RACING = 2;
 export const PHASE_FINISHED = 3;
 export const SPAN_FIELDS = 14;
-export const TEXTURE_SIZE = 256;
+const TEXTURE_SIZE = 256;
 export const NO_MATERIAL = 0xffffffff;
 /* rmesh.h RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT: decoded through the
  * environment palette, so it changes with the time of day. */
@@ -164,7 +164,6 @@ export class Rage {
   /** light direction, ambient, diffuse, sky top, horizon, bottom. */
   light(): Float32Array { return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_light'), 24); }
 
-  /** Decodes one span's 256x256 material; null when it has no image. */
   /** One span's material as the native backend uploads it: a premultiplied
    *  atlas mip chain (RAGE_TEXTURE_ATLAS_MIP_LEVELS levels), plus whether it
    *  has partial alpha (drawn blended, after everything opaque). */
@@ -226,7 +225,7 @@ export class Rage {
   carModels(): number { return this.num('rw_car_models', []); }
   /** The variant a class offers for a model, or -1. */
   classCar(classIndex: number, model: number): number { return this.num('rw_class_car', [classIndex, model]); }
-  carModel(variant: number): number { return this.num('rw_car_model', [variant]); }
+  private carModel(variant: number): number { return this.num('rw_car_model', [variant]); }
   carGrade(variant: number): number { return this.num('rw_car_grade', [variant]); }
   carName(variant: number): string { return this.str('rw_car_name', [this.carModel(variant)]); }
   courseName(course: number): string { return this.str('rw_course_name', [course]); }
@@ -251,16 +250,30 @@ export class Rage {
   }
 
   private frameBuffer = 0;
-  /** Restores one authoritative RaceFrame from the server. */
-  applyFrame(frame: Uint8Array): boolean {
-    if (!this.frameBuffer) this.frameBuffer = this.m._malloc(this.num('rw_frame_size', []));
+  private frameBufferSize = 0;
+  /** Hands one server RaceFrame to rw_apply_frame; its result, or null when
+   *  the frame does not fit the race. */
+  private applyServerFrame(frame: Uint8Array, ackSeq: number, arrivalTick: number): number | null {
+    if (frame.length > this.frameBufferSize) {
+      this.m._free(this.frameBuffer);
+      this.frameBuffer = this.m._malloc(frame.length);
+      this.frameBufferSize = frame.length;
+    }
     this.m.HEAPU8.set(frame, this.frameBuffer);
-    return this.num('rw_apply_frame', [this.frameBuffer, frame.length]) === 1;
+    const result = this.num('rw_apply_frame', [this.frameBuffer, frame.length, ackSeq, arrivalTick]);
+    return result === -2147483648 ? null : result;
+  }
+
+  /** A spectator restores one authoritative RaceFrame from the server. */
+  applyFrame(frame: Uint8Array): boolean { return this.applyServerFrame(frame, 0, 0) !== null; }
+
+  /** A player rewinds to a server frame and replays the unconsumed controls;
+   *  returns how many ticks late the acknowledged input was used, or null. */
+  applyPredicted(frame: Uint8Array, ackSeq: number, arrivalTick: number): number | null {
+    return this.applyServerFrame(frame, ackSeq, arrivalTick);
   }
 
   // ---- spectating ---------------------------------------------------------
-  /** The local car's seat, -1 for a spectator. */
-  localSeat(): number { return this.num('rw_local_seat', []); }
   /** The seat the camera and HUD follow. */
   viewSeat(): number { return this.num('rw_view_seat', []); }
   /** Follows another car; false when the seat is empty. */
@@ -276,16 +289,6 @@ export class Rage {
 
   /** Sequence number of the controls rw_take_input just handed out. */
   inputSeq(): number { return this.num('rw_input_seq', []) >>> 0; }
-
-  private predictBuffer = 0;
-  /** Rewinds to a server frame and replays the unconsumed controls; returns
-   *  how many ticks late the acknowledged input was used, or null. */
-  applyPredicted(frame: Uint8Array, ackSeq: number, arrivalTick: number): number | null {
-    if (!this.predictBuffer) this.predictBuffer = this.m._malloc(this.num('rw_frame_size', []));
-    this.m.HEAPU8.set(frame, this.predictBuffer);
-    const error = this.num('rw_apply_predicted', [this.predictBuffer, frame.length, ackSeq, arrivalTick]);
-    return error === -2147483648 ? null : error;
-  }
 
   /** The controls to send this tick (8 input words; gear edges consumed). */
   takeInput(): Int32Array {
