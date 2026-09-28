@@ -3,7 +3,7 @@
 // RaceFrame to everyone watching, reports race events and stores the results.
 import {
   ACK_WORDS, BINARY_FRAME, BINARY_INPUT, INPUT_BYTES, INPUT_REPEAT, INPUT_WORDS,
-  type RaceEvent, type RaceResult, type RaceSeat, type RoomSettings, type ServerMessage,
+  type Paint, type RaceEvent, type RaceResult, type RaceSeat, type RoomSettings, type ServerMessage,
 } from '../shared/protocol.ts';
 import { deflateRawSync } from 'node:zlib';
 import type { Store } from './db.ts';
@@ -28,7 +28,7 @@ const INPUT_LEAD_LIMIT = 25;
 
 interface PendingInput { sequence: number; tick: number; words: Int32Array }
 
-export interface Racer { userId: number; name: string; variant: number; manual: boolean }
+export interface Racer { userId: number; name: string; variant: number; manual: boolean; paint: Paint | null }
 
 /** What a race needs from its room. */
 export interface RaceRoom {
@@ -71,8 +71,8 @@ export class Race {
       if (sim.seat(handle, seat).status === STATUS_EMPTY) continue;
       const racer = racers[seat];
       this.seats.push(racer
-        ? { userId: racer.userId, name: racer.name, variant: racer.variant, manual: racer.manual }
-        : { userId: null, name: `CPU ${seat - racers.length + 1}`, variant: -1, manual: false });
+        ? { userId: racer.userId, name: racer.name, variant: racer.variant, manual: racer.manual, paint: racer.paint }
+        : { userId: null, name: `CPU ${seat - racers.length + 1}`, variant: -1, manual: false, paint: null });
     }
     this.seatOf = new Map(racers.map((racer, seat) => [racer.userId, seat]));
     this.acks = new Uint32Array(racers.length * ACK_WORDS);

@@ -23,6 +23,13 @@ browser draws them with three.js.
   (`node:sqlite`). `rooms.ts` is the lobby (rooms, members, chat) and
   `race.ts` one running race; `db.ts` the storage and `sim.ts` the
   simulation module.
+- **The garage** shows your car turning on a showroom camera (the same
+  renderer, one car on the start grid, `rw_build_showroom`) while you pick its
+  two body colours from the game's 18-colour paint catalogue. The paint is
+  saved on the server per car model (`/api/garage`), sent to everyone with the
+  race's seats and drawn by each client. It is presentation only: the
+  simulation, the wire format and the checks that compare the native and
+  WebAssembly physics never see it. Tyres and further customizing come next.
 - **Practice offline** runs the same simulation locally against the rivals.
 - **Sound** is the retail race audio: the desktop's own sound code (engine
   layers pitched from the car's curves, tyre, impact and landing cues, the
@@ -46,7 +53,7 @@ npm run server -- --disc "/path/to/Rage Racer (Europe) (Track 01).bin"
 ```
 
 Open <http://localhost:7243/>. The server serves the client, the REST API
-(`/api/register`, `/api/login`, `/api/me`, `/api/history`, `/api/records`) and
+(`/api/register`, `/api/login`, `/api/me`, `/api/history`, `/api/records`, `/api/garage`) and
 the WebSocket (`/ws`). Options: `--port` (default 7243), `--host`, `--db`
 (default `server/data/rage.db`), `--static`. The server needs its own copy of
 the disc, and players must use the same release (the lobby compares the boot
@@ -112,6 +119,7 @@ npm run test:server -- "<disc>"   # accounts, rooms, rules, a full race to resul
 npm run test:e2e -- "<disc>"      # two headless browsers race each other, then practice
 npm run test:grid -- "<disc>"     # 8-player grid on every course variant
 npm run test:finish -- "<disc>"   # finish fade, spectator hand-over, finish deadline
+npm run test:garage -- "<disc>"   # the garage preview, saving paint, seeing it in a race
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
 node scripts/audio-check.mjs "<disc.cue>"  # engine sound follows rpm; race tunes found
 # Native vs WebAssembly physics, tick by tick:

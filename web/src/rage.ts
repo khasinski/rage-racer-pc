@@ -1,7 +1,10 @@
 // Typed wrapper over the WebAssembly bridge (web/wasm/rage_web.c). Every
 // heap view is taken fresh: the module's memory can grow, which replaces the
 // underlying ArrayBuffer.
+import type { Paint } from '../shared/protocol.ts';
 import type { PadSample } from './input';
+
+const CLASS_COUNT = 6;
 
 interface FsStream { readonly fd: number }
 interface EmscriptenFs {
@@ -235,6 +238,60 @@ export class Rage {
   }
   /** Boot serial and archive fingerprint of the loaded disc. */
   discId(): string { return this.str('rw_disc_id', []); }
+
+  // ---- paint and the garage preview ---------------------------------------
+  /** Every car variant some class offers, by model, then grade. */
+  garageVariants(): number[] {
+    const variants = new Set<number>();
+    for (let classIndex = 0; classIndex < CLASS_COUNT; classIndex++) {
+      for (let model = 0; model < this.carModels(); model++) {
+        const variant = this.classCar(classIndex, model);
+        if (variant >= 0) variants.add(variant);
+      }
+    }
+    return [...variants].sort((a, b) => this.carModel(a) - this.carModel(b) || this.carGrade(a) - this.carGrade(b));
+  }
+
+  /** The base car a variant belongs to; paint is kept per model. */
+  modelOf(variant: number): number { return this.carModel(variant); }
+
+  /** The number of colours in the paint catalogue. */
+  paintCount(): number { return this.call('rw_paint_count'); }
+
+  /** A catalogue colour as CSS, for a swatch. */
+  paintSwatch(color: number): string {
+    const pointer = this.call('rw_paint_swatch', ['number'], [color]);
+    if (!pointer) return 'transparent';
+    const [r, g, b] = this.m.HEAPU8.subarray(pointer, pointer + 3);
+    return `rgb(${r} ${g} ${b})`;
+  }
+
+  /** The paint a human seat races in, from the next race prepared on; null
+   *  keeps the car's factory colours. */
+  setPaint(seat: number, paint: Paint | null): void {
+    this.call('rw_set_paint', ['number', 'number', 'number'], [seat, paint?.[0] ?? -1, paint?.[1] ?? -1]);
+  }
+
+  /** Prepares the garage preview of a car: alone on the grid of a course its
+   *  class races. False when no class offers that variant. */
+  startShowroom(variant: number): boolean {
+    for (let classIndex = 0; classIndex < CLASS_COUNT; classIndex++) {
+      const course = [0, 1, 2, 3].find((c) => this.courseAllowed(classIndex, c));
+      if (course === undefined || !this.num('rw_car_allowed', [classIndex, variant])) continue;
+      return this.startRace({ classIndex, course, car: variant, manual: true, reverse: false, laps: 1, rivals: false });
+    }
+    return false;
+  }
+
+  setShowroomPaint(paint: Paint | null): void {
+    this.call('rw_set_showroom_paint', ['number', 'number'], [paint?.[0] ?? -1, paint?.[1] ?? -1]);
+  }
+
+  /** Builds the preview seen from `angle` degrees round the car; the vertex
+   *  count or -1. */
+  buildShowroom(aspect: number, angle: number): number {
+    return this.call('rw_build_showroom', ['number', 'number'], [aspect, angle]);
+  }
 
   // ---- networked race -----------------------------------------------------
   /** Prepares the race the server announced; humans in seat order. */

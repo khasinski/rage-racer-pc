@@ -227,6 +227,7 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
   setHint('Preparing the course…');
   await new Promise(requestAnimationFrame);
   const players = message.seats.slice(0, message.humans);
+  players.forEach((seat, index) => rage.setPaint(index, seat.paint));
   const ok = rage.startNetRace(message.settings, players.map(({ variant, manual }) => ({ variant, manual })),
                                message.localSeat);
   send({ t: 'loaded', ok });

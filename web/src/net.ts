@@ -2,7 +2,7 @@
 // lobby, rooms and the race stream (see shared/protocol.ts).
 import {
   ACK_WORDS, BINARY_FRAME, BINARY_INPUT, BINARY_PING, INPUT_BYTES, INPUT_REPEAT, INPUT_WORDS,
-  type ClientMessage, type RecordRow, type ServerMessage, type UserInfo,
+  type ClientMessage, type Garage, type Paint, type RecordRow, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
 
 const TOKEN_KEY = 'rage-racer.session';
@@ -88,6 +88,17 @@ export class Session {
   }
 
   records(): Promise<{ records: RecordRow[] }> { return request('api/records'); }
+
+  /** The signed-in player's saved car paints. */
+  async garage(): Promise<Garage> {
+    return (await request<{ paints: Garage }>('api/garage', {}, this.token)).paints;
+  }
+
+  /** Saves a car model's paint (null: back to the factory colours). */
+  async savePaint(model: number, paint: Paint | null): Promise<Garage> {
+    return (await request<{ paints: Garage }>('api/garage',
+      { method: 'PUT', body: JSON.stringify({ model, paint }) }, this.token)).paints;
+  }
 
   /** The signed-in player's recent races. */
   history(): Promise<{ history: HistoryRow[] }> { return request('api/history', {}, this.token); }

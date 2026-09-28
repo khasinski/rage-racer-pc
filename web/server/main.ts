@@ -10,7 +10,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { extname, join, normalize, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { DEFAULT_PORT } from '../shared/protocol.ts';
+import { DEFAULT_PORT, PAINT_COLORS, type Paint } from '../shared/protocol.ts';
 import { Store } from './db.ts';
 import { Lobby, type Client } from './rooms.ts';
 import { Simulation } from './sim.ts';
@@ -94,6 +94,21 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
   if (!user || !token) return json(res, 401, { error: 'Log in first.' });
   if (path === '/api/me' && req.method === 'GET') return json(res, 200, { user, discId: sim.discId });
   if (path === '/api/history' && req.method === 'GET') return json(res, 200, { history: store.history(user.id) });
+  if (path === '/api/garage' && req.method === 'GET') return json(res, 200, { paints: store.garage(user.id) });
+  if (path === '/api/garage' && req.method === 'PUT') {
+    let input: Record<string, unknown>;
+    try { input = await body(req); } catch { return json(res, 400, { error: 'Malformed request.' }); }
+    const { model, paint } = input;
+    const colour = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) < PAINT_COLORS;
+    if (!Number.isInteger(model) || (model as number) < 0 || (model as number) >= sim.carModels()) {
+      return json(res, 400, { error: 'Unknown car.' });
+    }
+    if (paint !== null && !(Array.isArray(paint) && paint.length === 2 && paint.every(colour))) {
+      return json(res, 400, { error: 'Choose two colours from the paint catalogue.' });
+    }
+    store.setPaint(user.id, model as number, paint as Paint | null);
+    return json(res, 200, { paints: store.garage(user.id) });
+  }
   if (path === '/api/logout' && req.method === 'POST') {
     store.deleteSession(token);
     return json(res, 200, {});

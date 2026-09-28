@@ -55,6 +55,8 @@ export class Simulation {
   // Shared race rules (web/wasm/web_rules.c), the same code the browser runs.
   carModels(): number { return this.num('rw_car_models'); }
   classCar(classIndex: number, model: number): number { return this.num('rw_class_car', [classIndex, model]); }
+  /** The model (the base car) a variant belongs to. */
+  carModel(variant: number): number { return this.num('rw_car_model', [variant]); }
   carAllowed(classIndex: number, variant: number): boolean { return this.num('rw_car_allowed', [classIndex, variant]) === 1; }
   carAutomatic(variant: number): boolean { return this.num('rw_car_automatic', [variant]) === 1; }
   courseAllowed(classIndex: number, course: number): boolean { return this.num('rw_course_allowed', [classIndex, course]) === 1; }

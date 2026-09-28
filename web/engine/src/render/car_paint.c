@@ -39,6 +39,13 @@ static uint8_t PaintShade(uint8_t primary, uint8_t secondary,
     }
 }
 
+int CarPaintSwatch(uint8_t color, uint8_t rgb[3]) {
+    if (color >= RAGE_CAR_PAINT_COLOR_COUNT || rgb == NULL) return 0;
+    for (int channel = 0; channel < 3; channel++)
+        rgb[channel] = PaintExpand(s_colors[color].primary[channel]);
+    return 1;
+}
+
 int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
                       uint8_t firstColor, uint8_t secondColor) {
     size_t pixel;

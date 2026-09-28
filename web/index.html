@@ -33,6 +33,7 @@
       <h1>RAGE RACER</h1>
       <span class="spacer"></span>
       <span class="who"></span>
+      <button type="button" class="secondary" data-action="garage">Garage</button>
       <button type="button" class="secondary" data-action="practice">Practice offline</button>
       <button type="button" class="secondary" data-action="logout">Log out</button>
     </header>
@@ -133,6 +134,33 @@
     <p id="setup-status" class="status"></p>
     <p class="hint">Desktop controls: ←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back · Enter pause · Esc returns here. A gamepad drives as on the desktop: stick steers, RT/A accelerate, LT/X brake, D-pad ↓/↑ shift, Y camera, Start pause.</p>
   </form>
+
+  <section id="garage" class="page" hidden>
+    <header class="bar">
+      <h1>GARAGE</h1>
+      <span class="spacer"></span>
+      <button type="button" class="secondary" data-action="garage-back">Back to the lobby</button>
+    </header>
+    <div class="columns garage">
+      <section class="panel">
+        <canvas id="garage-view" aria-label="Your car, turning"></canvas>
+        <p class="hint">Drag to turn the car.</p>
+      </section>
+      <section class="panel garage-controls">
+        <label>Car <select id="garage-car"></select></label>
+        <h2>First colour</h2>
+        <div id="paint-first" class="swatches"></div>
+        <h2>Second colour</h2>
+        <div id="paint-second" class="swatches"></div>
+        <div class="row">
+          <button type="button" id="garage-save" disabled>Save</button>
+          <button type="button" id="garage-factory" class="secondary">Factory colours</button>
+        </div>
+        <p id="garage-status" class="status"></p>
+        <p class="hint">Your colours are kept for the car, whatever its grade, and everyone in your races sees them.</p>
+      </section>
+    </div>
+  </section>
 
   <canvas id="view" hidden></canvas>
   <div id="hud" hidden>

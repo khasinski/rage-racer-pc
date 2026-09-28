@@ -29,4 +29,8 @@ enum {
 int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
                       uint8_t firstColor, uint8_t secondColor);
 
+/* The colour a catalogue entry paints at its brightest, for a picker's
+ * swatch. 0 for an unknown entry. */
+int CarPaintSwatch(uint8_t color, uint8_t rgb[3]);
+
 #endif

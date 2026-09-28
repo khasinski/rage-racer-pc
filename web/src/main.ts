@@ -4,6 +4,7 @@ import './style.css';
 import { app, ragePromise, session, setHint, show } from './app';
 import { RaceAudio } from './audio';
 import { chooseDataTrack, droppedFiles } from './disc';
+import { enterGarage, loadGarage, paintOf } from './garage';
 import { disconnect, enterLobby, send } from './online';
 import { beginRace, practiceRace, raceSettings, runRaceLoop } from './race';
 import { $, editSettings, fillPractice, readPractice } from './views';
@@ -33,6 +34,7 @@ $<HTMLFormElement>('auth').addEventListener('submit', async (event) => {
 
 function afterLogin() {
   $('lobby').querySelector('.who')!.textContent = `${session.user!.name}${session.user!.admin ? ' (admin)' : ''}`;
+  void loadGarage();
   if (app.discLoaded) enterLobby();
   else show('disc');
 }
@@ -95,6 +97,8 @@ $('lobby').addEventListener('click', async (event) => {
     show('auth');
   } else if (action === 'practice') {
     show('setup');
+  } else if (action === 'garage' && app.rage) {
+    enterGarage();
   } else if (action === 'create-room' && app.rage) {
     const settings = await editSettings(app.rage, null, 1);
     if (settings) send({ t: 'createRoom', settings });
@@ -114,6 +118,7 @@ setup.addEventListener('submit', async (event) => {
   const options = readPractice(setup);
   $('setup-status').textContent = 'Preparing the course and cars…';
   await new Promise(requestAnimationFrame);
+  rage.setPaint(0, paintOf(rage, options.car));
   if (!rage.startRace(options)) {
     $('setup-status').textContent = 'This course could not be prepared from the disc.';
     return;

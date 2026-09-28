@@ -27,6 +27,7 @@
 #include "race_view.h"
 #include "rage/chase_camera.h"
 #include "render/car_lamps.h"
+#include "render/car_paint.h"
 #include "render/render_mesh_build.h"
 #include "render/render_projection.h"
 #include "render/render_shadow.h"
@@ -185,6 +186,26 @@ static int32_t s_hud[16];
 
 const RaceData *WebLoadedArchive(void) { return s_archive; }
 
+/* The paint each human seat races in (two catalogue colours), or -1 for the
+ * car's factory colours. Set before a race is prepared; presentation only, so
+ * neither the server's simulation nor the wire format knows about it. */
+static int s_paint[DRIVER_SEAT_LIMIT][2];
+EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
+    if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
+    const int valid = first >= 0 && first < RAGE_CAR_PAINT_COLOR_COUNT &&
+                      second >= 0 && second < RAGE_CAR_PAINT_COLOR_COUNT;
+    s_paint[seat][0] = valid ? first : -1;
+    s_paint[seat][1] = valid ? second : -1;
+}
+static void ClearPaint(void) { memset(s_paint, -1, sizeof(s_paint)); }
+
+/* The catalogue for a colour picker: how many colours, and one's RGB. */
+EMSCRIPTEN_KEEPALIVE int rw_paint_count(void) { return RAGE_CAR_PAINT_COLOR_COUNT; }
+EMSCRIPTEN_KEEPALIVE const uint8_t *rw_paint_swatch(int color) {
+    static uint8_t rgb[3];
+    return CarPaintSwatch((uint8_t)color, rgb) ? rgb : NULL;
+}
+
 static void ReleaseRace(void) {
     WebAudioStopRace();
     FreeClientRace(s_race);
@@ -193,6 +214,7 @@ static void ReleaseRace(void) {
 
 EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
     ReleaseRace();
+    ClearPaint();
     FreeRaceData(s_archive);
     s_archive = LoadRaceDisc(path);
     return s_archive != NULL;
@@ -213,7 +235,15 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     setup.reverse = reverse ? 1 : 0;
     if (!WebBuildField(s_archive, classIndex, course, reverse, humans, humanCount, rivals,
                        setup.entrants)) return 0;
-    for (int seat = 0; seat < humanCount; ++seat) setup.looks[seat].variant = humans[seat].variant;
+    for (int seat = 0; seat < humanCount; ++seat) {
+        setup.looks[seat].variant = humans[seat].variant;
+        if (s_paint[seat][0] >= 0) {
+            setup.looks[seat].hasPaint = 1;
+            setup.looks[seat].paint.paintColor1 = (u8)s_paint[seat][0];
+            setup.looks[seat].paint.paintColor2 = (u8)s_paint[seat][1];
+        }
+    }
+    ClearPaint();
     s_race = LoadClientRace(s_archive, &setup, NULL);
     if (!s_race) return 0;
     /* A spectator has no tachometer (rw_tachometer stays invisible). */
@@ -1064,6 +1094,8 @@ static void StoreLight(void) {
     StoreVec3(&s_frame.light[20], s_world.camera.skyBottomColor);
 }
 
+static int DrawSubmitted(float aspect, float t, int withMirror);
+
 /* Builds the scene presented `t` (0..1) of the way from the previous physics
  * step to the latest one, with the native sequence, and expands it into
  * world-space triangles. Returns the vertex count, or -1 on failure. */
@@ -1084,16 +1116,66 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     if (!SubmitScene(s_frame.page)) return -1;
     RenderWorldFocus(&s_world, (uint32_t)s_view.viewSeat);
     InterpolateVehicles(t);
+    return DrawSubmitted(aspect, t, 1);
+}
+
+/* Expands the submitted scene into the packed draw buffers and the uniform
+ * blocks the renderer reads. Returns the vertex count, or -1. */
+static int DrawSubmitted(float aspect, float t, int withMirror) {
     StoreShadow();
     s_frame.vertexCount = RenderBuildNativePassDraws(
         &s_world, RAGE_RENDER_PASS_MAIN, aspect, ResolveMesh, s_race,
         s_vertices, WEB_VERTEX_CAPACITY, s_spans, WEB_SPAN_CAPACITY, &s_frame.spanCount);
-    BuildMirror(t);
+    if (withMirror) BuildMirror(t);
     PackSpanFields(t);
     if (!BuildCameraUniform(&s_world.camera, aspect, s_frame.camera)) return -1;
     StoreLight();
     WebSkyUniform(&s_world.camera, aspect, s_frame.sky);
     return (int)s_frame.vertexCount;
+}
+
+/* The garage preview: a race prepared for one car (rw_start_race, alone on
+ * the grid), drawn without its field from a camera circling the car,
+ * `angle` degrees round it. The paint follows rw_set_showroom_paint. */
+EMSCRIPTEN_KEEPALIVE void rw_set_showroom_paint(int first, int second) {
+    if (!s_race || !s_race->view) return;
+    RaceCarLook *look = &s_race->view->looks[0];
+    look->hasPaint = first >= 0 && first < RAGE_CAR_PAINT_COLOR_COUNT &&
+                     second >= 0 && second < RAGE_CAR_PAINT_COLOR_COUNT;
+    look->paint.paintColor1 = (u8)(look->hasPaint ? first : 0);
+    look->paint.paintColor2 = (u8)(look->hasPaint ? second : 0);
+}
+
+EMSCRIPTEN_KEEPALIVE int rw_build_showroom(float aspect, float angle) {
+    enum { RADIUS = 330, HEIGHT = 105, FOCUS_HEIGHT = 30 };
+    if (!s_race || !(aspect > 0.0f)) return -1;
+    PlayerCarRuntime cars[DRIVER_SEAT_LIMIT];
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) cars[seat] = s_race->sim.drivers[seat].car;
+    const PlayerCarRuntime *car = &cars[0];
+    s_frame.page = car->trackSection >= s_race->look.textureSectionLo &&
+                   car->trackSection < s_race->look.textureSectionHi;
+    /* Game coordinates: y points down, so the eye is HEIGHT above the focus
+     * when it is that far negative; the view angles are the retail chase
+     * camera's (yaw and pitch from the eye-to-focus direction). */
+    const float radians = angle * 0.017453292519943295f;
+    const Vec3 toFocus = {-RADIUS * sinf(radians), HEIGHT, -RADIUS * cosf(radians)};
+    const Vec3 focus = {(float)car->x, (float)car->y - FOCUS_HEIGHT, (float)car->z};
+    const Vec3 eye = {focus.x - toFocus.x, focus.y - toFocus.y, focus.z - toFocus.z};
+    const s32 horizontal = (s32)lroundf(sqrtf(toFocus.x * toFocus.x + toFocus.z * toFocus.z));
+    const s32 yaw = 0x400 - (Atan2((s32)lroundf(toFocus.x), (s32)lroundf(toFocus.z)) & ANGLE_MASK);
+    const s32 pitch = 0x400 - (Atan2((s32)lroundf(toFocus.y), horizontal) & ANGLE_MASK);
+    RenderCamera camera = CameraFromView(eye, pitch, yaw, 0, 30.0f, 0);
+    RenderWorldBeginFrame(&s_world, ++s_frame.number);
+    ApplyEnvironment(&camera, &s_race->env);
+    RenderWorldSetCamera(&s_world, &camera);
+    RenderDirectionalLight light;
+    RenderDirectionalLightFromSky(&camera, &light);
+    RenderWorldSetDirectionalLight(&s_world, &light);
+    if (!SubmitClientTerrain(s_race, s_frame.page, &s_world) ||
+        !SubmitRaceViewPoses(&s_race->sim, s_race->view, cars, cars, s_race->rivals,
+                             s_race->primaryMesh.cached.assetKey, 0, &s_world)) return -1;
+    RenderWorldFocus(&s_world, 0);
+    return DrawSubmitted(aspect, 1.0f, 0); /* no interpolation: the poses are the same */
 }
 
 /* FNV-1a step. */

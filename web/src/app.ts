@@ -1,16 +1,18 @@
 // What the page's modules share: the WebAssembly module, the account
 // session, the screen on show and its status line.
+import type { Garage } from '../shared/protocol.ts';
 import type { RaceAudio } from './audio';
 import { Session } from './net';
 import { feed } from './overlay';
 import { Rage } from './rage';
 import { $, textWriter } from './views';
 
-export type Screen = 'auth' | 'disc' | 'lobby' | 'room' | 'setup' | 'race';
-const SCREENS: Screen[] = ['auth', 'disc', 'lobby', 'room', 'setup'];
+export type Screen = 'auth' | 'disc' | 'lobby' | 'room' | 'setup' | 'garage' | 'race';
+const SCREENS: Screen[] = ['auth', 'disc', 'lobby', 'room', 'setup', 'garage'];
 /* Where toast() writes on each screen (the race also shows it in its feed). */
 const STATUS: Record<Screen, string> = {
   auth: 'auth-status', disc: 'disc-status', lobby: 'lobby-status', room: 'room-status', setup: 'setup-status',
+  garage: 'garage-status',
   race: 'lobby-status',
 };
 
@@ -23,6 +25,8 @@ export const app = {
   discLoaded: false,
   /* Per car variant: false where the disc only offers a manual gearbox. */
   automaticCars: [] as boolean[],
+  /* The player's saved car paints (see garage.ts). */
+  garage: {} as Garage,
   /* Round trips by user id from the server's latency message (null while
    * a player is reconnecting). */
   latency: {} as Record<number, number | null>,

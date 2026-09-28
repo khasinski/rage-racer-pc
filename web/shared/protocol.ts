@@ -65,7 +65,17 @@ export interface RoomSummary {
 
 export interface RoomState extends RoomSummary { members: RoomPlayer[] }
 
-export interface RaceSeat { userId: number | null; name: string; variant: number; manual: boolean } // userId null: a rival
+/** Two colours from the game's paint catalogue (PAINT_COLORS entries): the
+ *  first and second body colour. Presentation only; the race never sees it. */
+export type Paint = [number, number];
+export const PAINT_COLORS = 18; // RAGE_CAR_PAINT_COLOR_COUNT
+
+/** A player's saved paints by car model (not variant: a car keeps its paint
+ *  through its upgrades). Missing: the car's factory colours. */
+export type Garage = Record<number, Paint>;
+
+// userId null: a rival. paint null: the factory colours.
+export interface RaceSeat { userId: number | null; name: string; variant: number; manual: boolean; paint: Paint | null }
 
 export interface RaceResult {
   seat: number;

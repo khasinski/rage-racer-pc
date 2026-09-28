@@ -3,7 +3,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { HistoryRow, RaceResult, RecordRow, RoomSettings, UserInfo } from '../shared/protocol.ts';
+import type { Garage, HistoryRow, Paint, RaceResult, RecordRow, RoomSettings, UserInfo } from '../shared/protocol.ts';
 
 const SESSION_DAYS = 30;
 
@@ -24,6 +24,13 @@ CREATE TABLE IF NOT EXISTS sessions (
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   expires_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS car_paints (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  model INTEGER NOT NULL,
+  paint1 INTEGER NOT NULL,
+  paint2 INTEGER NOT NULL,
+  PRIMARY KEY (user_id, model)
 );
 CREATE TABLE IF NOT EXISTS rooms (
   id INTEGER PRIMARY KEY,
@@ -198,6 +205,24 @@ export class Store {
         course: number; reverse: number; class_index: number; name: string; variant: number; best_lap_ms: number }>;
     return rows.map((r) => ({ course: r.course, reverse: r.reverse === 1, classIndex: r.class_index,
       name: r.name, variant: r.variant, bestLapMs: r.best_lap_ms }));
+  }
+
+  /** A player's saved car paints, by model. */
+  garage(userId: number): Garage {
+    const rows = this.db.prepare('SELECT model, paint1, paint2 FROM car_paints WHERE user_id = ?').all(userId) as
+      Array<{ model: number; paint1: number; paint2: number }>;
+    return Object.fromEntries(rows.map((r) => [r.model, [r.paint1, r.paint2] as Paint]));
+  }
+
+  /** Saves a model's paint, or with null returns it to the factory colours. */
+  setPaint(userId: number, model: number, paint: Paint | null): void {
+    if (!paint) {
+      this.db.prepare('DELETE FROM car_paints WHERE user_id = ? AND model = ?').run(userId, model);
+      return;
+    }
+    this.db.prepare(`INSERT INTO car_paints (user_id, model, paint1, paint2) VALUES (?, ?, ?, ?)
+      ON CONFLICT (user_id, model) DO UPDATE SET paint1 = excluded.paint1, paint2 = excluded.paint2`)
+      .run(userId, model, paint[0], paint[1]);
   }
 
   /** A player's recent races, newest first. */
