@@ -7,6 +7,7 @@ import type {
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
 import { Race } from './race.ts';
+import { RTC_ENABLED, RtcLink } from './rtc.ts';
 import type { Simulation } from './sim.ts';
 
 const TICK_MS = 1000 / 50;
@@ -22,6 +23,7 @@ export interface Client {
   roomId: number | null;
   latencyMs: number | null; // measured by the keep-alive pings (main.ts)
   replaced?: boolean; // superseded by a newer connection of the same account
+  rtc?: RtcLink; // the race's data channel, once the client offers one
 }
 
 interface Member {
@@ -100,6 +102,7 @@ export class Lobby {
 
   /** A lost connection keeps its place: offline for a while, not gone. */
   disconnect(client: Client): void {
+    client.rtc?.close();
     if (!this.clients.delete(client) || client.replaced) return;
     const room = this.roomOf(client);
     const member = room?.members.get(client.user.id);
@@ -152,7 +155,20 @@ export class Lobby {
       case 'leaveRace': return this.roomOf(client)?.race?.leave(client.user.id, 'left the race');
       case 'chat': return this.chat(client, message.text);
       case 'closeRoom': return this.closeRoom(client, message.roomId);
+      case 'rtcOffer': return this.rtcOffer(client, message.sdp);
+      case 'rtcCandidate': return client.rtc?.candidate(message.candidate, message.mid);
       default: return this.fail(client, 'Unknown message.');
+    }
+  }
+
+  /** Answers a client's data channel offer (one channel per connection). */
+  private rtcOffer(client: Client, sdp: string): void {
+    if (!RTC_ENABLED || typeof sdp !== 'string') return;
+    client.rtc?.close();
+    try {
+      client.rtc = new RtcLink(sdp, (message) => send(client, message), (data) => this.message(client, data, true));
+    } catch {
+      client.rtc = undefined; // a malformed offer: the race stays on the WebSocket
     }
   }
 
@@ -333,9 +349,9 @@ export class Lobby {
     if (members.some((m) => !this.carValid(room, m.variant, m.manual))) return this.fail(client, 'Every player needs a car for this class.');
     const race = Race.create(this.sim, this.store, {
       broadcast: (message) => this.toRoom(room, message),
-      socket: (userId) => {
+      client: (userId) => {
         const member = room.members.get(userId);
-        return member && member.offlineSince === null ? member.client.ws : undefined;
+        return member && member.offlineSince === null ? member.client : undefined;
       },
     }, room.id, room.settings, members.map((m) => ({
       userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual,

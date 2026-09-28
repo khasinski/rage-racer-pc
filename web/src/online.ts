@@ -53,6 +53,7 @@ async function refreshTables() {
 function connect() {
   if (connection || !session.token) return;
   connection = new Connection(session.token);
+  if (location.hash === '#e2e') Object.assign(window, { __transport: () => connection?.transport ?? null });
   connection.onMessage = onMessage;
   connection.onFrame = (frame) => {
     if (!racing) return;

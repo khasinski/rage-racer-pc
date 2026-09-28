@@ -17,6 +17,7 @@
     "test:grid": "node scripts/grid-test.mjs"
   },
   "dependencies": {
+    "node-datachannel": "^0.33.4",
     "three": "^0.186.1",
     "ws": "^8.22.0"
   },

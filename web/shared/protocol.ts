@@ -1,7 +1,9 @@
 // Messages between the browser and the multiplayer server (web/server).
 // Control traffic is JSON text frames; the race itself uses binary frames:
-//   client -> server  [BINARY_INPUT]  u32 sequence number, u32 the race tick the
-//                     client used the input for, 8 int32 input words
+//   client -> server  [BINARY_INPUT]  one or more inputs, oldest first, each
+//                     u32 sequence number, u32 the race tick the client used
+//                     it for, 8 int32 input words (the data channel repeats
+//                     the last few, so a lost packet loses nothing)
 //   server -> client  [BINARY_FRAME]  u32 server tick, u8 player count, per
 //                     player (seat order) u32 last input sequence applied, u32
 //                     the tick it was applied at and i32 how many ticks early
@@ -10,13 +12,22 @@
 // The server applies each input at the tick the client predicted it for, so
 // a player's own car needs no correction when inputs arrive in time; the
 // clients steer their clocks by the reported margin.
+// The race can also run over a WebRTC data channel (unordered, unreliable)
+// signalled with rtcOffer / rtcAnswer / rtcCandidate: the same inputs, and
+// frames compressed with raw deflate. Frames may then arrive out of order or
+// not at all; clients drop any older than the newest they have. The client
+// pings the channel [BINARY_PING, f64 time] and drops it when the echoes stop.
 // Types only: shared by the Vite client and the Node server (type stripping).
 
 export const DEFAULT_PORT = 7243;
 export const BINARY_INPUT = 1;
 export const BINARY_FRAME = 2;
+/* Data channel heartbeat: the client sends it, the server echoes it back. */
+export const BINARY_PING = 3;
 export const INPUT_WORDS = 8;
 export const ACK_WORDS = 3; // per player in a frame: sequence, applied tick, margin
+export const INPUT_BYTES = 8 + INPUT_WORDS * 4; // one input in a BINARY_INPUT packet
+export const INPUT_REPEAT = 4; // inputs per data channel packet
 
 export interface UserInfo { id: number; name: string; admin: boolean }
 
@@ -101,7 +112,9 @@ export type ClientMessage =
   | { t: 'loaded'; ok: boolean }
   | { t: 'leaveRace' }
   | { t: 'chat'; text: string }
-  | { t: 'closeRoom'; roomId: number };
+  | { t: 'closeRoom'; roomId: number }
+  | { t: 'rtcOffer'; sdp: string }
+  | { t: 'rtcCandidate'; candidate: string; mid: string };
 
 export type RaceEvent =
   | { kind: 'lap'; name: string; lap: number; lapMs: number }
@@ -122,4 +135,6 @@ export type ServerMessage =
   | { t: 'latency'; latency: Record<number, number | null> }
   | { t: 'raceEvent'; event: RaceEvent }
   | { t: 'results'; results: RaceResult[] }
-  | { t: 'error'; message: string };
+  | { t: 'error'; message: string }
+  | { t: 'rtcAnswer'; sdp: string }
+  | { t: 'rtcCandidate'; candidate: string; mid: string };

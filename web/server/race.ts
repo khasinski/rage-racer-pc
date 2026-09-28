@@ -1,12 +1,13 @@
 // One authoritative race: the server builds the field, waits for the players
 // to load it, steps it at 50 Hz, applies their inputs, streams the complete
 // RaceFrame to everyone watching, reports race events and stores the results.
-import type { WebSocket } from 'ws';
 import {
-  ACK_WORDS, BINARY_FRAME, BINARY_INPUT, INPUT_WORDS,
+  ACK_WORDS, BINARY_FRAME, BINARY_INPUT, INPUT_BYTES, INPUT_REPEAT, INPUT_WORDS,
   type RaceEvent, type RaceResult, type RaceSeat, type RoomSettings, type ServerMessage,
 } from '../shared/protocol.ts';
+import { deflateRawSync } from 'node:zlib';
 import type { Store } from './db.ts';
+import type { Client } from './rooms.ts';
 import {
   PHASE_FINISHED, STATUS_DRIVING, STATUS_EMPTY, STATUS_FINISHED, STATUS_RETIRED, type Simulation,
 } from './sim.ts';
@@ -34,7 +35,7 @@ export interface RaceRoom {
   /** Sends a message to every member of the room. */
   broadcast(message: ServerMessage): void;
   /** A member's connection while they are online. */
-  socket(userId: number): WebSocket | undefined;
+  client(userId: number): Client | undefined;
 }
 
 export class Race {
@@ -151,22 +152,26 @@ export class Race {
     if (seat !== undefined) this.sim.setInput(this.handle, seat, NEUTRAL_INPUT);
   }
 
-  /** Queues a player's input for the tick the client used it for (a late
-   *  one applies at the next tick); the margin tells the client how early it
-   *  arrived, so it can keep its clock just ahead. */
+  /** Queues a player's inputs for the tick the client used each for (a late
+   *  one applies at the next tick), skipping those it already has; the margin
+   *  tells the client how early the newest arrived, so it can keep its clock
+   *  just ahead. */
   input(userId: number, data: Buffer): void {
     const seat = this.seatOf.get(userId);
-    if (seat === undefined || data.length !== 9 + INPUT_WORDS * 4 || data[0] !== BINARY_INPUT) return;
-    const sequence = data.readUInt32LE(1);
+    const count = (data.length - 1) / INPUT_BYTES;
+    if (seat === undefined || data[0] !== BINARY_INPUT || !Number.isInteger(count) || count < 1 || count > INPUT_REPEAT) return;
     const queue = this.pending[seat];
-    const newest = queue.length ? queue[queue.length - 1].sequence : this.acks[seat * ACK_WORDS];
-    if (sequence <= newest || queue.length >= INPUT_QUEUE_LIMIT) return; // duplicate or flood
     const next = this.sim.simTick(this.handle) + 1;
-    const tick = data.readUInt32LE(5);
-    const words = new Int32Array(INPUT_WORDS);
-    for (let i = 0; i < INPUT_WORDS; i++) words[i] = data.readInt32LE(9 + i * 4);
-    queue.push({ sequence, tick: Math.min(Math.max(tick, next), next + INPUT_LEAD_LIMIT), words });
-    this.acks[seat * ACK_WORDS + 2] = (tick - next) >>> 0;
+    for (let at = 1; at < data.length; at += INPUT_BYTES) {
+      const sequence = data.readUInt32LE(at);
+      const newest = queue.length ? queue[queue.length - 1].sequence : this.acks[seat * ACK_WORDS];
+      if (sequence <= newest || queue.length >= INPUT_QUEUE_LIMIT) continue; // repeated, or a flood
+      const tick = data.readUInt32LE(at + 4);
+      const words = new Int32Array(INPUT_WORDS);
+      for (let i = 0; i < INPUT_WORDS; i++) words[i] = data.readInt32LE(at + 8 + i * 4);
+      queue.push({ sequence, tick: Math.min(Math.max(tick, next), next + INPUT_LEAD_LIMIT), words });
+      this.acks[seat * ACK_WORDS + 2] = (tick - next) >>> 0;
+    }
   }
 
   /** Applies every queued input due at the coming tick, in order. */
@@ -229,10 +234,14 @@ export class Race {
     packet[5] = this.seatOf.size;
     this.acks.forEach((value, i) => packet.writeUInt32LE(value >>> 0, 6 + i * 4));
     packet.set(frame, header);
+    let compressed: Buffer | null = null; // for data channels, made once
     for (const id of this.viewers) {
-      const ws = this.room.socket(id);
+      const client = this.room.client(id);
+      if (!client) continue;
+      if (client.rtc?.open && client.rtc.send(compressed ??= deflateRawSync(packet, { level: 1 }))) continue;
+      const ws = client.ws;
       // A slow link skips frames rather than falling ever further behind.
-      if (ws && ws.readyState === ws.OPEN && ws.bufferedAmount < BACKLOG_BYTES) ws.send(packet);
+      if (ws.readyState === ws.OPEN && ws.bufferedAmount < BACKLOG_BYTES) ws.send(packet);
     }
   }
 

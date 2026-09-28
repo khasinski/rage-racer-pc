@@ -76,6 +76,13 @@ inside the image and the SQLite database in `/data`. The CapRover app needs:
 - **HTTPS:** enabled, with HTTPS forced.
 - **Administrator:** `RAGE_ADMIN_PASSWORD` creates or updates the `admin`
   account at start-up.
+- **WebRTC (optional, recommended):** the race stream prefers a WebRTC data
+  channel (unordered, so a lost packet does not hold up the ones behind it),
+  on UDP port `RAGE_RTC_PORT` (7243 in the image). Publish that UDP port on
+  the host, preferably in host mode (not through the swarm routing mesh),
+  and set `RAGE_RTC_PUBLIC_IP` to the server's public address. Without them
+  every client stays on the WebSocket; a channel that goes silent falls back
+  to it within two seconds. `RAGE_RTC=0` turns the channel off.
 
 ## Protocol
 
@@ -90,6 +97,8 @@ same race (`rw_apply_frame`, built from the same rules in
 inputs and keeps its clock a couple of ticks ahead of the server by that
 margin. Corrections to a drawn car ease out over a few steps instead of
 jumping. Spectators play frames back a few ticks behind the newest one.
+Where it can, the race runs over a WebRTC data channel instead of the
+WebSocket (`server/rtc.ts`, `?transport=ws` forces the WebSocket).
 
 `node scripts/net-check.mjs "<disc>"` measures the corrections and jerk
 under simulated latency, jitter and loss (the client takes the same
