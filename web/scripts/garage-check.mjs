@@ -88,7 +88,8 @@ try {
   await wait(400);
   check((await paintsDrawn(owner)).join('|') === '', 'another car model starts with its factory colours');
   check(await owner.locator('#paint-first .swatch:not([disabled])').count() === 0 &&
-        await owner.locator('#garage-factory').isDisabled(), 'the last three cars cannot be repainted (retail)');
+        await owner.locator('#garage-factory').isDisabled() &&
+        await owner.locator('#tab-logo').isDisabled(), 'the last three cars take no paint, logo or name (retail)');
   await owner.selectOption('#garage-car', options[0].value);
   await owner.waitForFunction(() => document.querySelector('#garage-status').textContent === '', null, { timeout: 60_000 });
   await wait(400);
@@ -156,6 +157,48 @@ try {
   await owner.click('#garage-save');
   await owner.waitForFunction(() => document.querySelector('#garage-status').textContent.startsWith('Saved'), null, { timeout: 10_000 });
   check(await owner.locator('#logo-tag').textContent() === 'RAGE', 'the windscreen shows the name');
+
+  // Every car carries the logo and the name, not just the Erriso.
+  const missing = await owner.evaluate(() => {
+    const { rage } = window.__race;
+    const bytes = new Uint8Array(2080).fill(0x11, 0, 2048); // a red square, palette entry 1
+    bytes[2048 + 2] = 0x1f;
+    const carTextures = () => {
+      const { fields } = rage.spans();
+      const list = [];
+      for (let i = 0; i * 15 + 15 <= fields.length; i++) {
+        const texture = fields[i * 15 + 3] === 0 && rage.decodeTexture(i);
+        if (texture) list.push(texture.levels[0]);
+      }
+      return list;
+    };
+    const lacking = [];
+    for (const variant of rage.garageVariants().filter((v) => rage.modelOf(v) < 10)) {
+      rage.startShowroom(variant);
+      rage.setShowroomLogo(bytes);
+      rage.setShowroomTag(''); rage.buildShowroom(1.6, 30);
+      const plain = carTextures();
+      rage.setShowroomTag('RAGE'); rage.buildShowroom(1.6, 30);
+      const named = carTextures();
+      let red = 0, lettered = 0;
+      named.forEach((level, i) => {
+        let count = 0;
+        for (let y = 48; y < 112; y++) for (let x = 64; x < 128; x++) {
+          const o = (y * level.width + x) * 4;
+          if (level.data[o] > 240 && level.data[o + 1] < 16 && level.data[o + 2] < 16 && level.data[o + 3] === 255) count++;
+        }
+        red = Math.max(red, count);
+        for (let y = 55; y < 63; y++) for (let x = 8; x < 56; x++) {
+          const o = (y * level.width + x) * 4;
+          if (plain[i] && (level.data[o] !== plain[i].data[o] || level.data[o + 1] !== plain[i].data[o + 1])) lettered++;
+        }
+      });
+      const quads = rage.logoQuads();
+      if (red < 3000 || lettered === 0 || quads < 2) lacking.push(`${variant}: logo ${red}, name ${lettered}, bonnet triangles ${quads}`);
+    }
+    return lacking;
+  });
+  check(missing.length === 0, `every customizable car shows the logo and the name (lacking: ${missing.join('; ') || 'none'})`);
 
   // The server keeps it and validates it.
   const token = await owner.evaluate(() => localStorage.getItem('rage-racer.session'));

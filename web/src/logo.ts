@@ -193,5 +193,5 @@ export function teamTag(name: string): string {
     if (/^[A-Z0-9.\-!?@ ]$/.test(c)) tag += c;
     else if (c === '_') tag += ' ';
   }
-  return tag;
+  return tag.trim(); // blanks at the ends only shift the name off centre
 }

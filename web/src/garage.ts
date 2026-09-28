@@ -91,6 +91,9 @@ function refresh(rage: Rage, message = ''): void {
   if (!canPaint) draft = null;
   rage.setShowroomPaint(draft);
   for (const button of [...swatches.flat(), factoryButton]) button.disabled = !canPaint;
+  // The special cars take neither paint, a logo nor a name (as in retail).
+  $<HTMLButtonElement>('tab-logo').disabled = !canPaint;
+  if (!canPaint) selectTab('paint');
   swatches.forEach((buttons, zone) => buttons.forEach((button, color) => {
     button.setAttribute('aria-pressed', String(draft?.[zone] === color));
   }));
@@ -98,7 +101,7 @@ function refresh(rage: Rage, message = ''): void {
   const changed = paintChanged(rage) || logoChanged();
   saveButton.disabled = !changed;
   statusLine.textContent = changed ? 'Not saved yet.'
-    : !canPaint && !message ? 'This car keeps its factory colours (you can still add your logo).' : message;
+    : !canPaint && !message ? 'This car keeps its factory look: no repaint, logo or name.' : message;
 }
 
 function choose(rage: Rage, zone: number, color: number): void {

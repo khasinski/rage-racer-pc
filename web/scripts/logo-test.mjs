@@ -3,7 +3,7 @@
 import { LOGO_BYTES, LOGO_SIZE } from '../shared/protocol.ts';
 import {
   blankLogo, cloneLogo, decodeLogo, encodeLogo, fill, flipHorizontal, flipVertical, fromBase64, isEmpty, line, quantize,
-  rotateClockwise, rotateCounterClockwise, rgb15, sameLogo, shift, stamp, toBase64,
+  rotateClockwise, rotateCounterClockwise, rgb15, sameLogo, shift, stamp, teamTag, toBase64,
 } from '../src/logo.ts';
 import { checks } from './lib/harness.mjs';
 
@@ -59,4 +59,6 @@ const small = quantize(rgba);
 check(small.pixels[0] === 0 && small.pixels[10 * 64 + 5] !== small.pixels[10 * 64 + 60], 'a two-colour picture keeps two colours and its transparency');
 check(small.palette[small.pixels[10 * 64 + 5]] === rgb15(248, 0, 0) && small.palette[small.pixels[10 * 64 + 60]] === rgb15(0, 0, 248), 'the colours are found');
 check(small.palette.length === 16 && small.palette.every((c, i) => i === 0 || c !== 0), 'no palette entry is a bare zero (that would be transparent)');
+check(teamTag('Guest #12') === 'GUEST', 'a guest\'s windscreen reads GUEST, no trailing blank');
+check(teamTag('  hi ') === 'HI' && teamTag('chris.h@x') === 'CHRIS.', 'names are capitalised, cut to six characters and trimmed');
 report('logo ok');

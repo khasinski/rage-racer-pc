@@ -46,6 +46,14 @@ void CarCustomSetTag(CarCustom *custom, const char *text) {
         else if (c == '@') glyph = GLYPH_AT;
         if (glyph >= 0) custom->tag[custom->tagLength++] = (uint8_t)glyph;
     }
+    /* Blanks at either end would only shift the name off centre. */
+    while (custom->tagLength && custom->tag[custom->tagLength - 1] == GLYPH_BLANK) --custom->tagLength;
+    int lead = 0;
+    while (lead < custom->tagLength && custom->tag[lead] == GLYPH_BLANK) ++lead;
+    if (lead) {
+        memmove(custom->tag, custom->tag + lead, (size_t)(custom->tagLength - lead));
+        custom->tagLength -= lead;
+    }
     Rehash(custom);
 }
 

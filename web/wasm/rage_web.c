@@ -194,6 +194,7 @@ const RaceData *WebLoadedArchive(void) { return s_archive; }
 static int s_paint[DRIVER_SEAT_LIMIT][2];
 /* The garage preview's pivot (see FindShowroomCentre). */
 static struct { int valid; Vec3 centre; } s_showroom;
+enum { LOGO_LIFT = 4 }; /* world units the bonnet logo floats above the bonnet */
 
 EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
     if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
@@ -1164,6 +1165,49 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
     return DrawSubmitted(aspect, t, 1);
 }
 
+/* The bonnet logo is a quad that retail lays over the bonnet purely by draw
+ * order. With a depth buffer it sinks into a curved bonnet (part of it cut
+ * off, the rest flickering), so its corners are lifted off the surface along
+ * their normals, as the engine does for authored hood decals. The quad is the
+ * one sampling the logo's rectangle of the shared texture page (page 640,
+ * u 64..127, v 48..111). */
+static int s_logoQuads; /* triangles lifted in the last frame, for the checks */
+
+static void LiftLogoQuads(void) {
+    enum { SHARED_PAGE = 10 };
+    const float low[2] = {64.0f / 256.0f - 0.004f, 48.0f / 256.0f - 0.004f};
+    const float high[2] = {128.0f / 256.0f + 0.004f, 112.0f / 256.0f + 0.004f};
+    s_logoQuads = 0;
+    for (uint32_t i = 0; i < SpanTotal(); ++i) {
+        const RageNativeDrawSpan *span = &s_spans[i];
+        if (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK || span->material == UINT32_MAX) continue;
+        RenderMeshInstance instance;
+        memset(&instance, 0, sizeof(instance));
+        instance.assetKey = span->assetKey;
+        instance.assetSet = span->assetSet;
+        instance.assetSource = span->assetSource;
+        const RageImportedMeshEntry *entry = FindClientMesh(s_race, &instance);
+        if (!entry || !entry->materials || span->material >= entry->materialCount ||
+            (entry->materials[span->material].tpage & 0xF) != SHARED_PAGE) continue;
+        for (uint32_t v = 0; v + 2 < span->vertexCount; v += 3) {
+            RageNativeDrawVertex *triangle = &s_vertices[span->firstVertex + v];
+            int inside = 1;
+            for (int corner = 0; corner < 3 && inside; ++corner)
+                for (int axis = 0; axis < 2; ++axis)
+                    if (triangle[corner].uv[axis] < low[axis] || triangle[corner].uv[axis] > high[axis]) inside = 0;
+            if (!inside) continue;
+            for (int corner = 0; corner < 3; ++corner) {
+                const float *n = triangle[corner].normal;
+                const float length = sqrtf(n[0] * n[0] + n[1] * n[1] + n[2] * n[2]);
+                if (length <= 0.0f) continue;
+                for (int axis = 0; axis < 3; ++axis) triangle[corner].position[axis] += n[axis] * (LOGO_LIFT / length);
+            }
+            ++s_logoQuads;
+        }
+    }
+}
+EMSCRIPTEN_KEEPALIVE int rw_logo_quads(void) { return s_logoQuads; }
+
 /* Expands the submitted scene into the packed draw buffers and the uniform
  * blocks the renderer reads. Returns the vertex count, or -1. */
 static int DrawSubmitted(float aspect, float t, int withMirror) {
@@ -1172,6 +1216,7 @@ static int DrawSubmitted(float aspect, float t, int withMirror) {
         &s_world, RAGE_RENDER_PASS_MAIN, aspect, ResolveMesh, s_race,
         s_vertices, WEB_VERTEX_CAPACITY, s_spans, WEB_SPAN_CAPACITY, &s_frame.spanCount);
     if (withMirror) BuildMirror(t);
+    LiftLogoQuads();
     PackSpanFields(t);
     if (!BuildCameraUniform(&s_world.camera, aspect, s_frame.camera)) return -1;
     StoreLight();

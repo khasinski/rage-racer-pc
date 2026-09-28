@@ -297,6 +297,9 @@ export class Rage {
     try { use(pointer); } finally { this.m._free(pointer); }
   }
 
+  /** Bonnet logo triangles found in the last built frame. */
+  logoQuads(): number { return this.call('rw_logo_quads'); }
+
   /** Prepares the garage preview of a car: alone on the grid of a course its
    *  class races. False when no class offers that variant. */
   startShowroom(variant: number): boolean {
