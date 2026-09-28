@@ -1,7 +1,7 @@
 // The online side: the server connection, the lobby and room, and the
 // network part of an online race (a player predicts their own car from the
 // newest server frame; a spectator plays the frames through a jitter buffer).
-import type { RaceEvent, RoomState, ServerMessage } from '../shared/protocol.ts';
+import { ACK_WORDS, type RaceEvent, type RoomState, type ServerMessage } from '../shared/protocol.ts';
 import { app, session, setHint, show, toast } from './app';
 import { TICK_MS } from './constants';
 import { Connection, FrameBuffer, type Frame } from './net';
@@ -23,7 +23,14 @@ const frames = new FrameBuffer();
  * (ticks an input was used later than predicted). */
 let latest: Frame | null = null;
 let predicting = false;
-let clockError = 0;
+/* How many ticks early the player's inputs reached the server, from the most
+ * recent frames (oldest first). */
+const margins: number[] = [];
+const MARGIN_WINDOW = 12; // frames, about half a second
+const MARGIN_TARGET = 2; // ticks of slack for the network's jitter
+/* After the clock moves, margins count again from this input on (older ones
+ * were sent on the old clock). */
+let settleSeq = 0;
 
 const results = $('results');
 const onlineRace = () => racing && race.mode !== 'offline';
@@ -49,7 +56,14 @@ function connect() {
   connection.onMessage = onMessage;
   connection.onFrame = (frame) => {
     if (!racing) return;
-    if (race.mode === 'player') latest = frame;
+    if (race.mode === 'player') {
+      latest = frame;
+      const at = race.localSeat * ACK_WORDS;
+      if (at + 2 < frame.acks.length && frame.acks[at] >>> 0 >= settleSeq) {
+        margins.push(frame.acks[at + 2]);
+        if (margins.length > MARGIN_WINDOW) margins.shift();
+      }
+    }
     else if (race.mode === 'spectator') frames.push(frame);
   };
   connection.onClose = (reason) => {
@@ -189,7 +203,7 @@ const playerNet: RaceNet = {
   sync: syncPrediction,
   tick(rage) {
     const words = rage.takeInput();
-    connection?.sendInput(words, rage.inputSeq());
+    connection?.sendInput(words, rage.inputSeq(), rage.inputTick());
   },
   leave,
 };
@@ -225,7 +239,8 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
   frames.reset();
   latest = null;
   predicting = false;
-  clockError = 0;
+  margins.length = 0;
+  settleSeq = 0;
   beginRace(rage, {
     mode: spectator ? 'spectator' : 'player', names: message.seats.map((seat) => seat.name),
     humans: message.humans, userIds: players.map((seat) => seat.userId), localSeat: message.localSeat,
@@ -234,28 +249,37 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
 }
 
 /* Applies the newest server frame (rewind and replay) and keeps the local
- * clock just far enough ahead that each input reaches the server a tick
- * before it is needed: late inputs speed the clock up, early ones slow it.
+ * clock just far enough ahead that each input reaches the server a couple of
+ * ticks before the tick it was predicted for. The server applies inputs at
+ * that tick, so the player's own car needs no correction while they arrive in
+ * time. Steered by the smallest recent margin: a late input jumps the clock
+ * ahead, a margin well above the target eases it back.
  * Returns the milliseconds to add to the local clock. */
 function syncPrediction(rage: Rage): number {
   const frame = latest;
   const seat = race.localSeat;
   latest = null;
-  if (!frame || seat * 2 + 1 >= frame.acks.length) return 0;
-  const error = rage.applyPredicted(frame.data, frame.acks[seat * 2], frame.acks[seat * 2 + 1]);
+  if (!frame || (seat + 1) * ACK_WORDS > frame.acks.length) return 0;
+  const at = seat * ACK_WORDS;
+  const error = rage.applyPredicted(frame.data, frame.acks[at] >>> 0, frame.acks[at + 1] >>> 0);
   if (error === null) return 0;
   if (!predicting) {
-    predicting = true; // the first frame only sets the starting point
+    // The first frame sets the starting point: its tick plus the time the
+    // first inputs need to reach the server.
+    predicting = true;
+    margins.length = 0;
     return 0;
   }
-  const target = -1;
-  if (error > target + 3) {
-    // Far behind (start, or a network hiccup): catch up at once.
-    clockError = target;
-    return (error - target) * TICK_MS;
+  if (!margins.length) return 0;
+  const lowest = Math.min(...margins);
+  if (lowest < 0 || lowest > MARGIN_TARGET + 8) {
+    // Inputs arrive late (start, or the network got slower) or far too early
+    // (it got faster): move the clock at once.
+    margins.length = 0;
+    settleSeq = rage.inputSeq() + 1;
+    return (MARGIN_TARGET - lowest) * TICK_MS;
   }
-  clockError = clockError * 0.9 + error * 0.1;
-  if (clockError > target + 0.5) return TICK_MS * 0.05;
-  if (clockError < target - 1.5) return -TICK_MS * 0.05;
+  if (lowest < MARGIN_TARGET) return TICK_MS * 0.05;
+  if (lowest > MARGIN_TARGET + 1) return -TICK_MS * 0.05;
   return 0;
 }

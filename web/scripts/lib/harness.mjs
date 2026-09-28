@@ -63,14 +63,14 @@ export async function launchBrowser() {
 /** Opens the app in a new browser context, logs in (as a guest without a
  *  name) and chooses the disc files; resolves on the lobby. Page errors (and
  *  console errors with `consoleErrors`) go to `onError`. */
-export async function openPlayer(browser, { base, name, password, discFiles, onError, consoleErrors = false, init }) {
+export async function openPlayer(browser, { base, name, password, discFiles, onError, consoleErrors = false, init, query = '' }) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await context.newPage();
   const who = name ?? 'guest';
   page.on('pageerror', (error) => onError(`${who}: page error: ${error.message}`));
   if (consoleErrors) page.on('console', (m) => { if (m.type() === 'error') onError(`${who}: console: ${m.text()}`); });
   if (init) await page.addInitScript(init);
-  await page.goto(`${base}/#e2e`);
+  await page.goto(`${base}/${query}#e2e`);
   await page.waitForSelector('#auth:not([hidden])');
   if (name === undefined) await page.click('#auth button[value=guest]');
   else {

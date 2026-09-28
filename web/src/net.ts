@@ -1,7 +1,7 @@
 // Talks to the multiplayer server: REST for accounts, one WebSocket for the
 // lobby, rooms and the race stream (see shared/protocol.ts).
 import {
-  BINARY_FRAME, BINARY_INPUT, INPUT_WORDS,
+  ACK_WORDS, BINARY_FRAME, BINARY_INPUT, INPUT_WORDS,
   type ClientMessage, type RecordRow, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
 
@@ -97,12 +97,48 @@ export class Session {
 export interface Frame {
   tick: number;
   data: Uint8Array;
-  acks: Uint32Array; // per player seat: last input sequence, tick that first used it
+  acks: Int32Array; // per player seat (ACK_WORDS each): last input applied, its tick, the latest input's margin
+}
+
+/**
+ * Network conditions for experiments, from the page address:
+ *   ?net=rtt:150,jitter:30,loss:2   (milliseconds, milliseconds, percent)
+ * Each direction gets half the round trip plus random jitter. `ordered`
+ * links (TCP: the WebSocket) keep order, so a lost packet is retransmitted
+ * about one round trip later and holds up everything behind it; unordered
+ * links (a DataChannel) simply drop it.
+ */
+export class LinkSimulator {
+  private lastDelivery = 0;
+  constructor(readonly rtt: number, readonly jitter: number, readonly loss: number, private readonly ordered: boolean) {}
+
+  static fromAddress(ordered: boolean): LinkSimulator | null {
+    const spec = new URLSearchParams(location.search).get('net');
+    if (!spec) return null;
+    const value = (key: string) => Number(spec.match(new RegExp(`${key}:(\\d+(?:\\.\\d+)?)`))?.[1] ?? 0);
+    return new LinkSimulator(value('rtt'), value('jitter'), value('loss'), ordered);
+  }
+
+  /** Runs `deliver` when the packet would arrive (never, if lost unordered). */
+  pass(deliver: () => void): void {
+    const now = performance.now();
+    let at = now + this.rtt / 2 + Math.random() * this.jitter;
+    if (Math.random() * 100 < this.loss) {
+      if (!this.ordered) return;
+      at += this.rtt * 1.5; // retransmission
+    }
+    if (this.ordered) at = Math.max(at, this.lastDelivery);
+    this.lastDelivery = at;
+    setTimeout(deliver, Math.max(0, at - now));
+  }
 }
 
 export class Connection {
   private readonly ws: WebSocket;
-  private readonly input = new DataView(new ArrayBuffer(5 + INPUT_WORDS * 4));
+  private readonly input = new DataView(new ArrayBuffer(9 + INPUT_WORDS * 4));
+  /* Simulated conditions, one per direction (see LinkSimulator). */
+  private readonly upLink = LinkSimulator.fromAddress(true);
+  private readonly downLink = LinkSimulator.fromAddress(true);
   onMessage: (message: ServerMessage) => void = () => {};
   onFrame: (frame: Frame) => void = () => {};
   onClose: (reason: string) => void = () => {};
@@ -114,6 +150,13 @@ export class Connection {
     this.ws = new WebSocket(url);
     this.ws.binaryType = 'arraybuffer';
     this.ws.onmessage = (event) => {
+      if (this.downLink) this.downLink.pass(() => this.receive(event));
+      else this.receive(event);
+    };
+    this.ws.onclose = (event) => this.onClose(event.reason || 'The connection to the server closed.');
+  }
+
+  private receive(event: MessageEvent): void {
       if (typeof event.data === 'string') {
         this.onMessage(JSON.parse(event.data) as ServerMessage);
         return;
@@ -122,25 +165,29 @@ export class Connection {
       if (bytes[0] !== BINARY_FRAME || bytes.length < 6) return;
       const view = new DataView(bytes.buffer);
       const players = bytes[5];
-      const header = 6 + players * 8;
+      const header = 6 + players * ACK_WORDS * 4;
       if (bytes.length < header) return;
-      const acks = new Uint32Array(players * 2);
-      for (let i = 0; i < acks.length; i++) acks[i] = view.getUint32(6 + i * 4, true);
+      const acks = new Int32Array(players * ACK_WORDS);
+      for (let i = 0; i < acks.length; i++) acks[i] = view.getInt32(6 + i * 4, true);
       this.onFrame({ tick: view.getUint32(1, true), data: bytes.subarray(header), acks });
-    };
-    this.ws.onclose = (event) => this.onClose(event.reason || 'The connection to the server closed.');
   }
 
   send(message: ClientMessage): void {
     if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(message));
   }
 
-  sendInput(words: Int32Array, sequence: number): void {
+  sendInput(words: Int32Array, sequence: number, tick: number): void {
     if (this.ws.readyState !== WebSocket.OPEN) return;
     this.input.setUint8(0, BINARY_INPUT);
     this.input.setUint32(1, sequence, true);
-    for (let i = 0; i < INPUT_WORDS; i++) this.input.setInt32(5 + i * 4, words[i], true);
-    this.ws.send(this.input.buffer);
+    this.input.setUint32(5, tick, true);
+    for (let i = 0; i < INPUT_WORDS; i++) this.input.setInt32(9 + i * 4, words[i], true);
+    if (this.upLink) {
+      const packet = this.input.buffer.slice(0);
+      this.upLink.pass(() => { if (this.ws.readyState === WebSocket.OPEN) this.ws.send(packet); });
+    } else {
+      this.ws.send(this.input.buffer);
+    }
   }
 
   close(): void { this.ws.close(); }

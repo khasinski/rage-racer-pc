@@ -80,12 +80,20 @@ inside the image and the SQLite database in `/data`. The CapRover app needs:
 ## Protocol
 
 `shared/protocol.ts` lists every message. Control messages are JSON. The race
-uses binary frames: the client sends 8 input words each 50 Hz tick, and the
-server sends the server tick followed by the `RaceFrame` bytes. The client
-restores each frame into its own copy of the same race (`rw_apply_frame`),
-which it built from the same rules (`wasm/web_rules.c`, compiled into both
-modules). It plays frames back four ticks behind the newest one to hide
-network jitter.
+uses binary frames: the client sends 8 input words each 50 Hz tick, stamped
+with the race tick it predicted them for, and the server sends the server
+tick, per player the last input applied and how early the latest one
+arrived, then the `RaceFrame` bytes. The server applies each input at its
+stamped tick. A player's client restores each frame into its own copy of the
+same race (`rw_apply_frame`, built from the same rules in
+`wasm/web_rules.c`, compiled into both modules), replays its unacknowledged
+inputs and keeps its clock a couple of ticks ahead of the server by that
+margin. Corrections to a drawn car ease out over a few steps instead of
+jumping. Spectators play frames back a few ticks behind the newest one.
+
+`node scripts/net-check.mjs "<disc>"` measures the corrections and jerk
+under simulated latency, jitter and loss (the client takes the same
+`?net=rtt:150,jitter:20,loss:1` query).
 
 ## Checks
 

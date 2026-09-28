@@ -3,7 +3,7 @@
 // RaceFrame to everyone watching, reports race events and stores the results.
 import type { WebSocket } from 'ws';
 import {
-  BINARY_FRAME, BINARY_INPUT, INPUT_WORDS,
+  ACK_WORDS, BINARY_FRAME, BINARY_INPUT, INPUT_WORDS,
   type RaceEvent, type RaceResult, type RaceSeat, type RoomSettings, type ServerMessage,
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
@@ -20,6 +20,12 @@ const END_DELAY_MS = 2_500; // lets the last finisher see the line before result
 /* A client this far behind on frames skips some instead of queueing more. */
 const BACKLOG_BYTES = 256 * 1024;
 const NEUTRAL_INPUT = new Int32Array([1, 0, 0, 0, 0, 0, 0, 0]);
+/* Inputs waiting for their tick: at most this many per player, at most this
+ * many ticks ahead (a client clock gone wrong cannot stall its car). */
+const INPUT_QUEUE_LIMIT = 64;
+const INPUT_LEAD_LIMIT = 25;
+
+interface PendingInput { sequence: number; tick: number; words: Int32Array }
 
 export interface Racer { userId: number; name: string; variant: number; manual: boolean }
 
@@ -40,7 +46,8 @@ export class Race {
   private readonly raceId: number;
   private readonly seats: RaceSeat[]; // players first, in seat order, then the rivals
   private readonly seatOf: Map<number, number>; // userId -> seat
-  private readonly acks: Uint32Array; // per player seat: last input sequence, then the tick that first used it
+  private readonly acks: Uint32Array; // per player seat: last input applied, its tick, the latest input's margin
+  private readonly pending: PendingInput[][]; // per player seat, in sequence order
   private readonly viewers = new Set<number>(); // everyone receiving the race (players and spectators)
   private readonly awaiting: Set<number>; // players the start waits for, until loadDeadline
   private readonly retiring = new Set<number>(); // seats given up before the start, retired at it
@@ -67,7 +74,8 @@ export class Race {
         : { userId: null, name: `CPU ${seat - racers.length + 1}`, variant: -1, manual: false });
     }
     this.seatOf = new Map(racers.map((racer, seat) => [racer.userId, seat]));
-    this.acks = new Uint32Array(racers.length * 2);
+    this.acks = new Uint32Array(racers.length * ACK_WORDS);
+    this.pending = racers.map(() => []);
     this.awaiting = new Set(this.seatOf.keys());
     this.laps = this.seats.map(() => 0);
     this.status = this.seats.map(() => STATUS_DRIVING);
@@ -143,16 +151,35 @@ export class Race {
     if (seat !== undefined) this.sim.setInput(this.handle, seat, NEUTRAL_INPUT);
   }
 
+  /** Queues a player's input for the tick the client used it for (a late
+   *  one applies at the next tick); the margin tells the client how early it
+   *  arrived, so it can keep its clock just ahead. */
   input(userId: number, data: Buffer): void {
     const seat = this.seatOf.get(userId);
-    if (seat === undefined || data.length !== 5 + INPUT_WORDS * 4 || data[0] !== BINARY_INPUT) return;
+    if (seat === undefined || data.length !== 9 + INPUT_WORDS * 4 || data[0] !== BINARY_INPUT) return;
     const sequence = data.readUInt32LE(1);
-    if (sequence <= this.acks[seat * 2]) return; // late duplicate
+    const queue = this.pending[seat];
+    const newest = queue.length ? queue[queue.length - 1].sequence : this.acks[seat * ACK_WORDS];
+    if (sequence <= newest || queue.length >= INPUT_QUEUE_LIMIT) return; // duplicate or flood
+    const next = this.sim.simTick(this.handle) + 1;
+    const tick = data.readUInt32LE(5);
     const words = new Int32Array(INPUT_WORDS);
-    for (let i = 0; i < INPUT_WORDS; i++) words[i] = data.readInt32LE(5 + i * 4);
-    if (!this.sim.setInput(this.handle, seat, words)) return;
-    this.acks[seat * 2] = sequence;
-    this.acks[seat * 2 + 1] = this.sim.simTick(this.handle) + 1; // used from the next tick
+    for (let i = 0; i < INPUT_WORDS; i++) words[i] = data.readInt32LE(9 + i * 4);
+    queue.push({ sequence, tick: Math.min(Math.max(tick, next), next + INPUT_LEAD_LIMIT), words });
+    this.acks[seat * ACK_WORDS + 2] = (tick - next) >>> 0;
+  }
+
+  /** Applies every queued input due at the coming tick, in order. */
+  private applyInputs(): void {
+    const next = this.sim.simTick(this.handle) + 1;
+    this.pending.forEach((queue, seat) => {
+      while (queue.length && queue[0].tick <= next) {
+        const input = queue.shift()!;
+        if (!this.sim.setInput(this.handle, seat, input.words)) continue;
+        this.acks[seat * ACK_WORDS] = input.sequence;
+        this.acks[seat * ACK_WORDS + 1] = next;
+      }
+    });
   }
 
   /** Players still loading once the load timeout has passed. */
@@ -176,6 +203,7 @@ export class Race {
       this.room.broadcast({ t: 'raceGo' });
       outcome = 'started';
     }
+    this.applyInputs();
     const phase = this.sim.tick(this.handle);
     const serverTick = this.sim.simTick(this.handle);
     // The field moves every second tick (25 Hz); publish each such state.
@@ -199,7 +227,7 @@ export class Race {
     packet[0] = BINARY_FRAME;
     packet.writeUInt32LE(serverTick >>> 0, 1);
     packet[5] = this.seatOf.size;
-    this.acks.forEach((value, i) => packet.writeUInt32LE(value, 6 + i * 4));
+    this.acks.forEach((value, i) => packet.writeUInt32LE(value >>> 0, 6 + i * 4));
     packet.set(frame, header);
     for (const id of this.viewers) {
       const ws = this.room.socket(id);

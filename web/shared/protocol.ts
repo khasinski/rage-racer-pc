@@ -1,17 +1,22 @@
 // Messages between the browser and the multiplayer server (web/server).
 // Control traffic is JSON text frames; the race itself uses binary frames:
-//   client -> server  [BINARY_INPUT]  u32 sequence number, 8 int32 input words
+//   client -> server  [BINARY_INPUT]  u32 sequence number, u32 the race tick the
+//                     client used the input for, 8 int32 input words
 //   server -> client  [BINARY_FRAME]  u32 server tick, u8 player count, per
-//                     player (seat order) u32 last input sequence received and
-//                     u32 the server tick that first used it, then the
+//                     player (seat order) u32 last input sequence applied, u32
+//                     the tick it was applied at and i32 how many ticks early
+//                     the latest input arrived (negative: late), then the
 //                     RaceFrame wire bytes (all little-endian)
-// The acknowledgements let each player's client predict its own car.
+// The server applies each input at the tick the client predicted it for, so
+// a player's own car needs no correction when inputs arrive in time; the
+// clients steer their clocks by the reported margin.
 // Types only: shared by the Vite client and the Node server (type stripping).
 
 export const DEFAULT_PORT = 7243;
 export const BINARY_INPUT = 1;
 export const BINARY_FRAME = 2;
 export const INPUT_WORDS = 8;
+export const ACK_WORDS = 3; // per player in a frame: sequence, applied tick, margin
 
 export interface UserInfo { id: number; name: string; admin: boolean }
 

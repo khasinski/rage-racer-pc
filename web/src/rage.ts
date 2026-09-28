@@ -281,6 +281,15 @@ export class Rage {
   /** Whether a seat's car has left the picture (retired, or finished and faded out). */
   seatGone(seat: number): boolean { return this.num('rw_seat_gone', [seat]) === 1; }
 
+  // ---- network diagnostics (scripts/net-check.mjs) -------------------------
+  /** Server-frame corrections: frames, own mean/max, others mean/max, mean replayed ticks. */
+  netStats(): number[] { return Array.from(new Float32Array(this.m.HEAPU8.buffer, this.call('rw_net_stats'), 6)); }
+  resetNetStats(): void { this.call('rw_net_stats_reset'); }
+  /** Where a seat's car was drawn in the last frame (x, y, z). */
+  presented(seat: number): number[] {
+    return Array.from(new Float32Array(this.m.HEAPU8.buffer, this.num('rw_presented', [seat]), 3));
+  }
+
   /** Place (0 when out of the race), lap and SimDriverStatus of a seat. */
   standing(seat: number): { place: number; lap: number; status: number } {
     return { place: this.num('rw_seat_place', [seat]), lap: this.num('rw_seat_lap', [seat]),
@@ -289,6 +298,8 @@ export class Rage {
 
   /** Sequence number of the controls rw_take_input just handed out. */
   inputSeq(): number { return this.num('rw_input_seq', []) >>> 0; }
+  /** The race tick the latest taken input is predicted for. */
+  inputTick(): number { return this.num('rw_input_tick', []) >>> 0; }
 
   /** The controls to send this tick (8 input words; gear edges consumed). */
   takeInput(): Int32Array {

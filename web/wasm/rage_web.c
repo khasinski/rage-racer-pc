@@ -80,6 +80,14 @@ static struct Prediction {
     int tickInputReady;
 } s_predict;
 
+/* Correction smoothing. When a server frame moves a predicted car, the
+ * difference is kept as an offset on its drawn pose and eased out over a
+ * few physics steps, so a correction slides instead of teleporting. Jumps
+ * too large to be prediction error (a respawn) are shown at once. */
+enum { SMOOTH_SNAP_DISTANCE = 3000 };
+#define SMOOTH_DECAY 0.55f /* kept per 25 Hz step: ~90% gone after 4 steps */
+static struct Smooth { float x, y, z, yaw; } s_smooth[DRIVER_SEAT_LIMIT];
+
 /* The local controls. Gear, camera and mirror requests are edges: they stay
  * pending until a tick (or game frame) uses them. */
 static struct Controls {
@@ -97,6 +105,7 @@ enum { FINISH_FADE_STEPS = 62 };
 typedef struct FinishRun {
     int steps;          /* physics steps since the finish, 0 while racing */
     float motion[3];    /* its last step's motion while driving */
+    s32 raw[3];         /* its last simulated position (no smoothing) */
     float ox, oy, oz;   /* distance travelled past the line */
 } FinishRun;
 
@@ -224,6 +233,7 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     RenderWorldInit(&s_world, s_instances, WEB_INSTANCE_CAPACITY);
     s_localSeat = localSeat;
     memset(&s_predict, 0, sizeof(s_predict));
+    memset(s_smooth, 0, sizeof(s_smooth));
     memset(&s_controls, 0, sizeof(s_controls));
     s_controls.input.steering.mode = STEERING_DIGITAL;
     memset(&s_view, 0, sizeof(s_view)); /* the car view, no snapshot yet */
@@ -276,6 +286,8 @@ EMSCRIPTEN_KEEPALIVE int32_t *rw_take_input(void) {
     }
     return words;
 }
+/* The local race tick the controls rw_take_input handed out are used for. */
+EMSCRIPTEN_KEEPALIVE uint32_t rw_input_tick(void) { return s_predict.sent[s_predict.inputSeq % INPUT_HISTORY].tick; }
 EMSCRIPTEN_KEEPALIVE uint32_t rw_input_seq(void) { return s_predict.inputSeq; }
 
 /* Applies one authoritative RaceFrame from the server. A spectator only
@@ -284,6 +296,65 @@ EMSCRIPTEN_KEEPALIVE uint32_t rw_input_seq(void) { return s_predict.inputSeq; }
  * arrivalTick the server tick that first used it. Returns how many ticks
  * later than predicted that input was used (the client clock's error; 0 for
  * a spectator), or INT32_MIN when the frame does not fit the race. */
+/* Network diagnostics for players: how far each server frame moved the
+ * predicted cars (world units), own car and the others, and how many ticks
+ * were replayed. Read and reset by the network checks (scripts/net-check.mjs). */
+static struct NetStats {
+    double frames, ownSum, ownMax, otherSum, otherMax, otherCount, replaySum;
+} s_netStats;
+static float s_netStatsOut[6];
+EMSCRIPTEN_KEEPALIVE const float *rw_net_stats(void) {
+    const double frames = s_netStats.frames > 0 ? s_netStats.frames : 1;
+    const double others = s_netStats.otherCount > 0 ? s_netStats.otherCount : 1;
+    s_netStatsOut[0] = (float)s_netStats.frames;
+    s_netStatsOut[1] = (float)(s_netStats.ownSum / frames);
+    s_netStatsOut[2] = (float)s_netStats.ownMax;
+    s_netStatsOut[3] = (float)(s_netStats.otherSum / others);
+    s_netStatsOut[4] = (float)s_netStats.otherMax;
+    s_netStatsOut[5] = (float)(s_netStats.replaySum / frames);
+    return s_netStatsOut;
+}
+EMSCRIPTEN_KEEPALIVE void rw_net_stats_reset(void) { memset(&s_netStats, 0, sizeof(s_netStats)); }
+
+static void RecordCorrections(const s32 before[DRIVER_SEAT_LIMIT][3], const int driving[DRIVER_SEAT_LIMIT],
+                              u32 replayed) {
+    s_netStats.frames += 1;
+    s_netStats.replaySum += replayed;
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        const PlayerCarRuntime *car = &s_race->sim.drivers[seat].car;
+        if (!driving[seat] || s_race->sim.drivers[seat].status != SIM_DRIVING) continue;
+        const double dx = car->x - before[seat][0], dy = car->y - before[seat][1], dz = car->z - before[seat][2];
+        const double moved = sqrt(dx * dx + dy * dy + dz * dz);
+        if (seat == s_localSeat) {
+            s_netStats.ownSum += moved;
+            if (moved > s_netStats.ownMax) s_netStats.ownMax = moved;
+        } else {
+            s_netStats.otherSum += moved;
+            s_netStats.otherCount += 1;
+            if (moved > s_netStats.otherMax) s_netStats.otherMax = moved;
+        }
+    }
+}
+
+static void SmoothCorrections(const s32 before[DRIVER_SEAT_LIMIT][3], const s32 beforeYaw[DRIVER_SEAT_LIMIT],
+                              const int driving[DRIVER_SEAT_LIMIT]) {
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        const PlayerCarRuntime *car = &s_race->sim.drivers[seat].car;
+        struct Smooth *smooth = &s_smooth[seat];
+        const float dx = (float)(before[seat][0] - car->x), dy = (float)(before[seat][1] - car->y);
+        const float dz = (float)(before[seat][2] - car->z);
+        if (!driving[seat] || s_race->sim.drivers[seat].status != SIM_DRIVING ||
+            dx * dx + dy * dy + dz * dz > (float)SMOOTH_SNAP_DISTANCE * SMOOTH_SNAP_DISTANCE) {
+            memset(smooth, 0, sizeof(*smooth));
+            continue;
+        }
+        smooth->x += dx;
+        smooth->y += dy;
+        smooth->z += dz;
+        smooth->yaw += (float)((((beforeYaw[seat] - car->bodyYaw) & ANGLE_MASK) ^ 0x800) - 0x800);
+    }
+}
+
 EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint32_t ackSeq,
                                             uint32_t arrivalTick) {
     static RaceFrame frame;
@@ -291,6 +362,16 @@ EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint3
     if (!s_race || !s_net || !wire || size != RACE_FRAME_WIRE_SIZE ||
         !DecodeRaceFrame(&s_race->sim, wire, (size_t)size, &frame)) return INT32_MIN;
     const u32 present = s_race->sim.tick;
+    s32 before[DRIVER_SEAT_LIMIT][3], beforeYaw[DRIVER_SEAT_LIMIT];
+    int driving[DRIVER_SEAT_LIMIT];
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        const PlayerCarRuntime *car = &s_race->sim.drivers[seat].car;
+        before[seat][0] = car->x;
+        before[seat][1] = car->y;
+        before[seat][2] = car->z;
+        beforeYaw[seat] = car->bodyYaw;
+        driving[seat] = s_race->sim.drivers[seat].status == SIM_DRIVING;
+    }
     if (!RestoreRaceFrame(&s_race->sim, &frame)) return INT32_MIN;
     if (s_localSeat < 0) return 0;
     const int known = ackSeq && ackSeq <= p->inputSeq && p->inputSeq - ackSeq < INPUT_HISTORY;
@@ -300,6 +381,7 @@ EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint3
         return error;
     }
     const u32 oldest = p->inputSeq >= INPUT_HISTORY ? p->inputSeq - INPUT_HISTORY + 1 : 1;
+    const u32 restored = s_race->sim.tick;
     while (s_race->sim.tick < present) {
         const u32 next = s_race->sim.tick + 1;
         for (u32 seq = ackSeq + 1 > oldest ? ackSeq + 1 : oldest; seq <= p->inputSeq; ++seq) {
@@ -308,6 +390,8 @@ EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint3
         }
         if (!StepRaceSim(&s_race->sim)) break;
     }
+    if (present >= restored) RecordCorrections(before, driving, present - restored);
+    SmoothCorrections(before, beforeYaw, driving);
     return error;
 }
 
@@ -482,10 +566,23 @@ static void AdvanceFinishRuns(const RaceSim *sim) {
             pose.y += (s32)lroundf(run->oy);
             pose.z += (s32)lroundf(run->oz);
         } else if (driver->status == SIM_DRIVING && s_view.haveStep) {
-            run->motion[0] = (float)(pose.x - s_view.poseCurrent[seat].x);
-            run->motion[1] = (float)(pose.y - s_view.poseCurrent[seat].y);
-            run->motion[2] = (float)(pose.z - s_view.poseCurrent[seat].z);
+            run->motion[0] = (float)(pose.x - run->raw[0]);
+            run->motion[1] = (float)(pose.y - run->raw[1]);
+            run->motion[2] = (float)(pose.z - run->raw[2]);
         }
+        run->raw[0] = driver->car.x;
+        run->raw[1] = driver->car.y;
+        run->raw[2] = driver->car.z;
+        /* A recent correction still sliding out (see SmoothCorrections). */
+        struct Smooth *smooth = &s_smooth[seat];
+        pose.x += (s32)lroundf(smooth->x);
+        pose.y += (s32)lroundf(smooth->y);
+        pose.z += (s32)lroundf(smooth->z);
+        pose.bodyYaw = (pose.bodyYaw + (s32)lroundf(smooth->yaw)) & ANGLE_MASK;
+        smooth->x *= SMOOTH_DECAY;
+        smooth->y *= SMOOTH_DECAY;
+        smooth->z *= SMOOTH_DECAY;
+        smooth->yaw *= SMOOTH_DECAY;
         s_view.posePrevious[seat] = s_view.haveStep ? s_view.poseCurrent[seat] : pose;
         s_view.poseCurrent[seat] = pose;
     }
@@ -890,13 +987,26 @@ static int SubmitScene(int page) {
 
 /* Vehicles carry the previous physics step as their previous transform;
  * everything else animates per clock tick. */
+/* Where each car was drawn in the last frame (its first part), for checks. */
+static float s_presented[DRIVER_SEAT_LIMIT][3];
+EMSCRIPTEN_KEEPALIVE const float *rw_presented(int seat) {
+    return seat >= 0 && seat < DRIVER_SEAT_LIMIT ? s_presented[seat] : s_presented[0];
+}
+
 static void InterpolateVehicles(float t) {
+    int seen[DRIVER_SEAT_LIMIT] = {0};
     for (uint32_t i = 0; i < s_world.instanceCount; ++i) {
         RenderMeshInstance *instance = &s_world.instances[i];
         if (instance->entity >= DRIVER_SEAT_LIMIT) continue;
         RenderTransform mixed;
         RenderInterpolateTransform(&instance->previousTransform, &instance->transform, t, &mixed);
         instance->transform = mixed;
+        if (!seen[instance->entity]) {
+            seen[instance->entity] = 1;
+            s_presented[instance->entity][0] = mixed.position.x;
+            s_presented[instance->entity][1] = mixed.position.y;
+            s_presented[instance->entity][2] = mixed.position.z;
+        }
         /* update_camera.c draws the player's car only outside the car view. */
         if (instance->entity == (uint32_t)s_view.viewSeat && s_view.viewCurrent == WEB_VIEW_CAR)
             instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
