@@ -3,7 +3,7 @@
 import { randomInt } from 'node:crypto';
 import type { WebSocket } from 'ws';
 import {
-  PAINTABLE_MODELS, type ClientMessage, type Paint, type RoomPlayer, type RoomSettings, type RoomState, type RoomSummary, type ServerMessage, type UserInfo,
+  CLOSE_REPLACED, PAINTABLE_MODELS, type ClientMessage, type Paint, type RoomPlayer, type RoomSettings, type RoomState, type RoomSummary, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
 import { Race } from './race.ts';
@@ -80,7 +80,7 @@ export class Lobby {
         other.replaced = true;
         this.clients.delete(other);
         send(other, { t: 'error', message: 'You connected somewhere else.' });
-        other.ws.close(4001, 'replaced');
+        other.ws.close(CLOSE_REPLACED, 'replaced');
       }
     }
     this.clients.add(client);

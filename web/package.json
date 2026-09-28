@@ -15,7 +15,8 @@
     "test:e2e": "node scripts/e2e.mjs",
     "test:finish": "node scripts/finish-check.mjs",
     "test:grid": "node scripts/grid-test.mjs",
-    "test:garage": "node scripts/garage-check.mjs"
+    "test:garage": "node scripts/garage-check.mjs",
+    "test:replaced": "node scripts/replaced-check.mjs"
   },
   "dependencies": {
     "node-datachannel": "^0.33.4",

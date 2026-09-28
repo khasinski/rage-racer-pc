@@ -25,6 +25,8 @@ export const BINARY_FRAME = 2;
 /* Data channel heartbeat: the client sends it, the server echoes it back. */
 export const BINARY_PING = 3;
 export const INPUT_WORDS = 8;
+/* WebSocket close code of a connection a newer one of the same account took over. */
+export const CLOSE_REPLACED = 4001;
 export const ACK_WORDS = 3; // per player in a frame: sequence, applied tick, margin
 export const INPUT_BYTES = 8 + INPUT_WORDS * 4; // one input in a BINARY_INPUT packet
 export const INPUT_REPEAT = 4; // inputs per data channel packet

@@ -1,7 +1,7 @@
 // Talks to the multiplayer server: REST for accounts, one WebSocket for the
 // lobby, rooms and the race stream (see shared/protocol.ts).
 import {
-  ACK_WORDS, BINARY_FRAME, BINARY_INPUT, BINARY_PING, INPUT_BYTES, INPUT_REPEAT, INPUT_WORDS,
+  ACK_WORDS, BINARY_FRAME, CLOSE_REPLACED, BINARY_INPUT, BINARY_PING, INPUT_BYTES, INPUT_REPEAT, INPUT_WORDS,
   type ClientMessage, type Garage, type Paint, type RecordRow, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
 
@@ -188,7 +188,8 @@ export class Connection {
   private readonly rtcDownLink = LinkSimulator.fromAddress(false);
   onMessage: (message: ServerMessage) => void = () => {};
   onFrame: (frame: Frame) => void = () => {};
-  onClose: (reason: string) => void = () => {};
+  /** `replaced`: a newer connection of the same account took this one over. */
+  onClose: (reason: string, replaced: boolean) => void = () => {};
 
   constructor(token: string) {
     const url = new URL('ws', document.baseURI);
@@ -203,7 +204,7 @@ export class Connection {
     };
     this.ws.onclose = (event) => {
       this.closeChannel();
-      this.onClose(event.reason || 'The connection to the server closed.');
+      this.onClose(event.reason || 'The connection to the server closed.', event.code === CLOSE_REPLACED);
     };
   }
 

@@ -68,9 +68,17 @@ function connect() {
     }
     else if (race.mode === 'spectator') frames.push(frame);
   };
-  connection.onClose = (reason) => {
+  connection.onClose = (reason, replaced) => {
     connection = null;
     if (!session.token) return;
+    if (replaced) {
+      // Another window took the account over. Reconnecting would take it back
+      // and the two windows would push each other out for ever: stay put.
+      const text = 'You are playing in another window. Reload this page to play here instead.';
+      if (app.screen === 'race' && onlineRace()) setHint(text);
+      else toast(text);
+      return;
+    }
     // The server keeps your place for a while: stay on the race or room and
     // reconnect; it puts you back (and back in your car) when you return.
     if (app.screen === 'race' && onlineRace()) setHint('Connection lost — reconnecting…');
