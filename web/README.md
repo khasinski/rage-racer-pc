@@ -108,3 +108,12 @@ node scripts/parity.mjs "<disc>" 2000 > wasm.txt && cmp native.txt wasm.txt
 - **Sound gaps:** no SPU reverb (the retail tunnels' echo), no announcer
   lines about the rivals, no fly-by/shuttle scenery sounds, and no results
   music after the finish.
+- **Redeploying stops running races.** Races live in the server's memory, so
+  a redeploy ends them. Planned: on SIGTERM the server freezes every race,
+  writes rooms, members and each race's exact `RaceFrame` to `/data`, tells
+  the clients the race is paused for an update and exits. The new server
+  restores the rooms and the paused races from that snapshot. Clients
+  reconnect on their own (places are already kept), reload the race and
+  report back, and the race resumes after a short countdown once every
+  player is back or a timeout passes. Until then, check the room list for
+  running races before deploying.
