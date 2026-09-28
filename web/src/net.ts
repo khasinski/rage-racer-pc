@@ -174,6 +174,8 @@ async function inflate(data: ArrayBuffer): Promise<ArrayBuffer> {
  */
 export class Connection {
   private readonly ws: WebSocket;
+  /* Messages sent while the WebSocket was still opening. */
+  private readonly unsent: string[] = [];
   private pc: RTCPeerConnection | null = null;
   private channel: RTCDataChannel | null = null;
   /* The latest inputs (INPUT_BYTES each, oldest first): the data channel
@@ -197,7 +199,10 @@ export class Connection {
     url.searchParams.set('token', token);
     this.ws = new WebSocket(url);
     this.ws.binaryType = 'arraybuffer';
-    this.ws.onopen = () => { if (RTC_WANTED) void this.openChannel(); };
+    this.ws.onopen = () => {
+      for (const text of this.unsent.splice(0)) this.ws.send(text);
+      if (RTC_WANTED) void this.openChannel();
+    };
     this.ws.onmessage = (event) => {
       if (this.downLink) this.downLink.pass(() => this.receive(event.data));
       else this.receive(event.data);
@@ -301,7 +306,9 @@ export class Connection {
   }
 
   send(message: ClientMessage): void {
-    if (this.ws.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(message));
+    const text = JSON.stringify(message);
+    if (this.ws.readyState === WebSocket.OPEN) this.ws.send(text);
+    else if (this.ws.readyState === WebSocket.CONNECTING) this.unsent.push(text); // not lost: sent on open
   }
 
   sendInput(words: Int32Array, sequence: number, tick: number): void {
