@@ -132,7 +132,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   display: grid; gap: 4px; font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums;
 }
 #standings li {
-  display: grid; grid-template-columns: 2.2em minmax(6em, max-content) auto; gap: 10px; align-items: baseline;
+  display: grid; grid-template-columns: 2.2em minmax(6em, max-content) auto 4.5em; gap: 10px; align-items: baseline;
   background: rgba(7, 9, 12, 0.7); padding: 4px 12px; border-left: 3px solid var(--line); border-radius: 3px;
 }
 #standings li.me { border-left-color: var(--accent); }
@@ -140,6 +140,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 #hud #standings b { font-size: 15px; font-style: normal; }
 #hud #standings span { font-size: 15px; letter-spacing: normal; color: var(--text); }
 #hud #standings span.dim { font-size: 12px; font-weight: 400; color: var(--dim); }
+#hud #standings span.dim:last-child { text-align: right; }
 #spectating {
   position: absolute; left: 0; right: 0; top: 18px; margin: 0 auto; width: fit-content;
   background: rgba(7, 9, 12, 0.7); padding: 6px 14px; border-radius: 3px; font-size: 15px; font-weight: 600;

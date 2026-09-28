@@ -35,6 +35,8 @@ export interface RoomPlayer {
   ready: boolean;
   host: boolean;
   spectator: boolean; // watches instead of racing
+  online: boolean; // false while reconnecting (the place is kept for a while)
+  latencyMs: number | null; // round trip to the server
 }
 
 export interface RoomSummary {
@@ -102,6 +104,8 @@ export type ServerMessage =
   // The rest of the field has this long to finish once the first car is home.
   | { t: 'finishDeadline'; remainingMs: number }
   | { t: 'raceGo' }
+  // Every couple of seconds: each room member's round trip (null offline).
+  | { t: 'latency'; latency: Record<number, number | null> }
   | { t: 'raceEvent'; event: RaceEvent }
   | { t: 'results'; raceId: number; results: RaceResult[] }
   | { t: 'error'; message: string };

@@ -40,7 +40,10 @@ let rooms: RoomSummary[] = [];
 let room: RoomState | null = null;
 let online = false; // the current race is driven by the server
 /* Online: the players' seats and names, for the standings in the HUD. */
-let players: { seat: number; name: string }[] = [];
+let players: { seat: number; name: string; userId: number | null }[] = [];
+/* Round trips by user id (null while a player is reconnecting). */
+let latency: Record<number, number | null> = {};
+let reconnectDelay = 1000;
 let localSeat = 0;
 let standingsAt = 0;
 /* Every seat's name (players, then rivals), for spectating. */
@@ -169,12 +172,13 @@ function connect() {
   connection.onFrame = (frame) => { if (online) frames.push(frame); };
   connection.onClose = (reason) => {
     connection = null;
-    room = null;
-    if (online) stopRace();
     if (!session.token) return;
-    toast(`${reason} Reconnecting…`);
-    if (screen === 'room') show('lobby');
-    setTimeout(() => { if (!connection && session.token && discLoaded) connect(); }, 3000);
+    // The server keeps your place for a while: stay on the race or room and
+    // reconnect; it puts you back (and back in your car) when you return.
+    if (screen === 'race' && online) $('hud-hint').textContent = 'Connection lost — reconnecting…';
+    else toast(`${reason} Reconnecting…`);
+    setTimeout(() => { if (!connection && session.token && discLoaded) connect(); }, reconnectDelay);
+    reconnectDelay = Math.min(5000, reconnectDelay * 1.5);
   };
 }
 
@@ -188,6 +192,18 @@ function onMessage(message: ServerMessage) {
     case 'welcome':
       session.discId = message.discId;
       $('lobby-status').textContent = '';
+      reconnectDelay = 1000;
+      if (screen === 'race' && online) $('hud-hint').textContent = '';
+      break;
+    case 'latency':
+      latency = message.latency;
+      if (room && screen === 'room') {
+        for (const m of room.members) {
+          m.online = latency[m.userId] !== null;
+          m.latencyMs = latency[m.userId] ?? null;
+        }
+        renderRoom(rage, room, session.user!, automaticCars);
+      }
       break;
     case 'rooms':
       rooms = message.rooms;
@@ -334,7 +350,7 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
     return;
   }
   $('hud-hint').textContent = 'Waiting for the other players…';
-  players = message.seats.slice(0, message.humans).map((seat, index) => ({ seat: index, name: seat.name }));
+  players = message.seats.slice(0, message.humans).map((seat, index) => ({ seat: index, name: seat.name, userId: seat.userId }));
   seatNames = message.seats.map((seat) => seat.name);
   localSeat = message.localSeat;
   if (localSeat < 0) $('hud-hint').textContent = 'Watching the race…';
@@ -637,7 +653,11 @@ function drawStandings(rage: Rage) {
     const state = document.createElement('span');
     state.className = 'dim';
     state.textContent = row.status === 2 ? 'finished' : row.status === 3 ? '' : `lap ${Math.max(1, row.lap)}`;
-    item.append(place, name, state);
+    const ping = document.createElement('span');
+    ping.className = 'dim';
+    const ms = row.userId !== null ? latency[row.userId] : undefined;
+    ping.textContent = ms === null ? 'offline' : ms === undefined ? '' : `${ms} ms`;
+    item.append(place, name, state, ping);
     return item;
   }));
 }

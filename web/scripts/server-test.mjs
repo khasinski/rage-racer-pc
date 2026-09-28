@@ -43,7 +43,7 @@ async function connect(name, password) {
   const ws = new WebSocket(`ws://localhost:${port}/ws?token=${body.token}`);
   ws.binaryType = 'arraybuffer';
   const p = { name, ws, token: body.token, user: body.user, messages: [], frames: 0, lastTick: 0 };
-  ws.onmessage = (event) => {
+  p.handler = ws.onmessage = (event) => {
     if (typeof event.data === 'string') p.messages.push(JSON.parse(event.data));
     else {
       const view = new DataView(event.data);
@@ -53,7 +53,7 @@ async function connect(name, password) {
     }
   };
   await new Promise((r) => { ws.onopen = r; });
-  p.send = (message) => ws.send(JSON.stringify(message));
+  p.send = (message) => p.ws.send(JSON.stringify(message));
   p.last = (type) => p.messages.filter((m) => m.t === type).at(-1);
   p.errors = () => p.messages.filter((m) => m.t === 'error').map((m) => m.message);
   p.sequence = 0;
@@ -63,7 +63,7 @@ async function connect(name, password) {
     view.setUint8(0, 1);
     view.setUint32(1, ++p.sequence, true);
     [1, 0, 0, 0, throttle, 0, 0, 0].forEach((word, i) => view.setInt32(5 + i * 4, word, true));
-    ws.send(buffer);
+    p.ws.send(buffer);
   };
   return p;
 }
@@ -152,6 +152,21 @@ try {
   newbie.send({ t: 'joinRoom', roomId: room.id });
   check(await until(() => newbie.last('raceStart')?.localSeat === -1), 'a spectator joins the running race without a seat');
   check(await until(() => newbie.frames > 20), 'the spectator receives the race stream');
+  // A player who drops keeps the seat and gets back into the running race.
+  const seatBefore = rage.last('raceStart').localSeat;
+  rage.ws.close();
+  check(await until(() => admin.last('room')?.room.members.find((m) => m.name === 'rage')?.online === false),
+        'a dropped player stays in the room, marked offline');
+  const back = new WebSocket(`ws://localhost:${port}/ws?token=${rage.token}`);
+  back.binaryType = 'arraybuffer';
+  rage.ws = back;
+  rage.messages.length = 0;
+  back.onmessage = rage.handler;
+  await new Promise((r) => { back.onopen = r; });
+  check(await until(() => rage.last('raceStart')?.localSeat === seatBefore), 'reconnecting puts the player back in their car');
+  const framesBack = rage.frames;
+  check(await until(() => rage.frames > framesBack + 10), 'the race stream resumes after reconnecting');
+  check(await until(() => typeof admin.last('latency')?.latency[rage.user.id] === 'number'), 'rooms hear every player latency');
   const t0 = Date.now();
   while (!admin.last('results') && Date.now() - t0 < 240_000) {
     admin.input(256);

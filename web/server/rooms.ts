@@ -23,11 +23,19 @@ const FINISH_GRACE_SHARE = 0.3;
 const END_DELAY_MS = 2_500; // lets the last finisher see the line before results
 const CHAT_LIMIT = 200;
 const MAX_SPECTATORS = 16;
+/* A dropped connection keeps its place this long outside a race (a racing
+ * seat waits until the race is over), so a reconnect puts the player back. */
+const OFFLINE_GRACE_MS = Number(process.env.RAGE_OFFLINE_GRACE_MS ?? 60_000);
+/* A client this far behind on frames skips some instead of queueing more. */
+const BACKLOG_BYTES = 256 * 1024;
+const NEUTRAL_INPUT = new Int32Array([1, 0, 0, 0, 0, 0, 0, 0]);
 
 export interface Client {
   ws: WebSocket;
   user: UserInfo;
   roomId: number | null;
+  latencyMs: number | null; // measured by the keep-alive pings (main.ts)
+  replaced?: boolean; // superseded by a newer connection of the same account
 }
 
 interface Member {
@@ -36,6 +44,7 @@ interface Member {
   manual: boolean;
   ready: boolean;
   spectator: boolean;
+  offlineSince: number | null; // connection lost; the place waits OFFLINE_GRACE_MS
 }
 
 interface RaceRun {
@@ -86,27 +95,68 @@ export class Lobby {
   constructor(sim: Simulation, store: Store) {
     this.sim = sim;
     this.store = store;
+    setInterval(() => this.sweep(Date.now()), 2000).unref();
   }
 
   // ---- connections -------------------------------------------------------
 
   connect(client: Client): void {
-    // One live connection per account: a new login replaces the old one.
+    // One live connection per account: a newer one takes over the older.
     for (const other of this.clients) {
       if (other.user.id === client.user.id) {
-        send(other, { t: 'error', message: 'You logged in somewhere else.' });
-        this.disconnect(other);
+        other.replaced = true;
+        this.clients.delete(other);
+        send(other, { t: 'error', message: 'You connected somewhere else.' });
         other.ws.close(4001, 'replaced');
       }
     }
     this.clients.add(client);
     send(client, { t: 'welcome', user: client.user, discId: this.sim.discId });
     send(client, { t: 'rooms', rooms: this.summaries() });
+    // Back from a dropped or replaced connection: the same place, and the race.
+    for (const room of this.rooms.values()) {
+      const member = room.members.get(client.user.id);
+      if (!member) continue;
+      const wasOffline = member.offlineSince !== null;
+      member.client.roomId = null;
+      member.client = client;
+      member.offlineSince = null;
+      client.roomId = room.id;
+      if (wasOffline) this.systemChat(room, `${client.user.name} is back.`);
+      this.publish(room);
+      const run = room.race;
+      if (run && (run.seatOf.has(client.user.id) || run.viewers.has(client.user.id))) this.watchRace(client);
+    }
   }
 
+  /** A lost connection keeps its place: offline for a while, not gone. */
   disconnect(client: Client): void {
-    if (!this.clients.delete(client)) return;
-    this.leave(client, 'disconnected');
+    if (!this.clients.delete(client) || client.replaced) return;
+    const room = this.roomOf(client);
+    const member = room?.members.get(client.user.id);
+    if (!room || !member || member.client !== client) return;
+    member.offlineSince = Date.now();
+    member.ready = false;
+    const seat = room.race?.seatOf.get(client.user.id);
+    if (room.race && seat !== undefined) this.sim.setInput(room.race.handle, seat, NEUTRAL_INPUT); // coast
+    this.systemChat(room, `${client.user.name} lost the connection.`);
+    this.publish(room);
+  }
+
+  /** Members offline past the grace period leave; a racing seat waits for
+   *  the race to end. Every couple of seconds, rooms hear their latencies. */
+  private sweep(now: number): void {
+    for (const room of [...this.rooms.values()]) {
+      for (const member of [...room.members.values()]) {
+        if (member.offlineSince === null || now - member.offlineSince < OFFLINE_GRACE_MS) continue;
+        if (room.race?.seatOf.has(member.client.user.id)) continue;
+        this.leave(member.client, 'disconnected');
+      }
+      if (!this.rooms.has(room.id)) continue;
+      const latency: Record<number, number | null> = {};
+      for (const [id, member] of room.members) latency[id] = member.offlineSince === null ? member.client.latencyMs : null;
+      for (const member of room.members.values()) send(member.client, { t: 'latency', latency });
+    }
   }
 
   message(client: Client, data: Buffer, binary: boolean): void {
@@ -238,7 +288,7 @@ export class Lobby {
       const candidate = this.sim.classCar(room.settings.classIndex, model);
       if (candidate >= 0) variant = candidate;
     }
-    room.members.set(client.user.id, { client, variant, manual: !this.sim.carAutomatic(variant), ready: false, spectator });
+    room.members.set(client.user.id, { client, variant, manual: !this.sim.carAutomatic(variant), ready: false, spectator, offlineSince: null });
     client.roomId = room.id;
     this.systemChat(room, `${client.user.name} joined.`);
     this.publish(room);
@@ -479,7 +529,10 @@ export class Lobby {
     packet.set(frame, header);
     for (const id of run.viewers) {
       const member = room.members.get(id);
-      if (member && member.client.ws.readyState === member.client.ws.OPEN) member.client.ws.send(packet);
+      if (!member || member.offlineSince !== null) continue;
+      const ws = member.client.ws;
+      // A slow link skips frames rather than falling ever further behind.
+      if (ws.readyState === ws.OPEN && ws.bufferedAmount < BACKLOG_BYTES) ws.send(packet);
     }
   }
 
@@ -568,7 +621,8 @@ export class Lobby {
     const members: RoomPlayer[] = [...room.members.values()].map((m) => ({
       userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual,
       ready: m.ready || m.client.user.id === room.hostId, host: m.client.user.id === room.hostId,
-      spectator: m.spectator,
+      spectator: m.spectator, online: m.offlineSince === null,
+      latencyMs: m.offlineSince === null ? m.client.latencyMs : null,
     }));
     const state: RoomState = { ...this.summary(room), members };
     for (const member of room.members.values()) send(member.client, { t: 'room', room: state });

@@ -120,12 +120,14 @@ export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic:
   const racers = room.members.filter((m) => !m.spectator);
   const watchers = room.members.filter((m) => m.spectator);
   const players = $<HTMLTableElement>('room-players');
-  players.replaceChildren(row(['#', 'Driver', 'Car', 'Gearbox', ''], true),
+  const ping = (m: { online: boolean; latencyMs: number | null }) =>
+    el('span', { className: 'dim' }, !m.online ? 'offline' : m.latencyMs === null ? '' : `${m.latencyMs} ms`);
+  players.replaceChildren(row(['#', 'Driver', 'Car', 'Gearbox', '', 'Ping'], true),
     ...racers.map((m, index) => row([String(index + 1), `${m.name}${m.host ? ' ★' : ''}`,
       carLabel(rage, m.variant), m.manual ? 'MT' : 'AT',
-      el('span', { className: m.ready ? 'ok' : 'dim' }, m.ready ? 'ready' : 'choosing')])));
+      el('span', { className: m.ready ? 'ok' : 'dim' }, m.ready ? 'ready' : 'choosing'), ping(m)])));
   if (watchers.length) {
-    players.append(el('tr', {}, el('td', { colSpan: 5, className: 'dim' },
+    players.append(el('tr', {}, el('td', { colSpan: 6, className: 'dim' },
       `Watching: ${watchers.map((m) => `${m.name}${m.host ? ' ★' : ''}`).join(', ')}`)));
   }
   const free = s.maxPlayers - racers.length;

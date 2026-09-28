@@ -132,22 +132,26 @@ const server = createServer((req, res) => {
 
 const sockets = new WebSocketServer({ noServer: true, maxPayload: 64 * 1024, perMessageDeflate: true });
 
-/* Keep-alive: a quiet room sends nothing, and proxies (nginx in front of
- * CapRover apps) close idle connections after about a minute. A ping every
- * KEEPALIVE_MS keeps the connection open; a socket that has not answered the
- * previous ping is dead and is closed, which also frees its seat. */
-const KEEPALIVE_MS = Number(process.env.RAGE_KEEPALIVE_MS ?? 20_000);
-const alive = new WeakMap<WebSocket, boolean>();
+/* Keep-alive and latency: a ping every PING_MS keeps quiet connections open
+ * through proxies (nginx in front of CapRover apps closes idle ones after
+ * about a minute) and measures each player's round trip. Only a connection
+ * silent for DEAD_MS is given up; a player who drops keeps their place for
+ * a while and gets it back on reconnecting (rooms.ts). */
+const PING_MS = Number(process.env.RAGE_KEEPALIVE_MS ?? 2_000);
+const DEAD_MS = Number(process.env.RAGE_DEAD_MS ?? 60_000);
+const lastHeard = new WeakMap<WebSocket, number>();
 setInterval(() => {
+  const now = performance.now();
   for (const ws of sockets.clients) {
-    if (alive.get(ws) === false) {
+    if (now - (lastHeard.get(ws) ?? now) > DEAD_MS) {
       ws.terminate();
       continue;
     }
-    alive.set(ws, false);
-    ws.ping();
+    const stamp = Buffer.alloc(8);
+    stamp.writeDoubleLE(now);
+    ws.ping(stamp);
   }
-}, KEEPALIVE_MS).unref();
+}, PING_MS).unref();
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
   const user = url.pathname === '/ws' ? store.sessionUser(url.searchParams.get('token') ?? '') : null;
@@ -157,11 +161,18 @@ server.on('upgrade', (req, socket, head) => {
     return;
   }
   sockets.handleUpgrade(req, socket, head, (ws) => {
-    const client: Client = { ws, user, roomId: null };
-    alive.set(ws, true);
-    ws.on('pong', () => alive.set(ws, true));
+    const client: Client = { ws, user, roomId: null, latencyMs: null };
+    lastHeard.set(ws, performance.now());
+    ws.on('pong', (stamp) => {
+      const now = performance.now();
+      lastHeard.set(ws, now);
+      if (stamp.length === 8) client.latencyMs = Math.round(now - stamp.readDoubleLE(0));
+    });
     lobby.connect(client);
-    ws.on('message', (data, binary) => lobby.message(client, data as Buffer, binary));
+    ws.on('message', (data, binary) => {
+      lastHeard.set(ws, performance.now());
+      lobby.message(client, data as Buffer, binary);
+    });
     ws.on('close', () => lobby.disconnect(client));
     ws.on('error', () => lobby.disconnect(client));
   });
