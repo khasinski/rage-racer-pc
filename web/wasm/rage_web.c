@@ -225,6 +225,10 @@ EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
 static int PrepareRace(int classIndex, int course, int reverse, int laps, int rivals,
                        const WebSeat *humans, int humanCount, int localSeat) {
     RaceSetup setup;
+    int paint[DRIVER_SEAT_LIMIT][2];
+    /* The paint set for this race is used up whether or not it starts. */
+    memcpy(paint, s_paint, sizeof(paint));
+    ClearPaint();
     if (!s_archive || laps < 1 || laps > WEB_MAX_LAPS || localSeat < -1 ||
         localSeat >= humanCount) return 0;
     ReleaseRace();
@@ -237,13 +241,12 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
                        setup.entrants)) return 0;
     for (int seat = 0; seat < humanCount; ++seat) {
         setup.looks[seat].variant = humans[seat].variant;
-        if (s_paint[seat][0] >= 0) {
+        if (paint[seat][0] >= 0) {
             setup.looks[seat].hasPaint = 1;
-            setup.looks[seat].paint.paintColor1 = (u8)s_paint[seat][0];
-            setup.looks[seat].paint.paintColor2 = (u8)s_paint[seat][1];
+            setup.looks[seat].paint.paintColor1 = (u8)paint[seat][0];
+            setup.looks[seat].paint.paintColor2 = (u8)paint[seat][1];
         }
     }
-    ClearPaint();
     s_race = LoadClientRace(s_archive, &setup, NULL);
     if (!s_race) return 0;
     /* A spectator has no tachometer (rw_tachometer stays invisible). */

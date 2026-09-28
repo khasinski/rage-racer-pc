@@ -22,6 +22,7 @@ let open = false;
 let angle = 30; // degrees round the car
 let dragging = false;
 let lastFrame = 0;
+let shownSize = '';
 let variant = -1;
 let draft: Paint | null = null; // the colours on show, saved or not
 let swatches: HTMLButtonElement[][] = [];
@@ -93,7 +94,11 @@ function frame(now: number): void {
   if (!rage || !renderer) return;
   if (!dragging) angle = (angle + ((now - lastFrame) / 1000) * TURN_DEGREES_PER_SECOND) % 360;
   lastFrame = now;
-  renderer.resize(canvas.clientWidth, canvas.clientHeight);
+  const size = `${canvas.clientWidth}x${canvas.clientHeight}`;
+  if (size !== shownSize) {
+    shownSize = size;
+    renderer.resize(canvas.clientWidth, canvas.clientHeight);
+  }
   const count = rage.buildShowroom(renderer.aspect, angle);
   if (count < 0) return;
   renderer.update(count);

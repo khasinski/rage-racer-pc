@@ -71,6 +71,43 @@ try {
   await wait(400);
   check((await paintsDrawn(owner)).join('|') === '9,3', 'going back to the car shows its saved paint');
 
+  // Many combinations in a row: the renderer recycles its texture layers, so
+  // the last one still shows.
+  for (let i = 0; i < 60; i++) {
+    await owner.click(`#paint-first .swatch:nth-child(${1 + (i * 5) % 18})`);
+    await owner.click(`#paint-second .swatch:nth-child(${1 + (i * 7) % 18})`);
+  }
+  const lastFirst = (59 * 5) % 18, lastSecond = (59 * 7) % 18;
+  await wait(600);
+  check((await paintsDrawn(owner)).join('|') === `${lastFirst},${lastSecond}`, 'after sixty repaints the preview shows the last one');
+  await owner.click('#paint-first .swatch:nth-child(10)');
+  await owner.click('#paint-second .swatch:nth-child(4)');
+
+  // Every car really changes: painting it alters the pixels of its materials.
+  const unchanged = await owner.evaluate(() => {
+    const { rage } = window.__race;
+    const carTextures = () => {
+      const { fields } = rage.spans();
+      const list = [];
+      for (let i = 0; i * 14 + 14 <= fields.length; i++) {
+        const texture = fields[i * 14 + 3] === 0 && rage.decodeTexture(i);
+        if (texture) list.push(Uint8Array.from(texture.levels[0].data));
+      }
+      return list;
+    };
+    const stuck = [];
+    for (const variant of rage.garageVariants()) {
+      rage.startShowroom(variant);
+      rage.setShowroomPaint(null); rage.buildShowroom(1.6, 30);
+      const plain = carTextures();
+      rage.setShowroomPaint([9, 3]); rage.buildShowroom(1.6, 30);
+      const painted = carTextures();
+      if (!painted.some((texture, i) => plain[i] && texture.some((byte, k) => byte !== plain[i][k]))) stuck.push(variant);
+    }
+    return stuck;
+  });
+  check(unchanged.length === 0, `painting changes the pixels of every car (unchanged: ${unchanged.join(', ') || 'none'})`);
+
   // The server keeps it and validates it.
   const token = await owner.evaluate(() => localStorage.getItem('rage-racer.session'));
   const api = async (method, body) => {
