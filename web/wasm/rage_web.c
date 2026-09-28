@@ -194,7 +194,7 @@ const RaceData *WebLoadedArchive(void) { return s_archive; }
 static int s_paint[DRIVER_SEAT_LIMIT][2];
 /* The garage preview's pivot (see FindShowroomCentre). */
 static struct { int valid; Vec3 centre; } s_showroom;
-enum { LOGO_LIFT = 4 }; /* world units the bonnet logo floats above the bonnet */
+enum { LOGO_LIFT = 2 }; /* world units the bonnet logo floats above the bonnet (the engine's own decal lift) */
 
 EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
     if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
@@ -1167,11 +1167,11 @@ EMSCRIPTEN_KEEPALIVE int rw_build_frame(float aspect, float t) {
 
 /* The bonnet logo is a quad that retail lays over the bonnet purely by draw
  * order. With a depth buffer it sinks into a curved bonnet (part of it cut
- * off, the rest flickering), so its corners are lifted off the surface along
- * their normals, as the engine does for authored hood decals. The quad is the
- * one sampling the logo's rectangle of the shared texture page (page 640,
- * u 64..127, v 48..111). */
-static int s_logoQuads; /* triangles lifted in the last frame, for the checks */
+ * off, the rest flickering), so its corners are lifted a little off the
+ * surface along their normals, as the engine does for authored hood decals. The quad is the one sampling
+ * the logo's rectangle of the shared texture page (page 640, u 64..127,
+ * v 48..111). */
+static int s_logoQuads; /* triangles biased in the last frame, for the checks */
 
 static void LiftLogoQuads(void) {
     enum { SHARED_PAGE = 10 };
