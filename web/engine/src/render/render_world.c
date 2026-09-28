@@ -210,25 +210,6 @@ void RenderWorldSetCamera(RenderWorld *world,
     world->hasCamera = 1;
 }
 
-void RenderWorldSetMirrorCamera(RenderWorld *world,
-                                    const RenderCamera *camera,
-                                    int active, float panelY) {
-    if (world == NULL || camera == NULL) return;
-    if (world->hasMirrorCamera &&
-        RenderCameraIsCut(&world->previousMirrorCamera, camera)) {
-        world->previousMirrorCamera = *camera;
-        world->previousMirrorPanelY = panelY;
-    }
-    world->mirrorCamera = *camera;
-    world->mirrorPanelY = panelY;
-    world->mirrorActive = active != 0;
-    if (!world->hasMirrorCamera) {
-        world->previousMirrorCamera = *camera;
-        world->previousMirrorPanelY = panelY;
-    }
-    world->hasMirrorCamera = 1;
-}
-
 int RenderWorldSubmitMesh(RenderWorld *world,
                           const RenderMeshInstance *instance) {
     if (world == NULL || instance == NULL) return 0;
@@ -239,30 +220,6 @@ int RenderWorldSubmitMesh(RenderWorld *world,
     }
     world->instances[world->instanceCount++] = *instance;
     return 1;
-}
-
-void RenderWorldDiscardPass(RenderWorld *world, RenderPass pass) {
-    uint32_t source, destination = 0;
-    if (world == NULL) return;
-    for (source = 0; source < world->instanceCount; source++) {
-        if (world->instances[source].pass == pass) continue;
-        if (destination != source)
-            world->instances[destination] = world->instances[source];
-        destination++;
-    }
-    world->instanceCount = destination;
-}
-
-void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
-                                    RenderTransform *transform) {
-    if (transform == NULL) return;
-    memset(transform, 0, sizeof(*transform));
-    /* Original cells are in an inverted 32x32 grid and use 8192 mesh units. */
-    transform->position.x = (float)(grid_x * 8192u + 4096u);
-    transform->position.z = (float)((31u - grid_z) * 8192u + 4096u);
-    transform->scale.x = 1.0f;
-    transform->scale.y = 1.0f;
-    transform->scale.z = 1.0f;
 }
 
 void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]) {

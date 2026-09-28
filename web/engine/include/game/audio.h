@@ -100,17 +100,13 @@ s32 PollAudioSlotLoad(void);
 void SetPanVoiceTargetVolume(s32 left, s32 right);
 void SetIndexedEffectVoice(s32 index, s32 phase, s32 volume);
 /*
- * The two positional-cue setters. `cue` is an index into the shared 7-record
- * table at D_800126D0 (stride 0x18); each cue owns a fixed pair of voices, and a
- * call keys that pair on, updates it in place, or keys it off at volume 0.
- * Pitched drives EffectVoice D_801E6D30[4] with a 7.7 note; Stereo drives
+ * The positional-cue setter. `cue` is an index into the shared 7-record table
+ * at D_800126D0 (stride 0x18); each cue owns a fixed pair of voices, and a call
+ * keys that pair on, updates it in place, or keys it off at volume 0. It drives
  * D_801E6D00[2] with independent volumes.
  */
-void SetPitchedSoundCue(s32 cue, s32 pitch, s32 volume);
 void SetStereoSoundCue(s32 cue, s32 volLeft, s32 volRight);
 void PlaySoundCue(s32 cue);
-/* Play a UI cue from the menu bank even while another bank is loading. */
-void PlayMainSoundCue(s32 cue);
 void UpdateLoadedAudioVoices(s32 position, s32 bank);
 void InitEffectVoiceRuntime(void);
 void ForceAllEffectVoicesEnabled(s32 enabled);

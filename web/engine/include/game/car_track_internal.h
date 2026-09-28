@@ -32,9 +32,6 @@ s32 StepCarTrackState(GameCarRuntime *car, const TrackRoute *route,
                       s32 pointIndex, const CarTrackLimits *limits,
                       int reverse, int knockback);
 
-void ReconstructCarTrackState(GameCarRuntime *car, const TrackRoute *route,
-                              int reverse);
-
 typedef union CarTrackRadius {
     s32 value;
     struct {

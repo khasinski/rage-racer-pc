@@ -51,8 +51,7 @@ _Static_assert(sizeof(MusicChannel) == 0x18,
 
 extern MusicChannel g_MusicChannels[AUDIO_MUSIC_CHANNEL_COUNT];
 
-/* Effect voice, 4 elements for hardware voices 10..13. SetPitchedSoundCue walks it
- * with a pointer to `.state`. */
+/* Effect voice, 4 elements for hardware voices 10..13. */
 typedef union EffectVoicePitch {
     s32 value;
     struct {

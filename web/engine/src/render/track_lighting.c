@@ -6,10 +6,6 @@ static float ZoneAmount(int blend) {
     return (float)blend / 256.0f;
 }
 
-float TrackZoneDaylight(int blend) {
-    return 1.0f - ZoneAmount(blend) * 0.75f;
-}
-
 void TrackZoneLightColor(int blend, int zoneCode, float out[3]) {
     float amount;
     if (out == 0) return;

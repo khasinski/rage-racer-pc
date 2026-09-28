@@ -185,10 +185,6 @@ void PlaySoundCue(s32 cue) {
     PlaySoundCueFromBank(g_Audio.slots.cueBank, cue);
 }
 
-void PlayMainSoundCue(s32 cue) {
-    PlaySoundCueFromBank(1, cue);
-}
-
 /* Sets one engine-sound slot: scales `volume` by the global effect scale,
  * pushes it to the slot's voice, then re-pitches that voice to the tone at
  * g_SoundSlotTone[slot][toneIndex]. */

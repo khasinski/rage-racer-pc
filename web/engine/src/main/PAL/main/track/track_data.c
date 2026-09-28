@@ -33,22 +33,4 @@ TrackData *CopyTrackData(const void *data, size_t size) {
     return copy;
 }
 
-TrackData *LoadTrackData(const char *path) {
-    if (path == NULL) return NULL;
-    FILE *file = fopen(path, "rb");
-    if (file == NULL) return NULL;
-    if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return NULL; }
-    const long length = ftell(file);
-    if (length <= 0 || length > INT32_MAX || fseek(file, 0, SEEK_SET) != 0) {
-        fclose(file); return NULL;
-    }
-    void *buffer = malloc((size_t)length);
-    if (buffer == NULL) { fclose(file); return NULL; }
-    TrackData *data = NULL;
-    if (fread(buffer, 1, (size_t)length, file) == (size_t)length) data = CopyTrackData(buffer, (size_t)length);
-    free(buffer);
-    fclose(file);
-    return data;
-}
-
 void FreeTrackData(TrackData *data) { free(data); }

@@ -116,27 +116,6 @@ int RenderBuildDirectionalShadowMap(
     return 1;
 }
 
-void RenderProjectShadowPoint(const RenderShadowMap *shadow,
-                                  const Vec3 *point,
-                                  Vec3 *out) {
-    Vec3 relative;
-    float depth;
-    if (out == NULL) return;
-    *out = (Vec3){0.0f, 0.0f, 0.0f};
-    if (shadow == NULL || point == NULL ||
-        !RenderShadowMapIsFinite(shadow) ||
-        !RenderShadowVec3IsFinite(*point)) return;
-    relative.x = point->x - shadow->position.x;
-    relative.y = point->y - shadow->position.y;
-    relative.z = point->z - shadow->position.z;
-    depth = -RenderShadowDot(shadow->row2, relative);
-    out->x = RenderShadowDot(shadow->row0, relative) * shadow->scaleX;
-    out->y = RenderShadowDot(shadow->row1, relative) * shadow->scaleY;
-    out->z = depth * shadow->depthScale + shadow->depthOffset;
-    if (!RenderShadowVec3IsFinite(*out))
-        *out = (Vec3){0.0f, 0.0f, 0.0f};
-}
-
 Vec3 RenderShadowCenter(const RenderWorld *world) {
     if (!world) return (Vec3){0};
     if (world->instanceCount <= world->instanceCapacity && world->instances) {

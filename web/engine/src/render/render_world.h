@@ -238,16 +238,10 @@ void RenderDirectionalLightFromSky(const RenderCamera *camera,
 int32_t RenderClampCarToGround(int32_t carY, int32_t groundY);
 void RenderWorldSetCamera(RenderWorld *world,
                               const RenderCamera *camera);
-void RenderWorldSetMirrorCamera(RenderWorld *world,
-                                    const RenderCamera *camera,
-                                    int active, float panelY);
 int RenderWorldSubmitMesh(RenderWorld *world,
                               const RenderMeshInstance *instance);
 /* Select an existing main-view entity body. Failure preserves all flags. */
 int RenderWorldFocus(RenderWorld *world, uint32_t entity);
-void RenderWorldDiscardPass(RenderWorld *world, RenderPass pass);
-void RenderTerrainCellTransform(uint32_t grid_x, uint32_t grid_z,
-                                    RenderTransform *transform);
 /* Convert a PS1-space rotation into the conventional (+Y up, -Z forward)
  * scene basis used by imported meshes and Render World positions. */
 void RenderConvertPsxMatrix(const float source[3][3], float out[3][3]);

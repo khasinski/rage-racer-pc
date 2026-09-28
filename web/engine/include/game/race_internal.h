@@ -73,7 +73,6 @@ void UpdateBgmSelect(BgmSelect *state);
 void ExitBgmSelect(void);
 s32 CycleAttractCameraCar(s32 mask, s32 current);
 s32 CycleBgmSelectCameraCar(s32 mask, s32 current);
-s32 FramesToMilliseconds(s32 frames, s32 subframeMillis);
 void CommitClassProgress(void);
 
 extern s32 g_RaceTotalTime;

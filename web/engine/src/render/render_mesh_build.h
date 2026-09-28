@@ -72,27 +72,9 @@ typedef struct RageNativeDrawSpan {
 typedef const RageRuntimeMesh *(*RageRenderMeshLookup)(
     void *context, const RenderMeshInstance *instance);
 
-/* Expands imported indexed meshes into GPU-ready triangles. Fully outside
- * triangles are skipped; near-plane clipping itself belongs to the GPU. */
-uint32_t RenderBuildNativeDraws(const RenderWorld *world, float aspect,
-                                    RageRenderMeshLookup lookup, void *context,
-                                    RageNativeDrawVertex *vertices,
-                                    uint32_t vertexCapacity,
-                                    RageNativeDrawSpan *spans,
-                                    uint32_t spanCapacity,
-                                    uint32_t *spanCount);
 /* Builds only one semantic pass. Native mirrors deliberately render the main
  * scene again from another camera instead of consuming PS1 mirror instances. */
 uint32_t RenderBuildNativePassDraws(
-    const RenderWorld *world, RenderPass pass, float aspect,
-    RageRenderMeshLookup lookup, void *context,
-    RageNativeDrawVertex *vertices, uint32_t vertexCapacity,
-    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
-
-/* GPU contract: fog holds the original world position plus an enable flag,
- * allowing each view's shader to evaluate fog without baking it into meshes.
- * The CPU-reference functions above retain their colour/weight contract. */
-uint32_t RenderBuildNativeGpuPassDraws(
     const RenderWorld *world, RenderPass pass, float aspect,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, uint32_t vertexCapacity,

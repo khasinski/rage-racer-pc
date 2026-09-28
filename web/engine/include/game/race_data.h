@@ -44,6 +44,5 @@ struct DiscIsoReader;
 /* Copy archive/source identity through an already opened ISO sector reader.
  * No reader/context borrow remains. FreeRaceData owns the resulting copy. */
 RaceData *LoadRaceIso(struct DiscIsoReader *reader);
-RaceData *LoadRaceArchive(const char *path);
 void FreeRaceData(RaceData *archive);
 #endif

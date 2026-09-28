@@ -16,28 +16,6 @@ static RaceData *AdoptArchive(u8 *data, size_t size) {
     return NULL;
 }
 
-RaceData *LoadRaceArchive(const char *path) {
-    if (path == NULL) return NULL;
-    FILE *file = fopen(path, "rb");
-    if (file == NULL) return NULL;
-    u8 *data = NULL;
-    size_t size = 0;
-    if (fseek(file, 0, SEEK_END) == 0) {
-        const long length = ftell(file);
-        if (length > 0 && (unsigned long)length <= UINT32_MAX &&
-            fseek(file, 0, SEEK_SET) == 0) {
-            size = (size_t)length;
-            data = malloc(size);
-            if (data != NULL && fread(data, 1, size, file) != size) {
-                free(data);
-                data = NULL;
-            }
-        }
-    }
-    fclose(file);
-    return AdoptArchive(data, size);
-}
-
 RaceData *LoadRaceDisc(const char *path) {
     const char *image = path;
     char resolved[4096];

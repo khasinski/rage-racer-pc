@@ -36,8 +36,4 @@ int RenderBuildDirectionalShadowMap(
     const Vec3 *center, const Vec3 *lightDirection,
     float extent, uint32_t resolution, RenderShadowMap *out);
 
-void RenderProjectShadowPoint(const RenderShadowMap *shadow,
-                                  const Vec3 *point,
-                                  Vec3 *out);
-
 #endif

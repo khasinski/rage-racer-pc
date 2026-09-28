@@ -19,18 +19,6 @@ void RenderWorldToViewPrepared(const RenderViewTransform *transform,
 float RenderFogFactorPrepared(const RenderViewTransform *transform,
                              const Vec3 *world);
 
-/* Native renderer camera math. The result is conventional view space where
- * positive Z is forward; no PS1 GTE matrix or screen-space quantization is
- * involved. */
-void RenderWorldToView(const RenderCamera *camera,
-                           const Vec3 *world,
-                           Vec3 *view);
-int RenderProject(const RenderCamera *camera, const Vec3 *view,
-                      float aspect, Vec3 *clip);
-/* Reconstructs a world-space point from normalized device coordinates and
- * the 0..1 depth buffer written by RenderProject. */
-int RenderUnproject(const RenderCamera *camera, float aspect,
-                    const Vec3 *clip, Vec3 *world);
 /* Homogeneous depth terms for a 0..1 depth buffer:
  * clip_z = view_depth * scale + offset, clip_w = view_depth. */
 /* GPU projection scales, preserving float operation order for valid cameras.
@@ -40,8 +28,5 @@ int RenderPerspectiveScales(const RenderCamera *camera, float aspect,
 
 int RenderPerspectiveDepthTerms(const RenderCamera *camera,
                                     float *scale, float *offset);
-/* Perspective-correct fog weight for a world-space point. */
-float RenderFogFactor(const RenderCamera *camera,
-                          const Vec3 *world);
 
 #endif

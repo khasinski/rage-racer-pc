@@ -58,8 +58,6 @@ void StepCarShiftPitch(PlayerCarRuntime *car, const GameCarSpec *spec, u32 *rand
 void UpdateCarTravelVelocity(GameCarRuntime *car);
 void StepCarDriving(PlayerCarRuntime *car, const LaunchSpeedThreshold *threshold);
 enum { CAR_STANDING_START_MIN_SPIN = 11 };
-void BeginCarStandingStart(PlayerCarRuntime *car, const GameCarSpec *spec,
-                           const CarPerformance *performance, s32 engineRpm);
 /* Random samples are supplied by the race owner, so rooms need not share a
  * generator. The legacy adapter samples only while wheelspin is active. */
 /* Returns nonzero when wheelspin finishes on this step. */

@@ -26,7 +26,6 @@ set(SIM_SOURCES
     src/main/PAL/main/asset/read_scene_blocks.c
     src/main/PAL/main/car/angle_math.c
     src/main/PAL/main/car/arc_measure.c
-    src/main/PAL/main/car/begin_car_standing_start.c
     src/main/PAL/main/car/car_airborne.c
     src/main/PAL/main/car/car_body_kick.c
     src/main/PAL/main/car/car_body_roll.c
@@ -73,7 +72,6 @@ set(SIM_SOURCES
     src/main/PAL/main/car/player_track_contact.c
     src/main/PAL/main/car/player_track_limits.c
     src/main/PAL/main/car/prepare_airborne_drivetrain.c
-    src/main/PAL/main/car/replay_track_reconstruction.c
     src/main/PAL/main/car/rival_acceleration.c
     src/main/PAL/main/car/rival_ai_setup.c
     src/main/PAL/main/car/rival_body_motion.c
@@ -99,7 +97,6 @@ set(SIM_SOURCES
     src/main/PAL/main/race/race_frame.c
     src/main/PAL/main/race/race_lap.c
     src/main/PAL/main/race/race_sim.c
-    src/main/PAL/main/race/time_conversion.c
     src/main/PAL/main/track/blend_angle.c
     src/main/PAL/main/track/interpolate_track_angle.c
     src/main/PAL/main/track/interpolate_track_point.c
@@ -155,14 +152,11 @@ set(RMESH_SOURCES
 set(RENDER_WORLD_SOURCES
     src/render/car_lamps.c
     src/render/car_lights.c
-    src/render/render_geometry_pack.c
     src/render/render_mesh_build.c
     src/render/render_projection.c
     src/render/render_shadow.c
-    src/render/render_stage.c
     src/render/render_world.c
     src/render/render_world_frame.c
-    src/render/render_world_snapshot.c
     src/render/track_lighting.c)
 
 # Client race: the scene around the simulation, as the multiplayer client.
@@ -192,7 +186,6 @@ set(AUDIO_SOURCES
     src/main/PAL/main/audio/engine_sound_runtime.c
     src/main/PAL/main/audio/forced_voice_playback.c
     src/main/PAL/main/audio/interpolate_audio_parameter.c
-    src/main/PAL/main/audio/pitched_sound_cue.c
     src/main/PAL/main/audio/reset_audio_voice_state.c
     src/main/PAL/main/audio/sound_cues.c
     src/main/PAL/main/audio/sound_runtime.c

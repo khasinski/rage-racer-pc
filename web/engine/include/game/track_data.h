@@ -15,7 +15,6 @@ int ReadTrackData(const SceneAssetBlock blocks[SCENE_ASSET_BLOCK_COUNT], TrackDa
 /* Copies only physics blocks from a retail runtime pack. Caller owns the
  * returned object and frees it after all races borrowing its views finish. */
 TrackData *CopyTrackData(const void *data, size_t size);
-TrackData *LoadTrackData(const char *path);
 /* Only for CopyTrackData/LoadTrackData results, never borrowed stack views. */
 void FreeTrackData(TrackData *data);
 #endif

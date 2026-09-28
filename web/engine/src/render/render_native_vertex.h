@@ -17,22 +17,6 @@ typedef struct RageNativeGpuVertex {
 
 _Static_assert(sizeof(RageNativeGpuVertex) == 56, "native GPU vertex ABI");
 
-/* Main vertices occupy the prefix; mirror spans must cover the following
- * mirrorCount vertices in order. Reuse byte-identical main ranges and compact
- * unmatched mirror ranges in place. Returns the physical combined count;
- * logical draw counts and all span state except firstVertex are unchanged.
- * Invalid ranges leave the input unchanged. No cross-frame retention. */
-uint32_t RenderShareNativeViewVertices(RageNativeGpuVertex *vertices,
-    uint32_t mainCount, const RageNativeDrawSpan *mainSpans, uint32_t mainSpanCount,
-    uint32_t mirrorCount, RageNativeDrawSpan *mirrorSpans, uint32_t mirrorSpanCount);
-
-/* Direct compact output; CPU fog encoding remains available for A/B runs. */
-uint32_t RenderBuildNativeCompactPassDraws(
-    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog,
-    RageRenderMeshLookup lookup, void *context,
-    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
-    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
-
 /* Immutable, material-grouped vehicle geometry shared across instances/views.
  * Initialize with {0}. The caller must release before replacing source meshes.
  * Bounded storage; unsupported geometry or allocation failure uses the regular
@@ -54,25 +38,6 @@ typedef struct RageNativeMeshTemplateView {
 const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
     RageNativeMeshTemplateCache *cache, const RageRuntimeMesh *mesh,
     RenderAssetSet assetSet, uint32_t submesh);
-void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache);
-/* Also retain local source/transform metadata for resident GPU draws. Spans
- * are separated at instance/template boundaries. With expandWorldVertices=0,
- * local spans reserve ranges without writing them; use ExpandNativeLocalDraw
- * only when diagnostics or a GPU allocation failure require world vertices. */
-uint32_t RenderBuildNativeLocalCompactPassDraws(
-    RageNativeMeshTemplateCache *cache,
-    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
-    RageRenderMeshLookup lookup, void *context,
-    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
-    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
-int RenderExpandNativeLocalDraw(const RageNativeDrawSpan *span,
-    RageNativeGpuVertex *vertices, uint32_t capacity);
-uint32_t RenderBuildNativeCachedCompactPassDraws(
-    RageNativeMeshTemplateCache *cache,
-    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog,
-    RageRenderMeshLookup lookup, void *context,
-    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
-    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
 
 static inline RageNativeGpuVertex RenderPackNativeGpuVertex(
     const RageNativeDrawVertex *source) {
