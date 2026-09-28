@@ -158,6 +158,32 @@ try {
   await owner.waitForFunction(() => document.querySelector('#garage-status').textContent.startsWith('Saved'), null, { timeout: 10_000 });
   check(await owner.locator('#logo-tag').textContent() === 'RAGE', 'the windscreen shows the name');
 
+  // The logo is on the bonnet only: from behind it must not shine through the
+  // roof (a depth bias that is too strong pulls it in front of everything).
+  await owner.selectOption('#garage-car', '11'); // Esperanza III: a tall roof over a curved bonnet
+  await owner.waitForFunction(() => !document.querySelector('#garage-status').textContent.startsWith('Loading'), null, { timeout: 60_000 });
+  await owner.click('#tool-fill');
+  const redAround = async (degrees) => {
+    await owner.evaluate((deg) => window.__garage.turnTo(deg), degrees);
+    await wait(500);
+    return owner.evaluate(() => {
+      const source = document.querySelector('#garage-view');
+      const scratch = document.createElement('canvas');
+      scratch.width = source.width; scratch.height = source.height;
+      const context = scratch.getContext('2d', { willReadFrequently: true });
+      context.drawImage(source, 0, 0);
+      const { width, height } = scratch;
+      // The car sits in the middle of the frame; the background has red banners.
+      const box = context.getImageData(width * 0.3, height * 0.25, width * 0.4, height * 0.5).data;
+      let red = 0;
+      for (let i = 0; i < box.length; i += 4) if (box[i] > 60 && box[i] > box[i + 1] * 4 && box[i] > box[i + 2] * 4) red++;
+      return red;
+    });
+  };
+  const fromFront = await redAround(320), fromBehind = await redAround(90);
+  check(fromFront > 300, `the logo is on the bonnet seen from the front (${fromFront} red pixels)`);
+  check(fromBehind < 30, `and does not shine through the roof from behind (${fromBehind} red pixels)`);
+
   // Every car carries the logo and the name, not just the Erriso.
   const missing = await owner.evaluate(() => {
     const { rage } = window.__race;

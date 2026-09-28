@@ -194,7 +194,10 @@ const RaceData *WebLoadedArchive(void) { return s_archive; }
 static int s_paint[DRIVER_SEAT_LIMIT][2];
 /* The garage preview's pivot (see FindShowroomCentre). */
 static struct { int valid; Vec3 centre; } s_showroom;
-enum { LOGO_DEPTH_BIAS = 6000 }; /* renderer depth-bias units (negative: nearer) */
+/* Renderer depth-bias units, applied as nearer. Enough to beat the bonnet on
+ * every car (100 already does), but small: much above 500 pulls the quad in
+ * front of the roof when the car is seen from behind. */
+enum { LOGO_DEPTH_BIAS = 150 };
 
 EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
     if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
