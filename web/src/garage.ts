@@ -1,7 +1,7 @@
 // The garage: pick a car, choose its two body colours and watch it turn on a
 // showroom camera. Paint is presentation only; it is saved per car model on
 // the server and shown by everyone who races or watches you.
-import type { Paint } from '../shared/protocol.ts';
+import { PAINTABLE_MODELS, type Paint } from '../shared/protocol.ts';
 import { app, session, show } from './app';
 import { Renderer } from './renderer';
 import type { Rage } from './rage';
@@ -31,7 +31,8 @@ const same = (a: Paint | null, b: Paint | null) => a === b || (!!a && !!b && a[0
 
 /** The player's saved paint for a car, for the races they start. */
 export function paintOf(rage: Rage, carVariant: number): Paint | null {
-  return app.garage[rage.modelOf(carVariant)] ?? null;
+  const model = rage.modelOf(carVariant);
+  return model < PAINTABLE_MODELS ? app.garage[model] ?? null : null;
 }
 
 /** Fetches the saved paints after logging in; a failure leaves factory colours. */
@@ -56,14 +57,17 @@ function buildSwatches(rage: Rage): void {
 }
 
 function refresh(rage: Rage, message = ''): void {
+  const paintable = rage.modelOf(variant) < PAINTABLE_MODELS;
+  if (!paintable) draft = null;
   rage.setShowroomPaint(draft);
+  for (const button of [...swatches.flat(), factoryButton]) button.disabled = !paintable;
   swatches.forEach((buttons, zone) => buttons.forEach((button, color) => {
     button.setAttribute('aria-pressed', String(draft?.[zone] === color));
   }));
   factoryButton.setAttribute('aria-pressed', String(draft === null));
   const changed = !same(draft, saved(rage));
-  saveButton.disabled = !changed;
-  statusLine.textContent = changed ? 'Not saved yet.' : message;
+  saveButton.disabled = !changed || !paintable;
+  statusLine.textContent = !paintable ? 'This car keeps its factory colours.' : changed ? 'Not saved yet.' : message;
 }
 
 function choose(rage: Rage, zone: number, color: number): void {

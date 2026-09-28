@@ -31,6 +31,10 @@ static uint8_t ImportCarPaintCode(uint32_t x, uint32_t y) {
     word = (y * 64u + (x - 704u));
     if (word < 0x7060u / 2u) return 0;
     entry = word - 0x7060u / 2u;
+    /* CarPaintPalette.fixed.bodyColor1: the one entry retail's
+     * ApplyPrimaryBodyColor sets outside the gradients, to the first colour's
+     * primary (the Erriso's roof is drawn with it). */
+    if (entry == 0x81) return 1;
     for (index = 0; index < sizeof(slots3A) / sizeof(slots3A[0]); index++) {
         uint32_t offset = entry - slots3A[index];
         if (entry >= slots3A[index] && offset < 3) return first3[offset];

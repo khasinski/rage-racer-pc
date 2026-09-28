@@ -69,6 +69,9 @@ export interface RoomState extends RoomSummary { members: RoomPlayer[] }
  *  first and second body colour. Presentation only; the race never sees it. */
 export type Paint = [number, number];
 export const PAINT_COLORS = 18; // RAGE_CAR_PAINT_COLOR_COUNT
+/** Retail lets the first ten car models be repainted; the last three (the
+ *  special cars) keep their factory colours. CUSTOM_PAINT_CAR_COUNT. */
+export const PAINTABLE_MODELS = 10;
 
 /** A player's saved paints by car model (not variant: a car keeps its paint
  *  through its upgrades). Missing: the car's factory colours. */

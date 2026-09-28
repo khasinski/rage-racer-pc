@@ -10,7 +10,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { extname, join, normalize, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { DEFAULT_PORT, PAINT_COLORS, type Paint } from '../shared/protocol.ts';
+import { DEFAULT_PORT, PAINT_COLORS, PAINTABLE_MODELS, type Paint } from '../shared/protocol.ts';
 import { Store } from './db.ts';
 import { Lobby, type Client } from './rooms.ts';
 import { Simulation } from './sim.ts';
@@ -103,6 +103,7 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     if (!Number.isInteger(model) || (model as number) < 0 || (model as number) >= sim.carModels()) {
       return json(res, 400, { error: 'Unknown car.' });
     }
+    if ((model as number) >= PAINTABLE_MODELS) return json(res, 400, { error: 'This car cannot be repainted.' });
     if (paint !== null && !(Array.isArray(paint) && paint.length === 2 && paint.every(colour))) {
       return json(res, 400, { error: 'Choose two colours from the paint catalogue.' });
     }

@@ -2,8 +2,8 @@
 // most one race at a time (race.ts); one 50 Hz timer steps every running race.
 import { randomInt } from 'node:crypto';
 import type { WebSocket } from 'ws';
-import type {
-  ClientMessage, RoomPlayer, RoomSettings, RoomState, RoomSummary, ServerMessage, UserInfo,
+import {
+  PAINTABLE_MODELS, type ClientMessage, type Paint, type RoomPlayer, type RoomSettings, type RoomState, type RoomSummary, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
 import { Race } from './race.ts';
@@ -236,6 +236,12 @@ export class Lobby {
     if (room.race) this.sendRace(room, client);
   }
 
+  /** A racer's saved paint for their car; the special cars have none. */
+  private paintOf(userId: number, variant: number): Paint | null {
+    const model = this.sim.carModel(variant);
+    return model < PAINTABLE_MODELS ? this.store.garage(userId)[model] ?? null : null;
+  }
+
   private racers(room: Room): Member[] {
     return [...room.members.values()].filter((m) => !m.spectator);
   }
@@ -355,7 +361,7 @@ export class Lobby {
       },
     }, room.id, room.settings, members.map((m) => ({
       userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual,
-      paint: this.store.garage(m.client.user.id)[this.sim.carModel(m.variant)] ?? null,
+      paint: this.paintOf(m.client.user.id, m.variant),
     })));
     if (!race) return this.fail(client, 'The server could not prepare this race.');
     room.race = race;

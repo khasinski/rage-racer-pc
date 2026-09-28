@@ -63,9 +63,11 @@ try {
   const options = await owner.locator('#garage-car option').evaluateAll((all) => all.map((o) => ({ value: o.value, text: o.textContent })));
   check(options.length >= 13, `the garage lists the cars (${options.length})`);
   await owner.selectOption('#garage-car', options[options.length - 1].value);
-  await owner.waitForFunction(() => document.querySelector('#garage-status').textContent === '', null, { timeout: 60_000 });
+  await owner.waitForFunction(() => !document.querySelector('#garage-status').textContent.startsWith('Loading'), null, { timeout: 60_000 });
   await wait(400);
   check((await paintsDrawn(owner)).join('|') === '', 'another car model starts with its factory colours');
+  check(await owner.locator('#paint-first .swatch:not([disabled])').count() === 0 &&
+        await owner.locator('#garage-factory').isDisabled(), 'the last three cars cannot be repainted (retail)');
   await owner.selectOption('#garage-car', options[0].value);
   await owner.waitForFunction(() => document.querySelector('#garage-status').textContent === '', null, { timeout: 60_000 });
   await wait(400);
@@ -84,7 +86,7 @@ try {
   await owner.click('#paint-second .swatch:nth-child(4)');
 
   // Every car really changes: painting it alters the pixels of its materials.
-  const unchanged = await owner.evaluate(() => {
+  const { stuck: unchanged, erriso } = await owner.evaluate(() => {
     const { rage } = window.__race;
     const carTextures = () => {
       const { fields } = rage.spans();
@@ -96,16 +98,20 @@ try {
       return list;
     };
     const stuck = [];
-    for (const variant of rage.garageVariants()) {
+    let erriso = 0;
+    for (const variant of rage.garageVariants().filter((v) => rage.modelOf(v) < 10)) {
       rage.startShowroom(variant);
       rage.setShowroomPaint(null); rage.buildShowroom(1.6, 30);
       const plain = carTextures();
       rage.setShowroomPaint([9, 3]); rage.buildShowroom(1.6, 30);
       const painted = carTextures();
-      if (!painted.some((texture, i) => plain[i] && texture.some((byte, k) => byte !== plain[i][k]))) stuck.push(variant);
+      const changed = painted.filter((texture, i) => plain[i] && texture.some((byte, k) => byte !== plain[i][k])).length;
+      if (!changed) stuck.push(variant);
+      if (variant === 0) erriso = changed;
     }
-    return stuck;
+    return { stuck, erriso };
   });
+  check(erriso >= 9, `the Erriso's roof is painted with its body (${erriso} of its materials change)`);
   check(unchanged.length === 0, `painting changes the pixels of every car (unchanged: ${unchanged.join(', ') || 'none'})`);
 
   // The server keeps it and validates it.
@@ -118,6 +124,7 @@ try {
   check(Object.values(paints).length === 1 && paints[Object.keys(paints)[0]].join() === '9,3', 'the server stores the paint');
   check((await api('PUT', { model: 0, paint: [18, 0] })).status === 400, 'a colour outside the catalogue is refused');
   check((await api('PUT', { model: 99, paint: [0, 0] })).status === 400, 'an unknown car is refused');
+  check((await api('PUT', { model: 10, paint: [0, 0] })).status === 400, 'a car retail never let you repaint is refused');
   check((await api('PUT', { model: 0, paint: [1] })).status === 400, 'a paint with one colour is refused');
 
   // In a race, the other player's client draws the painted car.

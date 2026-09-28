@@ -190,6 +190,9 @@ const RaceData *WebLoadedArchive(void) { return s_archive; }
  * car's factory colours. Set before a race is prepared; presentation only, so
  * neither the server's simulation nor the wire format knows about it. */
 static int s_paint[DRIVER_SEAT_LIMIT][2];
+/* The garage preview's pivot (see FindShowroomCentre). */
+static struct { int valid; Vec3 centre; } s_showroom;
+
 EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
     if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
     const int valid = first >= 0 && first < RAGE_CAR_PAINT_COLOR_COUNT &&
@@ -229,6 +232,7 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     /* The paint set for this race is used up whether or not it starts. */
     memcpy(paint, s_paint, sizeof(paint));
     ClearPaint();
+    s_showroom.valid = 0;
     if (!s_archive || laps < 1 || laps > WEB_MAX_LAPS || localSeat < -1 ||
         localSeat >= humanCount) return 0;
     ReleaseRace();
@@ -1149,6 +1153,29 @@ EMSCRIPTEN_KEEPALIVE void rw_set_showroom_paint(int first, int second) {
     look->paint.paintColor2 = (u8)(look->hasPaint ? second : 0);
 }
 
+/* The middle of the car as drawn (game coordinates), found from its own
+ * vertices the first time a preview frame is built: the car's origin sits by
+ * its rear axle, so circling that would swing the car round it. */
+
+static void FindShowroomCentre(void) {
+    float low[3] = {INFINITY, INFINITY, INFINITY}, high[3] = {-INFINITY, -INFINITY, -INFINITY};
+    for (uint32_t i = 0; i < s_frame.spanCount; ++i) {
+        const RageNativeDrawSpan *span = &s_spans[i];
+        if (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK) continue;
+        for (uint32_t v = 0; v < span->vertexCount; ++v) {
+            const float *p = s_vertices[span->firstVertex + v].position;
+            for (int axis = 0; axis < 3; ++axis) {
+                if (p[axis] < low[axis]) low[axis] = p[axis];
+                if (p[axis] > high[axis]) high[axis] = p[axis];
+            }
+        }
+    }
+    if (!(low[0] <= high[0])) return;
+    /* Drawn coordinates flip y and z relative to the game's. */
+    s_showroom.centre = (Vec3){(low[0] + high[0]) / 2, -(low[1] + high[1]) / 2, -(low[2] + high[2]) / 2};
+    s_showroom.valid = 1;
+}
+
 EMSCRIPTEN_KEEPALIVE int rw_build_showroom(float aspect, float angle) {
     enum { RADIUS = 330, HEIGHT = 105, FOCUS_HEIGHT = 30 };
     if (!s_race || !(aspect > 0.0f)) return -1;
@@ -1162,7 +1189,8 @@ EMSCRIPTEN_KEEPALIVE int rw_build_showroom(float aspect, float angle) {
      * camera's (yaw and pitch from the eye-to-focus direction). */
     const float radians = angle * 0.017453292519943295f;
     const Vec3 toFocus = {-RADIUS * sinf(radians), HEIGHT, -RADIUS * cosf(radians)};
-    const Vec3 focus = {(float)car->x, (float)car->y - FOCUS_HEIGHT, (float)car->z};
+    const Vec3 focus = s_showroom.valid ? s_showroom.centre
+                                        : (Vec3){(float)car->x, (float)car->y - FOCUS_HEIGHT, (float)car->z};
     const Vec3 eye = {focus.x - toFocus.x, focus.y - toFocus.y, focus.z - toFocus.z};
     const s32 horizontal = (s32)lroundf(sqrtf(toFocus.x * toFocus.x + toFocus.z * toFocus.z));
     const s32 yaw = 0x400 - (Atan2((s32)lroundf(toFocus.x), (s32)lroundf(toFocus.z)) & ANGLE_MASK);
@@ -1178,7 +1206,12 @@ EMSCRIPTEN_KEEPALIVE int rw_build_showroom(float aspect, float angle) {
         !SubmitRaceViewPoses(&s_race->sim, s_race->view, cars, cars, s_race->rivals,
                              s_race->primaryMesh.cached.assetKey, 0, &s_world)) return -1;
     RenderWorldFocus(&s_world, 0);
-    return DrawSubmitted(aspect, 1.0f, 0); /* no interpolation: the poses are the same */
+    const int count = DrawSubmitted(aspect, 1.0f, 0); /* no interpolation: the poses are the same */
+    if (count >= 0 && !s_showroom.valid) {
+        FindShowroomCentre();
+        if (s_showroom.valid) return rw_build_showroom(aspect, angle);
+    }
+    return count;
 }
 
 /* FNV-1a step. */
