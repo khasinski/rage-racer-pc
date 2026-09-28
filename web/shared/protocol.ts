@@ -25,7 +25,7 @@ export interface RoomSettings {
   maxPlayers: number; // 1..the course's authored starts
 }
 
-export type RoomStatus = 'lobby' | 'loading' | 'racing' | 'results';
+export type RoomStatus = 'lobby' | 'loading' | 'racing';
 
 export interface RoomPlayer {
   userId: number;
@@ -36,7 +36,6 @@ export interface RoomPlayer {
   host: boolean;
   spectator: boolean; // watches instead of racing
   online: boolean; // false while reconnecting (the place is kept for a while)
-  latencyMs: number | null; // round trip to the server
 }
 
 export interface RoomSummary {
@@ -50,7 +49,7 @@ export interface RoomSummary {
 
 export interface RoomState extends RoomSummary { members: RoomPlayer[] }
 
-export interface RaceSeat { userId: number | null; name: string; variant: number; manual: boolean; ai: boolean }
+export interface RaceSeat { userId: number | null; name: string; variant: number; manual: boolean } // userId null: a rival
 
 export interface RaceResult {
   seat: number;
@@ -70,8 +69,18 @@ export interface RecordRow {
   name: string;
   variant: number;
   bestLapMs: number;
-  raceMs: number | null;
-  at: string;
+}
+
+// GET /api/history: the player's recent races, newest first.
+export interface HistoryRow {
+  course: number;
+  reverse: boolean;
+  classIndex: number;
+  place: number;
+  entrants: number;
+  timeMs: number;
+  bestLapMs: number;
+  status: RaceResult['status'];
 }
 
 export type ClientMessage =
@@ -90,22 +99,22 @@ export type ClientMessage =
   | { t: 'closeRoom'; roomId: number };
 
 export type RaceEvent =
-  | { kind: 'lap'; seat: number; name: string; lap: number; lapMs: number }
-  | { kind: 'finish'; seat: number; name: string; place: number; timeMs: number }
-  | { kind: 'retire'; seat: number; name: string; reason: string };
+  | { kind: 'lap'; name: string; lap: number; lapMs: number }
+  | { kind: 'finish'; name: string; place: number; timeMs: number }
+  | { kind: 'retire'; name: string; reason: string };
 
 export type ServerMessage =
   | { t: 'welcome'; user: UserInfo; discId: string }
   | { t: 'rooms'; rooms: RoomSummary[] }
   | { t: 'room'; room: RoomState | null }
-  | { t: 'chat'; roomId: number; from: string; text: string; at: number }
+  | { t: 'chat'; from: string; text: string; at: number }
   // localSeat is -1 for a spectator.
-  | { t: 'raceStart'; raceId: number; settings: RoomSettings; seats: RaceSeat[]; humans: number; localSeat: number }
+  | { t: 'raceStart'; settings: RoomSettings; seats: RaceSeat[]; humans: number; localSeat: number }
   // The rest of the field has this long to finish once the first car is home.
   | { t: 'finishDeadline'; remainingMs: number }
   | { t: 'raceGo' }
   // Every couple of seconds: each room member's round trip (null offline).
   | { t: 'latency'; latency: Record<number, number | null> }
   | { t: 'raceEvent'; event: RaceEvent }
-  | { t: 'results'; raceId: number; results: RaceResult[] }
+  | { t: 'results'; results: RaceResult[] }
   | { t: 'error'; message: string };

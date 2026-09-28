@@ -12,21 +12,18 @@ interface ServerModule {
   _malloc(size: number): number;
 }
 
-export const PHASE_SETUP = 0;
-export const PHASE_COUNTDOWN = 1;
-export const PHASE_RACING = 2;
 export const PHASE_FINISHED = 3;
 export const STATUS_EMPTY = 0;
 export const STATUS_DRIVING = 1;
 export const STATUS_FINISHED = 2;
 export const STATUS_RETIRED = 3;
 
-export interface CarChoice { variant: number; manual: boolean }
-export interface SeatState { status: number; place: number; timeMs: number; bestLapMs: number; lap: number }
+interface CarChoice { variant: number; manual: boolean }
+interface SeatState { status: number; place: number; timeMs: number; bestLapMs: number; lap: number }
 
 export class Simulation {
   readonly discId: string;
-  readonly frameSize: number;
+  private readonly frameSize: number;
   private readonly scratch: number;
   private readonly m: ServerModule;
 
@@ -55,16 +52,11 @@ export class Simulation {
     return this.m.ccall(name, 'number', args.map(() => 'number'), args);
   }
 
-  private str(name: string, args: number[]): string {
-    return this.m.ccall(name, 'string', args.map(() => 'number'), args);
-  }
-
   // Shared race rules (web/wasm/web_rules.c), the same code the browser runs.
   carModels(): number { return this.num('rw_car_models'); }
   classCar(classIndex: number, model: number): number { return this.num('rw_class_car', [classIndex, model]); }
   carAllowed(classIndex: number, variant: number): boolean { return this.num('rw_car_allowed', [classIndex, variant]) === 1; }
   carAutomatic(variant: number): boolean { return this.num('rw_car_automatic', [variant]) === 1; }
-  carName(variant: number): string { return this.str('rw_car_name', [this.num('rw_car_model', [variant])]); }
   courseAllowed(classIndex: number, course: number): boolean { return this.num('rw_course_allowed', [classIndex, course]) === 1; }
   maxHumans(classIndex: number, course: number, reverse: boolean): number {
     return this.num('rw_max_humans', [classIndex, course, +reverse]);

@@ -91,7 +91,6 @@ export class Lobby {
   private readonly sim: Simulation;
   private readonly store: Store;
   private timer: ReturnType<typeof setInterval> | null = null;
-  private clock = 0;
 
   constructor(sim: Simulation, store: Store) {
     this.sim = sim;
@@ -234,7 +233,6 @@ export class Lobby {
     const racers = this.racers(room).length;
     if (settings.maxPlayers < racers) return this.fail(client, `${racers} players are already on the grid.`);
     room.settings = this.normalize(settings);
-    this.store.updateRoom(room.id, room.hostId, room.settings);
     for (const member of room.members.values()) {
       member.ready = false;
       if (!this.carValid(room, member.variant, member.manual)) member.variant = -1;
@@ -278,7 +276,7 @@ export class Lobby {
     // A player back before the start reloads the race: the start waits again.
     const seat = run.seatOf.get(client.user.id);
     if (!run.started && seat !== undefined && !run.retiring.has(seat)) run.awaiting.add(client.user.id);
-    send(client, { t: 'raceStart', raceId: run.raceId, settings: room.settings, seats: run.seats, humans: run.humans,
+    send(client, { t: 'raceStart', settings: room.settings, seats: run.seats, humans: run.humans,
                    localSeat: run.seatOf.get(client.user.id) ?? -1 });
     if (run.started) send(client, { t: 'raceGo' });
     if (run.finishDeadline !== null) send(client, { t: 'finishDeadline', remainingMs: Math.max(0, run.finishDeadline - Date.now()) });
@@ -312,7 +310,6 @@ export class Lobby {
     if (room.members.size === 0) return this.dropRoom(room);
     if (room.hostId === client.user.id) {
       room.hostId = room.members.keys().next().value as number;
-      this.store.updateRoom(room.id, room.hostId, room.settings);
     }
     this.systemChat(room, `${client.user.name} ${reason === 'disconnected' ? 'disconnected' : 'left'}.`);
     this.publish(room);
@@ -337,7 +334,6 @@ export class Lobby {
       room.race = null;
     }
     this.rooms.delete(room.id);
-    this.store.closeRoom(room.id);
     this.broadcastRooms();
   }
 
@@ -373,13 +369,13 @@ export class Lobby {
     const clean = text.replace(/\s+/g, ' ').trim().slice(0, CHAT_LIMIT);
     if (!clean) return;
     for (const member of room.members.values()) {
-      send(member.client, { t: 'chat', roomId: room.id, from: client.user.name, text: clean, at: Date.now() });
+      send(member.client, { t: 'chat', from: client.user.name, text: clean, at: Date.now() });
     }
   }
 
   private systemChat(room: Room, text: string): void {
     for (const member of room.members.values()) {
-      send(member.client, { t: 'chat', roomId: room.id, from: '', text, at: Date.now() });
+      send(member.client, { t: 'chat', from: '', text, at: Date.now() });
     }
   }
 
@@ -407,8 +403,8 @@ export class Lobby {
       if (status === STATUS_EMPTY) continue;
       const member = members[seat];
       seats.push(member
-        ? { userId: member.client.user.id, name: member.client.user.name, variant: member.variant, manual: member.manual, ai: false }
-        : { userId: null, name: `CPU ${seat - members.length + 1}`, variant: -1, manual: false, ai: true });
+        ? { userId: member.client.user.id, name: member.client.user.name, variant: member.variant, manual: member.manual }
+        : { userId: null, name: `CPU ${seat - members.length + 1}`, variant: -1, manual: false });
     }
     const run: RaceRun = {
       raceId: this.store.createRace(room.id, s), handle, seats,
@@ -421,7 +417,7 @@ export class Lobby {
     room.race = run;
     for (const member of room.members.values()) {
       member.ready = false;
-      send(member.client, { t: 'raceStart', raceId: run.raceId, settings: s, seats, humans: run.humans,
+      send(member.client, { t: 'raceStart', settings: s, seats, humans: run.humans,
                             localSeat: run.seatOf.get(member.client.user.id) ?? -1 });
     }
     this.publish(room);
@@ -457,7 +453,7 @@ export class Lobby {
       run.retiring.add(seat);
       run.awaiting.delete(client.user.id);
     }
-    this.raceEvent(room, { kind: 'retire', seat, name: client.user.name, reason });
+    this.raceEvent(room, { kind: 'retire', name: client.user.name, reason });
   }
 
   private input(client: Client, data: Buffer): void {
@@ -494,7 +490,6 @@ export class Lobby {
   }
 
   private tick(): void {
-    this.clock++;
     const now = Date.now();
     for (const room of this.rooms.values()) {
       const run = room.race;
@@ -548,15 +543,15 @@ export class Lobby {
     let humansDone = true;
     run.seats.forEach((seat, index) => {
       const state = this.sim.seat(run.handle, index);
-      if (!seat.ai && state.lap > run.laps[index] && run.laps[index] >= 1) {
+      if (seat.userId !== null && state.lap > run.laps[index] && run.laps[index] >= 1) {
         const lapMs = this.sim.lapTime(run.handle, index, run.laps[index] - 1);
         if (lapMs >= 0 && state.status === STATUS_DRIVING) {
-          this.raceEvent(room, { kind: 'lap', seat: index, name: seat.name, lap: run.laps[index], lapMs });
+          this.raceEvent(room, { kind: 'lap', name: seat.name, lap: run.laps[index], lapMs });
         }
       }
       run.laps[index] = state.lap;
       if (state.status === STATUS_FINISHED && run.status[index] !== STATUS_FINISHED) {
-        this.raceEvent(room, { kind: 'finish', seat: index, name: seat.name, place: state.place, timeMs: state.timeMs });
+        this.raceEvent(room, { kind: 'finish', name: seat.name, place: state.place, timeMs: state.timeMs });
         if (run.finishDeadline === null) {
           const grace = Math.max(FINISH_GRACE_MS, state.timeMs * FINISH_GRACE_SHARE);
           run.finishDeadline = now + grace;
@@ -564,7 +559,7 @@ export class Lobby {
         }
       }
       run.status[index] = state.status;
-      if (!seat.ai && state.status === STATUS_DRIVING) humansDone = false;
+      if (seat.userId !== null && state.status === STATUS_DRIVING) humansDone = false;
     });
     if (humansDone && run.endAt === null) run.endAt = now + END_DELAY_MS;
     if (run.finishDeadline !== null && run.endAt === null && now >= run.finishDeadline) run.endAt = now;
@@ -581,7 +576,7 @@ export class Lobby {
       const state = this.sim.seat(run.handle, index);
       const finished = state.status === STATUS_FINISHED;
       return {
-        seat: index, userId: seat.userId, name: seat.name, variant: seat.ai ? -1 : seat.variant,
+        seat: index, userId: seat.userId, name: seat.name, variant: seat.variant,
         // Cars still running when the race closes keep their running position.
         place: state.status === STATUS_RETIRED ? 0 : state.place,
         timeMs: finished ? state.timeMs : -1, bestLapMs: state.bestLapMs,
@@ -594,7 +589,7 @@ export class Lobby {
     room.race = null;
     for (const member of room.members.values()) {
       member.ready = false;
-      send(member.client, { t: 'results', raceId: run.raceId, results });
+      send(member.client, { t: 'results', results });
     }
     this.publish(room);
   }
@@ -630,7 +625,6 @@ export class Lobby {
       userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual,
       ready: m.ready || m.client.user.id === room.hostId, host: m.client.user.id === room.hostId,
       spectator: m.spectator, online: m.offlineSince === null,
-      latencyMs: m.offlineSince === null ? m.client.latencyMs : null,
     }));
     const state: RoomState = { ...this.summary(room), members };
     for (const member of room.members.values()) send(member.client, { t: 'room', room: state });

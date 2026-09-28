@@ -3,7 +3,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import type { RaceResult, RecordRow, RoomSettings, UserInfo } from '../shared/protocol.ts';
+import type { HistoryRow, RaceResult, RecordRow, RoomSettings, UserInfo } from '../shared/protocol.ts';
 
 const SESSION_DAYS = 30;
 
@@ -68,7 +68,7 @@ function hashPassword(password: string, salt: string): string {
 }
 
 export class Store {
-  readonly db: DatabaseSync;
+  private readonly db: DatabaseSync;
 
   constructor(path: string) {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
@@ -80,8 +80,6 @@ export class Store {
       this.db.exec('ALTER TABLE users ADD COLUMN guest INTEGER NOT NULL DEFAULT 0');
     }
     this.db.prepare(`DELETE FROM sessions WHERE expires_at < datetime('now')`).run();
-    // Rooms live in memory; any left open by a previous run are over.
-    this.db.prepare(`UPDATE rooms SET closed_at = datetime('now') WHERE closed_at IS NULL`).run();
   }
 
   /** Creates an account; null when the name is taken. */
@@ -163,17 +161,6 @@ export class Store {
       .lastInsertRowid);
   }
 
-  updateRoom(roomId: number, hostId: number, s: RoomSettings): void {
-    this.db.prepare(`UPDATE rooms SET name = ?, host_id = ?, class_index = ?, course = ?, reverse = ?,
-      laps = ?, rivals = ?, max_players = ? WHERE id = ?`)
-      .run(s.name, hostId, s.classIndex, s.course, s.reverse ? 1 : 0, s.laps, s.rivals ? 1 : 0,
-           s.maxPlayers, roomId);
-  }
-
-  closeRoom(roomId: number): void {
-    this.db.prepare(`UPDATE rooms SET closed_at = datetime('now') WHERE id = ?`).run(roomId);
-  }
-
   createRace(roomId: number, s: RoomSettings): number {
     return Number(this.db.prepare(`INSERT INTO races (room_id, class_index, course, reverse, laps)
       VALUES (?, ?, ?, ?, ?)`).run(roomId, s.classIndex, s.course, s.reverse ? 1 : 0, s.laps).lastInsertRowid);
@@ -202,31 +189,27 @@ export class Store {
     const rows = this.db.prepare(`
       WITH laps AS (
         SELECT races.course, races.reverse, races.class_index, rr.name, rr.variant, rr.best_lap_ms,
-               CASE WHEN rr.status = 'finished' THEN rr.time_ms END AS race_ms, races.started_at,
                ROW_NUMBER() OVER (PARTITION BY races.course, races.reverse, races.class_index
                                   ORDER BY rr.best_lap_ms) AS rank
         FROM race_results rr JOIN races ON races.id = rr.race_id
         WHERE rr.user_id IS NOT NULL AND rr.best_lap_ms > 0)
-      SELECT course, reverse, class_index, name, variant, best_lap_ms, race_ms, started_at
+      SELECT course, reverse, class_index, name, variant, best_lap_ms
       FROM laps WHERE rank = 1 ORDER BY course, reverse, class_index`).all() as Array<{
-        course: number; reverse: number; class_index: number; name: string; variant: number;
-        best_lap_ms: number; race_ms: number | null; started_at: string }>;
+        course: number; reverse: number; class_index: number; name: string; variant: number; best_lap_ms: number }>;
     return rows.map((r) => ({ course: r.course, reverse: r.reverse === 1, classIndex: r.class_index,
-      name: r.name, variant: r.variant, bestLapMs: r.best_lap_ms, raceMs: r.race_ms, at: r.started_at }));
+      name: r.name, variant: r.variant, bestLapMs: r.best_lap_ms }));
   }
 
   /** A player's recent races, newest first. */
-  history(userId: number, limit = 20): Array<{ raceId: number; course: number; reverse: boolean; classIndex: number;
-      place: number; entrants: number; timeMs: number; bestLapMs: number; status: string; at: string }> {
-    const rows = this.db.prepare(`SELECT races.id, races.course, races.reverse, races.class_index, rr.place,
+  history(userId: number, limit = 20): HistoryRow[] {
+    const rows = this.db.prepare(`SELECT races.course, races.reverse, races.class_index, rr.place,
         (SELECT COUNT(*) FROM race_results x WHERE x.race_id = races.id) AS entrants,
-        rr.time_ms, rr.best_lap_ms, rr.status, races.started_at
+        rr.time_ms, rr.best_lap_ms, rr.status
       FROM race_results rr JOIN races ON races.id = rr.race_id
       WHERE rr.user_id = ? ORDER BY races.id DESC LIMIT ?`).all(userId, limit) as Array<{
-        id: number; course: number; reverse: number; class_index: number; place: number; entrants: number;
-        time_ms: number; best_lap_ms: number; status: string; started_at: string }>;
-    return rows.map((r) => ({ raceId: r.id, course: r.course, reverse: r.reverse === 1, classIndex: r.class_index,
-      place: r.place, entrants: r.entrants, timeMs: r.time_ms, bestLapMs: r.best_lap_ms, status: r.status,
-      at: r.started_at }));
+        course: number; reverse: number; class_index: number; place: number; entrants: number;
+        time_ms: number; best_lap_ms: number; status: RaceResult['status'] }>;
+    return rows.map((r) => ({ course: r.course, reverse: r.reverse === 1, classIndex: r.class_index,
+      place: r.place, entrants: r.entrants, timeMs: r.time_ms, bestLapMs: r.best_lap_ms, status: r.status }));
   }
 }
