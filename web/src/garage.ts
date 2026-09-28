@@ -15,11 +15,11 @@ import { $, el } from './views';
 const TURN_DEGREES_PER_SECOND = 14;
 const DRAG_DEGREES_PER_PIXEL = 0.5;
 const UNDO_LIMIT = 40;
+const AUTOSAVE_MS = 600; // a quiet moment after the last change
 
 const canvas = $<HTMLCanvasElement>('garage-view');
 const carSelect = $<HTMLSelectElement>('garage-car');
 const statusLine = $('garage-status');
-const saveButton = $<HTMLButtonElement>('garage-save');
 const factoryButton = $<HTMLButtonElement>('garage-factory');
 const rows = [$('paint-first'), $('paint-second')];
 const logoCanvas = $<HTMLCanvasElement>('logo-canvas');
@@ -41,6 +41,8 @@ let undo: Logo[] = [];
 let tool: 'pen' | 'fill' | 'pick' = 'pen';
 let colour = 1; // the palette entry drawn with
 let previewStale = true; // the preview's logo needs sending to the module
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let saving: Promise<void> = Promise.resolve();
 
 const same = (a: Paint | null, b: Paint | null) => a === b || (!!a && !!b && a[0] === b[0] && a[1] === b[1]);
 /** A logo as it is kept: nothing drawn means none. */
@@ -99,9 +101,39 @@ function refresh(rage: Rage, message = ''): void {
   }));
   factoryButton.setAttribute('aria-pressed', String(draft === null));
   const changed = paintChanged(rage) || logoChanged();
-  saveButton.disabled = !changed;
-  statusLine.textContent = changed ? 'Not saved yet.'
+  statusLine.textContent = changed ? 'Saving…'
     : !canPaint && !message ? 'This car keeps its factory look: no repaint, logo or name.' : message;
+}
+
+/** Saves what changed after a quiet moment (and at once when leaving). */
+function scheduleSave(): void {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => void flush(), AUTOSAVE_MS);
+}
+
+function flush(): Promise<void> {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  saving = saving.then(saveChanges);
+  return saving;
+}
+
+async function saveChanges(): Promise<void> {
+  const rage = app.rage!;
+  const model = rage.modelOf(variant);
+  const paint = draft, logo = kept(draftLogo);
+  const paintDirty = paintChanged(rage), logoDirty = logoChanged();
+  if (!paintDirty && !logoDirty) {
+    refresh(rage, 'Saved. Everyone in your races sees this.'); // changed back to what was saved
+    return;
+  }
+  try {
+    if (paintDirty) app.garage = await session.savePaint(model, paint);
+    if (logoDirty) app.logo = logoFromBase64(await session.saveLogo(logo ? toBase64(encodeLogo(logo)) : null));
+    refresh(rage, 'Saved. Everyone in your races sees this.');
+  } catch (error) {
+    refresh(rage, (error as Error).message);
+  }
 }
 
 function choose(rage: Rage, zone: number, color: number): void {
@@ -111,6 +143,7 @@ function choose(rage: Rage, zone: number, color: number): void {
   next[zone] = color;
   draft = next;
   refresh(rage);
+  scheduleSave();
 }
 
 function showCar(rage: Rage): void {
@@ -160,6 +193,7 @@ function logoEdited(rage: Rage | null = app.rage): void {
   previewStale = true;
   undoButton.disabled = undo.length === 0;
   if (rage) refresh(rage);
+  scheduleSave();
 }
 
 function remember(): void {
@@ -323,7 +357,8 @@ export function enterGarage(): void {
   requestAnimationFrame(frame);
 }
 
-function leave(): void {
+async function leave(): Promise<void> {
+  await flush(); // the races started next read the saved look
   open = false;
   show('lobby');
 }
@@ -331,23 +366,16 @@ function leave(): void {
 // The automated checks turn the car themselves.
 if (location.hash === '#e2e') Object.assign(window, { __garage: { turnTo: (degrees: number) => { dragging = true; angle = degrees; } } });
 
-carSelect.onchange = () => showCar(app.rage!);
-factoryButton.onclick = () => { draft = null; refresh(app.rage!); };
-saveButton.onclick = async () => {
-  const rage = app.rage!;
-  saveButton.disabled = true;
-  try {
-    if (paintChanged(rage)) app.garage = await session.savePaint(rage.modelOf(variant), draft);
-    if (logoChanged()) {
-      const stored = kept(draftLogo);
-      app.logo = logoFromBase64(await session.saveLogo(stored ? toBase64(encodeLogo(stored)) : null));
-    }
-    refresh(rage, 'Saved. Everyone in your races sees this.');
-  } catch (error) {
-    refresh(rage, (error as Error).message);
-  }
+carSelect.onchange = async () => {
+  await flush(); // the draft belongs to the car being left
+  showCar(app.rage!);
 };
-$('garage').querySelector('[data-action=garage-back]')!.addEventListener('click', leave);
+factoryButton.onclick = () => {
+  draft = null;
+  refresh(app.rage!);
+  scheduleSave();
+};
+$('garage').querySelector('[data-action=garage-back]')!.addEventListener('click', () => void leave());
 
 canvas.addEventListener('pointerdown', (event) => { dragging = true; canvas.setPointerCapture(event.pointerId); });
 canvas.addEventListener('pointerup', () => { dragging = false; });

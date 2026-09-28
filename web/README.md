@@ -37,7 +37,9 @@ browser draws them with three.js.
   on the windscreen strip. The engine writes both into a copy of the car's
   shared texture page when it decodes the materials (`engine/src/port/car_custom.c`),
   so every client draws every player's logo and name. The logo is saved once
-  per player (`/api/logo`). Tyres come next.
+  per player (`/api/logo`). Changes are saved as they are made (a moment
+  after the last one, and at once when leaving the garage or switching car).
+  Tyres come next.
 - **Practice offline** runs the same simulation locally against the rivals.
 - **Sound** is the retail race audio: the desktop's own sound code (engine
   layers pitched from the car's curves, tyre, impact and landing cues, the

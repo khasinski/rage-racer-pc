@@ -75,10 +75,8 @@ try {
   const painted = await owner.locator('#garage-view').screenshot({ path: join(out, 'garage-painted.png') });
   await owner.screenshot({ path: join(out, 'garage-page.png') });
   check(!factory.equals(painted), 'the painted preview looks different from the factory one');
-  check(await owner.locator('#garage-save').isEnabled(), 'an unsaved change enables Save');
-  await owner.click('#garage-save');
   await owner.waitForFunction(() => document.querySelector('#garage-status').textContent.startsWith('Saved'), null, { timeout: 10_000 });
-  check(await owner.locator('#garage-save').isDisabled(), 'Save is off once saved');
+  check(true, 'a paint change is saved by itself');
 
   // A different grade of the same car shares the paint.
   const options = await owner.locator('#garage-car option').evaluateAll((all) => all.map((o) => ({ value: o.value, text: o.textContent })));
@@ -147,14 +145,12 @@ try {
   await wait(600);
   const shown = await logoPixels(owner);
   check(shown >= 4000, `the logo appears on the car in the preview (${shown} red pixels)`);
-  check(await owner.locator('#garage-save').isEnabled(), 'a drawn logo enables Save');
   await owner.screenshot({ path: join(out, 'garage-logo.png') });
   await owner.click('#logo-undo');
   await wait(400);
-  check(await logoPixels(owner) === 0 && await owner.locator('#garage-save').isDisabled(), 'undo takes the logo away again');
+  check(await logoPixels(owner) === 0, 'undo takes the logo away again');
   await owner.click('#tool-fill');
   await owner.click('#logo-canvas');
-  await owner.click('#garage-save');
   await owner.waitForFunction(() => document.querySelector('#garage-status').textContent.startsWith('Saved'), null, { timeout: 10_000 });
   check(await owner.locator('#logo-tag').textContent() === 'RAGE', 'the windscreen shows the name');
 
@@ -225,6 +221,23 @@ try {
     return lacking;
   });
   check(missing.length === 0, `every customizable car shows the logo and the name (lacking: ${missing.join('; ') || 'none'})`);
+
+  // Nothing to press: leaving straight after a change still keeps it.
+  const hasty = await openPlayer(browser, { base, discFiles, onError: (e) => errors.push(e) });
+  await hasty.click('[data-action=garage]');
+  await hasty.waitForFunction(() => document.querySelector('#garage-status').textContent === '', null, { timeout: 60_000 });
+  await hasty.click('#paint-first .swatch:nth-child(5)');
+  await hasty.click('#tab-logo');
+  await hasty.click('#tool-fill');
+  await hasty.click('#logo-canvas');
+  await hasty.click('#garage [data-action=garage-back]');
+  await hasty.waitForSelector('#lobby:not([hidden])');
+  const hastyToken = await hasty.evaluate(() => localStorage.getItem('rage-racer.session'));
+  const hastyGet = async (path) => (await (await fetch(`${base}/api/${path}`, { headers: { authorization: `Bearer ${hastyToken}` } })).json());
+  const hastyPaints = (await hastyGet('garage')).paints;
+  check(Object.values(hastyPaints).some((p) => p[0] === 4), 'a paint changed just before leaving is saved');
+  check(typeof (await hastyGet('logo')).logo === 'string', 'so is a logo drawn just before leaving');
+  await hasty.context().close();
 
   // The server keeps it and validates it.
   const token = await owner.evaluate(() => localStorage.getItem('rage-racer.session'));
