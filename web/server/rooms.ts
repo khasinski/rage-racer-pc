@@ -1,34 +1,20 @@
-// Rooms, lobby and the authoritative races. The server owns every race: it
-// builds the field, steps it at 50 Hz, applies the players' inputs, streams
-// the complete RaceFrame to each player, reports race events and stores the
-// results.
+// The lobby: connections, rooms, their members and chat. Each room runs at
+// most one race at a time (race.ts); one 50 Hz timer steps every running race.
 import { randomInt } from 'node:crypto';
 import type { WebSocket } from 'ws';
-import {
-  BINARY_FRAME, BINARY_INPUT, INPUT_WORDS,
-  type ClientMessage, type RaceEvent, type RaceResult, type RaceSeat, type RoomPlayer,
-  type RoomSettings, type RoomState, type RoomSummary, type ServerMessage, type UserInfo,
+import type {
+  ClientMessage, RoomPlayer, RoomSettings, RoomState, RoomSummary, ServerMessage, UserInfo,
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
-import {
-  PHASE_FINISHED, STATUS_DRIVING, STATUS_EMPTY, STATUS_FINISHED, STATUS_RETIRED, type Simulation,
-} from './sim.ts';
+import { Race } from './race.ts';
+import type { Simulation } from './sim.ts';
 
 const TICK_MS = 1000 / 50;
-const LOAD_TIMEOUT_MS = Number(process.env.RAGE_LOAD_TIMEOUT_MS ?? 30_000);
-/* After the winner (player or rival) crosses the line, the rest of the field
- * has this long: at least 90 s, or 30% of the winning time on long races. */
-const FINISH_GRACE_MS = Number(process.env.RAGE_FINISH_GRACE_MS ?? 90_000);
-const FINISH_GRACE_SHARE = 0.3;
-const END_DELAY_MS = 2_500; // lets the last finisher see the line before results
 const CHAT_LIMIT = 200;
 const MAX_SPECTATORS = 16;
 /* A dropped connection keeps its place this long outside a race (a racing
  * seat waits until the race is over), so a reconnect puts the player back. */
 const OFFLINE_GRACE_MS = Number(process.env.RAGE_OFFLINE_GRACE_MS ?? 60_000);
-/* A client this far behind on frames skips some instead of queueing more. */
-const BACKLOG_BYTES = 256 * 1024;
-const NEUTRAL_INPUT = new Int32Array([1, 0, 0, 0, 0, 0, 0, 0]);
 
 export interface Client {
   ws: WebSocket;
@@ -47,30 +33,12 @@ interface Member {
   offlineSince: number | null; // connection lost; the place waits OFFLINE_GRACE_MS
 }
 
-interface RaceRun {
-  raceId: number;
-  handle: number;
-  seats: RaceSeat[];
-  seatOf: Map<number, number>; // userId -> seat
-  acks: Uint32Array; // per player seat: last input sequence, then the tick that first used it
-  viewers: Set<number>; // everyone receiving the race (players and spectators)
-  humans: number;
-  awaiting: Set<number>; // players the start waits for until loadDeadline
-  retiring: Set<number>; // seats given up before the start, retired when it comes
-  loadDeadline: number;
-  started: boolean;
-  laps: number[];
-  status: number[];
-  finishDeadline: number | null;
-  endAt: number | null;
-}
-
 interface Room {
   id: number;
   settings: RoomSettings;
   hostId: number;
   members: Map<number, Member>; // insertion order is join order
-  race: RaceRun | null;
+  race: Race | null;
 }
 
 function shuffle<T>(items: T[]): T[] {
@@ -81,16 +49,19 @@ function shuffle<T>(items: T[]): T[] {
   return items;
 }
 
-const send = (client: Client, message: ServerMessage) => {
-  if (client.ws.readyState === client.ws.OPEN) client.ws.send(JSON.stringify(message));
+/** Sends a message, or its JSON when several clients get the same one. */
+const send = (client: Client, message: ServerMessage | string) => {
+  if (client.ws.readyState === client.ws.OPEN) client.ws.send(typeof message === 'string' ? message : JSON.stringify(message));
 };
 
 export class Lobby {
   private readonly rooms = new Map<number, Room>();
+  private readonly racing = new Set<Room>(); // rooms with a race
   private readonly clients = new Set<Client>();
   private readonly sim: Simulation;
   private readonly store: Store;
   private timer: ReturnType<typeof setInterval> | null = null;
+  private roomList = JSON.stringify({ t: 'rooms', rooms: [] } satisfies ServerMessage); // as last broadcast
 
   constructor(sim: Simulation, store: Store) {
     this.sim = sim;
@@ -112,21 +83,19 @@ export class Lobby {
     }
     this.clients.add(client);
     send(client, { t: 'welcome', user: client.user, discId: this.sim.discId });
-    send(client, { t: 'rooms', rooms: this.summaries() });
+    send(client, this.roomList);
     // Back from a dropped or replaced connection: the same place, and the race.
-    for (const room of this.rooms.values()) {
-      const member = room.members.get(client.user.id);
-      if (!member) continue;
-      const wasOffline = member.offlineSince !== null;
-      member.client.roomId = null;
-      member.client = client;
-      member.offlineSince = null;
-      client.roomId = room.id;
-      if (wasOffline) this.systemChat(room, `${client.user.name} is back.`);
-      this.publish(room);
-      const run = room.race;
-      if (run && (run.seatOf.has(client.user.id) || run.viewers.has(client.user.id))) this.watchRace(client);
-    }
+    const room = [...this.rooms.values()].find((r) => r.members.has(client.user.id));
+    const member = room?.members.get(client.user.id);
+    if (!room || !member) return;
+    const wasOffline = member.offlineSince !== null;
+    member.client.roomId = null;
+    member.client = client;
+    member.offlineSince = null;
+    client.roomId = room.id;
+    if (wasOffline) this.systemChat(room, `${client.user.name} is back.`);
+    this.publish(room);
+    if (room.race?.involves(client.user.id)) this.sendRace(room, client);
   }
 
   /** A lost connection keeps its place: offline for a while, not gone. */
@@ -137,8 +106,7 @@ export class Lobby {
     if (!room || !member || member.client !== client) return;
     member.offlineSince = Date.now();
     member.ready = false;
-    const seat = room.race?.seatOf.get(client.user.id);
-    if (room.race && seat !== undefined) this.sim.setInput(room.race.handle, seat, NEUTRAL_INPUT); // coast
+    room.race?.coast(client.user.id);
     this.systemChat(room, `${client.user.name} lost the connection.`);
     this.publish(room);
   }
@@ -149,19 +117,19 @@ export class Lobby {
     for (const room of [...this.rooms.values()]) {
       for (const member of [...room.members.values()]) {
         if (member.offlineSince === null || now - member.offlineSince < OFFLINE_GRACE_MS) continue;
-        if (room.race?.seatOf.has(member.client.user.id)) continue;
+        if (room.race?.seated(member.client.user.id)) continue;
         this.leave(member.client, 'disconnected');
       }
       if (!this.rooms.has(room.id)) continue;
       const latency: Record<number, number | null> = {};
       for (const [id, member] of room.members) latency[id] = member.offlineSince === null ? member.client.latencyMs : null;
-      for (const member of room.members.values()) send(member.client, { t: 'latency', latency });
+      this.toRoom(room, { t: 'latency', latency });
     }
   }
 
   message(client: Client, data: Buffer, binary: boolean): void {
     if (binary) {
-      this.input(client, data);
+      this.roomOf(client)?.race?.input(client.user.id, data);
       return;
     }
     let message: ClientMessage;
@@ -181,7 +149,7 @@ export class Lobby {
       case 'watchRace': return this.watchRace(client);
       case 'startRace': return this.startRace(client);
       case 'loaded': return this.loaded(client, message.ok);
-      case 'leaveRace': return this.leaveRace(client);
+      case 'leaveRace': return this.roomOf(client)?.race?.leave(client.user.id, 'left the race');
       case 'chat': return this.chat(client, message.text);
       case 'closeRoom': return this.closeRoom(client, message.roomId);
       default: return this.fail(client, 'Unknown message.');
@@ -249,7 +217,7 @@ export class Lobby {
     if (spectator && room.members.size >= room.settings.maxPlayers + MAX_SPECTATORS) return this.fail(client, 'That room is full.');
     if (client.roomId !== null) this.leave(client, 'left');
     this.addMember(room, client, spectator);
-    if (room.race) this.watchRace(client);
+    if (room.race) this.sendRace(room, client);
   }
 
   private racers(room: Room): Member[] {
@@ -264,22 +232,6 @@ export class Lobby {
     member.spectator = spectator;
     member.ready = false;
     this.publish(room);
-  }
-
-  /** Sends the running race to a member who watches it: a spectator, or a
-   *  player who left their car (they come back to their own seat). */
-  private watchRace(client: Client): void {
-    const room = this.roomOf(client);
-    const run = room?.race;
-    if (!room || !run) return;
-    run.viewers.add(client.user.id);
-    // A player back before the start reloads the race: the start waits again.
-    const seat = run.seatOf.get(client.user.id);
-    if (!run.started && seat !== undefined && !run.retiring.has(seat)) run.awaiting.add(client.user.id);
-    send(client, { t: 'raceStart', settings: room.settings, seats: run.seats, humans: run.humans,
-                   localSeat: run.seatOf.get(client.user.id) ?? -1 });
-    if (run.started) send(client, { t: 'raceGo' });
-    if (run.finishDeadline !== null) send(client, { t: 'finishDeadline', remainingMs: Math.max(0, run.finishDeadline - Date.now()) });
   }
 
   private addMember(room: Room, client: Client, spectator = false): void {
@@ -301,16 +253,10 @@ export class Lobby {
     client.roomId = null;
     if (!room) return;
     room.members.delete(client.user.id);
-    const run = room.race;
-    if (run) {
-      run.viewers.delete(client.user.id);
-      this.retireSeat(room, run, client, reason);
-    }
+    room.race?.leave(client.user.id, reason);
     send(client, { t: 'room', room: null });
     if (room.members.size === 0) return this.dropRoom(room);
-    if (room.hostId === client.user.id) {
-      room.hostId = room.members.keys().next().value as number;
-    }
+    if (room.hostId === client.user.id) room.hostId = room.members.keys().next().value as number;
     this.systemChat(room, `${client.user.name} ${reason === 'disconnected' ? 'disconnected' : 'left'}.`);
     this.publish(room);
   }
@@ -319,9 +265,9 @@ export class Lobby {
     const room = this.rooms.get(roomId);
     if (!room) return;
     if (room.hostId !== client.user.id && !client.user.admin) return this.fail(client, 'Only the host or an admin can close a room.');
-    for (const member of [...room.members.values()]) {
+    this.toRoom(room, { t: 'room', room: null });
+    for (const member of room.members.values()) {
       member.client.roomId = null;
-      send(member.client, { t: 'room', room: null });
       if (member.client !== client) send(member.client, { t: 'error', message: `The room “${room.settings.name}” was closed.` });
     }
     room.members.clear();
@@ -329,10 +275,8 @@ export class Lobby {
   }
 
   private dropRoom(room: Room): void {
-    if (room.race) {
-      this.sim.free(room.race.handle);
-      room.race = null;
-    }
+    room.race?.free();
+    this.endRace(room);
     this.rooms.delete(room.id);
     this.broadcastRooms();
   }
@@ -367,19 +311,14 @@ export class Lobby {
     const room = this.roomOf(client);
     if (!room || typeof text !== 'string') return;
     const clean = text.replace(/\s+/g, ' ').trim().slice(0, CHAT_LIMIT);
-    if (!clean) return;
-    for (const member of room.members.values()) {
-      send(member.client, { t: 'chat', from: client.user.name, text: clean, at: Date.now() });
-    }
+    if (clean) this.toRoom(room, { t: 'chat', from: client.user.name, text: clean, at: Date.now() });
   }
 
   private systemChat(room: Room, text: string): void {
-    for (const member of room.members.values()) {
-      send(member.client, { t: 'chat', from: '', text, at: Date.now() });
-    }
+    this.toRoom(room, { t: 'chat', from: '', text, at: Date.now() });
   }
 
-  // ---- race lifecycle ----------------------------------------------------
+  // ---- races -------------------------------------------------------------
 
   private startRace(client: Client): void {
     const room = this.roomOf(client);
@@ -392,82 +331,42 @@ export class Lobby {
     const unready = members.filter((m) => m.client.user.id !== room.hostId && !m.ready);
     if (unready.length) return this.fail(client, `Waiting for ${unready.map((m) => m.client.user.name).join(', ')}.`);
     if (members.some((m) => !this.carValid(room, m.variant, m.manual))) return this.fail(client, 'Every player needs a car for this class.');
-    const s = room.settings;
-    const handle = this.sim.createRace(s.classIndex, s.course, s.reverse, s.laps, s.rivals,
-      members.map((m) => ({ variant: m.variant, manual: m.manual })));
-    if (!handle) return this.fail(client, 'The server could not prepare this race.');
-
-    const seats: RaceSeat[] = [];
-    for (let seat = 0; seat < 12; seat++) {
-      const status = this.sim.seat(handle, seat).status;
-      if (status === STATUS_EMPTY) continue;
-      const member = members[seat];
-      seats.push(member
-        ? { userId: member.client.user.id, name: member.client.user.name, variant: member.variant, manual: member.manual }
-        : { userId: null, name: `CPU ${seat - members.length + 1}`, variant: -1, manual: false });
-    }
-    const run: RaceRun = {
-      raceId: this.store.createRace(room.id, s), handle, seats,
-      seatOf: new Map(members.map((m, seat) => [m.client.user.id, seat])),
-      acks: new Uint32Array(members.length * 2),
-      viewers: new Set(room.members.keys()),
-      humans: members.length, awaiting: new Set(members.map((m) => m.client.user.id)), retiring: new Set(), loadDeadline: Date.now() + LOAD_TIMEOUT_MS, started: false,
-      laps: seats.map(() => 0), status: seats.map(() => STATUS_DRIVING), finishDeadline: null, endAt: null,
-    };
-    room.race = run;
+    const race = Race.create(this.sim, this.store, {
+      broadcast: (message) => this.toRoom(room, message),
+      socket: (userId) => {
+        const member = room.members.get(userId);
+        return member && member.offlineSince === null ? member.client.ws : undefined;
+      },
+    }, room.id, room.settings, members.map((m) => ({
+      userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual,
+    })));
+    if (!race) return this.fail(client, 'The server could not prepare this race.');
+    room.race = race;
+    this.racing.add(room);
     for (const member of room.members.values()) {
       member.ready = false;
-      send(member.client, { t: 'raceStart', settings: s, seats, humans: run.humans,
-                            localSeat: run.seatOf.get(member.client.user.id) ?? -1 });
+      this.sendRace(room, member.client);
     }
     this.publish(room);
     this.ensureTimer();
   }
 
+  /** Sends the running race to a member: everyone at the start, then a
+   *  spectator, or a player coming back (to their own seat). */
+  private sendRace(room: Room, client: Client): void {
+    for (const message of room.race?.watch(client.user.id) ?? []) send(client, message);
+  }
+
+  private watchRace(client: Client): void {
+    const room = this.roomOf(client);
+    if (room) this.sendRace(room, client);
+  }
+
   private loaded(client: Client, ok: boolean): void {
-    const room = this.roomOf(client);
-    const run = room?.race;
-    if (!room || !run || run.started || !run.seatOf.has(client.user.id)) return;
-    run.awaiting.delete(client.user.id);
-    if (!ok) this.leave(client, 'could not load the race');
-  }
-
-  private leaveRace(client: Client): void {
-    const room = this.roomOf(client);
-    const run = room?.race;
-    if (!room || !run) return;
-    run.viewers.delete(client.user.id);
-    this.retireSeat(room, run, client, 'left the race');
-  }
-
-  /** Takes a player's car out of the race: at once while racing, at the
-   *  start before it. A car that finished or already retired stays as it is. */
-  private retireSeat(room: Room, run: RaceRun, client: Client, reason: string): void {
-    const seat = run.seatOf.get(client.user.id);
-    if (seat === undefined) return;
-    if (run.started) {
-      if (this.sim.seat(run.handle, seat).status !== STATUS_DRIVING) return;
-      this.sim.retire(run.handle, seat);
-    } else {
-      if (run.retiring.has(seat)) return;
-      run.retiring.add(seat);
-      run.awaiting.delete(client.user.id);
-    }
-    this.raceEvent(room, { kind: 'retire', name: client.user.name, reason });
-  }
-
-  private input(client: Client, data: Buffer): void {
-    const room = this.roomOf(client);
-    const run = room?.race;
-    const seat = run?.seatOf.get(client.user.id);
-    if (!run || seat === undefined || data.length !== 5 + INPUT_WORDS * 4 || data[0] !== BINARY_INPUT) return;
-    const sequence = data.readUInt32LE(1);
-    if (sequence <= run.acks[seat * 2]) return; // late duplicate
-    const words = new Int32Array(INPUT_WORDS);
-    for (let i = 0; i < INPUT_WORDS; i++) words[i] = data.readInt32LE(5 + i * 4);
-    if (!this.sim.setInput(run.handle, seat, words)) return;
-    run.acks[seat * 2] = sequence;
-    run.acks[seat * 2 + 1] = this.sim.simTick(run.handle) + 1; // used from the next tick
+    const race = this.roomOf(client)?.race;
+    if (!race?.awaits(client.user.id)) return;
+    if (ok) race.loaded(client.user.id);
+    else this.leave(client, 'could not load the race');
   }
 
   private ensureTimer(): void {
@@ -482,7 +381,7 @@ export class Lobby {
         next += TICK_MS;
       }
       if (next < now) next = now;
-      if (![...this.rooms.values()].some((room) => room.race)) {
+      if (!this.racing.size) {
         clearInterval(this.timer!);
         this.timer = null;
       }
@@ -491,122 +390,34 @@ export class Lobby {
 
   private tick(): void {
     const now = Date.now();
-    for (const room of this.rooms.values()) {
-      const run = room.race;
-      if (!run) continue;
-      if (!run.started) {
-        if (run.awaiting.size && now < run.loadDeadline) continue;
-        for (const id of [...run.awaiting]) {
-          const member = room.members.get(id);
-          if (member) this.leave(member.client, 'could not load the race in time');
-        }
-        if (!room.race) continue;
-        if (!this.sim.start(run.handle)) {
-          this.abortRace(room, 'The race could not start.');
-          continue;
-        }
-        run.started = true;
-        for (const seat of run.retiring) this.sim.retire(run.handle, seat);
-        this.publish(room);
-        for (const member of room.members.values()) send(member.client, { t: 'raceGo' });
+    for (const room of this.racing) {
+      for (const id of room.race!.overdue(now)) {
+        const member = room.members.get(id);
+        if (member) this.leave(member.client, 'could not load the race in time');
       }
-      const phase = this.sim.tick(run.handle);
-      const serverTick = this.sim.simTick(run.handle);
-      // The field moves every second tick (25 Hz); publish each such state.
-      if (serverTick % 2 === 0 || phase === PHASE_FINISHED) this.publishFrame(room, run, serverTick);
-      if (serverTick % 2 === 0) this.detectEvents(room, run, now);
-      if (phase === PHASE_FINISHED && run.endAt === null) run.endAt = now + END_DELAY_MS;
-      if (run.endAt !== null && now >= run.endAt) this.endRace(room);
+      const race = room.race;
+      if (!race) continue; // everybody left
+      const outcome = race.step(now);
+      if (outcome === 'over') this.endRace(room);
+      if (outcome !== 'running') this.publish(room);
     }
-  }
-
-  private publishFrame(room: Room, run: RaceRun, serverTick: number): void {
-    const frame = this.sim.frame(run.handle);
-    if (!frame) return;
-    const header = 6 + run.acks.length * 4;
-    const packet = Buffer.allocUnsafe(header + frame.length);
-    packet[0] = BINARY_FRAME;
-    packet.writeUInt32LE(serverTick >>> 0, 1);
-    packet[5] = run.humans;
-    run.acks.forEach((value, i) => packet.writeUInt32LE(value, 6 + i * 4));
-    packet.set(frame, header);
-    for (const id of run.viewers) {
-      const member = room.members.get(id);
-      if (!member || member.offlineSince !== null) continue;
-      const ws = member.client.ws;
-      // A slow link skips frames rather than falling ever further behind.
-      if (ws.readyState === ws.OPEN && ws.bufferedAmount < BACKLOG_BYTES) ws.send(packet);
-    }
-  }
-
-  private detectEvents(room: Room, run: RaceRun, now: number): void {
-    let humansDone = true;
-    run.seats.forEach((seat, index) => {
-      const state = this.sim.seat(run.handle, index);
-      if (seat.userId !== null && state.lap > run.laps[index] && run.laps[index] >= 1) {
-        const lapMs = this.sim.lapTime(run.handle, index, run.laps[index] - 1);
-        if (lapMs >= 0 && state.status === STATUS_DRIVING) {
-          this.raceEvent(room, { kind: 'lap', name: seat.name, lap: run.laps[index], lapMs });
-        }
-      }
-      run.laps[index] = state.lap;
-      if (state.status === STATUS_FINISHED && run.status[index] !== STATUS_FINISHED) {
-        this.raceEvent(room, { kind: 'finish', name: seat.name, place: state.place, timeMs: state.timeMs });
-        if (run.finishDeadline === null) {
-          const grace = Math.max(FINISH_GRACE_MS, state.timeMs * FINISH_GRACE_SHARE);
-          run.finishDeadline = now + grace;
-          for (const member of room.members.values()) send(member.client, { t: 'finishDeadline', remainingMs: grace });
-        }
-      }
-      run.status[index] = state.status;
-      if (seat.userId !== null && state.status === STATUS_DRIVING) humansDone = false;
-    });
-    if (humansDone && run.endAt === null) run.endAt = now + END_DELAY_MS;
-    if (run.finishDeadline !== null && run.endAt === null && now >= run.finishDeadline) run.endAt = now;
-  }
-
-  private raceEvent(room: Room, event: RaceEvent): void {
-    for (const member of room.members.values()) send(member.client, { t: 'raceEvent', event });
   }
 
   private endRace(room: Room): void {
-    const run = room.race;
-    if (!run) return;
-    const results: RaceResult[] = run.seats.map((seat, index) => {
-      const state = this.sim.seat(run.handle, index);
-      const finished = state.status === STATUS_FINISHED;
-      return {
-        seat: index, userId: seat.userId, name: seat.name, variant: seat.variant,
-        // Cars still running when the race closes keep their running position.
-        place: state.status === STATUS_RETIRED ? 0 : state.place,
-        timeMs: finished ? state.timeMs : -1, bestLapMs: state.bestLapMs,
-        status: finished ? 'finished' : state.status === STATUS_RETIRED ? 'retired' : 'dnf',
-      };
-    });
-    results.sort((a, b) => (a.place || 99) - (b.place || 99) || a.seat - b.seat);
-    this.store.finishRace(run.raceId, results);
-    this.sim.free(run.handle);
     room.race = null;
-    for (const member of room.members.values()) {
-      member.ready = false;
-      send(member.client, { t: 'results', results });
-    }
-    this.publish(room);
-  }
-
-  private abortRace(room: Room, message: string): void {
-    const run = room.race;
-    if (!run) return;
-    this.sim.free(run.handle);
-    room.race = null;
-    for (const member of room.members.values()) send(member.client, { t: 'error', message });
-    this.publish(room);
+    this.racing.delete(room);
   }
 
   // ---- state publication -------------------------------------------------
 
   private roomOf(client: Client): Room | undefined {
     return client.roomId === null ? undefined : this.rooms.get(client.roomId);
+  }
+
+  /** Sends one message to every member of a room, serialized once. */
+  private toRoom(room: Room, message: ServerMessage): void {
+    const text = JSON.stringify(message);
+    for (const member of room.members.values()) send(member.client, text);
   }
 
   private summary(room: Room): RoomSummary {
@@ -616,10 +427,6 @@ export class Lobby {
              status: room.race ? (room.race.started ? 'racing' : 'loading') : 'lobby' };
   }
 
-  private summaries(): RoomSummary[] {
-    return [...this.rooms.values()].map((room) => this.summary(room));
-  }
-
   private publish(room: Room): void {
     const members: RoomPlayer[] = [...room.members.values()].map((m) => ({
       userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual,
@@ -627,12 +434,15 @@ export class Lobby {
       spectator: m.spectator, online: m.offlineSince === null,
     }));
     const state: RoomState = { ...this.summary(room), members };
-    for (const member of room.members.values()) send(member.client, { t: 'room', room: state });
+    this.toRoom(room, { t: 'room', room: state });
     this.broadcastRooms();
   }
 
+  /** The room list goes to everyone, only when it changed. */
   private broadcastRooms(): void {
-    const message: ServerMessage = { t: 'rooms', rooms: this.summaries() };
-    for (const client of this.clients) send(client, message);
+    const list = JSON.stringify({ t: 'rooms', rooms: [...this.rooms.values()].map((room) => this.summary(room)) } satisfies ServerMessage);
+    if (list === this.roomList) return;
+    this.roomList = list;
+    for (const client of this.clients) send(client, list);
   }
 }
