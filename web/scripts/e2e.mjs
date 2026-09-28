@@ -1,17 +1,14 @@
 // End-to-end check of the whole app in real (headless) browsers:
 //   node scripts/e2e.mjs <disc file ...> [--out dir]
 // Starts the multiplayer server with a scratch database and the development
-// test accounts (on the scratch database only), then two players log in, choose the disc through
+// test accounts, then two players log in, choose the disc through
 // the page's file picker, meet in a room, race each other on the server, leave
 // and read the results; one of them then drives an offline practice race.
 // Fails on any page error, a blank frame or a step that does not happen.
-import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
+import { mkdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { checks, launchBrowser, openPlayer, startServer, web } from './lib/harness.mjs';
 
-const web = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
 const outIndex = args.indexOf('--out');
 const out = resolve(outIndex >= 0 ? args.splice(outIndex, 2)[1] : join(web, 'e2e-output'));
@@ -21,59 +18,36 @@ mkdirSync(out, { recursive: true });
 
 // The server reads the Track 01 BIN (or the CUE) the players will choose.
 const serverDisc = discFiles.find((f) => /\.cue$/i.test(f)) ?? discFiles[0];
-const db = join(out, 'e2e.db');
-for (const suffix of ['', '-wal', '-shm']) rmSync(db + suffix, { force: true });
-spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db, '--admin-password', 'admin', '--rage-password', 'racer'], { stdio: 'inherit' });
-const port = 4180;
-const server = spawn(process.execPath, [join(web, 'server/main.ts'), '--disc', serverDisc, '--port', String(port), '--db', db],
-  { cwd: web, stdio: ['ignore', 'pipe', 'inherit'] });
-await new Promise((ready, fail) => {
-  server.stdout.on('data', (d) => String(d).includes('server on') && ready());
-  server.on('exit', (code) => fail(new Error(`server exited with ${code}`)));
-});
+const { base, stop } = await startServer({ disc: serverDisc, port: 4180, db: join(out, 'e2e.db') });
 
-const failures = [];
+const { failures, report } = checks();
 const step = (text) => console.log(`· ${text}`);
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const browser = await launchBrowser();
 
-async function player(name, password) {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
-  const page = await context.newPage();
-  page.on('pageerror', (error) => failures.push(`${name}: page error: ${error.message}`));
-  page.on('console', (message) => {
-    if (message.type() === 'error') failures.push(`${name}: console: ${message.text()}`);
-  });
-  // Tallies what the page hands its audio worklet (web/src/audio.ts): race
-  // effects PCM, streamed CD music, and whether the output is running.
-  await page.addInitScript(() => {
-    const tally = { sfxFrames: 0, sfxPeak: 0, musicFrames: 0, contexts: [] };
-    window.__audio = tally;
-    const post = MessagePort.prototype.postMessage;
-    MessagePort.prototype.postMessage = function (message, ...rest) {
-      if (message && (message.type === 'sfx' || message.type === 'music')) {
-        const pcm = message.pcm;
-        if (message.type === 'sfx') {
-          tally.sfxFrames += pcm.length / 2;
-          for (let i = 0; i < pcm.length; i++) tally.sfxPeak = Math.max(tally.sfxPeak, Math.abs(pcm[i]));
-        } else tally.musicFrames += pcm.length / 2;
-      }
-      return post.call(this, message, ...rest);
-    };
-    const Base = window.AudioContext;
-    window.AudioContext = class extends Base {
-      constructor(...args) { super(...args); tally.contexts.push(this); }
-    };
-  });
-  await page.goto(`http://localhost:${port}/#e2e`);
-  await page.waitForSelector('#auth:not([hidden])');
-  await page.fill('#auth input[name=name]', name);
-  await page.fill('#auth input[name=password]', password);
-  await page.click('#auth button[value=login]');
-  await page.waitForSelector('#disc:not([hidden])');
-  await page.setInputFiles('#disc-input', discFiles);
-  await page.waitForSelector('#lobby:not([hidden])', { timeout: 180_000 });
-  return page;
+// Tallies what the page hands its audio worklet (web/src/audio.ts): race
+// effects PCM, streamed CD music, and whether the output is running.
+function tallyAudio() {
+  const tally = { sfxFrames: 0, sfxPeak: 0, musicFrames: 0, contexts: [] };
+  window.__audio = tally;
+  const post = MessagePort.prototype.postMessage;
+  MessagePort.prototype.postMessage = function (message, ...rest) {
+    if (message && (message.type === 'sfx' || message.type === 'music')) {
+      const pcm = message.pcm;
+      if (message.type === 'sfx') {
+        tally.sfxFrames += pcm.length / 2;
+        for (let i = 0; i < pcm.length; i++) tally.sfxPeak = Math.max(tally.sfxPeak, Math.abs(pcm[i]));
+      } else tally.musicFrames += pcm.length / 2;
+    }
+    return post.call(this, message, ...rest);
+  };
+  const Base = window.AudioContext;
+  window.AudioContext = class extends Base {
+    constructor(...args) { super(...args); tally.contexts.push(this); }
+  };
 }
+
+const player = (name, password) => openPlayer(browser, { base, name, password, discFiles, consoleErrors: true,
+  init: tallyAudio, onError: (error) => failures.push(error) });
 
 const blank = (page) => page.evaluate(() => {
   const canvas = document.getElementById('view');
@@ -86,8 +60,8 @@ const blank = (page) => page.evaluate(() => {
   for (let i = 0; i < data.length; i += 4) colours.add((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]);
   return colours.size < 8;
 });
-const hud = (page) => page.evaluate(() => Object.fromEntries(['place', 'lap', 'time', 'speed', 'gear']
-  .map((id) => [id, document.getElementById(`hud-${id}`)?.textContent])));
+// The race state the HUD shows (web/src/rage.ts Hud), read from the page.
+const hud = (page) => page.evaluate(() => window.__race.rage.hud());
 
 try {
   const admin = await player('admin', 'admin');
@@ -138,10 +112,10 @@ try {
   const hudRage = await hud(rage);
   console.log('hud admin', JSON.stringify(hudAdmin), 'rage', JSON.stringify(hudRage));
   for (const [name, h] of [['admin', hudAdmin], ['rage', hudRage]]) {
-    if (!(Number(h.speed) > 0)) failures.push(`${name}'s car did not move`);
-    if (!h.place?.endsWith('/12')) failures.push(`${name} does not see the full field: ${h.place}`);
+    if (!(h.speed > 0)) failures.push(`${name}'s car did not move`);
+    if (h.entrants !== 12) failures.push(`${name} does not see the full field: ${h.entrants}`);
   }
-  if (hudAdmin.time === '0:00.00') failures.push('the race clock did not run');
+  if (!(hudAdmin.timeMs > 0)) failures.push('the race clock did not run');
   for (const [name, page] of [['admin', admin], ['rage', rage]]) if (await blank(page)) failures.push(`${name}'s race view is blank`);
   const withMusic = discFiles.some((f) => /\.cue$/i.test(f)) && discFiles.length > 2;
   for (const [name, page] of [['admin', admin], ['rage', rage]]) {
@@ -178,16 +152,12 @@ try {
   await rage.keyboard.up('KeyX');
   await rage.screenshot({ path: join(out, '09-practice.png') });
   const practice = await hud(rage);
-  if (!(Number(practice.speed) > 0)) failures.push('the practice car did not move');
+  if (!(practice.speed > 0)) failures.push('the practice car did not move');
   step(`practice race ran (${JSON.stringify(practice)})`);
 } catch (error) {
   failures.push(String(error));
 } finally {
   await browser.close();
-  server.kill();
+  stop();
 }
-if (failures.length) {
-  console.error(failures.join('\n'));
-  process.exit(1);
-}
-console.log(`ok — screenshots in ${out}`);
+report(`ok — screenshots in ${out}`);

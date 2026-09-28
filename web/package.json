@@ -12,7 +12,9 @@
     "server": "node server/main.ts",
     "seed": "node server/seed.ts",
     "test:server": "node scripts/server-test.mjs",
-    "test:e2e": "node scripts/e2e.mjs"
+    "test:e2e": "node scripts/e2e.mjs",
+    "test:finish": "node scripts/finish-check.mjs",
+    "test:grid": "node scripts/grid-test.mjs"
   },
   "dependencies": {
     "three": "^0.186.1",

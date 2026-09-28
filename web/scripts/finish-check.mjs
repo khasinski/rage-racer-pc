@@ -4,37 +4,20 @@
 // spectator. The guest follows the leading rival over the line: the car
 // drives on and fades out, then the camera hands over to the nearest
 // player, and everyone sees the time left to finish (bottom left).
-import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { chromium } from 'playwright';
-const web = join(fileURLToPath(new URL('.', import.meta.url)), '..');
-const [disc, out = join(web, 'e2e-output')] = process.argv.slice(2);
-if (!disc) { console.error('usage: finish-check.mjs <disc> [out dir]'); process.exit(2); }
+import { mkdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { checks, launchBrowser, openPlayer, startServer, web } from './lib/harness.mjs';
+
+const [discArg, out = join(web, 'e2e-output')] = process.argv.slice(2);
+if (!discArg) { console.error('usage: finish-check.mjs <disc> [out dir]'); process.exit(2); }
+const disc = resolve(discArg);
 mkdirSync(out, { recursive: true });
-const failures = [];
-const check = (ok, what) => { console.log(`${ok ? '✓' : '✗'} ${what}`); if (!ok) failures.push(what); };
-const db = join(out, 'finish.db'); for (const s of ['', '-wal', '-shm']) rmSync(db + s, { force: true });
-spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db, '--admin-password', 'admin', '--rage-password', 'racer']);
-const server = spawn(process.execPath, [join(web, 'server/main.ts'), '--disc', disc, '--port', '4191', '--db', db], { stdio: ['ignore', 'pipe', 'inherit'] });
-await new Promise((r) => server.stdout.on('data', (d) => String(d).includes('server on') && r()));
-const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const errors = [];
-async function open(name, password) {
-  const page = await (await browser.newContext({ viewport: { width: 1280, height: 720 } })).newPage();
-  page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
-  await page.goto('http://localhost:4191/#e2e');
-  await page.waitForSelector('#auth:not([hidden])');
-  if (name === 'guest') await page.click('#auth button[value=guest]');
-  else { await page.fill('#auth input[name=name]', name); await page.fill('#auth input[name=password]', password); await page.click('#auth button[value=login]'); }
-  await page.waitForSelector('#disc:not([hidden])');
-  await page.setInputFiles('#disc-input', disc);
-  await page.waitForSelector('#lobby:not([hidden])', { timeout: 180000 });
-  return page;
-}
+const { check, failures, report } = checks();
+const { base, stop } = await startServer({ disc, port: 4191, db: join(out, 'finish.db') });
+const browser = await launchBrowser();
+const open = (name, password) => openPlayer(browser, { base, name, password, discFiles: disc, onError: (e) => failures.push(e) });
 try {
-  const admin = await open('admin', 'admin'), rage = await open('rage', 'racer'), guest = await open('guest');
+  const admin = await open('admin', 'admin'), rage = await open('rage', 'racer'), guest = await open();
   await admin.click('[data-action=create-room]');
   await admin.fill('#settings-form input[name=name]', 'Finish');
   await admin.selectOption('#settings-form select[name=class]', '2');
@@ -68,7 +51,5 @@ try {
   check(/^Race closes in \d+:\d\d$/.test(await guest.textContent('#deadline')), 'the spectator sees the time left to finish');
   await admin.screenshot({ path: join(out, 'f4-admin-deadline.png') });
   check(!(await admin.$eval('#deadline', (e) => e.hidden)), 'players see the time left to finish');
-} catch (error) { failures.push(String(error)); } finally { await browser.close(); server.kill(); }
-failures.push(...errors);
-if (failures.length) { console.error(failures.join('\n')); process.exit(1); }
-console.log('ok');
+} catch (error) { failures.push(String(error)); } finally { await browser.close(); stop(); }
+report();

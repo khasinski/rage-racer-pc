@@ -20,7 +20,9 @@ browser draws them with three.js.
   sends lap, finish and retirement events, closes the race 90 s after the
   winner (at least), and stores the results. Accounts, sessions, rooms,
   races, results, lap records and each player's history live in SQLite
-  (`node:sqlite`).
+  (`node:sqlite`). `rooms.ts` is the lobby (rooms, members, chat) and
+  `race.ts` one running race; `db.ts` the storage and `sim.ts` the
+  simulation module.
 - **Practice offline** runs the same simulation locally against the rivals.
 - **Sound** is the retail race audio: the desktop's own sound code (engine
   layers pitched from the car's curves, tyre, impact and landing cues, the
@@ -49,6 +51,12 @@ the WebSocket (`/ws`). Options: `--port` (default 7243), `--host`, `--db`
 (default `server/data/rage.db`), `--static`. The server needs its own copy of
 the disc, and players must use the same release (the lobby compares the boot
 serial and a fingerprint of the game archive).
+
+Timings (milliseconds, mainly for the checks): `RAGE_LOAD_TIMEOUT_MS`
+(30 s for every player to load a race), `RAGE_FINISH_GRACE_MS` (at least
+90 s to finish after the winner), `RAGE_OFFLINE_GRACE_MS` (60 s to come back
+after a dropped connection outside a race), `RAGE_KEEPALIVE_MS` (2 s pings)
+and `RAGE_DEAD_MS` (60 s of silence closes a connection).
 
 For client development, `npm run dev` proxies `/api` and `/ws` to the server
 at `RAGE_SERVER` (default `http://localhost:7243`).
@@ -83,10 +91,10 @@ network jitter.
 
 ```sh
 npm run typecheck
-npm run test:server -- "<disc>"   # accounts, rooms, rules, a full race to results
+npm run test:server -- "<disc>"   # accounts, rooms, rules, a full race to results, leaving/reconnecting/timeouts
 npm run test:e2e -- "<disc>"      # two headless browsers race each other, then practice
-node scripts/grid-test.mjs "<disc>" # 8-player grid on every course variant
-node scripts/finish-check.mjs "<disc>" # finish fade, spectator hand-over, finish deadline
+npm run test:grid -- "<disc>"     # 8-player grid on every course variant
+npm run test:finish -- "<disc>"   # finish fade, spectator hand-over, finish deadline
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
 node scripts/audio-check.mjs "<disc.cue>"  # engine sound follows rpm; race tunes found
 # Native vs WebAssembly physics, tick by tick:
@@ -97,9 +105,6 @@ node scripts/parity.mjs "<disc>" 2000 > wasm.txt && cmp native.txt wasm.txt
 
 ## Not done yet
 
-- **Latency on your own car:** there is no client-side prediction, so your
-  own car responds after a round trip plus the 80 ms playback buffer.
-- **Reconnecting:** you cannot rejoin a race you disconnected from.
 - **Sound gaps:** no SPU reverb (the retail tunnels' echo), no announcer
   lines about the rivals, no fly-by/shuttle scenery sounds, and no results
   music after the finish.

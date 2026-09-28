@@ -3,38 +3,25 @@
 // Starts the server on a scratch database and checks accounts, room and car
 // rules, host hand-over, chat, and a complete race run by the server to the
 // finish (rivals finish, players who do not are closed out), with events,
-// results and their storage.
-import { spawn, spawnSync } from 'node:child_process';
+// results and their storage; then short races for leaving before the start,
+// reconnecting before it and the load timeout, and the offline grace period.
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
-import { fileURLToPath } from 'node:url';
+import { checks, startServer, until, wait } from './lib/harness.mjs';
 
-const web = join(dirname(fileURLToPath(import.meta.url)), '..');
 const disc = process.argv[2] && resolve(process.argv[2]);
 if (!disc) { console.error('usage: server-test.mjs <disc>'); process.exit(2); }
 const scratch = mkdtempSync(join(tmpdir(), 'rage-server-test-'));
 const db = join(scratch, 'test.db');
-spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db, '--admin-password', 'admin', '--rage-password', 'racer'], { stdio: 'ignore' });
 const port = 4181;
 const LOAD_TIMEOUT_MS = 5000;
 const OFFLINE_GRACE_MS = 3000;
-const server = spawn(process.execPath, [join(web, 'server/main.ts'), '--disc', disc, '--port', String(port), '--db', db],
-  { cwd: web, stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, RAGE_FINISH_GRACE_MS: '3000', RAGE_KEEPALIVE_MS: '500',
-    RAGE_LOAD_TIMEOUT_MS: String(LOAD_TIMEOUT_MS), RAGE_OFFLINE_GRACE_MS: String(OFFLINE_GRACE_MS) } });
-await new Promise((ready) => server.stdout.on('data', (d) => String(d).includes('server on') && ready()));
+const { base, stop } = await startServer({ disc, port, db, env: { RAGE_FINISH_GRACE_MS: '3000', RAGE_KEEPALIVE_MS: '500',
+  RAGE_LOAD_TIMEOUT_MS: String(LOAD_TIMEOUT_MS), RAGE_OFFLINE_GRACE_MS: String(OFFLINE_GRACE_MS) } });
+const { check, failures, report } = checks();
 
-const base = `http://localhost:${port}`;
-const failures = [];
-const check = (ok, what) => { console.log(`${ok ? '✓' : '✗'} ${what}`); if (!ok) failures.push(what); };
-const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-/* Polls until a condition holds (messages arrive asynchronously). */
-const until = async (condition, ms = 10_000) => {
-  const t0 = Date.now();
-  while (!condition() && Date.now() - t0 < ms) await wait(20);
-  return Boolean(condition());
-};
 const post = async (path, body, token) => {
   const response = await fetch(base + path, { method: 'POST', body: JSON.stringify(body),
     headers: token ? { authorization: `Bearer ${token}` } : {} });
@@ -307,8 +294,7 @@ try {
   failures.push(String(error));
   console.error(error);
 } finally {
-  server.kill();
+  stop();
   rmSync(scratch, { recursive: true, force: true });
 }
-if (failures.length) { console.error(`${failures.length} failed`); process.exit(1); }
-console.log('ok');
+report();
