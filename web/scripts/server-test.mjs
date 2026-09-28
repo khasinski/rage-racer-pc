@@ -18,8 +18,11 @@ const scratch = mkdtempSync(join(tmpdir(), 'rage-server-test-'));
 const db = join(scratch, 'test.db');
 spawnSync(process.execPath, [join(web, 'server/seed.ts'), '--db', db, '--admin-password', 'admin', '--rage-password', 'racer'], { stdio: 'ignore' });
 const port = 4181;
+const LOAD_TIMEOUT_MS = 5000;
+const OFFLINE_GRACE_MS = 3000;
 const server = spawn(process.execPath, [join(web, 'server/main.ts'), '--disc', disc, '--port', String(port), '--db', db],
-  { cwd: web, stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, RAGE_FINISH_GRACE_MS: '3000', RAGE_KEEPALIVE_MS: '500' } });
+  { cwd: web, stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env, RAGE_FINISH_GRACE_MS: '3000', RAGE_KEEPALIVE_MS: '500',
+    RAGE_LOAD_TIMEOUT_MS: String(LOAD_TIMEOUT_MS), RAGE_OFFLINE_GRACE_MS: String(OFFLINE_GRACE_MS) } });
 await new Promise((ready) => server.stdout.on('data', (d) => String(d).includes('server on') && ready()));
 
 const base = `http://localhost:${port}`;
@@ -38,6 +41,17 @@ const post = async (path, body, token) => {
   return { status: response.status, body: await response.json() };
 };
 
+/* Opens a new connection with a player's session (the old one closed). */
+async function reconnect(p) {
+  p.ws.close();
+  const ws = new WebSocket(`ws://localhost:${port}/ws?token=${p.token}`);
+  ws.binaryType = 'arraybuffer';
+  p.ws = ws;
+  p.messages.length = 0;
+  ws.onmessage = p.handler;
+  await new Promise((r) => { ws.onopen = r; });
+}
+
 async function connect(name, password) {
   const { body } = await post('/api/login', { name, password });
   const ws = new WebSocket(`ws://localhost:${port}/ws?token=${body.token}`);
@@ -55,6 +69,9 @@ async function connect(name, password) {
   await new Promise((r) => { ws.onopen = r; });
   p.send = (message) => p.ws.send(JSON.stringify(message));
   p.last = (type) => p.messages.filter((m) => m.t === type).at(-1);
+  // Messages of a type that arrived after p.mark() returned `mark`.
+  p.mark = () => p.messages.length;
+  p.since = (mark, type) => p.messages.slice(mark).filter((m) => m.t === type);
   p.errors = () => p.messages.filter((m) => m.t === 'error').map((m) => m.message);
   p.sequence = 0;
   p.input = (throttle) => {
@@ -157,12 +174,7 @@ try {
   rage.ws.close();
   check(await until(() => admin.last('room')?.room.members.find((m) => m.name === 'rage')?.online === false),
         'a dropped player stays in the room, marked offline');
-  const back = new WebSocket(`ws://localhost:${port}/ws?token=${rage.token}`);
-  back.binaryType = 'arraybuffer';
-  rage.ws = back;
-  rage.messages.length = 0;
-  back.onmessage = rage.handler;
-  await new Promise((r) => { back.onopen = r; });
+  await reconnect(rage);
   check(await until(() => rage.last('raceStart')?.localSeat === seatBefore), 'reconnecting puts the player back in their car');
   const framesBack = rage.frames;
   check(await until(() => rage.frames > framesBack + 10), 'the race stream resumes after reconnecting');
@@ -205,11 +217,91 @@ try {
   check(records.length === 1 && records[0].name === 'rage' && records[0].bestLapMs === 61234 && records[0].classIndex === 2,
         'lap records keep the fastest player per course variant and class');
 
+  /* Starts a race in the room: the other racer gets ready, the host starts,
+   * and both players get their seats. */
+  const startRaceWith = async (host, other) => {
+    other.send({ t: 'setReady', ready: true });
+    await until(() => host.last('room')?.room.members.every((m) => m.ready || m.spectator));
+    const marks = [host.mark(), other.mark()];
+    host.send({ t: 'startRace' });
+    if (!(await until(() => host.since(marks[0], 'raceStart').length && other.since(marks[1], 'raceStart').length))) {
+      throw new Error(`the race did not start: ${host.errors().at(-1)}`);
+    }
+  };
+  const retires = (p, mark, name) => p.since(mark, 'raceEvent').filter((m) => m.event.kind === 'retire' && m.event.name === name);
+  const hostAndOther = () => admin.last('room')?.room.members.find((m) => m.host)?.name === 'rage' ? [rage, admin] : [admin, rage];
+
+  // Escape while the race loads: the car is retired when the race starts
+  // instead of holding the race open on the grid.
+  let mark = admin.mark();
+  await startRaceWith(...hostAndOther());
+  admin.send({ t: 'loaded', ok: true });
+  rage.send({ t: 'leaveRace' });
+  check(await until(() => admin.since(mark, 'raceGo').length === 1), 'the race starts without a player who left while it loaded');
+  check(retires(admin, mark, 'rage').length === 1, 'leaving before the start announces the retirement');
+  admin.send({ t: 'leaveRace' });
+  check(await until(() => admin.since(mark, 'results').length === 1, 8000), 'the race ends once no player is left driving');
+  check(admin.last('results')?.results.find((r) => r.name === 'rage')?.status === 'retired',
+        'a player who left before the start is retired at the start');
+
+  // A player who drops before the start is awaited again: the race starts
+  // once they reloaded it, not as soon as they are back.
+  mark = admin.mark();
+  await startRaceWith(...hostAndOther());
+  admin.send({ t: 'loaded', ok: true });
+  await reconnect(rage);
+  check(await until(() => rage.last('raceStart')), 'a player back before the start gets the race again');
+  await wait(1000);
+  check(admin.since(mark, 'raceGo').length === 0, 'the start waits for a player who reconnected before it');
+  rage.send({ t: 'loaded', ok: true });
+  check(await until(() => admin.since(mark, 'raceGo').length === 1), 'the race starts once the reconnected player loaded it');
+  // A car that is out of the race already is not retired again on leaving.
+  rage.send({ t: 'leaveRace' });
+  await until(() => retires(admin, mark, 'rage').length === 1);
+  rage.send({ t: 'leaveRoom' });
+  await until(() => admin.last('room')?.room.members.every((m) => m.name !== 'rage'));
+  await wait(300);
+  check(retires(admin, mark, 'rage').length === 1,
+        `leaving the room after retiring announces nothing more (${retires(admin, mark, 'rage').length} retirements)`);
+  admin.send({ t: 'leaveRace' });
+  check(await until(() => admin.since(mark, 'results').length === 1, 8000), 'the race ends once both players are out');
+
+  // The load timeout: a player who never loads leaves the room and the race
+  // starts without them.
+  rage.send({ t: 'joinRoom', roomId: room.id });
+  await until(() => admin.last('room')?.room.members.some((m) => m.name === 'rage' && !m.spectator));
+  mark = admin.mark();
+  const rageMark = rage.mark();
+  await startRaceWith(...hostAndOther());
+  admin.send({ t: 'loaded', ok: true });
+  const t1 = Date.now();
+  const startedLate = await until(() => admin.since(mark, 'raceGo').length === 1, LOAD_TIMEOUT_MS + 3000);
+  check(startedLate && Date.now() - t1 > LOAD_TIMEOUT_MS - 1000,
+        `the race starts after the load timeout without the player who did not load (${Date.now() - t1} ms)`);
+  check(retires(admin, mark, 'rage')[0]?.event.reason === 'could not load the race in time' &&
+        rage.since(rageMark, 'room').at(-1)?.room === null, 'the player who did not load is retired and leaves the room');
+  admin.send({ t: 'leaveRace' });
+  check(await until(() => admin.since(mark, 'results').length === 1, 8000), 'the race without them runs to its results');
+  rage.send({ t: 'joinRoom', roomId: room.id });
+  await until(() => rage.last('room')?.room?.id === room.id);
+
   // Closing: only the host or an admin.
   newbie.send({ t: 'closeRoom', roomId: room.id });
   check(await until(() => newbie.errors().some((e) => e.includes('Only the host'))), 'others cannot close a room');
   admin.send({ t: 'closeRoom', roomId: room.id });
   check(await until(() => rage.last('room')?.room === null && rage.last('rooms')?.rooms.length === 0), 'an admin can close any room');
+
+  // A player offline past the grace period loses their place.
+  admin.send({ t: 'createRoom', settings: { ...settings, course: 0, classIndex: 2, name: 'Grace' } });
+  await until(() => admin.last('room')?.room?.settings.name === 'Grace');
+  rage.send({ t: 'joinRoom', roomId: admin.last('room').room.id });
+  await until(() => admin.last('room')?.room.members.length === 2);
+  rage.ws.close();
+  const t2 = Date.now();
+  await until(() => admin.last('room')?.room.members.find((m) => m.name === 'rage')?.online === false);
+  const gone = await until(() => admin.last('room')?.room.members.length === 1, OFFLINE_GRACE_MS + 5000);
+  check(gone && Date.now() - t2 > OFFLINE_GRACE_MS - 500, `an offline player leaves the room after the grace period (${Date.now() - t2} ms)`);
+  check(admin.messages.some((m) => m.t === 'chat' && m.text === 'rage disconnected.'), 'the room hears that they disconnected');
   for (const p of [admin, rage, newbie]) p.ws.close();
 } catch (error) {
   failures.push(String(error));

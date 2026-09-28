@@ -15,7 +15,7 @@ import {
 } from './sim.ts';
 
 const TICK_MS = 1000 / 50;
-const LOAD_TIMEOUT_MS = 30_000;
+const LOAD_TIMEOUT_MS = Number(process.env.RAGE_LOAD_TIMEOUT_MS ?? 30_000);
 /* After the winner (player or rival) crosses the line, the rest of the field
  * has this long: at least 90 s, or 30% of the winning time on long races. */
 const FINISH_GRACE_MS = Number(process.env.RAGE_FINISH_GRACE_MS ?? 90_000);
@@ -55,7 +55,8 @@ interface RaceRun {
   acks: Uint32Array; // per player seat: last input sequence, then the tick that first used it
   viewers: Set<number>; // everyone receiving the race (players and spectators)
   humans: number;
-  loaded: Set<number>;
+  awaiting: Set<number>; // players the start waits for until loadDeadline
+  retiring: Set<number>; // seats given up before the start, retired when it comes
   loadDeadline: number;
   started: boolean;
   laps: number[];
@@ -274,7 +275,9 @@ export class Lobby {
     const run = room?.race;
     if (!room || !run) return;
     run.viewers.add(client.user.id);
-    run.loaded.add(client.user.id);
+    // A player back before the start reloads the race: the start waits again.
+    const seat = run.seatOf.get(client.user.id);
+    if (!run.started && seat !== undefined && !run.retiring.has(seat)) run.awaiting.add(client.user.id);
     send(client, { t: 'raceStart', raceId: run.raceId, settings: room.settings, seats: run.seats, humans: run.humans,
                    localSeat: run.seatOf.get(client.user.id) ?? -1 });
     if (run.started) send(client, { t: 'raceGo' });
@@ -303,12 +306,7 @@ export class Lobby {
     const run = room.race;
     if (run) {
       run.viewers.delete(client.user.id);
-      const seat = run.seatOf.get(client.user.id);
-      if (seat !== undefined) {
-        run.loaded.add(client.user.id);
-        if (run.started) this.sim.retire(run.handle, seat);
-        this.raceEvent(room, { kind: 'retire', seat, name: client.user.name, reason });
-      }
+      this.retireSeat(room, run, client, reason);
     }
     send(client, { t: 'room', room: null });
     if (room.members.size === 0) return this.dropRoom(room);
@@ -417,7 +415,7 @@ export class Lobby {
       seatOf: new Map(members.map((m, seat) => [m.client.user.id, seat])),
       acks: new Uint32Array(members.length * 2),
       viewers: new Set(room.members.keys()),
-      humans: members.length, loaded: new Set(), loadDeadline: Date.now() + LOAD_TIMEOUT_MS, started: false,
+      humans: members.length, awaiting: new Set(members.map((m) => m.client.user.id)), retiring: new Set(), loadDeadline: Date.now() + LOAD_TIMEOUT_MS, started: false,
       laps: seats.map(() => 0), status: seats.map(() => STATUS_DRIVING), finishDeadline: null, endAt: null,
     };
     room.race = run;
@@ -434,21 +432,32 @@ export class Lobby {
     const room = this.roomOf(client);
     const run = room?.race;
     if (!room || !run || run.started || !run.seatOf.has(client.user.id)) return;
-    run.loaded.add(client.user.id);
+    run.awaiting.delete(client.user.id);
     if (!ok) this.leave(client, 'could not load the race');
   }
 
   private leaveRace(client: Client): void {
     const room = this.roomOf(client);
     const run = room?.race;
-    const seat = run?.seatOf.get(client.user.id);
     if (!room || !run) return;
     run.viewers.delete(client.user.id);
-    if (seat === undefined) return; // a spectator stops watching
-    if (this.sim.seat(run.handle, seat).status !== STATUS_DRIVING) return; // finished: just stops watching
-    if (run.started) this.sim.retire(run.handle, seat);
-    run.loaded.add(client.user.id);
-    this.raceEvent(room, { kind: 'retire', seat, name: client.user.name, reason: 'left the race' });
+    this.retireSeat(room, run, client, 'left the race');
+  }
+
+  /** Takes a player's car out of the race: at once while racing, at the
+   *  start before it. A car that finished or already retired stays as it is. */
+  private retireSeat(room: Room, run: RaceRun, client: Client, reason: string): void {
+    const seat = run.seatOf.get(client.user.id);
+    if (seat === undefined) return;
+    if (run.started) {
+      if (this.sim.seat(run.handle, seat).status !== STATUS_DRIVING) return;
+      this.sim.retire(run.handle, seat);
+    } else {
+      if (run.retiring.has(seat)) return;
+      run.retiring.add(seat);
+      run.awaiting.delete(client.user.id);
+    }
+    this.raceEvent(room, { kind: 'retire', seat, name: client.user.name, reason });
   }
 
   private input(client: Client, data: Buffer): void {
@@ -491,19 +500,18 @@ export class Lobby {
       const run = room.race;
       if (!run) continue;
       if (!run.started) {
-        const waiting = [...run.seatOf.keys()].filter((id) => !run.loaded.has(id));
-        if (waiting.length && now < run.loadDeadline) continue;
-        for (const id of waiting) {
+        if (run.awaiting.size && now < run.loadDeadline) continue;
+        for (const id of [...run.awaiting]) {
           const member = room.members.get(id);
           if (member) this.leave(member.client, 'could not load the race in time');
         }
         if (!room.race) continue;
-        for (const [id, seat] of run.seatOf) if (!room.members.has(id)) this.sim.retire(run.handle, seat);
         if (!this.sim.start(run.handle)) {
           this.abortRace(room, 'The race could not start.');
           continue;
         }
         run.started = true;
+        for (const seat of run.retiring) this.sim.retire(run.handle, seat);
         this.publish(room);
         for (const member of room.members.values()) send(member.client, { t: 'raceGo' });
       }
