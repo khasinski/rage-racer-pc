@@ -299,6 +299,52 @@ void main() {
 }
 `;
 
+// A camera-facing name above a car. The quad keeps the roof point's depth,
+// so the scene depth test hides it when something nearer covers that point.
+export const nameplateVertex = /* glsl */ `
+precision highp float;
+in vec2 corner;
+uniform vec4 uCameraPosition;
+uniform vec4 uViewRow0;
+uniform vec4 uViewRow1;
+uniform vec4 uViewRow2;
+uniform vec4 uProjection;
+uniform vec3 uAnchor;
+uniform vec2 uSize;
+out vec2 vUv;
+void main() {
+    vec3 relative = uAnchor - uCameraPosition.xyz;
+    vec3 view = vec3(dot(uViewRow0.xyz, relative),
+                     dot(uViewRow1.xyz, relative),
+                     dot(uViewRow2.xyz, relative));
+    float viewDepth = -view.z;
+    vUv = vec2(corner.x * 0.5 + 0.5, corner.y);
+    if (viewDepth < 1.0) {
+        gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+        return;
+    }
+    vec2 offset = vec2(corner.x * uSize.x * 0.5, corner.y * uSize.y);
+    vec3 placed = view + vec3(offset, 0.0);
+    float clipDepth = viewDepth * uProjection.z + uProjection.w;
+    gl_Position = vec4(placed.x * uProjection.x, placed.y * uProjection.y,
+                       2.0 * clipDepth - viewDepth, viewDepth);
+}
+`;
+
+export const nameplateFragment = /* glsl */ `
+precision highp float;
+uniform sampler2D uName;
+uniform float uAlpha;
+in vec2 vUv;
+out vec4 outColor;
+void main() {
+    vec4 texel = texture(uName, vUv);
+    float alpha = texel.a * uAlpha;
+    if (alpha < 0.02) discard;
+    outColor = vec4(texel.rgb, alpha);
+}
+`;
+
 export const mirrorFragment = /* glsl */ `
 precision highp float;
 uniform sampler2D uMirror;

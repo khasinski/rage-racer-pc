@@ -9,8 +9,9 @@ import { PAL_HEIGHT, PAL_WIDTH } from './constants';
 import {
   ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture, type TextureLevel,
 } from './rage';
+import { NAMEPLATE_HEIGHT, type Nameplate } from './nameplates';
 import {
-  ATLAS_LAYER_HEIGHT, ATLAS_LAYER_WIDTH, ATLAS_LEVEL_ORIGINS, mirrorFragment, mirrorVertex, shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
+  ATLAS_LAYER_HEIGHT, ATLAS_LAYER_WIDTH, ATLAS_LEVEL_ORIGINS, mirrorFragment, mirrorVertex, nameplateFragment, nameplateVertex, shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
 } from './shaders';
 
 const VERTEX_CAPACITY = 600_000;
@@ -120,6 +121,8 @@ export class Renderer {
   private mirrorView: View = { camera: new Float32Array(28), sky: new Float32Array(28) };
   private mirrorPanelY: number | null = null;
   shadows = true;
+  private readonly nameGeometry = nameQuad();
+  private readonly nameTags = new Map<number, NameTag>();
 
   constructor(canvas: HTMLCanvasElement, private readonly rage: Rage) {
     this.webgl = new THREE.WebGLRenderer({
@@ -478,6 +481,65 @@ export class Renderer {
     k.uSkyGridParams.value.w = height;
   }
 
+  /** Names above the cars close to the one being followed. Drawn with the
+   *  world, so the depth test hides a plate behind nearer geometry. */
+  setNameplates(plates: readonly Nameplate[]): void {
+    const live = new Set<number>();
+    for (const plate of plates) {
+      live.add(plate.seat);
+      let tag = this.nameTags.get(plate.seat);
+      if (!tag) {
+        tag = this.createNameTag();
+        this.nameTags.set(plate.seat, tag);
+      }
+      if (tag.name !== plate.name || tag.texture === null) {
+        tag.texture?.dispose();
+        tag.texture = paintName(plate.name);
+        tag.material.uniforms.uName.value = tag.texture;
+        tag.name = plate.name;
+      }
+      tag.material.uniforms.uAnchor.value.set(plate.anchor[0], plate.anchor[1], plate.anchor[2]);
+      const image = tag.texture.image as HTMLCanvasElement;
+      const height = plate.length * NAMEPLATE_HEIGHT;
+      tag.material.uniforms.uSize.value.set(height * (image.width / image.height), height);
+      tag.material.uniforms.uAlpha.value = plate.alpha;
+      tag.mesh.position.set(plate.anchor[0], plate.anchor[1], plate.anchor[2]);
+      tag.mesh.visible = true;
+    }
+    for (const [seat, tag] of this.nameTags) if (!live.has(seat)) tag.mesh.visible = false;
+  }
+
+  private createNameTag(): NameTag {
+    const material = new THREE.RawShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      vertexShader: nameplateVertex,
+      fragmentShader: nameplateFragment,
+      uniforms: {
+        uCameraPosition: this.shared.uCameraPosition,
+        uViewRow0: this.shared.uViewRow0,
+        uViewRow1: this.shared.uViewRow1,
+        uViewRow2: this.shared.uViewRow2,
+        uProjection: this.shared.uProjection,
+        uAnchor: { value: new THREE.Vector3() },
+        uSize: { value: new THREE.Vector2(1, 1) },
+        uAlpha: { value: 1 },
+        uName: { value: null },
+      },
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      depthFunc: THREE.LessEqualDepth,
+      side: THREE.DoubleSide,
+      blending: THREE.NormalBlending,
+    });
+    const mesh = new THREE.Mesh(this.nameGeometry, material);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 2;
+    mesh.visible = false;
+    this.scene.add(mesh);
+    return { mesh, material, texture: null, name: '' };
+  }
+
   render() {
     if (this.shared.uShadowEnabled.value) {
       this.webgl.setRenderTarget(this.shadowTarget);
@@ -536,4 +598,45 @@ export class Renderer {
     this.webgl.setViewport(0, 0, size.x, size.y);
     this.webgl.autoClear = autoClear;
   }
+}
+
+interface NameTag {
+  mesh: THREE.Mesh;
+  material: THREE.RawShaderMaterial;
+  texture: THREE.CanvasTexture | null;
+  name: string;
+}
+
+function nameQuad(): THREE.BufferGeometry {
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('corner', new THREE.Float32BufferAttribute([-1, 0, 1, 0, 1, 1, -1, 1], 2));
+  geometry.setIndex([0, 1, 2, 0, 2, 3]);
+  geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
+  return geometry;
+}
+
+function paintName(name: string): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('name canvas unavailable');
+  const font = '700 32px "Helvetica Neue", Arial, sans-serif';
+  ctx.font = font;
+  canvas.width = Math.max(4, Math.ceil(ctx.measureText(name).width) + 24);
+  canvas.height = 48;
+  ctx.font = font;
+  ctx.textBaseline = 'middle';
+  ctx.lineJoin = 'round';
+  ctx.miterLimit = 2;
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeText(name, 12, 26);
+  ctx.fillText(name, 12, 26);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
 }

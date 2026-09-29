@@ -375,6 +375,13 @@ export class Rage {
     return Array.from(new Float32Array(this.m.HEAPU8.buffer, this.num('rw_presented', [seat]), 3));
   }
 
+  /** Per seat: roof point x, y, z and the body's longer horizontal side.
+   *  The length is 0 when that human car was not drawn. */
+  nameplates(): Float32Array {
+    const seats = this.num('rw_nameplate_seats', []);
+    return new Float32Array(this.m.HEAPU8.buffer, this.call('rw_nameplates'), seats * 4).slice();
+  }
+
   /** Place (0 when out of the race), lap and SimDriverStatus of a seat. */
   standing(seat: number): { place: number; lap: number; status: number } {
     return { place: this.num('rw_seat_place', [seat]), lap: this.num('rw_seat_lap', [seat]),

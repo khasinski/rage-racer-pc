@@ -7,6 +7,7 @@ import { Tachometer } from './hud';
 import { clearKeyEdges, consumeKey, PAD, samplePad } from './input';
 import { drawDeadline, drawStandings, followRace, resetOverlay, spectateKeys } from './overlay';
 import { PHASE_COUNTDOWN, PHASE_FINISHED, PHASE_RACING, type Hud, type Rage } from './rage';
+import { selectNameplates, type CarMark } from './nameplates';
 import { Renderer } from './renderer';
 import { $, formatTime, textWriter } from './views';
 
@@ -74,6 +75,7 @@ export function beginRace(rage: Rage, state: RaceState, raceNet: RaceNet | null 
   net = raceNet;
   renderer ??= new Renderer(canvas, rage);
   renderer.shadows = raceSettings.shadows;
+  renderer.setNameplates([]);
   resize();
   tachometer.prepare(rage);
   last = performance.now();
@@ -155,7 +157,10 @@ function frame(now: number) {
   const interval = Math.max(TICK_MS, currentStep - previousStep);
   const t = Math.min(1, Math.max(0, (simTime + accumulator - currentStep) / interval));
   const vertices = rage.buildFrame(renderer.aspect, t);
-  if (vertices >= 0) renderer.update(vertices);
+  if (vertices >= 0) {
+    renderer.update(vertices);
+    renderer.setNameplates(platesFor(rage));
+  }
   const h = rage.hud();
   if (race.mode !== 'offline' && h.phase >= PHASE_RACING) setHint('');
   app.audio?.update(h, paused);
@@ -173,4 +178,28 @@ function frame(now: number) {
 
 export function runRaceLoop(): void {
   requestAnimationFrame(frame);
+}
+
+/** Human cars near the one the camera follows. Offline has no other players. */
+function platesFor(rage: Rage): ReturnType<typeof selectNameplates> {
+  if (race.mode === 'offline') return [];
+  const view = rage.viewSeat();
+  const marks = rage.nameplates();
+  const seats = new Set<number>();
+  for (let seat = 0; seat < race.humans; seat++) seats.add(seat);
+  if (view >= 0) seats.add(view);
+  const cars: CarMark[] = [];
+  for (const seat of seats) {
+    const origin = rage.presented(seat);
+    const base = seat * 4;
+    const length = marks[base + 3] ?? 0;
+    cars.push({
+      seat,
+      name: race.names[seat] ?? '',
+      origin: [origin[0], origin[1], origin[2]],
+      anchor: length > 0 ? [marks[base], marks[base + 1], marks[base + 2]] : null,
+      length,
+    });
+  }
+  return selectNameplates(cars, view);
 }

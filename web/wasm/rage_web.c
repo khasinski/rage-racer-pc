@@ -1091,7 +1091,59 @@ static void InterpolateVehicles(float t) {
         if (s_view.run[instance->entity].steps > FINISH_FADE_STEPS)
             instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
     }
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        if (seen[seat]) continue;
+        s_presented[seat][0] = s_presented[seat][1] = s_presented[seat][2] = 0.0f;
+    }
 }
+
+/* Roof point and horizontal size of each human car drawn this frame, in the
+ * same space as the vertices. x, y, z, length; length is 0 when that seat
+ * has no body on screen (bumper view, a faded car, a rival). */
+static float s_nameplate[DRIVER_SEAT_LIMIT][4];
+
+static void StoreNameplates(void) {
+    float low[DRIVER_SEAT_LIMIT][3], high[DRIVER_SEAT_LIMIT][3];
+    int seen[DRIVER_SEAT_LIMIT] = {0};
+    memset(s_nameplate, 0, sizeof(s_nameplate));
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        for (int axis = 0; axis < 3; ++axis) {
+            low[seat][axis] = INFINITY;
+            high[seat][axis] = -INFINITY;
+        }
+    }
+    for (uint32_t i = 0; i < s_frame.spanCount; ++i) {
+        const RageNativeDrawSpan *span = &s_spans[i];
+        const uint32_t seat = span->sourceEntity;
+        if (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK || seat >= DRIVER_SEAT_LIMIT ||
+            !span->vertexCount || s_spanFields[i * WEB_SPAN_FIELDS + WEB_SPAN_ALPHA] == 0)
+            continue;
+        for (uint32_t v = 0; v < span->vertexCount; ++v) {
+            const float *p = s_vertices[span->firstVertex + v].position;
+            if (!isfinite(p[0]) || !isfinite(p[1]) || !isfinite(p[2])) continue;
+            seen[seat] = 1;
+            for (int axis = 0; axis < 3; ++axis) {
+                if (p[axis] < low[seat][axis]) low[seat][axis] = p[axis];
+                if (p[axis] > high[seat][axis]) high[seat][axis] = p[axis];
+            }
+        }
+    }
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
+        float across, along, height;
+        if (!seen[seat]) continue;
+        across = high[seat][0] - low[seat][0];
+        along = high[seat][2] - low[seat][2];
+        height = high[seat][1] - low[seat][1];
+        s_nameplate[seat][0] = (low[seat][0] + high[seat][0]) * 0.5f;
+        s_nameplate[seat][1] = high[seat][1] + (height > 0.0f ? height * 0.06f : 0.0f);
+        s_nameplate[seat][2] = (low[seat][2] + high[seat][2]) * 0.5f;
+        s_nameplate[seat][3] = across > along ? across : along;
+        if (!(s_nameplate[seat][3] > 0.0f)) s_nameplate[seat][3] = 1.0f;
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE const float *rw_nameplates(void) { return s_nameplate[0]; }
+EMSCRIPTEN_KEEPALIVE int rw_nameplate_seats(void) { return DRIVER_SEAT_LIMIT; }
 
 static void StoreShadow(void) {
     RenderShadowMap shadow;
@@ -1220,6 +1272,7 @@ static int DrawSubmitted(float aspect, float t, int withMirror) {
     if (!BuildCameraUniform(&s_world.camera, aspect, s_frame.camera)) return -1;
     StoreLight();
     WebSkyUniform(&s_world.camera, aspect, s_frame.sky);
+    if (withMirror) StoreNameplates();
     return (int)s_frame.vertexCount;
 }
 
