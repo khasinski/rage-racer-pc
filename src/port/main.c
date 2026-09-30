@@ -21,10 +21,6 @@
 #include "native_asset_importer.h"
 #include "platform_paths.h"
 #include "menu_music_runtime.h"
-#include "multiplayer_net.h"
-#include "multiplayer_session.h"
-#include "mp_race_client.h"
-#include "game/state.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -79,18 +75,6 @@ int main(int argc, char **argv) {
     char carCatalogError[256];
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
-    {
-        MultiplayerCommand multiplayer;
-
-        if (!MultiplayerParseCommand(argc, argv, &multiplayer)) {
-            fprintf(stderr,
-                    "rage-port: use --host to wait for one client, or --join <ipv4>\n");
-            return EXIT_FAILURE;
-        }
-        /* Join before the disc and the window. The server stays here until a
-         * client connects, and only then is its session installed. */
-        if (!MultiplayerRunCommand(&multiplayer)) return EXIT_FAILURE;
-    }
     if (!DiagnosticLogOpen(logPath, sizeof(logPath))) {
         fprintf(stderr, "rage-port: could not open diagnostic log\n");
     }
@@ -158,15 +142,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-port: car catalog=%s\n", carCatalogPath);
     }
     CarCatalogApplyMetadata();
-    if (RuntimeConfigGet("multiplayer.connect_host") != NULL) {
-        /* Temporary command, not a menu entry yet (see docs/multiplayer.md,
-         * "Order of work" step 3): --set multiplayer.connect_host=<ip>. */
-        GameInitPad();
-        int ok = PortRunMultiplayer(0);
-        Psyz_AudioDestroy();
-        ModernShutdown();
-        return ok ? EXIT_SUCCESS : EXIT_FAILURE;
-    }
     if (!MenuMusicPrepare()) {
         Psyz_AudioDestroy();
         ModernShutdown();

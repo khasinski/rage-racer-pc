@@ -1,5 +1,3 @@
-include(multiplayer.cmake)
-
 if(NOT TARGET psyz)
     add_subdirectory(sim)
     return()

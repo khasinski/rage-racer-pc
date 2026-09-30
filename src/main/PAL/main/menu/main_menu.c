@@ -101,11 +101,6 @@ void UpdateMainMenuInput(void) {
 
     if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
-        if (frontend->selection == TITLE_MENU_MULTIPLAYER) {
-            frontend->state = FRONTEND_STATE_MENU_EXIT;
-            DrawMainMenuRows();
-            return;
-        }
         if (!AssetLoadCompletedSuccessfully()) ResetAssetLoader();
         ShuffleBgmOrder();
         g_RaceSession.kind = RACE_SESSION_STANDARD;

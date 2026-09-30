@@ -38,15 +38,10 @@ typedef enum GameSceneId {
     GAME_SCENE_PROLOGUE = 32,
     GAME_SCENE_RETURN_FROM_ENDING_FMV = 33,
     GAME_SCENE_ENDING_STILL = 34,
-    /* Host-owned activity, entered between legacy frames by MainLoop. */
-    GAME_SCENE_MULTIPLAYER = 35,
 } GameSceneId;
 
 /* The retail dispatch table reserves a few slots after the last recovered
  * scene. Keep its storage size distinct from the highest named scene ID. */
 enum { GAME_SCENE_HANDLER_COUNT = 40 };
-
-_Static_assert((int)GAME_SCENE_MULTIPLAYER < (int)GAME_SCENE_HANDLER_COUNT,
-               "scene dispatch table is too small");
 
 #endif

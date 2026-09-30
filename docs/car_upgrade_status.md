@@ -1,6 +1,6 @@
 # Car upgrade work in progress
 
-Goal remains `goal.md`. Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
+Base Erriso, Abeille, Pegase, Esperanza, Acceron, Bayonet,
 Hijack, Fatalita, Istante, Ghepardo, Vainqure, Bulshade, and Squaldon player bodies and
 their rival representations are integrated. Other player grades and cars retain their
 original geometry; the full set is still in progress.

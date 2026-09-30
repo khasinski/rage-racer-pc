@@ -11,7 +11,6 @@
 #include "game/random.h"
 #include "game/render_internal.h"
 #include "game/screens.h"
-#include "game/scene.h"
 #include "psyq/cd.h"
 
 enum {
@@ -51,9 +50,6 @@ void UpdateMainMenuExit(void) {
             break;
         case TITLE_MENU_OPTIONS:
             g_SceneId = 0x16;
-            break;
-        case TITLE_MENU_MULTIPLAYER:
-            g_SceneId = GAME_SCENE_MULTIPLAYER;
             break;
         }
     }

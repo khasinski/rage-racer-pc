@@ -31,18 +31,6 @@ endif()
 add_test(NAME force_feedback COMMAND force_feedback_tests)
 set_tests_properties(force_feedback PROPERTIES LABELS functional)
 
-add_executable(multiplayer_session_tests
-    multiplayer_session_tests.c
-    ${CMAKE_SOURCE_DIR}/src/port/multiplayer_session.c)
-target_include_directories(multiplayer_session_tests PRIVATE
-    ${CMAKE_SOURCE_DIR}/src/port)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(multiplayer_session_tests PRIVATE
-        ${RAGE_STRICT_WARNING_OPTIONS})
-endif()
-add_test(NAME multiplayer_session COMMAND multiplayer_session_tests)
-set_tests_properties(multiplayer_session PROPERTIES LABELS unit)
-
 add_executable(controller_config_begin_tests
     controller_config_begin_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/pad/begin_controller_config.c)

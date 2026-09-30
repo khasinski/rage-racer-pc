@@ -207,13 +207,6 @@ int main(void) {
     CHECK(g_GrandPrixMode == 0 && g_SceneId == GAME_SCENE_INIT_MENU);
 
     Reset();
-    s_frontend.pulse = 0x80;
-    s_frontend.selection = TITLE_MENU_MULTIPLAYER;
-    g_GrandPrixMode = 1;
-    UpdateMainMenuExit();
-    CHECK(g_SceneId == GAME_SCENE_MULTIPLAYER && g_GrandPrixMode == 1);
-
-    Reset();
     s_frontend.exitTimer = 1;
     UpdateFrontend();
     CHECK(g_SceneTimer == 1 && s_setupCalls == 1);

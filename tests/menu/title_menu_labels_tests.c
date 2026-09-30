@@ -31,19 +31,13 @@ int main(void) {
                 const Tile *panel = &tiles[count - 1];
                 CHECK(panel->x == 0 && panel->y == 0 && panel->w == 112 && panel->h == height);
                 if (height == 16) CHECK(count > 1);
-                if (height == 16 && item == TITLE_MENU_MULTIPLAYER) {
-                    int black = 0;
-                    for (unsigned i = 0; i + 1 < count; ++i)
-                        black |= tiles[i].r == 0 && tiles[i].g == 0 && tiles[i].b == 0;
-                    CHECK(black);
-                }
             }
         }
     }
     count = 0;
     CHECK(DrawTitleMenuLabel(NULL, packets, (TitleMenuItem)-1, 7, 9, 16, 0) == packets);
     CHECK(DrawTitleMenuLabel(NULL, packets, TITLE_MENU_ITEM_COUNT, 7, 9, 16, 0) == packets);
-    CHECK(DrawTitleMenuLabel(NULL, packets, TITLE_MENU_MULTIPLAYER, 7, 9, 0, 0) == packets);
+    CHECK(DrawTitleMenuLabel(NULL, packets, TITLE_MENU_OPTIONS, 7, 9, 0, 0) == packets);
     CHECK(count == 0);
     puts("title labels stay within their revealed panels in both states");
     return 0;

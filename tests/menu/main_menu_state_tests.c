@@ -9,7 +9,6 @@
 
 #include <limits.h>
 #include <stdio.h>
-#include <string.h>
 
 static Frontend s_frontend;
 
@@ -172,30 +171,6 @@ int main(void) {
     UpdateMainMenuInput();
     CHECK(s_optionRequests == 1 && s_optionMenu.cursor == 0);
 
-    ResetState(TITLE_MENU_MULTIPLAYER);
-    RaceSession before;
-    memcpy(&before, &g_RaceSession, sizeof(before));
-    CarEntry *cars = g_CarTable;
-    GameRaceProgress *progress = g_RaceProgress;
-    CourseProgressState *courses = g_CourseProgress;
-    const s16 series = g_SeriesSelection;
-    GameRaceProgress gp, extra, attack;
-    memcpy(&gp, &g_GrandPrixSave, sizeof(gp));
-    memcpy(&extra, &g_ExtraGrandPrixSave, sizeof(extra));
-    memcpy(&attack, &g_TimeAttackSave, sizeof(attack));
-    UpdateMainMenuInput();
-    CHECK(s_frontend.state == FRONTEND_STATE_MENU_EXIT);
-    CHECK(s_shuffleCalls == 0 && s_resetCalls == 0);
-    CHECK(s_selectBgmRequests == 0 && s_saveRequests == 0 &&
-          s_optionRequests == 0 && s_courseRequests == 0);
-    CHECK(memcmp(&g_RaceSession, &before, sizeof(before)) == 0);
-    CHECK(g_CarTable == cars && g_RaceProgress == progress);
-    CHECK(g_CourseProgress == courses && g_SeriesSelection == series);
-    CHECK(g_GrandPrixClass == 5 && g_CourseIndex == 2);
-    CHECK(memcmp(&g_GrandPrixSave, &gp, sizeof(gp)) == 0);
-    CHECK(memcmp(&g_ExtraGrandPrixSave, &extra, sizeof(extra)) == 0);
-    CHECK(memcmp(&g_TimeAttackSave, &attack, sizeof(attack)) == 0);
-
     ResetState(TITLE_MENU_OPTIONS);
     s_assetComplete = 1;
     UpdateMainMenuInput();
@@ -206,7 +181,7 @@ int main(void) {
     s_frontend.state = FRONTEND_STATE_MENU_OPENING;
     s_frontend.menuSlide = INT_MAX;
     UpdateMainMenuOpen();
-    CHECK(s_frontend.menuSlide == 0x40);
+    CHECK(s_frontend.menuSlide == 0x38);
     CHECK(s_frontend.state == FRONTEND_STATE_MENU_INPUT);
 
     s_frontend.state = FRONTEND_STATE_MENU_OPENING;
@@ -218,7 +193,7 @@ int main(void) {
     ResetState(TITLE_MENU_CUSTOM);
     g_PadPressed = 0;
     g_ExtraGrandPrixUnlocked = 1;
-    s_frontend.menuSlide = 0x40;
+    s_frontend.menuSlide = 0x38;
     s_frontend.pulse = 0;
     DrawMainMenuRows();
     CHECK(s_labelCount == TITLE_MENU_ITEM_COUNT);
@@ -228,7 +203,6 @@ int main(void) {
     CHECK(s_labelItem[3] == TITLE_MENU_CUSTOM);
     CHECK(s_labelItem[4] == TITLE_MENU_LOAD_SAVE);
     CHECK(s_labelItem[5] == TITLE_MENU_OPTIONS);
-    CHECK(s_labelItem[6] == TITLE_MENU_MULTIPLAYER);
     for (s32 row = 0; row < TITLE_MENU_ITEM_COUNT; ++row) {
         CHECK(s_labelY[row] == 0x58 + row * 0x16);
         CHECK(s_labelY[row] + s_labelHeight[row] <= 240);

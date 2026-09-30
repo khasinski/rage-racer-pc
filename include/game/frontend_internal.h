@@ -24,7 +24,6 @@ typedef enum TitleMenuItem {
     TITLE_MENU_CUSTOM,
     TITLE_MENU_LOAD_SAVE,
     TITLE_MENU_OPTIONS,
-    TITLE_MENU_MULTIPLAYER,
     TITLE_MENU_ITEM_COUNT,
 } TitleMenuItem;
 

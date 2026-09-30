@@ -23,8 +23,7 @@ const char *RuntimeConfigGetForced(const char *key);
  * domain. Missing and malformed settings return fallback. */
 int RuntimeConfigInt(const char *key, int fallback, int minimum, int maximum);
 
-/* Replace one already-loaded setting. Later readers, including a scenario
- * started after a multiplayer join, see the new value. */
+/* Replace one already-loaded setting. Later readers see the new value. */
 int RuntimeConfigSet(const char *key, const char *value);
 
 #endif

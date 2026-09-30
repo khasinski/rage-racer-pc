@@ -15,7 +15,6 @@ int HostLoadArchiveIndex(void *entries, int count);
 int HostLoadAsset(unsigned int byte_offset, unsigned int size,
                   void *destination);
 int PortShouldExit(int frame_number);
-int PortRunMultiplayer(int interactive);
 void PortBeforeSceneHandler(void);
 void PortAfterSceneHandler(void);
 void PortAfterFrameTransfers(void);
