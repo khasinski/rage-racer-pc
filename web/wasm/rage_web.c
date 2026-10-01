@@ -350,6 +350,16 @@ static void SmoothCorrections(const s32 before[DRIVER_SEAT_LIMIT][3], const s32 
     }
 }
 
+/* A frame far from what this page last showed (it stalled, its tab was in the
+ * background, a spectator caught up): the scenery's animation and the race
+ * view resync, where the per-tick catch-up would refuse the gap and rw_tick
+ * would stop the race. */
+static void ResyncAfterJump(void) {
+    if (s_race->sim.tick - s_race->sceneryTick > CLIENT_SCENERY_CATCHUP_LIMIT) ResyncClientScenery(s_race);
+    if (s_race->view && s_race->view->tickSeen && s_race->sim.tick - s_race->view->tick > RACE_VIEW_CATCHUP_LIMIT)
+        ResyncRaceView(s_race->view);
+}
+
 EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint32_t ackSeq,
                                             uint32_t arrivalTick) {
     static RaceFrame frame;
@@ -368,6 +378,7 @@ EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint3
         driving[seat] = s_race->sim.drivers[seat].status == SIM_DRIVING;
     }
     if (!RestoreRaceFrame(&s_race->sim, &frame)) return INT32_MIN;
+    ResyncAfterJump();
     if (s_localSeat < 0) return 0;
     const int known = ackSeq && ackSeq <= p->inputSeq && p->inputSeq - ackSeq < INPUT_HISTORY;
     const int32_t error = known ? (int32_t)(arrivalTick - p->sent[ackSeq % INPUT_HISTORY].tick) : 0;

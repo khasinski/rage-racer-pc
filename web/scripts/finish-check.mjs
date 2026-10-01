@@ -37,9 +37,20 @@ try {
   await guest.screenshot({ path: join(out, 'f1-guest-watching.png') });
   check(/^Watching (admin|rage)/.test(await guest.textContent('#spectating')), 'a spectator follows a player');
   check(await guest.$eval('#hud-hint', (e) => !e.textContent), 'the joining hint clears once the race runs');
-  // Follow the leader until it finishes.
-  const leader = await guest.evaluate(() => { const { rage } = window.__race; let best = 0; for (let s = 0; s < 12; s++) if (rage.standing(s).place === 1) best = s; rage.setViewSeat(best); return best; });
-  await guest.waitForFunction((seat) => window.__race.rage.standing(seat).status === 2, leader, { timeout: 180000, polling: 100 });
+  // Follow whoever leads (the lead can change) until a car finishes; that
+  // car is the one whose fade and hand-over are checked.
+  const finished = await guest.waitForFunction(() => {
+    const { rage } = window.__race;
+    let leader = -1;
+    for (let s = 0; s < 12; s++) {
+      const standing = rage.standing(s);
+      if (standing.status === 2) return s + 1; // truthy even for seat 0
+      if (standing.place === 1) leader = s;
+    }
+    if (leader >= 0 && rage.viewSeat() !== leader) rage.setViewSeat(leader);
+    return false;
+  }, null, { timeout: 240000, polling: 100 });
+  const leader = (await finished.jsonValue()) - 1;
   for (const ms of [0, 600, 1200, 1800, 2400]) {
     if (ms) await guest.waitForTimeout(600);
     await guest.screenshot({ path: join(out, `f2-fading-${ms}.png`), clip: { x: 440, y: 480, width: 400, height: 220 } });

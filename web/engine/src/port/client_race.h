@@ -79,10 +79,16 @@ int SubmitClientTerrain(const ClientRace *race, int page, RenderWorld *world);
  * Requires an explicit camera for wrapped-coordinate placement and visibility. */
 int SubmitClientScenery(const ClientRace *race, int page, RenderWorld *world);
 enum { CLIENT_SCENERY_CATCHUP_LIMIT = RACE_VIEW_CATCHUP_LIMIT };
+/* A session resync (a page that stalled, a spectator catching up) animates
+ * the scenery through up to half an hour of ticks at once: each is cheap. */
+enum { CLIENT_SCENERY_RESYNC_LIMIT = SIM_TICK_RATE * 60 * 30 };
 /* Advances to the simulation clock, including missed snapshots up to ten seconds.
  * Includes PAL environment cues at 25 Hz and scenery at the prototype clock.
  * Repeated ticks are inert; rewind/long gaps reject atomically. No physics runs. */
 int TickClientScenery(ClientRace *race);
+/* Brings the scenery to the race's tick however far it jumped (within
+ * CLIENT_SCENERY_RESYNC_LIMIT), or back when it moved back. */
+int ResyncClientScenery(ClientRace *race);
 /* Publishes current/previous shuttle poses without advancing animation.
  * Replaces only this semantic entity range; failure preserves the world. */
 int SubmitClientShuttles(const ClientRace *race, int page, RenderWorld *world);

@@ -133,13 +133,13 @@ int SubmitClientScenery(const ClientRace *race, int page, RenderWorld *world) {
     return 1;
 }
 
-int TickClientScenery(ClientRace *race) {
+/* Advances the scenery's animation to the race's tick, at most `limit` ticks. */
+static int AdvanceClientScenery(ClientRace *race, u32 limit) {
     if (!race || race->shuttleCount > SHUTTLE_INSTANCE_COUNT ||
         (u32)race->spinningScenery > 2) return 0;
     const u32 elapsed = race->sim.tick - race->sceneryTick;
     if (!elapsed) return 1;
-    /* Bound work from remote clocks; larger gaps require session resync. */
-    if (elapsed > CLIENT_SCENERY_CATCHUP_LIMIT) return 0;
+    if (elapsed > limit) return 0;
     GameShuttleScenery next[SHUTTLE_INSTANCE_COUNT];
     GameShuttleScenery previous[SHUTTLE_INSTANCE_COUNT];
     memcpy(next, race->shuttles, sizeof(next));
@@ -182,6 +182,20 @@ int TickClientScenery(ClientRace *race) {
     memcpy(race->previousShuttles, previous, sizeof(previous));
     race->sceneryTick = race->sim.tick;
     return 1;
+}
+
+int TickClientScenery(ClientRace *race) {
+    /* Bound work from remote clocks; larger gaps require session resync. */
+    return AdvanceClientScenery(race, CLIENT_SCENERY_CATCHUP_LIMIT);
+}
+
+int ResyncClientScenery(ClientRace *race) {
+    if (!race) return 0;
+    if (race->sim.tick < race->sceneryTick) {
+        race->sceneryTick = race->sim.tick; /* moved back: animate on from here */
+        return 1;
+    }
+    return AdvanceClientScenery(race, CLIENT_SCENERY_RESYNC_LIMIT);
 }
 
 static RenderTransform CoursePose(const Vec4 *position, s32 yaw, s32 roll, const s32 reference[3]) {

@@ -35,6 +35,9 @@ typedef struct RaceView {
  * Inputs and existing views remain unchanged. */
 RaceView *LoadRaceView(const RaceData *archive, const RaceSim *race,
                        const RaceCarLook looks[DRIVER_SEAT_LIMIT]);
+/* The race jumped further than TickRaceView catches up: the view starts
+ * again from the race's next tick (no motion carried across the gap). */
+void ResyncRaceView(RaceView *view);
 void FreeRaceView(RaceView *view);
 
 /* Update once after each simulation clock tick. Repeated rendering does not

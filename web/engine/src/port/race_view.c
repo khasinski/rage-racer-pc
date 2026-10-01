@@ -54,6 +54,12 @@ RaceView *LoadRaceView(const RaceData *archive, const RaceSim *race,
     return view;
 }
 
+void ResyncRaceView(RaceView *view) {
+    if (!view) return;
+    view->tickSeen = 0;
+    memset(view->carSeen, 0, sizeof(view->carSeen));
+}
+
 static int ValidField(const RaceSim *race, const RaceView *view) {
     if (race == NULL || view == NULL) return 0;
     for (unsigned seat = 0; seat < DRIVER_SEAT_LIMIT; seat++) {
