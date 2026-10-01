@@ -207,7 +207,8 @@ input[type=color] { padding: 0; width: 44px; height: 30px; }
 #touch button.held { background: rgba(255, 90, 31, 0.6); border-color: var(--accent); }
 .touch-steer { position: absolute; left: 16px; bottom: 20px; display: flex; gap: 14px; }
 .touch-steer button { width: 84px; height: 84px; }
-.touch-pedals { position: absolute; right: 16px; bottom: 20px; display: flex; gap: 12px; align-items: flex-end; }
+/* Left of the tachometer, which takes the bottom right corner. */
+.touch-pedals { position: absolute; right: max(200px, 24vw); bottom: 20px; display: flex; gap: 12px; align-items: flex-end; }
 .touch-pedals [data-touch=accelerate] { width: 96px; height: 96px; font-size: 16px; }
 .touch-pedals [data-touch=brake] { width: 76px; height: 76px; font-size: 13px; }
 .touch-gears { display: grid; gap: 8px; }
