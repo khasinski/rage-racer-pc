@@ -10,8 +10,9 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { extname, join, normalize, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { DEFAULT_PORT, LOGO_BYTES, PAINT_COLORS, PAINTABLE_MODELS, type Paint } from '../shared/protocol.ts';
+import { DEFAULT_PORT } from '../shared/protocol.ts';
 import { Store } from './db.ts';
+import { parseLogoRequest, parsePaintRequest } from './looks.ts';
 import { Lobby, type Client } from './rooms.ts';
 import { Simulation } from './sim.ts';
 
@@ -62,6 +63,11 @@ async function body(req: IncomingMessage): Promise<Record<string, unknown>> {
   return parsed && typeof parsed === 'object' ? parsed : {};
 }
 
+/** A request's JSON body, or null when it is malformed (the caller answers 400). */
+async function readJson(req: IncomingMessage): Promise<Record<string, unknown> | null> {
+  try { return await body(req); } catch { return null; }
+}
+
 function bearer(req: IncomingMessage): string | null {
   const header = req.headers.authorization ?? '';
   return header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -69,8 +75,8 @@ function bearer(req: IncomingMessage): string | null {
 
 async function api(req: IncomingMessage, res: ServerResponse, path: string): Promise<void> {
   if (req.method === 'POST' && (path === '/api/register' || path === '/api/login')) {
-    let input: Record<string, unknown>;
-    try { input = await body(req); } catch { return json(res, 400, { error: 'Malformed request.' }); }
+    const input = await readJson(req);
+    if (!input) return json(res, 400, { error: 'Malformed request.' });
     const name = typeof input.name === 'string' ? input.name.trim() : '';
     const password = typeof input.password === 'string' ? input.password : '';
     if (path === '/api/register') {
@@ -95,34 +101,23 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
   if (path === '/api/me' && req.method === 'GET') return json(res, 200, { user, discId: sim.discId });
   if (path === '/api/history' && req.method === 'GET') return json(res, 200, { history: store.history(user.id) });
   if (path === '/api/garage' && req.method === 'GET') return json(res, 200, { paints: store.garage(user.id) });
+  const logoOf = () => store.logo(user.id)?.toString('base64') ?? null;
   if (path === '/api/garage' && req.method === 'PUT') {
-    let input: Record<string, unknown>;
-    try { input = await body(req); } catch { return json(res, 400, { error: 'Malformed request.' }); }
-    const { model, paint } = input;
-    const colour = (v: unknown) => Number.isInteger(v) && (v as number) >= 0 && (v as number) < PAINT_COLORS;
-    if (!Number.isInteger(model) || (model as number) < 0 || (model as number) >= sim.carModels()) {
-      return json(res, 400, { error: 'Unknown car.' });
-    }
-    if ((model as number) >= PAINTABLE_MODELS) return json(res, 400, { error: 'This car cannot be repainted.' });
-    if (paint !== null && !(Array.isArray(paint) && paint.length === 2 && paint.every(colour))) {
-      return json(res, 400, { error: 'Choose two colours from the paint catalogue.' });
-    }
-    store.setPaint(user.id, model as number, paint as Paint | null);
+    const input = await readJson(req);
+    if (!input) return json(res, 400, { error: 'Malformed request.' });
+    const request = parsePaintRequest(input, sim.carModels());
+    if (!request.ok) return json(res, 400, { error: request.error });
+    store.setPaint(user.id, request.value.model, request.value.paint);
     return json(res, 200, { paints: store.garage(user.id) });
   }
-  if (path === '/api/logo' && req.method === 'GET') return json(res, 200, { logo: store.logo(user.id)?.toString('base64') ?? null });
+  if (path === '/api/logo' && req.method === 'GET') return json(res, 200, { logo: logoOf() });
   if (path === '/api/logo' && req.method === 'PUT') {
-    let input: Record<string, unknown>;
-    try { input = await body(req); } catch { return json(res, 400, { error: 'Malformed request.' }); }
-    const { logo } = input;
-    if (logo !== null) {
-      const bytes = typeof logo === 'string' && /^[A-Za-z0-9+/]+=*$/.test(logo) ? Buffer.from(logo, 'base64') : null;
-      if (!bytes || bytes.length !== LOGO_BYTES) return json(res, 400, { error: 'A logo is 64 by 64 pixels with a 16-colour palette.' });
-      store.setLogo(user.id, bytes);
-    } else {
-      store.setLogo(user.id, null);
-    }
-    return json(res, 200, { logo: store.logo(user.id)?.toString('base64') ?? null });
+    const input = await readJson(req);
+    if (!input) return json(res, 400, { error: 'Malformed request.' });
+    const request = parseLogoRequest(input);
+    if (!request.ok) return json(res, 400, { error: request.error });
+    store.setLogo(user.id, request.value);
+    return json(res, 200, { logo: logoOf() });
   }
   if (path === '/api/logout' && req.method === 'POST') {
     store.deleteSession(token);
