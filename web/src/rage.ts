@@ -234,6 +234,8 @@ export class Rage {
     return this.m.ccall(name, 'string', args.map(() => 'number' as const), args);
   }
   carModels(): number { return this.num('rw_car_models', []); }
+  /** Whether a class offers this car variant (web_rules.c, as the server checks). */
+  carAllowed(classIndex: number, variant: number): boolean { return this.num('rw_car_allowed', [classIndex, variant]) === 1; }
   /** The variant a class offers for a model, or -1. */
   classCar(classIndex: number, model: number): number { return this.num('rw_class_car', [classIndex, model]); }
   private carModel(variant: number): number { return this.num('rw_car_model', [variant]); }

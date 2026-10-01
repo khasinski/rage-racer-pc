@@ -20,6 +20,7 @@
 // Types only: shared by the Vite client and the Node server (type stripping).
 
 export const DEFAULT_PORT = 7243;
+export type Transport = 'rtc' | 'ws';
 export const BINARY_INPUT = 1;
 export const BINARY_FRAME = 2;
 /* Data channel heartbeat: the client sends it, the server echoes it back. */
@@ -31,7 +32,9 @@ export const ACK_WORDS = 3; // per player in a frame: sequence, applied tick, ma
 export const INPUT_BYTES = 8 + INPUT_WORDS * 4; // one input in a BINARY_INPUT packet
 export const INPUT_REPEAT = 4; // inputs per data channel packet
 
-export interface UserInfo { id: number; name: string; admin: boolean }
+/** guest: a "Guest #n" account, kept only by this browser's session until
+ *  the player saves it with a name and password (POST /api/claim). */
+export interface UserInfo { id: number; name: string; admin: boolean; guest: boolean }
 
 export interface RoomSettings {
   name: string;
@@ -176,7 +179,10 @@ export type ServerMessage =
   | { t: 'finishDeadline'; remainingMs: number }
   | { t: 'raceGo' }
   // Every couple of seconds: each room member's round trip (null offline).
-  | { t: 'latency'; latency: Record<number, number | null> }
+  // transport: how each online member's race traffic travels ('rtc': the
+  // data channel; 'ws': the WebSocket fallback, where a lost packet holds up
+  // the ones behind it).
+  | { t: 'latency'; latency: Record<number, number | null>; transport?: Record<number, Transport> }
   | { t: 'raceEvent'; event: RaceEvent }
   | { t: 'results'; results: RaceResult[] }
   | { t: 'error'; message: string }

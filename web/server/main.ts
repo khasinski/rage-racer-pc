@@ -68,6 +68,13 @@ async function readJson(req: IncomingMessage): Promise<Record<string, unknown> |
   try { return await body(req); } catch { return null; }
 }
 
+/** Why a new account's name or password cannot be used, or null. */
+function accountProblem(name: string, password: string): string | null {
+  if (!NAME.test(name)) return 'Names are 3–20 letters, digits, dots, dashes or underscores.';
+  if (password.length < 4 || password.length > 200) return 'Use a password of at least 4 characters.';
+  return null;
+}
+
 function bearer(req: IncomingMessage): string | null {
   const header = req.headers.authorization ?? '';
   return header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -80,8 +87,8 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     const name = typeof input.name === 'string' ? input.name.trim() : '';
     const password = typeof input.password === 'string' ? input.password : '';
     if (path === '/api/register') {
-      if (!NAME.test(name)) return json(res, 400, { error: 'Names are 3–20 letters, digits, dots, dashes or underscores.' });
-      if (password.length < 4 || password.length > 200) return json(res, 400, { error: 'Use a password of at least 4 characters.' });
+      const problem = accountProblem(name, password);
+      if (problem) return json(res, 400, { error: problem });
       const user = store.createUser(name, password);
       if (!user) return json(res, 409, { error: 'That name is taken.' });
       return json(res, 201, { token: store.createSession(user.id), user });
@@ -118,6 +125,19 @@ async function api(req: IncomingMessage, res: ServerResponse, path: string): Pro
     if (!request.ok) return json(res, 400, { error: request.error });
     store.setLogo(user.id, request.value);
     return json(res, 200, { logo: logoOf() });
+  }
+  if (path === '/api/claim' && req.method === 'POST') {
+    const input = await readJson(req);
+    if (!input) return json(res, 400, { error: 'Malformed request.' });
+    const name = typeof input.name === 'string' ? input.name.trim() : '';
+    const password = typeof input.password === 'string' ? input.password : '';
+    const problem = accountProblem(name, password);
+    if (problem) return json(res, 400, { error: problem });
+    const claimed = store.claimGuest(user.id, name, password);
+    if (claimed === 'taken') return json(res, 409, { error: 'That name is taken.' });
+    if (!claimed) return json(res, 400, { error: 'This account already has a name.' });
+    lobby.renamed(claimed);
+    return json(res, 200, { user: claimed });
   }
   if (path === '/api/logout' && req.method === 'POST') {
     store.deleteSession(token);

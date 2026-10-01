@@ -20,19 +20,16 @@ try {
   await second.waitForSelector('#disc:not([hidden])');
   await second.setInputFiles('#disc-input', discFiles);
   await second.waitForSelector('#lobby:not([hidden])', { timeout: 180_000 });
-  await first.waitForFunction(() => document.querySelector('#lobby-status').textContent.includes('another window'), null, { timeout: 15_000 });
+  await first.waitForFunction(() => document.querySelector('#connection-text').textContent.includes('another window') && !document.querySelector('#connection').hidden, null, { timeout: 15_000 });
   check(true, 'the older window is told another window took over');
   await wait(6_000); // long enough for several reconnect attempts
-  const secondStatus = await second.locator('#lobby-status').textContent();
-  check(!/another window|somewhere else|econnecting/.test(secondStatus), `the newer window is left alone (“${secondStatus}”)`);
-  const firstStatus = await first.locator('#lobby-status').textContent();
-  check(firstStatus.includes('another window'), 'and the older one still says so instead of reconnecting');
-  await first.reload();
-  await first.waitForSelector('#disc:not([hidden])');
-  await first.setInputFiles('#disc-input', discFiles);
-  await first.waitForSelector('#lobby:not([hidden])', { timeout: 180_000 });
-  await second.waitForFunction(() => document.querySelector('#lobby-status').textContent.includes('another window'), null, { timeout: 15_000 });
-  check(true, 'reloading the older window takes the account back');
+  check(await second.locator('#connection').isHidden(), 'the newer window is left alone');
+  check((await first.locator('#connection-text').textContent()).includes('another window'), 'and the older one still says so instead of reconnecting');
+  check(await first.locator('[data-action=create-room]').evaluate((b) => getComputedStyle(b).pointerEvents === 'none'), 'while the older window cannot create rooms');
+  await first.click('#connection-here');
+  await first.waitForFunction(() => document.querySelector('#connection').hidden, null, { timeout: 15_000 });
+  await second.waitForFunction(() => document.querySelector('#connection-text').textContent.includes('another window') && !document.querySelector('#connection').hidden, null, { timeout: 15_000 });
+  check(true, '“Play here” in the older window takes the account back, without a reload');
 } finally {
   await browser.close();
   stop();

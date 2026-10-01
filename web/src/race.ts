@@ -4,7 +4,10 @@
 import { app, setHint, show, toast } from './app';
 import { SEAT_FINISHED, TICK_MS, TICK_RATE } from './constants';
 import { Tachometer } from './hud';
-import { clearKeyEdges, consumeKey, PAD, samplePad } from './input';
+import { clearKeyEdges, consumeKey, PAD, samplePad, useTouch } from './input';
+import { takeTouchKeys, touchHeld } from './touch';
+
+useTouch({ held: touchHeld, keys: takeTouchKeys });
 import { drawDeadline, drawStandings, followRace, resetOverlay, spectateKeys } from './overlay';
 import { PHASE_COUNTDOWN, PHASE_FINISHED, PHASE_RACING, type Hud, type Rage } from './rage';
 import { selectNameplates, type CarMark } from './nameplates';
@@ -168,7 +171,7 @@ function frame(now: number) {
   if (spectateKeys(rage, race)) standingsAt = 0;
   if (now - standingsAt > 250) {
     standingsAt = now;
-    if (race.mode !== 'offline') drawStandings(rage, race, app.latency);
+    if (race.mode !== 'offline') drawStandings(rage, race, app.latency, app.transport);
     followRace(rage, race);
   }
   drawDeadline(race, now);

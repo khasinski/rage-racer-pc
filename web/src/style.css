@@ -190,3 +190,51 @@ input[type=color] { padding: 0; width: 44px; height: 30px; }
   position: absolute; inset: 0; margin: auto; width: min(640px, calc(100% - 32px)); height: fit-content;
   max-height: calc(100% - 32px); overflow: auto; z-index: 5; box-shadow: 0 20px 60px #000;
 }
+
+/* Touch controls (touch.ts): only on touch screens, only during a race. */
+#touch { display: none; }
+@media (pointer: coarse) {
+  body[data-screen=race] #touch {
+    display: block; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    user-select: none; -webkit-user-select: none; touch-action: none;
+  }
+}
+#touch button {
+  pointer-events: auto; touch-action: none; border-radius: 50%;
+  background: rgba(10, 14, 19, 0.45); color: var(--text); border: 2px solid rgba(223, 232, 239, 0.35);
+  font-size: 22px; font-weight: 800; padding: 0;
+}
+#touch button.held { background: rgba(255, 90, 31, 0.6); border-color: var(--accent); }
+.touch-steer { position: absolute; left: 16px; bottom: 20px; display: flex; gap: 14px; }
+.touch-steer button { width: 84px; height: 84px; }
+.touch-pedals { position: absolute; right: 16px; bottom: 20px; display: flex; gap: 12px; align-items: flex-end; }
+.touch-pedals [data-touch=accelerate] { width: 96px; height: 96px; font-size: 16px; }
+.touch-pedals [data-touch=brake] { width: 76px; height: 76px; font-size: 13px; }
+.touch-gears { display: grid; gap: 8px; }
+.touch-gears button, .touch-top button { width: 48px; height: 48px; font-size: 16px; }
+.touch-top { position: absolute; top: 12px; right: 12px; display: flex; gap: 10px; }
+
+/* The controls, folded away until asked for. */
+.controls { grid-column: 1 / -1; font-size: 13px; color: var(--dim); }
+.controls summary { cursor: pointer; color: var(--text); width: fit-content; }
+.controls dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 12px; margin: 10px 0 0; line-height: 1.5; }
+.controls dt { color: #ffd48a; }
+.controls dd { margin: 0; }
+
+/* The connection banner (online.ts): shown off the race while the server is
+ * out of reach or another window has the account; what needs the server waits. */
+#connection {
+  position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 20;
+  display: flex; align-items: center; gap: 12px; max-width: calc(100% - 32px);
+  padding: 10px 16px; border-radius: 8px; background: #2a1d0b; border: 1px solid #6b4a12; color: #ffd48a;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); font-size: 14px;
+}
+body[data-screen=race] #connection { display: none; }
+body[data-connection=down] .needs-server, body[data-connection=replaced] .needs-server {
+  opacity: 0.45; pointer-events: none;
+}
+
+/* A player on the WebSocket fallback (views.ts pingCell). */
+.ping.fallback { color: #ffd48a; cursor: help; }
+#hud #standings span.ping { font-size: 12px; font-weight: 400; text-align: right; }
+#hud #standings span.ping.fallback { color: #ffd48a; }

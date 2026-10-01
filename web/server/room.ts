@@ -1,7 +1,7 @@
 // One room: its settings, members (players and spectators), its host, the
 // race it runs (race.ts), and what its members are told about it.
 import type { WebSocket } from 'ws';
-import type { DuelSetup, RoomPlayer, RoomSettings, RoomState, RoomSummary, ServerMessage, UserInfo } from '../shared/protocol.ts';
+import type { DuelSetup, RoomPlayer, Transport, RoomSettings, RoomState, RoomSummary, ServerMessage, UserInfo } from '../shared/protocol.ts';
 import type { Race } from './race.ts';
 import type { RtcLink } from './rtc.ts';
 
@@ -62,6 +62,16 @@ export class Room {
   /** A line in the chat from nobody: joins, leaves, connection news. */
   systemChat(text: string): void {
     this.toAll({ t: 'chat', from: '', text, at: Date.now() });
+  }
+
+  /** How each online member's race traffic travels: the data channel or
+   *  the WebSocket fallback. */
+  transports(): Record<number, Transport> {
+    const transport: Record<number, Transport> = {};
+    for (const [id, member] of this.members) {
+      if (member.offlineSince === null) transport[id] = member.client.rtc?.open ? 'rtc' : 'ws';
+    }
+    return transport;
   }
 
   /** Every member's round trip (null while offline), for the latency message. */

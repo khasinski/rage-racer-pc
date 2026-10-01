@@ -49,8 +49,14 @@ addEventListener('blur', () => { held.clear(); tapped.clear(); });
 
 const axis = (value: number) => Math.round(Math.max(-1, Math.min(1, value)) * 32767);
 
+/** Buttons held on the touch screen and its key presses (touch.ts), set
+ *  there so this module does not depend on the page. */
+let touchSource: { held: () => number; keys: () => string[] } | null = null;
+export function useTouch(source: { held: () => number; keys: () => string[] }): void { touchSource = source; }
+
 export function samplePad(): PadSample {
-  let buttons = 0;
+  let buttons = touchSource?.held() ?? 0;
+  for (const code of touchSource?.keys() ?? []) pressedEdges.add(code);
   for (const code of held) buttons |= KEYS[code] ?? 0;
   for (const code of tapped) buttons |= KEYS[code] ?? 0;
   tapped.clear();

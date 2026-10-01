@@ -3,12 +3,12 @@
 // the server (the paint per car model, the logo once) and drawn by everyone
 // who races or watches you. The windscreen shows your name.
 import { PAINTABLE_MODELS, type Paint, type RaceSeat } from '../shared/protocol.ts';
-import { app, session, show } from './app';
+import { app, rememberCar, session, show } from './app';
 import { encodeLogo, fromBase64, isEmpty, logoFromBase64, sameLogo, teamTag, toBase64, type Logo } from './logo';
 import { LogoEditor } from './logo-editor';
 import { Renderer } from './renderer';
 import type { Rage, SeatLook } from './rage';
-import { $, el } from './views';
+import { $, el, setCarNote } from './views';
 
 const TURN_DEGREES_PER_SECOND = 14;
 const DRAG_DEGREES_PER_PIXEL = 0.5;
@@ -42,6 +42,9 @@ let saving: Promise<void> = Promise.resolve();
 const same = (a: Paint | null, b: Paint | null) => a === b || (!!a && !!b && a[0] === b[0] && a[1] === b[1]);
 /** A logo as it is kept: nothing drawn means none. */
 const kept = (logo: Logo): Logo | null => (isEmpty(logo) ? null : logo);
+
+/* The race forms mark painted cars too. */
+setCarNote((v) => (app.rage && paintOf(app.rage, v) ? ' · painted' : ''));
 
 /** The player's saved paint for a car, for the races they start. */
 export function paintOf(rage: Rage, carVariant: number): Paint | null {
@@ -160,6 +163,7 @@ function choose(rage: Rage, zone: number, color: number): void {
 
 function showCar(rage: Rage): void {
   variant = Number(carSelect.value);
+  rememberCar(variant);
   statusLine.textContent = 'Loading the car…';
   if (!rage.startShowroom(variant)) {
     statusLine.textContent = 'This car could not be prepared from your disc.';
@@ -235,6 +239,8 @@ export function enterGarage(): void {
     carSelect.replaceChildren(...rage.garageVariants().map((v) => new Option(carOption(rage, v), String(v))));
     buildSwatches(rage);
   }
+  // Open on the car the player last chose (here, in practice or in a room).
+  if ([...carSelect.options].some((o) => o.value === String(app.lastCar))) carSelect.value = String(app.lastCar);
   editor.load(app.logo); // the saved logo
   $('logo-tag').textContent = teamTag(session.user?.name ?? '') || '(nothing the font can show)';
   open = true;

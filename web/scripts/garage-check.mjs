@@ -278,8 +278,13 @@ try {
   await joinButton.waitFor();
   await joinButton.click();
   await owner.waitForSelector('#room:not([hidden])');
-  // The owner's car: the one whose paint was saved (model of options[0]).
-  await owner.selectOption('#car-model', options[0].value).catch(() => {});
+  // The owner's car: one of the painted model (the room may first have put
+  // them in the car they chose last), and wait until the room has it.
+  await owner.waitForTimeout(1000);
+  const model = options[0].text.split(' ')[0];
+  const paintedCar = await owner.locator('#car-model option', { hasText: model }).first().getAttribute('value');
+  await owner.selectOption('#car-model', paintedCar);
+  await owner.waitForFunction((name) => [...document.querySelectorAll('#room-players td')].some((td) => td.textContent.startsWith(name)), model, { timeout: 10_000 });
   await owner.click('#ready-button');
   await rival.waitForSelector('#start-button:not([disabled])');
   await rival.click('#start-button');

@@ -100,7 +100,7 @@ export class Store {
       const result = this.db.prepare(
         'INSERT INTO users (name, password_hash, password_salt, admin) VALUES (?, ?, ?, ?)')
         .run(name, hashPassword(password, salt), salt, admin ? 1 : 0);
-      return { id: Number(result.lastInsertRowid), name, admin };
+      return { id: Number(result.lastInsertRowid), name, admin, guest: false };
     } catch (error) {
       if (String(error).includes('UNIQUE')) return null;
       throw error;
@@ -119,11 +119,27 @@ export class Store {
         const result = this.db.prepare(
           'INSERT INTO users (name, password_hash, password_salt, guest) VALUES (?, ?, ?, ?)')
           .run(name, password, salt, next);
-        return { id: Number(result.lastInsertRowid), name, admin: false };
+        return { id: Number(result.lastInsertRowid), name, admin: false, guest: true };
       } catch (error) {
         if (!String(error).includes('UNIQUE')) throw error; // taken meanwhile: next number
       }
     }
+  }
+
+  /** Gives a guest account a name and password (it keeps its id, races,
+   *  paint and logo). 'taken' when the name is someone else's, null when the
+   *  account is no guest. */
+  claimGuest(userId: number, name: string, password: string): UserInfo | 'taken' | null {
+    const salt = randomBytes(16).toString('hex');
+    try {
+      const result = this.db.prepare(`UPDATE users SET name = ?, password_hash = ?, password_salt = ?, guest = 0
+        WHERE id = ? AND guest > 0`).run(name, hashPassword(password, salt), salt, userId);
+      if (Number(result.changes) !== 1) return null;
+    } catch (error) {
+      if (String(error).includes('UNIQUE')) return 'taken';
+      throw error;
+    }
+    return { id: userId, name, admin: false, guest: false };
   }
 
   /** Sets a password (and the admin flag), creating the account if needed. */
@@ -136,13 +152,13 @@ export class Store {
   }
 
   verifyUser(name: string, password: string): UserInfo | null {
-    const row = this.db.prepare('SELECT id, name, password_hash, password_salt, admin FROM users WHERE name = ?')
-      .get(name) as { id: number; name: string; password_hash: string; password_salt: string; admin: number } | undefined;
+    const row = this.db.prepare('SELECT id, name, password_hash, password_salt, admin, guest FROM users WHERE name = ?')
+      .get(name) as { id: number; name: string; password_hash: string; password_salt: string; admin: number; guest: number } | undefined;
     if (!row) return null;
     const expected = Buffer.from(row.password_hash, 'hex');
     const actual = Buffer.from(hashPassword(password, row.password_salt), 'hex');
     if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
-    return { id: row.id, name: row.name, admin: row.admin === 1 };
+    return { id: row.id, name: row.name, admin: row.admin === 1, guest: row.guest > 0 };
   }
 
   createSession(userId: number): string {
@@ -153,11 +169,11 @@ export class Store {
   }
 
   sessionUser(token: string): UserInfo | null {
-    const row = this.db.prepare(`SELECT users.id, users.name, users.admin FROM sessions
+    const row = this.db.prepare(`SELECT users.id, users.name, users.admin, users.guest FROM sessions
       JOIN users ON users.id = sessions.user_id
       WHERE sessions.token = ? AND sessions.expires_at >= datetime('now')`)
-      .get(token) as { id: number; name: string; admin: number } | undefined;
-    return row ? { id: row.id, name: row.name, admin: row.admin === 1 } : null;
+      .get(token) as { id: number; name: string; admin: number; guest: number } | undefined;
+    return row ? { id: row.id, name: row.name, admin: row.admin === 1, guest: row.guest > 0 } : null;
   }
 
   deleteSession(token: string): void {

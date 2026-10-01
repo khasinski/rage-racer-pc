@@ -6,6 +6,10 @@
   <title>Rage Racer</title>
 </head>
 <body>
+  <div id="connection" role="status" hidden>
+    <span id="connection-text"></span>
+    <button type="button" id="connection-here" hidden>Play here</button>
+  </div>
   <form id="auth" class="panel narrow" hidden>
     <h1>RAGE RACER</h1>
     <p class="lead">Online races on the original physics</p>
@@ -37,6 +41,7 @@
       <h1>RAGE RACER</h1>
       <span class="spacer"></span>
       <span class="who"></span>
+      <button type="button" data-action="claim" hidden>Save account</button>
       <button type="button" class="secondary" data-action="garage">Garage</button>
       <button type="button" class="secondary" data-action="practice">Practice offline</button>
       <button type="button" class="secondary" data-action="logout">Log out</button>
@@ -46,11 +51,11 @@
         <div class="title-row">
           <h2>Rooms</h2>
           <div class="row">
-            <button type="button" data-action="create-duel">Duel</button>
-            <button type="button" data-action="create-room">Create room</button>
+            <button type="button" data-action="create-duel" class="needs-server">Duel</button>
+            <button type="button" data-action="create-room" class="needs-server">Create room</button>
           </div>
         </div>
-        <ul id="room-list" class="list"></ul>
+        <ul id="room-list" class="list needs-server"></ul>
         <p id="lobby-status" class="status"></p>
       </section>
       <section class="panel">
@@ -67,9 +72,9 @@
       <h1 id="room-name"></h1>
       <span id="room-summary" class="summary"></span>
       <span class="spacer"></span>
-      <button type="button" class="secondary" data-action="edit-room" hidden>Room settings</button>
-      <button type="button" class="secondary danger" data-action="close-room" hidden>Close room</button>
-      <button type="button" class="secondary" data-action="leave-room">Leave</button>
+      <button type="button" class="secondary needs-server" data-action="edit-room" hidden>Room settings</button>
+      <button type="button" class="secondary danger needs-server" data-action="close-room" hidden>Close room</button>
+      <button type="button" class="secondary needs-server" data-action="leave-room">Leave</button>
     </header>
     <div class="columns">
       <section class="panel">
@@ -83,7 +88,7 @@
             <button type="button" id="duel-copy" class="secondary">Copy link</button>
           </div>
         </div>
-        <div class="car-picker" id="car-picker">
+        <div class="car-picker needs-server" id="car-picker">
           <label id="car-model-field">Your car <select id="car-model"></select></label>
           <label>Transmission
             <select id="car-transmission"><option value="auto">Automatic</option><option value="manual">Manual</option></select>
@@ -98,22 +103,43 @@
             </select>
           </label>
         </div>
-        <div class="row">
+        <div class="row needs-server">
           <button type="button" id="ready-button">Ready</button>
           <button type="button" id="start-button" hidden>Start race</button>
           <button type="button" id="spectate-button" class="secondary">Watch only</button>
           <button type="button" id="watch-button" hidden>Watch the race</button>
         </div>
         <p id="room-status" class="status"></p>
-        <p class="hint">Keys as on the desktop: ←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back. A gamepad steers with the stick, RT/LT pedals, D-pad ↓/↑ shift, Y camera.</p>
+        <details class="controls">
+          <summary>Controls</summary>
+          <dl>
+            <dt>Keyboard</dt><dd>←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back · Esc leaves the race</dd>
+            <dt>Gamepad</dt><dd>stick steers · RT/A accelerate · LT/X brake · D-pad ↓/↑ shift · Y camera · Start pause</dd>
+            <dt>Touch</dt><dd>◀ ▶ steer · GAS and BRAKE · ▲ ▼ shift · ◎ camera · ✕ leaves the race</dd>
+          </dl>
+        </details>
       </section>
       <section class="panel chat">
         <h2>Chat</h2>
         <ol id="chat-log"></ol>
-        <form id="chat-form"><input name="text" maxlength="200" autocomplete="off" placeholder="Say something…"><button type="submit">Send</button></form>
+        <form id="chat-form" class="needs-server"><input name="text" maxlength="200" autocomplete="off" placeholder="Say something…"><button type="submit">Send</button></form>
       </section>
     </div>
   </section>
+
+  <dialog id="claim-dialog">
+    <form id="claim-form" method="dialog">
+      <h2>Save your account</h2>
+      <p class="hint">A guest lives only in this browser. Give it a name and a password to log in anywhere and keep your races, paint and logo.</p>
+      <label>Name <input name="name" autocomplete="username" required minlength="3" maxlength="20" pattern="[A-Za-z0-9_.\-]{3,20}"></label>
+      <label>Password <input name="password" type="password" autocomplete="new-password" required minlength="4"></label>
+      <p id="claim-status" class="status"></p>
+      <div class="row">
+        <button type="submit" value="ok">Save</button>
+        <button type="submit" value="cancel" class="secondary" formnovalidate>Cancel</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="settings-dialog">
     <form id="settings-form" method="dialog">
@@ -155,7 +181,14 @@
       <button type="button" class="secondary" data-action="back-to-lobby">Back to the lobby</button>
     </div>
     <p id="setup-status" class="status"></p>
-    <p class="hint">Desktop controls: ←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back · Enter pause · Esc returns here. A gamepad drives as on the desktop: stick steers, RT/A accelerate, LT/X brake, D-pad ↓/↑ shift, Y camera, Start pause.</p>
+    <details class="controls">
+          <summary>Controls</summary>
+          <dl>
+            <dt>Keyboard</dt><dd>←/→ steer · X accelerate · Z brake · E/R shift up, Q/W shift down (manual) · S camera · hold ↓ to look back · Enter pause · Esc returns here</dd>
+            <dt>Gamepad</dt><dd>stick steers · RT/A accelerate · LT/X brake · D-pad ↓/↑ shift · Y camera · Start pause</dd>
+            <dt>Touch</dt><dd>◀ ▶ steer · GAS and BRAKE · ▲ ▼ shift · ◎ camera · ✕ leaves the race</dd>
+          </dl>
+        </details>
   </form>
 
   <section id="garage" class="page" hidden>
@@ -224,6 +257,25 @@
   </section>
 
   <canvas id="view" hidden></canvas>
+  <div id="touch" aria-hidden="true">
+    <div class="touch-steer">
+      <button type="button" data-touch="left">◀</button>
+      <button type="button" data-touch="right">▶</button>
+    </div>
+    <div class="touch-top">
+      <button type="button" data-touch="leave">✕</button>
+      <button type="button" data-touch="pause">❚❚</button>
+      <button type="button" data-touch="camera">◎</button>
+    </div>
+    <div class="touch-pedals">
+      <div class="touch-gears">
+        <button type="button" data-touch="up">▲</button>
+        <button type="button" data-touch="down">▼</button>
+      </div>
+      <button type="button" data-touch="brake">BRAKE</button>
+      <button type="button" data-touch="accelerate">GAS</button>
+    </div>
+  </div>
   <div id="hud" hidden>
     <canvas id="tacho"></canvas>
     <div class="cell"><span>POS</span><b id="hud-place"></b></div>
@@ -240,7 +292,10 @@
   <section id="results" class="panel" hidden>
     <h2>Results</h2>
     <table id="results-table" class="table"></table>
-    <button type="button" data-action="results-done">Back to the room</button>
+    <div class="row">
+      <button type="button" data-action="race-again">Race again</button>
+      <button type="button" class="secondary" data-action="results-done">Back to the room</button>
+    </div>
   </section>
   <script type="module" src="/src/main.ts"></script>
 </body>

@@ -1,11 +1,12 @@
 // The race view's overlay: the event feed, the online standings, the finish
 // deadline, and the camera that follows another car once yours is gone (or
 // when you only watch).
+import type { Transport } from '../shared/protocol.ts';
 import { SEAT_FINISHED, SEAT_RACING, SEAT_RETIRED } from './constants';
 import { consumeKey } from './input';
 import type { Rage } from './rage';
 import type { RaceState } from './race';
-import { $, el, formatTime, pingLabel, textWriter } from './views';
+import { $, el, formatTime, pingCell, textWriter } from './views';
 
 const feedList = $<HTMLOListElement>('feed');
 const standings = $<HTMLOListElement>('standings');
@@ -89,7 +90,8 @@ export function drawDeadline(race: RaceState, now: number): void {
 }
 
 /** The online players in race order, styled like the event feed. */
-export function drawStandings(rage: Rage, race: RaceState, latency: Record<number, number | null>): void {
+export function drawStandings(rage: Rage, race: RaceState, latency: Record<number, number | null>,
+                              transport: Record<number, Transport>): void {
   const rows = Array.from({ length: race.humans }, (_, seat) => ({ seat, ...rage.standing(seat) }))
     .sort((a, b) => (a.place || 99) - (b.place || 99) || a.seat - b.seat);
   standings.replaceChildren(...rows.map((row) => {
@@ -99,6 +101,6 @@ export function drawStandings(rage: Rage, race: RaceState, latency: Record<numbe
       el('span', {}, race.names[row.seat]),
       el('span', { className: 'dim' },
         row.status === SEAT_FINISHED ? 'finished' : row.status === SEAT_RETIRED ? '' : `lap ${Math.max(1, row.lap)}`),
-      el('span', { className: 'dim' }, pingLabel(userId === null ? undefined : latency[userId])));
+      pingCell(userId === null ? undefined : latency[userId], undefined, userId === null ? undefined : transport[userId]));
   }));
 }

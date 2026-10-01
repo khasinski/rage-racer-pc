@@ -63,6 +63,14 @@ export class Session {
       { method: 'POST', body: JSON.stringify({ name, password }) }));
   }
 
+  /** Turns the signed-in guest into an account with this name and password
+   *  (the same account: its races, paint and logo stay). */
+  async claim(name: string, password: string): Promise<void> {
+    const result = await request<{ user: UserInfo }>('api/claim',
+      { method: 'POST', body: JSON.stringify({ name, password }) }, this.token);
+    this.user = result.user;
+  }
+
   /** Plays as a new guest account ("Guest #n"). */
   guest(): Promise<void> {
     return this.adopt(request('api/guest', { method: 'POST' }));

@@ -2,7 +2,7 @@
 // come from the WebAssembly module (web_rules.c), the same code the server
 // validates with.
 import type {
-  RaceResult, RecordRow, RoomSettings, RoomState, RoomSummary, UserInfo,
+  RaceResult, RecordRow, RoomSettings, RoomState, RoomSummary, Transport, UserInfo,
 } from '../shared/protocol.ts';
 import type { HistoryRow } from './net';
 import type { Rage, RaceOptions } from './rage';
@@ -51,6 +51,19 @@ function carLabel(rage: Rage, variant: number): string {
   return variant < 0 ? '—' : `${rage.carName(variant)} ${'I'.repeat(rage.carGrade(variant) + 1)}`;
 }
 
+/* What the car pickers add to a car's name: the garage marks the cars the
+ * player painted (set by garage.ts, which knows the paints). */
+let carNote: (variant: number) => string = () => '';
+export function setCarNote(note: (variant: number) => string): void { carNote = note; }
+
+/** The class that offers a car variant, or -1. */
+export function classOf(rage: Rage, variant: number): number {
+  for (let classIndex = 0; classIndex < CLASS_NAMES.length; classIndex++) {
+    for (let model = 0; model < rage.carModels(); model++) if (rage.classCar(classIndex, model) === variant) return classIndex;
+  }
+  return -1;
+}
+
 /** Models a class offers, as (variant, label). */
 function classCars(rage: Rage, classIndex: number): { variant: number; label: string }[] {
   const cars = [];
@@ -76,10 +89,11 @@ function fillCourses(rage: Rage, select: HTMLSelectElement, classIndex: number, 
   select.value = String(rage.courseAllowed(classIndex, wanted) ? wanted : 0);
 }
 
-/** The class's models; the selection stays when the new list has it. */
+/** The class's models (marked as the garage says); the selection stays when
+ *  the new list has it. */
 function fillCars(rage: Rage, select: HTMLSelectElement, classIndex: number): void {
-  const cars = classCars(rage, classIndex);
-  const key = cars.map((c) => c.variant).join(',');
+  const cars = classCars(rage, classIndex).map((c) => ({ ...c, label: c.label + carNote(c.variant) }));
+  const key = cars.map((c) => `${c.variant}${c.label}`).join(',');
   if (select.dataset.cars === key) return;
   const current = select.value;
   select.replaceChildren(...cars.map((c) => new Option(c.label, String(c.variant))));
@@ -128,6 +142,17 @@ export function fillPractice(rage: Rage, form: HTMLFormElement, automatic: boole
   classSelect.onchange = syncClass;
   car.onchange = syncCar;
   syncClass();
+}
+
+/** Opens the practice form on a car: its class, and the car itself. */
+export function choosePracticeCar(rage: Rage, form: HTMLFormElement, variant: number): void {
+  const classSelect = field<HTMLSelectElement>(form, 'class');
+  const classIndex = variant >= 0 ? classOf(rage, variant) : -1;
+  if (classIndex >= 0 && Number(classSelect.value) !== classIndex) classSelect.value = String(classIndex);
+  classSelect.onchange?.(new Event('change')); // refills courses and cars (and their marks)
+  const car = field<HTMLSelectElement>(form, 'car');
+  if (classIndex >= 0) car.value = String(variant);
+  car.onchange?.(new Event('change'));
 }
 
 export function readPractice(form: HTMLFormElement): RaceOptions & { shadows: boolean } {
@@ -217,13 +242,18 @@ export function renderHistory(rage: Rage, history: HistoryRow[]): void {
 }
 
 /** A round trip for the ping columns (null while reconnecting, undefined
- *  before the first measurement). */
-export function pingLabel(ms: number | null | undefined, online = ms !== null): string {
-  return !online ? 'offline' : ms == null ? '' : `${ms} ms`;
+ *  before the first measurement), marked when the player races over the
+ *  WebSocket fallback instead of the data channel. */
+export function pingCell(ms: number | null | undefined, online = ms !== null, transport?: Transport): HTMLElement {
+  const fallback = online && ms != null && transport === 'ws';
+  const cell = el('span', { className: fallback ? 'ping fallback' : 'ping dim' },
+    !online ? 'offline' : ms == null ? '' : `${ms} ms${fallback ? ' ⚠' : ''}`);
+  if (fallback) cell.title = 'On the fallback connection: a lost packet holds up the ones behind it, so the race may stutter.';
+  return cell;
 }
 
 export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic: boolean[],
-                           latency: Record<number, number | null>): void {
+                           latency: Record<number, number | null>, transport: Record<number, Transport> = {}): void {
   const s = room.settings;
   const host = room.members.find((m) => m.host);
   const mine = room.members.find((m) => m.userId === me.id);
@@ -246,7 +276,7 @@ export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic:
       carLabel(rage, m.variant), m.manual ? 'MT' : 'AT',
       ...(duel ? [String(m.tire + 1)] : []),
       el('span', { className: m.ready ? 'ok' : 'dim' }, m.ready ? 'ready' : 'choosing'),
-      el('span', { className: 'dim' }, pingLabel(latency[m.userId], m.online))])));
+      pingCell(latency[m.userId], m.online, transport[m.userId])])));
   if (watchers.length) {
     players.append(el('tr', {}, el('td', { colSpan: headers.length, className: 'dim' },
       `Watching: ${watchers.map((m) => `${m.name}${m.host ? ' ★' : ''}`).join(', ')}`)));

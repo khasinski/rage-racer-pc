@@ -3,7 +3,7 @@
 // at most one race at a time (race.ts).
 import { randomInt } from 'node:crypto';
 import {
-  CLOSE_REPLACED, PAINTABLE_MODELS, type ClientMessage, type Paint, type RoomSettings, type ServerMessage,
+  CLOSE_REPLACED, PAINTABLE_MODELS, type ClientMessage, type Paint, type RoomSettings, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
 import { Race } from './race.ts';
@@ -74,6 +74,17 @@ export class Lobby {
     if (room.race?.involves(client.user.id)) this.sendRace(room, client);
   }
 
+  /** An account got a new name (a guest saved it): its connections and room
+   *  use it from now on. */
+  renamed(user: UserInfo): void {
+    for (const client of this.clients) {
+      if (client.user.id !== user.id) continue;
+      client.user = user;
+      const room = this.roomOf(client);
+      if (room) this.publish(room);
+    }
+  }
+
   /** A lost connection keeps its place: offline for a while, not gone. */
   disconnect(client: Client): void {
     client.rtc?.close();
@@ -97,7 +108,7 @@ export class Lobby {
         if (room.race?.seated(member.client.user.id)) continue;
         this.leave(member.client, 'disconnected');
       }
-      if (this.rooms.has(room.id)) room.toAll({ t: 'latency', latency: room.latencies() });
+      if (this.rooms.has(room.id)) room.toAll({ t: 'latency', latency: room.latencies(), transport: room.transports() });
     }
   }
 

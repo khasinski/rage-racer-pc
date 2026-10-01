@@ -1,7 +1,7 @@
 // The page: accounts, the disc, the lobby and offline practice. The online
 // side is in online.ts, the race loop in race.ts.
 import './style.css';
-import { app, ragePromise, session, setHint, show } from './app';
+import { app, ragePromise, rememberCar, session, setHint, show } from './app';
 import { RaceAudio } from './audio';
 import {
   canPickDirectory, canPickFiles, DiscGone, discLabel, discPermission, droppedDisc, filesFromHandles,
@@ -11,7 +11,7 @@ import { chooseDataTrack } from './disc';
 import { enterGarage, loadGarage, ownLook } from './garage';
 import { disconnect, enterLobby, send } from './online';
 import { beginRace, practiceRace, raceSettings, runRaceLoop } from './race';
-import { $, editSettings, fillPractice, readPractice } from './views';
+import { $, choosePracticeCar, editSettings, fillPractice, readPractice } from './views';
 
 const discStatus = $('disc-status');
 const picker = $<HTMLInputElement>('disc-input');
@@ -36,8 +36,33 @@ $<HTMLFormElement>('auth').addEventListener('submit', async (event) => {
   }
 });
 
+function showWho() {
+  const user = session.user!;
+  $('lobby').querySelector('.who')!.textContent = `${user.name}${user.admin ? ' (admin)' : ''}`;
+  $('lobby').querySelector<HTMLButtonElement>('[data-action=claim]')!.hidden = !user.guest;
+}
+
+/* A guest saves their account: the same account, with a name and password. */
+const claimDialog = $<HTMLDialogElement>('claim-dialog');
+const claimForm = $<HTMLFormElement>('claim-form');
+claimForm.addEventListener('submit', async (event) => {
+  const submitter = (event as SubmitEvent).submitter as HTMLButtonElement | null;
+  if (submitter?.value !== 'ok') return; // Cancel closes the dialog
+  event.preventDefault();
+  const value = (name: string) => (claimForm.elements.namedItem(name) as HTMLInputElement).value;
+  $('claim-status').textContent = 'Saving…';
+  try {
+    await session.claim(value('name').trim(), value('password'));
+    claimDialog.close();
+    showWho();
+    $('lobby-status').textContent = `Saved: log in as ${session.user!.name} anywhere.`;
+  } catch (error) {
+    $('claim-status').textContent = (error as Error).message;
+  }
+});
+
 function afterLogin() {
-  $('lobby').querySelector('.who')!.textContent = `${session.user!.name}${session.user!.admin ? ' (admin)' : ''}`;
+  showWho();
   void loadGarage();
   if (app.discLoaded) enterLobby();
   else {
@@ -221,11 +246,16 @@ addEventListener('drop', (event) => {
 
 $('lobby').addEventListener('click', async (event) => {
   const action = (event.target as HTMLElement).closest<HTMLElement>('[data-action]')?.dataset.action;
-  if (action === 'logout') {
+  if (action === 'claim') {
+    claimForm.reset();
+    $('claim-status').textContent = '';
+    claimDialog.showModal();
+  } else if (action === 'logout') {
     disconnect();
     await session.logout();
     show('auth');
   } else if (action === 'practice') {
+    if (app.rage) choosePracticeCar(app.rage, setup, app.lastCar);
     show('setup');
   } else if (action === 'garage' && app.rage) {
     enterGarage();
@@ -248,6 +278,7 @@ setup.addEventListener('submit', async (event) => {
   event.preventDefault();
   const rage = await ragePromise;
   const options = readPractice(setup);
+  rememberCar(options.car);
   $('setup-status').textContent = 'Preparing the course and cars…';
   await new Promise(requestAnimationFrame);
   rage.setLook(0, ownLook(rage, options.car));
