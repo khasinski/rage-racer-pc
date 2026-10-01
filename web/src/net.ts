@@ -1,9 +1,10 @@
 // Talks to the multiplayer server: REST for accounts, one WebSocket for the
 // lobby, rooms and the race stream (see shared/protocol.ts).
 import {
-  ACK_WORDS, BINARY_FRAME, CLOSE_REPLACED, BINARY_INPUT, BINARY_PING, INPUT_BYTES, INPUT_REPEAT, INPUT_WORDS,
+  ACK_WORDS, BINARY_FRAME, CLOSE_REPLACED, BINARY_INPUT, INPUT_BYTES, INPUT_REPEAT, INPUT_WORDS,
   type ClientMessage, type Garage, type Paint, type RecordRow, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
+import { RaceChannel } from './race-channel';
 
 const TOKEN_KEY = 'rage-racer.session';
 
@@ -157,37 +158,31 @@ export class LinkSimulator {
 /* Browsers without WebRTC, and ?transport=ws, keep the race on the WebSocket. */
 const RTC_WANTED = typeof RTCPeerConnection !== 'undefined' && new URLSearchParams(location.search).get('transport') !== 'ws';
 
-/* The data channel is pinged this often and dropped (back to the WebSocket)
- * when no echo came back for CHANNEL_DEAD_MS. */
-const CHANNEL_PING_MS = 500;
-const CHANNEL_DEAD_MS = 2000;
-
-async function inflate(data: ArrayBuffer): Promise<ArrayBuffer> {
-  return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+/** A BINARY_INPUT packet carrying the given inputs (INPUT_BYTES each, oldest first). */
+function inputPacket(inputs: Uint8Array[]): Uint8Array<ArrayBuffer> {
+  const packet = new Uint8Array(1 + inputs.length * INPUT_BYTES);
+  packet[0] = BINARY_INPUT;
+  inputs.forEach((input, i) => packet.set(input, 1 + i * INPUT_BYTES));
+  return packet;
 }
 
 /**
  * The connection to the server: a WebSocket for everything, plus (where the
- * browser and server manage it) a WebRTC data channel for the race stream,
- * unordered and unreliable, so a lost packet costs only itself instead of
- * holding up the frames behind it. See shared/protocol.ts.
+ * browser and server manage it) a WebRTC data channel for the race stream
+ * (race-channel.ts). See shared/protocol.ts.
  */
 export class Connection {
   private readonly ws: WebSocket;
   /* Messages sent while the WebSocket was still opening. */
   private readonly unsent: string[] = [];
-  private pc: RTCPeerConnection | null = null;
-  private channel: RTCDataChannel | null = null;
+  private readonly channel: RaceChannel | null;
   /* The latest inputs (INPUT_BYTES each, oldest first): the data channel
    * repeats them, so the server still gets an input whose packet was lost. */
   private readonly recent: Uint8Array[] = [];
   private newestTick = -1; // frames older than this one are dropped
-  private heartbeat: ReturnType<typeof setInterval> | null = null;
-  /* Simulated conditions, one per direction and transport (see LinkSimulator). */
+  /* Simulated conditions on the WebSocket, one per direction (see LinkSimulator). */
   private readonly upLink = LinkSimulator.fromAddress(true);
   private readonly downLink = LinkSimulator.fromAddress(true);
-  private readonly rtcUpLink = LinkSimulator.fromAddress(false);
-  private readonly rtcDownLink = LinkSimulator.fromAddress(false);
   onMessage: (message: ServerMessage) => void = () => {};
   onFrame: (frame: Frame) => void = () => {};
   /** `replaced`: a newer connection of the same account took this one over. */
@@ -199,76 +194,27 @@ export class Connection {
     url.searchParams.set('token', token);
     this.ws = new WebSocket(url);
     this.ws.binaryType = 'arraybuffer';
+    this.channel = RTC_WANTED
+      ? new RaceChannel((message) => this.send(message), (data) => this.frame(data),
+                        LinkSimulator.fromAddress(false), LinkSimulator.fromAddress(false))
+      : null;
     this.ws.onopen = () => {
       for (const text of this.unsent.splice(0)) this.ws.send(text);
-      if (RTC_WANTED) void this.openChannel();
+      void this.channel?.offer();
     };
     this.ws.onmessage = (event) => {
       if (this.downLink) this.downLink.pass(() => this.receive(event.data));
       else this.receive(event.data);
     };
     this.ws.onclose = (event) => {
-      this.closeChannel();
+      this.channel?.close();
       this.onClose(event.reason || 'The connection to the server closed.', event.code === CLOSE_REPLACED);
     };
   }
 
   /** Whether the race runs over the data channel. */
   get transport(): 'rtc' | 'ws' {
-    return this.channel?.readyState === 'open' ? 'rtc' : 'ws';
-  }
-
-  /** Offers the server a data channel; the answer and candidates come back
-   *  over the WebSocket. Failing, the race simply stays there. */
-  private async openChannel(): Promise<void> {
-    try {
-      const pc = this.pc = new RTCPeerConnection();
-      const channel = pc.createDataChannel('race', { ordered: false, maxRetransmits: 0 });
-      channel.binaryType = 'arraybuffer';
-      let lastEcho = 0;
-      channel.onmessage = (event) => {
-        if (new Uint8Array(event.data as ArrayBuffer)[0] === BINARY_PING) {
-          lastEcho = performance.now();
-          return;
-        }
-        const deliver = () => void inflate(event.data as ArrayBuffer).then((data) => this.frame(data), () => {});
-        if (this.rtcDownLink) this.rtcDownLink.pass(deliver);
-        else deliver();
-      };
-      channel.onopen = () => {
-        if (this.pc !== pc) return;
-        this.channel = channel;
-        lastEcho = performance.now();
-        const ping = new DataView(new ArrayBuffer(9));
-        ping.setUint8(0, BINARY_PING);
-        this.heartbeat = setInterval(() => {
-          const now = performance.now();
-          // Silent (a NAT forgot it, say): the race goes back to the WebSocket.
-          if (now - lastEcho > CHANNEL_DEAD_MS) return this.closeChannel();
-          ping.setFloat64(1, now, true);
-          if (channel.readyState === 'open') channel.send(ping.buffer);
-        }, CHANNEL_PING_MS);
-      };
-      channel.onclose = () => { if (this.channel === channel) this.channel = null; };
-      pc.onicecandidate = (event) => {
-        if (event.candidate?.candidate) {
-          this.send({ t: 'rtcCandidate', candidate: event.candidate.candidate, mid: event.candidate.sdpMid ?? '0' });
-        }
-      };
-      await pc.setLocalDescription(await pc.createOffer());
-      this.send({ t: 'rtcOffer', sdp: pc.localDescription!.sdp });
-    } catch {
-      this.closeChannel();
-    }
-  }
-
-  private closeChannel(): void {
-    if (this.heartbeat) clearInterval(this.heartbeat);
-    this.heartbeat = null;
-    this.channel?.close();
-    this.pc?.close();
-    this.channel = null;
-    this.pc = null;
+    return this.channel?.open ? 'rtc' : 'ws';
   }
 
   private receive(data: string | ArrayBuffer): void {
@@ -276,10 +222,10 @@ export class Connection {
     const message = JSON.parse(data) as ServerMessage;
     switch (message.t) {
       case 'rtcAnswer':
-        void this.pc?.setRemoteDescription({ type: 'answer', sdp: message.sdp }).catch(() => this.closeChannel());
+        this.channel?.answer(message.sdp);
         return;
       case 'rtcCandidate':
-        void this.pc?.addIceCandidate({ candidate: message.candidate, sdpMid: message.mid }).catch(() => {});
+        this.channel?.candidate(message.candidate, message.mid);
         return;
       case 'raceStart':
         // A new race counts its ticks and inputs from the start.
@@ -311,6 +257,8 @@ export class Connection {
     else if (this.ws.readyState === WebSocket.CONNECTING) this.unsent.push(text); // not lost: sent on open
   }
 
+  /** Sends one tick's input: with the last few repeated on the data channel,
+   *  on its own over the WebSocket (which loses nothing). */
   sendInput(words: Int32Array, sequence: number, tick: number): void {
     const entry = new Uint8Array(INPUT_BYTES);
     const view = new DataView(entry.buffer);
@@ -319,25 +267,15 @@ export class Connection {
     for (let i = 0; i < INPUT_WORDS; i++) view.setInt32(8 + i * 4, words[i], true);
     this.recent.push(entry);
     if (this.recent.length > INPUT_REPEAT) this.recent.shift();
-    const channel = this.channel;
-    if (channel?.readyState === 'open') {
-      const packet = new Uint8Array(1 + this.recent.length * INPUT_BYTES);
-      packet[0] = BINARY_INPUT;
-      this.recent.forEach((input, i) => packet.set(input, 1 + i * INPUT_BYTES));
-      if (this.rtcUpLink) this.rtcUpLink.pass(() => { if (channel.readyState === 'open') channel.send(packet); });
-      else channel.send(packet);
-      return;
-    }
+    if (this.channel?.send(inputPacket(this.recent))) return;
     if (this.ws.readyState !== WebSocket.OPEN) return;
-    const packet = new Uint8Array(1 + INPUT_BYTES);
-    packet[0] = BINARY_INPUT;
-    packet.set(entry, 1);
+    const packet = inputPacket([entry]);
     if (this.upLink) this.upLink.pass(() => { if (this.ws.readyState === WebSocket.OPEN) this.ws.send(packet); });
     else this.ws.send(packet);
   }
 
   close(): void {
-    this.closeChannel();
+    this.channel?.close();
     this.ws.close();
   }
 }
