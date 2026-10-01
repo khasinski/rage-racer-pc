@@ -2,12 +2,12 @@
 // showroom camera. Paint and the logo are presentation only; they are saved on
 // the server (the paint per car model, the logo once) and drawn by everyone
 // who races or watches you. The windscreen shows your name.
-import { PAINTABLE_MODELS, type Paint } from '../shared/protocol.ts';
+import { PAINTABLE_MODELS, type Paint, type RaceSeat } from '../shared/protocol.ts';
 import { app, session, show } from './app';
-import { encodeLogo, isEmpty, logoFromBase64, sameLogo, teamTag, toBase64, type Logo } from './logo';
+import { encodeLogo, fromBase64, isEmpty, logoFromBase64, sameLogo, teamTag, toBase64, type Logo } from './logo';
 import { LogoEditor } from './logo-editor';
 import { Renderer } from './renderer';
-import type { Rage } from './rage';
+import type { Rage, SeatLook } from './rage';
 import { $, el } from './views';
 
 const TURN_DEGREES_PER_SECOND = 14;
@@ -56,10 +56,14 @@ export async function loadGarage(): Promise<void> {
   try { app.logo = logoFromBase64(await session.logo()); } catch { app.logo = null; }
 }
 
-/** Hands the player's own logo and name to the next race prepared (seat 0 offline). */
-export function useOwnLook(rage: Rage, seat: number): void {
-  rage.setLogo(seat, app.logo ? encodeLogo(app.logo) : null);
-  rage.setTag(seat, session.user?.name ?? '');
+/** The player's own car look for a car (offline practice). */
+export function ownLook(rage: Rage, carVariant: number): SeatLook {
+  return { paint: paintOf(rage, carVariant), logo: app.logo ? encodeLogo(app.logo) : null, name: session.user?.name ?? '' };
+}
+
+/** A seat's car look as the server announced it with the race. */
+export function seatLook(seat: RaceSeat): SeatLook {
+  return { paint: seat.paint, logo: seat.logo ? fromBase64(seat.logo) : null, name: seat.name };
 }
 
 const savedPaint = (rage: Rage) => paintOf(rage, variant);

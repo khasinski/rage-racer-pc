@@ -198,10 +198,6 @@ static int32_t s_hud[16];
 
 const RaceData *WebLoadedArchive(void) { return s_archive; }
 
-/* The paint each human seat races in (two catalogue colours), or -1 for the
- * car's factory colours. Set before a race is prepared; presentation only, so
- * neither the server's simulation nor the wire format knows about it. */
-static int s_paint[DRIVER_SEAT_LIMIT][2];
 /* The garage preview's pivot (see FindShowroomCentre). */
 static struct { int valid; Vec3 centre; } s_showroom;
 /* Renderer depth-bias units, applied as nearer. Enough to beat the bonnet on
@@ -209,18 +205,17 @@ static struct { int valid; Vec3 centre; } s_showroom;
  * front of the roof when the car is seen from behind. */
 enum { LOGO_DEPTH_BIAS = 150 };
 
-EMSCRIPTEN_KEEPALIVE void rw_set_paint(int seat, int first, int second) {
-    if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
-    const int valid = first >= 0 && first < RAGE_CAR_PAINT_COLOR_COUNT &&
-                      second >= 0 && second < RAGE_CAR_PAINT_COLOR_COUNT;
-    s_paint[seat][0] = valid ? first : -1;
-    s_paint[seat][1] = valid ? second : -1;
-}
-
-/* The logo and team name each human seat races with: set before a race is
- * prepared (s_pending), then kept here for the race's textures to read. Like
- * paint they are presentation only. */
-static CarCustom s_pending[DRIVER_SEAT_LIMIT];
+/* What a human seat looks like: its paint (two catalogue colours, or -1 for
+ * the car's factory colours) and its logo and name. Presentation only: neither
+ * the server's simulation nor the wire format knows about it. rw_set_look sets
+ * each seat's for the next race prepared, which uses them up whether or not it
+ * starts; the running race's logos and names stay in s_custom for its
+ * textures to read. */
+typedef struct SeatLook {
+    int paint[2];
+    CarCustom custom;
+} SeatLook;
+static SeatLook s_nextLooks[DRIVER_SEAT_LIMIT];
 static CarCustom s_custom[DRIVER_SEAT_LIMIT];
 
 /* A logo: CAR_LOGO_BYTES of 4-bit pixels, then CAR_LOGO_COLORS little-endian
@@ -235,15 +230,23 @@ static void ReadLogo(CarCustom *custom, const uint8_t *data) {
         clut[i] = (uint16_t)(data[CAR_LOGO_BYTES + i * 2] | (data[CAR_LOGO_BYTES + i * 2 + 1] << 8));
     CarCustomSetLogo(custom, data, clut);
 }
-EMSCRIPTEN_KEEPALIVE void rw_set_logo(int seat, const uint8_t *data) {
-    if (seat >= 0 && seat < DRIVER_SEAT_LIMIT) ReadLogo(&s_pending[seat], data);
-}
-EMSCRIPTEN_KEEPALIVE void rw_set_tag(int seat, const char *text) {
-    if (seat >= 0 && seat < DRIVER_SEAT_LIMIT) CarCustomSetTag(&s_pending[seat], text);
+/* A seat's look for the next race: paint (first and second colour, -1 for
+ * the factory ones), logo (see ReadLogo; NULL for none) and windscreen name. */
+EMSCRIPTEN_KEEPALIVE void rw_set_look(int seat, int first, int second, const uint8_t *logo, const char *tag) {
+    if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
+    SeatLook *look = &s_nextLooks[seat];
+    const int valid = first >= 0 && first < RAGE_CAR_PAINT_COLOR_COUNT &&
+                      second >= 0 && second < RAGE_CAR_PAINT_COLOR_COUNT;
+    look->paint[0] = valid ? first : -1;
+    look->paint[1] = valid ? second : -1;
+    ReadLogo(&look->custom, logo);
+    CarCustomSetTag(&look->custom, tag);
 }
 
-static void ClearPaint(void) { memset(s_paint, -1, sizeof(s_paint)); }
-static void ClearPending(void) { memset(s_pending, 0, sizeof(s_pending)); }
+static void ClearNextLooks(void) {
+    memset(s_nextLooks, 0, sizeof(s_nextLooks));
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) s_nextLooks[seat].paint[0] = s_nextLooks[seat].paint[1] = -1;
+}
 
 /* The catalogue for a colour picker: how many colours, and one's RGB. */
 EMSCRIPTEN_KEEPALIVE int rw_paint_count(void) { return RAGE_CAR_PAINT_COLOR_COUNT; }
@@ -260,8 +263,7 @@ static void ReleaseRace(void) {
 
 EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
     ReleaseRace();
-    ClearPaint();
-    ClearPending();
+    ClearNextLooks();
     FreeRaceData(s_archive);
     s_archive = LoadRaceDisc(path);
     return s_archive != NULL;
@@ -272,19 +274,16 @@ EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
 static int PrepareRace(int classIndex, int course, int reverse, int laps, int rivals,
                        const WebSeat *humans, int humanCount, int localSeat) {
     RaceSetup setup;
-    int paint[DRIVER_SEAT_LIMIT][2];
-    /* The paint set for this race is used up whether or not it starts. */
-    memcpy(paint, s_paint, sizeof(paint));
-    ClearPaint();
+    SeatLook looks[DRIVER_SEAT_LIMIT];
+    /* The looks set for this race are used up whether or not it starts. */
+    memcpy(looks, s_nextLooks, sizeof(looks));
+    ClearNextLooks();
     s_showroom.valid = 0;
     if (!s_archive || laps < 1 || laps > WEB_MAX_LAPS || localSeat < -1 ||
-        localSeat >= humanCount) {
-        ClearPending();
-        return 0;
-    }
+        localSeat >= humanCount) return 0;
     ReleaseRace();
-    memcpy(s_custom, s_pending, sizeof(s_custom)); /* the old race no longer reads them */
-    ClearPending();
+    /* The old race no longer reads its logos and names. */
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) s_custom[seat] = looks[seat].custom;
     memset(&setup, 0, sizeof(setup));
     setup.classIndex = classIndex;
     setup.courseIndex = course;
@@ -295,10 +294,10 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     for (int seat = 0; seat < humanCount; ++seat) {
         setup.looks[seat].variant = humans[seat].variant;
         setup.looks[seat].custom = &s_custom[seat];
-        if (paint[seat][0] >= 0) {
+        if (looks[seat].paint[0] >= 0) {
             setup.looks[seat].hasPaint = 1;
-            setup.looks[seat].paint.paintColor1 = (u8)paint[seat][0];
-            setup.looks[seat].paint.paintColor2 = (u8)paint[seat][1];
+            setup.looks[seat].paint.paintColor1 = (u8)looks[seat].paint[0];
+            setup.looks[seat].paint.paintColor2 = (u8)looks[seat].paint[1];
         }
     }
     s_race = LoadClientRace(s_archive, &setup, NULL);
@@ -1538,7 +1537,7 @@ static void FindShowroomCentre(void) {
     s_showroom.valid = 1;
 }
 
-/* The preview's logo (see rw_set_logo) and team name, changed live. */
+/* The preview's logo (see ReadLogo) and team name, changed live. */
 EMSCRIPTEN_KEEPALIVE void rw_set_showroom_logo(const uint8_t *data) { ReadLogo(&s_custom[0], data); }
 EMSCRIPTEN_KEEPALIVE void rw_set_showroom_tag(const char *text) { CarCustomSetTag(&s_custom[0], text); }
 

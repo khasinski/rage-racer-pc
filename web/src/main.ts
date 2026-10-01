@@ -8,7 +8,7 @@ import {
   forgetDisc, pickDiscFiles, pickDiscFolder, rememberedDisc, rememberDisc, requestDiscPermission,
 } from './disc-access';
 import { chooseDataTrack } from './disc';
-import { enterGarage, loadGarage, paintOf, useOwnLook } from './garage';
+import { enterGarage, loadGarage, ownLook } from './garage';
 import { disconnect, enterLobby, send } from './online';
 import { beginRace, practiceRace, raceSettings, runRaceLoop } from './race';
 import { $, editSettings, fillPractice, readPractice } from './views';
@@ -250,8 +250,7 @@ setup.addEventListener('submit', async (event) => {
   const options = readPractice(setup);
   $('setup-status').textContent = 'Preparing the course and cars…';
   await new Promise(requestAnimationFrame);
-  rage.setPaint(0, paintOf(rage, options.car));
-  useOwnLook(rage, 0);
+  rage.setLook(0, ownLook(rage, options.car));
   if (!rage.startRace(options)) {
     $('setup-status').textContent = 'This course could not be prepared from the disc.';
     return;

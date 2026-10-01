@@ -6,6 +6,14 @@ import type { PadSample } from './input';
 
 const CLASS_COUNT = 6;
 
+/** How a player's car looks (presentation only): paint (null for the factory
+ *  colours), team logo (LOGO_BYTES, or null) and the name on the windscreen. */
+export interface SeatLook {
+  paint: Paint | null;
+  logo: Uint8Array | null;
+  name: string;
+}
+
 interface FsStream { readonly fd: number }
 interface EmscriptenFs {
   mkdir(path: string): void;
@@ -266,19 +274,11 @@ export class Rage {
     return `rgb(${r} ${g} ${b})`;
   }
 
-  /** The paint a human seat races in, from the next race prepared on; null
-   *  keeps the car's factory colours. */
-  setPaint(seat: number, paint: Paint | null): void {
-    this.call('rw_set_paint', ['number', 'number', 'number'], [seat, paint?.[0] ?? -1, paint?.[1] ?? -1]);
-  }
-
-  /** A human seat's team logo (LOGO_BYTES) and name for the next race prepared. */
-  setLogo(seat: number, logo: Uint8Array | null): void {
-    this.withBytes(logo, (pointer) => this.call('rw_set_logo', ['number', 'number'], [seat, pointer]));
-  }
-
-  setTag(seat: number, text: string): void {
-    this.m.ccall('rw_set_tag', null, ['number', 'string'], [seat, text]);
+  /** How a human seat's car looks in the next race prepared. */
+  setLook(seat: number, look: SeatLook): void {
+    this.withBytes(look.logo, (logo) => this.m.ccall('rw_set_look', null,
+      ['number', 'number', 'number', 'number', 'string'],
+      [seat, look.paint?.[0] ?? -1, look.paint?.[1] ?? -1, logo, look.name]));
   }
 
   setShowroomLogo(logo: Uint8Array | null): void {
