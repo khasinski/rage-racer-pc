@@ -50,6 +50,7 @@ export interface RoomPlayer {
   name: string;
   variant: number; // -1 until chosen
   manual: boolean;
+  tire: number; // retail compound 0..4 (the launch-threshold index); 0 outside a duel
   ready: boolean;
   host: boolean;
   spectator: boolean; // watches instead of racing
@@ -65,7 +66,18 @@ export interface RoomSummary {
   spectators: number;
 }
 
-export interface RoomState extends RoomSummary { members: RoomPlayer[] }
+/** A one-on-one duel. The server rolled one car and both drivers keep that
+ *  variant. `manual` is the gearbox they both start on: automatic when the
+ *  car has it, otherwise manual. Each driver then picks a gearbox and tires. */
+export interface DuelSetup { variant: number; manual: boolean; token: string }
+
+/** Retail customize stores five tire compounds. They are the launch thresholds. */
+export const TIRE_COMPOUND_COUNT = 5;
+
+export interface RoomState extends RoomSummary {
+  members: RoomPlayer[];
+  duel: DuelSetup | null;
+}
 
 /** Two colours from the game's paint catalogue (PAINT_COLORS entries): the
  *  first and second body colour. Presentation only; the race never sees it. */
@@ -92,6 +104,7 @@ export type Garage = Record<number, Paint>;
 // userId null: a rival. paint null: the factory colours.
 export interface RaceSeat {
   userId: number | null; name: string; variant: number; manual: boolean;
+  tire: number; // 0..4; rivals and rooms without a picker stay on 0
   paint: Paint | null;
   logo: string | null; // base64 of LOGO_BYTES, or null for none
 }
@@ -130,10 +143,12 @@ export interface HistoryRow {
 
 export type ClientMessage =
   | { t: 'createRoom'; settings: RoomSettings }
+  | { t: 'createDuel' }
   | { t: 'updateRoom'; settings: RoomSettings }
   | { t: 'joinRoom'; roomId: number }
+  | { t: 'joinDuel'; token: string }
   | { t: 'leaveRoom' }
-  | { t: 'setCar'; variant: number; manual: boolean }
+  | { t: 'setCar'; variant: number; manual: boolean; tire?: number }
   | { t: 'setReady'; ready: boolean }
   | { t: 'setSpectator'; spectator: boolean }
   | { t: 'watchRace' }

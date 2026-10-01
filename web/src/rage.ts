@@ -324,10 +324,14 @@ export class Rage {
   // ---- networked race -----------------------------------------------------
   /** Prepares the race the server announced; humans in seat order. */
   startNetRace(o: { classIndex: number; course: number; reverse: boolean; laps: number; rivals: boolean },
-               humans: { variant: number; manual: boolean }[], localSeat: number): boolean {
-    const seats = this.m._malloc(humans.length * 8);
-    const words = new Int32Array(this.m.HEAPU8.buffer, seats, humans.length * 2);
-    humans.forEach((h, seat) => { words[seat * 2] = h.variant; words[seat * 2 + 1] = +h.manual; });
+               humans: { variant: number; manual: boolean; tire?: number }[], localSeat: number): boolean {
+    const seats = this.m._malloc(humans.length * 12);
+    const words = new Int32Array(this.m.HEAPU8.buffer, seats, humans.length * 3);
+    humans.forEach((h, seat) => {
+      words[seat * 3] = h.variant;
+      words[seat * 3 + 1] = +h.manual;
+      words[seat * 3 + 2] = h.tire ?? 0;
+    });
     const ok = this.num('rw_start_net_race', [o.classIndex, o.course, +o.reverse, o.laps, +o.rivals,
                                                 humans.length, seats, localSeat]) === 1;
     this.m._free(seats);
@@ -363,7 +367,7 @@ export class Rage {
   viewSeat(): number { return this.num('rw_view_seat', []); }
   /** Follows another car; false when the seat is empty. */
   setViewSeat(seat: number): boolean { return this.num('rw_set_view_seat', [seat]) === 1; }
-  /** Whether a seat's car has left the picture (retired, or finished and faded out). */
+  /** Whether a seat's car has left the picture (retired, or finished and removed). */
   seatGone(seat: number): boolean { return this.num('rw_seat_gone', [seat]) === 1; }
 
   // ---- network diagnostics (scripts/net-check.mjs) -------------------------

@@ -61,9 +61,11 @@ export async function launchBrowser() {
 }
 
 /** Opens the app in a new browser context, logs in (as a guest without a
- *  name) and chooses the disc files; resolves on the lobby. Page errors (and
+ *  name) and chooses the disc files; resolves when `ready` is visible (the
+ *  lobby, unless a duel link has already opened its room). Page errors (and
  *  console errors with `consoleErrors`) go to `onError`. */
-export async function openPlayer(browser, { base, name, password, discFiles, onError, consoleErrors = false, init, query = '' }) {
+export async function openPlayer(browser, { base, name, password, discFiles, onError, consoleErrors = false, init, query = '',
+  ready = '#lobby:not([hidden])' }) {
   const context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await context.newPage();
   const who = name ?? 'guest';
@@ -80,6 +82,6 @@ export async function openPlayer(browser, { base, name, password, discFiles, onE
   }
   await page.waitForSelector('#disc:not([hidden])');
   await page.setInputFiles('#disc-input', discFiles);
-  await page.waitForSelector('#lobby:not([hidden])', { timeout: 180_000 });
+  await page.waitForSelector(ready, { timeout: 180_000 });
   return page;
 }

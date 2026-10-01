@@ -33,9 +33,10 @@ int WebCourseAllowed(int classIndex, int course);
 typedef struct WebSeat {
     int variant; /* car variant */
     int manual;  /* transmission */
+    int tire;    /* retail compound 0..4: the launch-threshold index. 0 where nobody picked. */
 } WebSeat;
-/* Reads humanCount (variant, manual) word pairs, in seat order. Returns 0
- * for an impossible count. */
+/* Reads humanCount (variant, manual, tire) word triples, in seat order.
+ * Returns 0 for an impossible count or a tire outside 0..4. */
 int WebReadSeats(const int32_t *words, int humanCount, WebSeat humans[DRIVER_SEAT_LIMIT]);
 
 /* Builds the field: humans in seats 0..humanCount-1 on the players' grid

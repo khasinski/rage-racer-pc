@@ -17,15 +17,19 @@ if (!m.ccall('rs_load_disc', 'number', ['string'], [`/disc/${basename(disc)}`]))
 
 const PLAYERS = 8;
 const failures = [];
-const seats = m._malloc(PLAYERS * 8);
+const seats = m._malloc(PLAYERS * 12);
 let races = 0;
 for (let classIndex = 0; classIndex < 6; classIndex++) {
   const variant = call('rw_class_car', [classIndex, 3]); // Esperanza, offered in every class
   for (let course = 0; course < 4; course++) {
     if (!call('rw_course_allowed', [classIndex, course])) continue;
     for (const reverse of [0, 1]) {
-      const words = new Int32Array(m.HEAPU8.buffer, seats, PLAYERS * 2);
-      for (let seat = 0; seat < PLAYERS; seat++) { words[seat * 2] = variant; words[seat * 2 + 1] = 1; }
+      const words = new Int32Array(m.HEAPU8.buffer, seats, PLAYERS * 3);
+      for (let seat = 0; seat < PLAYERS; seat++) {
+        words[seat * 3] = variant;
+        words[seat * 3 + 1] = 1;
+        words[seat * 3 + 2] = 0;
+      }
       const race = call('rs_create_race', [classIndex, course, reverse, 3, 1, PLAYERS, seats]);
       const where = `class ${classIndex + 1} course ${course} ${reverse ? 'reverse' : 'forward'}`;
       if (!race) { failures.push(`${where}: no race`); continue; }

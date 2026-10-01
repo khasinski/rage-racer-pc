@@ -53,7 +53,8 @@ label.check { display: flex; align-items: center; gap: 8px; color: var(--text); 
 #disc { border: 2px dashed var(--line); text-align: center; width: min(560px, calc(100% - 32px)); padding: 36px; }
 #disc[data-drag="on"] { border-color: var(--accent); }
 #disc[data-state="error"] .status { color: var(--error); }
-#disc .button { margin-top: 14px; }
+#disc .disc-actions { justify-content: center; margin-top: 16px; }
+#disc .status { margin: 14px 0 0; }
 
 .page { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: auto; }
 .bar {
@@ -68,7 +69,7 @@ label.check { display: flex; align-items: center; gap: 8px; color: var(--text); 
   align-items: start; width: min(1180px, 100%); margin: 0 auto;
 }
 @media (max-width: 820px) { .columns { grid-template-columns: 1fr; padding: 12px 16px; } }
-.title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
 .title-row h2 { margin: 0; }
 
 .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -86,6 +87,8 @@ label.check { display: flex; align-items: center; gap: 8px; color: var(--text); 
 .table tr.me td { color: var(--accent); font-weight: 700; }
 
 .car-picker { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin: 16px 0 12px; }
+#duel-invite { display: grid; gap: 8px; margin: 12px 0; }
+#duel-link { flex: 1; min-width: 0; }
 
 .chat { display: flex; flex-direction: column; height: min(520px, calc(100vh - 140px)); }
 #chat-log { list-style: none; margin: 0 0 10px; padding: 0; flex: 1; overflow-y: auto; font-size: 14px; display: grid; align-content: start; gap: 5px; }

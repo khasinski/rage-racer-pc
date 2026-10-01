@@ -88,7 +88,7 @@ int InitRaceSim(RaceSim *race, const TrackRoute *route,
 int AddRaceDriver(RaceSim *race, s32 slot, const GameCarSpec *spec,
                     const DriverHull *hull, const CarHullPoint *roadCorners, const LaunchSpeedThreshold *threshold,
                     const TrackRivalStart *position, s32 walkStart, s16 manual,
-                    s16 modelIndex, u32 seed);
+                    s16 modelIndex, u32 seed, s32 launchThresholdIndex);
 /* AI uses an authored behavior slot and the configuration for its logical model.
  * rivalCorners is the AI/AI hull, separate from hull's human/AI silhouette. Inactive
  * grid entries and duplicate AI slots are rejected before modifying the race. */

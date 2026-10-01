@@ -11,6 +11,9 @@ typedef struct RaceEntrant {
     s32 model;      /* Human retail variant, or logical AI model. */
     s32 rivalSlot;  /* Authored AI behavior slot. */
     s16 manual;
+    /* Retail tire compound, 0..4. The showroom stores it in the same word as
+     * the launch-threshold index, and that is what the simulation reads. */
+    s32 tire;
     u32 seed;
     /* Web port: a human may start from an explicit place instead of the
      * authored start at grid (hasStart set; activeFlag 0, as the player). */

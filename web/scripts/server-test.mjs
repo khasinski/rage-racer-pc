@@ -1,7 +1,7 @@
 // Protocol and race-management checks for the multiplayer server, without a
 // browser:  node scripts/server-test.mjs <Track 01 BIN or CUE>
 // Starts the server on a scratch database and checks accounts, room and car
-// rules, host hand-over, chat, and a complete race run by the server to the
+// rules, host hand-over, chat, duels, and a complete race run by the server to the
 // finish (rivals finish, players who do not are closed out), with events,
 // results and their storage; then short races for leaving before the start,
 // reconnecting before it and the load timeout, and the offline grace period.
@@ -278,6 +278,111 @@ try {
   check(await until(() => newbie.errors().some((e) => e.includes('Only the host'))), 'others cannot close a room');
   admin.send({ t: 'closeRoom', roomId: room.id });
   check(await until(() => rage.last('room')?.room === null && rage.last('rooms')?.rooms.length === 0), 'an admin can close any room');
+
+  // A duel rolls one car and one course. The link is the only way in, and both
+  // drivers keep that car.
+  const duelMark = admin.mark();
+  admin.send({ t: 'createDuel' });
+  check(await until(() => admin.since(duelMark, 'room').some((m) => m.room?.duel?.token)), 'a duel comes with an invite link');
+  const duel = admin.last('room').room;
+  check(duel.settings.maxPlayers === 2 && duel.settings.rivals === false && duel.settings.laps === 3
+        && duel.members.length === 1 && duel.members[0].variant === duel.duel.variant
+        && duel.members[0].manual === duel.duel.manual && duel.members[0].tire === 0
+        && duel.members[0].ready === false,
+        'the host is put in the rolled car, for two drivers and three laps');
+  check((admin.last('rooms')?.rooms ?? []).every((r) => r.id !== duel.id), 'a duel stays off the public room list');
+  const alone = admin.mark();
+  admin.send({ t: 'startRace' });
+  check(await until(() => admin.since(alone, 'error').some((m) => m.message.includes('both drivers'))),
+        'a duel waits for the second driver');
+  const refused = rage.mark();
+  rage.send({ t: 'joinRoom', roomId: duel.id });
+  rage.send({ t: 'joinDuel', token: 'nope' });
+  check(await until(() => {
+    const errors = rage.since(refused, 'error').map((m) => m.message);
+    return errors.some((e) => e.includes('joined with its link')) && errors.some((e) => e.includes('over'));
+  }), 'a duel is refused from the room list and from an unknown link');
+  rage.send({ t: 'joinDuel', token: duel.duel.token });
+  check(await until(() => {
+    const members = rage.last('room')?.room?.members ?? [];
+    return members.length === 2 && members.every((m) => m.variant === duel.duel.variant
+      && m.manual === duel.duel.manual && m.tire === 0 && m.ready === false);
+  }), 'the opponent gets the same car and the same starting gearbox');
+  const locked = rage.mark();
+  rage.send({ t: 'setCar', variant: duel.duel.variant === 0 ? 1 : 0, manual: duel.duel.manual, tire: 0 });
+  admin.send({ t: 'updateRoom', settings: { ...duel.settings, laps: 1 } });
+  check(await until(() => rage.since(locked, 'error').some((m) => m.message.includes('same car'))),
+        'neither driver can change the duel car');
+  check(await until(() => admin.since(locked, 'error').some((m) => m.message.includes('keeps the car'))),
+        'a duel keeps its course');
+  // A manual-only car rejects automatic. Either way the guest can take manual and a tire.
+  const setup = rage.mark();
+  if (duel.duel.manual) {
+    rage.send({ t: 'setCar', variant: duel.duel.variant, manual: false, tire: 4 });
+    check(await until(() => rage.since(setup, 'error').some((m) => m.message.includes('not available'))),
+          'a manual-only duel car stays manual');
+  }
+  rage.send({ t: 'setReady', ready: true });
+  check(await until(() => rage.last('room')?.room?.members.find((m) => m.name === 'rage')?.ready === true),
+        'a driver can ready before changing the setup');
+  rage.send({ t: 'setCar', variant: duel.duel.variant, manual: true, tire: 4 });
+  check(await until(() => {
+    const me = rage.last('room')?.room?.members.find((m) => m.name === 'rage');
+    return me?.tire === 4 && me.manual === true && me.ready === false;
+  }), 'a gearbox or tire change is kept and clears ready');
+  const badTire = rage.mark();
+  rage.send({ t: 'setCar', variant: duel.duel.variant, manual: true, tire: 5 });
+  check(await until(() => rage.since(badTire, 'error').some((m) => m.message.includes('not available'))),
+        'a tire outside the five compounds is refused');
+  check(rage.last('room')?.room?.members.find((m) => m.name === 'rage')?.tire === 4, 'a refused tire leaves the previous one');
+  admin.send({ t: 'setCar', variant: duel.duel.variant, manual: duel.duel.manual, tire: 2 });
+  check(await until(() => admin.last('room')?.room?.members.find((m) => m.name === 'admin')?.tire === 2),
+        'the host picks tires too');
+  const third = newbie.mark();
+  newbie.send({ t: 'joinDuel', token: duel.duel.token });
+  check(await until(() => newbie.since(third, 'error').some((m) => m.message.includes('two drivers'))),
+        'a third driver cannot take the link');
+  rage.send({ t: 'setReady', ready: true });
+  check(await until(() => {
+    const members = admin.last('room')?.room?.members ?? [];
+    return members.find((m) => m.name === 'rage')?.ready === true && members.find((m) => m.name === 'admin')?.ready === false;
+  }), 'one driver ready leaves the host to confirm');
+  const early = admin.mark();
+  admin.send({ t: 'startRace' });
+  check(await until(() => admin.since(early, 'error').some((m) => m.message.includes('Waiting for'))),
+        'the duel waits until both drivers are ready');
+  admin.send({ t: 'setReady', ready: true });
+  check(await until(() => (admin.last('room')?.room?.members ?? []).every((m) => m.ready)),
+        'both drivers confirm ready');
+  const started = admin.mark();
+  admin.send({ t: 'startRace' });
+  check(await until(() => {
+    const start = admin.since(started, 'raceStart').at(-1);
+    const byName = (name) => start?.seats.find((seat) => seat.name === name);
+    const guest = byName('rage');
+    const host = byName('admin');
+    return start && start.humans === 2 && start.seats.length === 2
+      && guest?.variant === duel.duel.variant && host?.variant === duel.duel.variant
+      && guest?.manual === true && guest?.tire === 4
+      && host?.manual === duel.duel.manual && host?.tire === 2;
+  }), 'the duel starts in the shared car with each driver\'s gearbox and tires');
+  admin.send({ t: 'closeRoom', roomId: duel.id });
+  check(await until(() => admin.last('room')?.room === null && rage.last('room')?.room === null),
+        'closing the duel drops both drivers');
+
+  const rolled = [];
+  for (let i = 0; i < 8; i++) {
+    const mark = newbie.mark();
+    newbie.send({ t: 'createDuel' });
+    const made = await until(() => newbie.since(mark, 'room').some((m) => m.room?.duel));
+    const room = newbie.last('room')?.room;
+    if (made && room?.duel) {
+      rolled.push(`${room.settings.classIndex}:${room.settings.course}:${Number(room.settings.reverse)}:${room.duel.variant}:${Number(room.duel.manual)}`);
+      newbie.send({ t: 'closeRoom', roomId: room.id });
+      await until(() => newbie.last('room')?.room === null);
+    }
+  }
+  check(new Set(rolled).size >= 2, `duels roll different cars and courses (${rolled.join(' | ')})`);
 
   // A player offline past the grace period loses their place.
   admin.send({ t: 'createRoom', settings: { ...settings, course: 0, classIndex: 2, name: 'Grace' } });

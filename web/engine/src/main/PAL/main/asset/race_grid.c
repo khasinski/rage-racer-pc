@@ -1,5 +1,9 @@
 #include "game/race_grid.h"
 
+/* The customize screen's five tire positions are the five launch thresholds. */
+_Static_assert(CAR_TIRE_COMPOUND_COUNT == CAR_LAUNCH_THRESHOLD_COUNT,
+               "a tire compound is a launch-threshold index");
+
 int InitRaceGrid(RaceSim *race, const RaceData *archive, const TrackData *track,
                   const RaceEntrant entrants[DRIVER_SEAT_LIMIT],
                   const RageCarCatalog *catalog, s32 laps, int reverse) {
@@ -20,6 +24,7 @@ int InitRaceGrid(RaceSim *race, const RaceData *archive, const TrackData *track,
         const TrackRivalStart *position = entrant->kind == RACE_SEAT_HUMAN && entrant->hasStart
             ? &entrant->start : &track->events->rivalStarts[reverse][entrant->grid];
         if (entrant->kind == RACE_SEAT_HUMAN) {
+            if (entrant->tire < 0 || entrant->tire >= CAR_LAUNCH_THRESHOLD_COUNT) return 0;
             GameCarSpec spec;
             if (!ReadRaceCar(archive, entrant->model, &spec)) return 0;
             if (catalog) {
@@ -33,7 +38,7 @@ int InitRaceGrid(RaceSim *race, const RaceData *archive, const TrackData *track,
             }
             if (!AddRaceDriver(&candidate, seat, &spec, &hull, g_CarCornerOffsets,
                                &launch, position, track->events->trackWalkStart,
-                               entrant->manual, 0x17, entrant->seed)) return 0;
+                               entrant->manual, 0x17, entrant->seed, entrant->tire)) return 0;
             candidate.drivers[seat].variant = entrant->model;
         } else if (entrant->kind == RACE_SEAT_AI) {
             if ((u32)entrant->model >= RACE_CAR_SLOT_COUNT ||

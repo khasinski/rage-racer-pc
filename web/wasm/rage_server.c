@@ -42,7 +42,7 @@ static ServerRace *Race(int handle) {
     return handle > 0 && handle <= SERVER_RACE_LIMIT ? s_races[handle] : NULL;
 }
 
-/* humanSeats holds (variant, manual) per human in seat order. Returns a
+/* humanSeats holds (variant, manual, tire) per human in seat order. Returns a
  * handle, or 0 when the room's settings or cars are not a valid field. */
 EMSCRIPTEN_KEEPALIVE int rs_create_race(int classIndex, int course, int reverse, int laps,
                                         int rivals, int humanCount, const int32_t *humanSeats) {
@@ -157,6 +157,13 @@ EMSCRIPTEN_KEEPALIVE int rs_seat_progress(int handle, int seat) {
     const PlayerCarRuntime *car = &race->sim.drivers[seat].car;
     return (int)((uint32_t)car->progressA + (uint32_t)car->progressB);
 }
+/* Retail tire compound of a human seat: the launch-threshold index, or -1. */
+EMSCRIPTEN_KEEPALIVE int rs_seat_launch(int handle, int seat) {
+    ServerRace *race = Race(handle);
+    if (!race || seat < 0 || seat >= DRIVER_SEAT_LIMIT || race->sim.drivers[seat].status == SIM_EMPTY) return -1;
+    return race->sim.drivers[seat].car.drive.launchThresholdIndex;
+}
+
 /* World position of a seat's car (x, z), for checks of the starting grid. */
 EMSCRIPTEN_KEEPALIVE int rs_seat_x(int handle, int seat) {
     ServerRace *race = Race(handle);

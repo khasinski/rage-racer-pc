@@ -2,7 +2,7 @@
 //   node scripts/finish-check.mjs <Track 01 BIN> [out dir]
 // Two players hold the throttle and a guest joins the running race as a
 // spectator. The guest follows the leading rival over the line: the car
-// drives on and fades out, then the camera hands over to the nearest
+// stays on the road, brakes, and disappears, then the camera hands over to the nearest
 // player, and everyone sees the time left to finish (bottom left).
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -46,7 +46,7 @@ try {
   }
   await guest.waitForTimeout(2000);
   await guest.screenshot({ path: join(out, 'f3-handed-over.png') });
-  check(await guest.evaluate((seat) => window.__race.rage.seatGone(seat), leader), 'the finished car has faded out');
+  check(await guest.evaluate((seat) => window.__race.rage.seatGone(seat), leader), 'the finished car has left the picture');
   check(/^Watching (admin|rage)/.test(await guest.textContent('#spectating')), 'the camera hands over to the nearest player');
   check(/^Race closes in \d+:\d\d$/.test(await guest.textContent('#deadline')), 'the spectator sees the time left to finish');
   await admin.screenshot({ path: join(out, 'f4-admin-deadline.png') });

@@ -18,7 +18,7 @@ export const STATUS_DRIVING = 1;
 export const STATUS_FINISHED = 2;
 export const STATUS_RETIRED = 3;
 
-interface CarChoice { variant: number; manual: boolean }
+interface CarChoice { variant: number; manual: boolean; tire?: number }
 interface SeatState { status: number; place: number; timeMs: number; bestLapMs: number; lap: number }
 
 export class Simulation {
@@ -67,9 +67,21 @@ export class Simulation {
   /** Builds a race; returns its handle, or 0 when the field is invalid. */
   createRace(classIndex: number, course: number, reverse: boolean, laps: number, rivals: boolean,
              cars: CarChoice[]): number {
-    const words = new Int32Array(this.m.HEAPU8.buffer, this.scratch, cars.length * 2);
-    cars.forEach((car, seat) => { words[seat * 2] = car.variant; words[seat * 2 + 1] = +car.manual; });
-    return this.num('rs_create_race', [classIndex, course, +reverse, laps, +rivals, cars.length, this.scratch]);
+    const words = new Int32Array(this.m.HEAPU8.buffer, this.scratch, cars.length * 3);
+    cars.forEach((car, seat) => {
+      words[seat * 3] = car.variant;
+      words[seat * 3 + 1] = +car.manual;
+      words[seat * 3 + 2] = car.tire ?? 0;
+    });
+    const handle = this.num('rs_create_race', [classIndex, course, +reverse, laps, +rivals, cars.length, this.scratch]);
+    if (!handle) return 0;
+    for (let seat = 0; seat < cars.length; seat++) {
+      if (this.num('rs_seat_launch', [handle, seat]) !== (cars[seat].tire ?? 0)) {
+        this.free(handle);
+        return 0;
+      }
+    }
+    return handle;
   }
 
   start(race: number): boolean { return this.num('rs_start', [race]) === 1; }

@@ -22,8 +22,12 @@
   <section id="disc" class="panel narrow" aria-live="polite" hidden>
     <h1>RAGE RACER</h1>
     <p class="lead">Drop your Rage Racer disc image here</p>
-    <p class="hint">A CUE file together with its BIN files, the Track 01 BIN on its own, or the whole disc folder.</p>
-    <label class="button" for="disc-input">Browse…</label>
+    <p class="hint">A CUE file together with its BIN files, the Track 01 BIN on its own, or the whole disc folder. Where the browser can remember a file permission, the same disc opens from your disk next visit.</p>
+    <div class="row disc-actions">
+      <button type="button" id="disc-again" hidden>Use the disc from last time</button>
+      <button type="button" id="disc-browse">Browse…</button>
+      <button type="button" id="disc-folder" class="secondary" hidden>Disc folder…</button>
+    </div>
     <input id="disc-input" type="file" accept=".cue,.bin,.img" multiple hidden>
     <p id="disc-status" class="status"></p>
   </section>
@@ -41,7 +45,10 @@
       <section class="panel">
         <div class="title-row">
           <h2>Rooms</h2>
-          <button type="button" data-action="create-room">Create room</button>
+          <div class="row">
+            <button type="button" data-action="create-duel">Duel</button>
+            <button type="button" data-action="create-room">Create room</button>
+          </div>
         </div>
         <ul id="room-list" class="list"></ul>
         <p id="lobby-status" class="status"></p>
@@ -69,10 +76,26 @@
         <h2>Grid</h2>
         <table id="room-players" class="table"></table>
         <p id="room-fill" class="hint"></p>
+        <div id="duel-invite" hidden>
+          <p id="duel-car" class="hint"></p>
+          <div class="row">
+            <input id="duel-link" readonly aria-label="Link for the other driver">
+            <button type="button" id="duel-copy" class="secondary">Copy link</button>
+          </div>
+        </div>
         <div class="car-picker" id="car-picker">
-          <label>Your car <select id="car-model"></select></label>
+          <label id="car-model-field">Your car <select id="car-model"></select></label>
           <label>Transmission
             <select id="car-transmission"><option value="auto">Automatic</option><option value="manual">Manual</option></select>
+          </label>
+          <label id="car-tires-field" hidden>Tires
+            <select id="car-tires">
+              <option value="0">1</option>
+              <option value="1">2</option>
+              <option value="2">3</option>
+              <option value="3">4</option>
+              <option value="4">5</option>
+            </select>
           </label>
         </div>
         <div class="row">

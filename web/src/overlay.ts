@@ -44,7 +44,7 @@ function racingSeats(rage: Rage, race: RaceState, playersFirst: boolean): { seat
   return seats.sort((a, b) => (playersFirst ? Number(b.player) - Number(a.player) : 0) || a.place - b.place);
 }
 
-/** Once your car has finished and faded out (or retired, or you only
+/** Once your car has finished and left the picture (or retired, or you only
  *  watch), the camera follows the player nearest to you in the race; with
  *  no player left, the nearest rival. A followed car that leaves the
  *  picture hands over the same way. */

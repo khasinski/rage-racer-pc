@@ -190,8 +190,11 @@ static int GridOrder(const TrackData *track, int classIndex, int reverse, s32 gr
 
 int WebReadSeats(const int32_t *words, int humanCount, WebSeat humans[DRIVER_SEAT_LIMIT]) {
     if (!words || humanCount < 1 || humanCount > DRIVER_SEAT_LIMIT) return 0;
-    for (int seat = 0; seat < humanCount; ++seat)
-        humans[seat] = (WebSeat){words[seat * 2], words[seat * 2 + 1]};
+    for (int seat = 0; seat < humanCount; ++seat) {
+        const int tire = words[seat * 3 + 2];
+        if (tire < 0 || tire >= CAR_LAUNCH_THRESHOLD_COUNT) return 0;
+        humans[seat] = (WebSeat){words[seat * 3], words[seat * 3 + 1], tire};
+    }
     return 1;
 }
 
@@ -212,6 +215,7 @@ int WebBuildField(const RaceData *archive, int classIndex, int course, int rever
         const WebSeat *human = &humans[seat];
         int automatic = 0;
         if (!WebCarAllowed(classIndex, human->variant) ||
+            human->tire < 0 || human->tire >= CAR_LAUNCH_THRESHOLD_COUNT ||
             (!human->manual && (!ReadRaceCarTransmission(archive, human->variant, &automatic) ||
                                 !automatic))) return 0;
     }
@@ -237,7 +241,8 @@ int WebBuildField(const RaceData *archive, int classIndex, int course, int rever
             usedGrid |= 1u << grid;
         }
         field[seat] = (RaceEntrant){.kind = RACE_SEAT_HUMAN, .grid = grid, .model = humans[seat].variant,
-                                    .manual = humans[seat].manual ? 1 : 0, .seed = 0x5eedu + (u32)seat};
+                                    .manual = humans[seat].manual ? 1 : 0, .tire = humans[seat].tire,
+                                    .seed = 0x5eedu + (u32)seat};
         /* Alone, the player keeps the retail start; together, the grid. */
         if (humanCount > 1) {
             field[seat].hasStart = 1;

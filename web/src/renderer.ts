@@ -384,7 +384,7 @@ export class Renderer {
       if (!entry) continue;
       const set = spans[f + SPAN.assetSet];
       const vehicle = set === ASSET_MODEL_BANK || set === ASSET_TRACK_MODEL_BANK_1;
-      // A car fading out past the finish is drawn blended and casts no shadow.
+      // A span below full alpha is drawn blended and casts no shadow.
       const fading = spans[f + SPAN.alpha] < 255;
       const phase = entry.transparent || fading ? 3 : spans[f + SPAN.depthDecal] ? 1 : vehicle ? 2 : 0;
       (span >= mainSpans ? mirrorPhases : phases)[phase].push({

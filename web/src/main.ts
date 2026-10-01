@@ -3,7 +3,11 @@
 import './style.css';
 import { app, ragePromise, session, setHint, show } from './app';
 import { RaceAudio } from './audio';
-import { chooseDataTrack, droppedFiles } from './disc';
+import {
+  canPickDirectory, canPickFiles, DiscGone, discLabel, discPermission, droppedDisc, filesFromHandles,
+  forgetDisc, pickDiscFiles, pickDiscFolder, rememberedDisc, rememberDisc, requestDiscPermission,
+} from './disc-access';
+import { chooseDataTrack } from './disc';
 import { enterGarage, loadGarage, paintOf, useOwnLook } from './garage';
 import { disconnect, enterLobby, send } from './online';
 import { beginRace, practiceRace, raceSettings, runRaceLoop } from './race';
@@ -36,55 +40,181 @@ function afterLogin() {
   $('lobby').querySelector('.who')!.textContent = `${session.user!.name}${session.user!.admin ? ' (admin)' : ''}`;
   void loadGarage();
   if (app.discLoaded) enterLobby();
-  else show('disc');
+  else {
+    show('disc');
+    void offerRememberedDisc();
+  }
 }
 
 // ---- disc -------------------------------------------------------------------
 
-async function useFiles(files: File[]) {
-  const disc = $('disc');
-  const choice = await chooseDataTrack(files);
-  if ('error' in choice) {
-    discStatus.textContent = choice.error;
-    disc.dataset.state = 'error';
-    return;
-  }
-  disc.dataset.state = 'busy';
-  discStatus.textContent = `Reading ${choice.file.name}…`;
-  const rage = await ragePromise;
-  const ok = await rage.loadDisc(choice.file, (fraction) => {
-    discStatus.textContent = `Reading ${choice.file.name}… ${Math.round(fraction * 100)}%`;
-  });
-  if (!ok) {
-    disc.dataset.state = 'error';
-    discStatus.textContent = `${choice.file.name} is not a Rage Racer disc image this build can read.`;
-    return;
-  }
-  if (session.discId && rage.discId() !== session.discId) {
-    disc.dataset.state = 'error';
-    discStatus.textContent = `This disc (${rage.discId()}) differs from the server's (${session.discId}). ` +
-      'Online races need the same release; practice still works offline.';
-  } else {
-    disc.dataset.state = '';
-  }
-  app.discLoaded = true;
-  void app.audio?.useDisc(files);
-  app.automaticCars = rage.carAutomatic();
-  fillPractice(rage, setup, app.automaticCars);
-  if (disc.dataset.state === 'error') {
-    setTimeout(() => show('setup'), 2500);
-    return;
-  }
-  enterLobby();
+const disc = $('disc');
+const again = $<HTMLButtonElement>('disc-again');
+const browse = $<HTMLButtonElement>('disc-browse');
+const folder = $<HTMLButtonElement>('disc-folder');
+/** Loads run one at a time. A newer choice supersedes one already queued. */
+let discTail = Promise.resolve();
+let discTicket = 0;
+
+function setDiscBusy(busy: boolean) {
+  again.disabled = busy;
+  browse.disabled = busy;
+  folder.disabled = busy;
 }
 
+function showRemembered(label: string) {
+  again.hidden = false;
+  again.textContent = `Use “${label}”`;
+  browse.classList.add('secondary');
+}
+
+function hideRemembered() {
+  again.hidden = true;
+  browse.classList.remove('secondary');
+}
+
+function useFiles(files: File[], handles: FileSystemHandle[] | null = null): Promise<void> {
+  const ticket = ++discTicket;
+  const job = discTail.then(() => loadDiscFiles(files, handles, ticket));
+  discTail = job.then(() => undefined, () => undefined);
+  return job;
+}
+
+async function loadDiscFiles(files: File[], handles: FileSystemHandle[] | null, ticket: number) {
+  try {
+    if (ticket !== discTicket) return;
+    const choice = await chooseDataTrack(files);
+    if (ticket !== discTicket) return;
+    if ('error' in choice) {
+      discStatus.textContent = choice.error;
+      disc.dataset.state = 'error';
+      setDiscBusy(false);
+      return;
+    }
+    setDiscBusy(true);
+    disc.dataset.state = 'busy';
+    discStatus.textContent = `Reading ${choice.file.name}…`;
+    const rage = await ragePromise;
+    const ok = await rage.loadDisc(choice.file, (fraction) => {
+      if (ticket !== discTicket) return;
+      discStatus.textContent = `Reading ${choice.file.name}… ${Math.round(fraction * 100)}%`;
+    });
+    if (ticket !== discTicket) return;
+    if (!ok) {
+      disc.dataset.state = 'error';
+      discStatus.textContent = `${choice.file.name} is not a Rage Racer disc image this build can read.`;
+      setDiscBusy(false);
+      return;
+    }
+    if (handles?.length) await rememberDisc(handles);
+    if (ticket !== discTicket) return;
+    if (session.discId && rage.discId() !== session.discId) {
+      disc.dataset.state = 'error';
+      discStatus.textContent = `This disc (${rage.discId()}) differs from the server's (${session.discId}). ` +
+        'Online races need the same release; practice still works offline.';
+    } else {
+      disc.dataset.state = '';
+    }
+    app.discLoaded = true;
+    void app.audio?.useDisc(files);
+    app.automaticCars = rage.carAutomatic();
+    fillPractice(rage, setup, app.automaticCars);
+    setDiscBusy(false);
+    if (disc.dataset.state === 'error') {
+      setTimeout(() => show('setup'), 2500);
+      return;
+    }
+    enterLobby();
+  } catch {
+    if (ticket !== discTicket) return;
+    disc.dataset.state = 'error';
+    discStatus.textContent = 'The disc could not be read.';
+    setDiscBusy(false);
+  }
+}
+
+async function openRemembered(handles: FileSystemHandle[], ask: boolean) {
+  setDiscBusy(true);
+  try {
+    if (ask && await requestDiscPermission(handles) !== 'granted') {
+      disc.dataset.state = 'error';
+      discStatus.textContent = 'The browser did not allow reading the saved disc. Drop it again, or browse for it.';
+      setDiscBusy(false);
+      return;
+    }
+    await useFiles(await filesFromHandles(handles), handles);
+  } catch (error) {
+    if (error instanceof DiscGone) {
+      await forgetDisc();
+      hideRemembered();
+    }
+    disc.dataset.state = 'error';
+    discStatus.textContent = error instanceof DiscGone
+      ? error.message
+      : 'The saved disc could not be read. Drop it again, or browse for it.';
+    setDiscBusy(false);
+  }
+}
+
+async function offerRememberedDisc() {
+  const handles = await rememberedDisc();
+  if (!handles?.length || app.discLoaded) return;
+  const label = discLabel(handles);
+  showRemembered(label);
+  again.onclick = () => { void openRemembered(handles, true); };
+  let granted = false;
+  try { granted = await discPermission(handles) === 'granted'; } catch { granted = false; }
+  if (app.discLoaded) return;
+  if (granted) {
+    await openRemembered(handles, false);
+    return;
+  }
+  disc.dataset.state = '';
+  discStatus.textContent = `“${label}” is remembered on this computer.`;
+}
+
+async function usePicked(handles: FileSystemHandle[] | null) {
+  if (!handles?.length) return;
+  try {
+    await useFiles(await filesFromHandles(handles), handles);
+  } catch (error) {
+    disc.dataset.state = 'error';
+    discStatus.textContent = error instanceof DiscGone
+      ? error.message
+      : 'Those files could not be read.';
+    setDiscBusy(false);
+  }
+}
+
+if (canPickDirectory()) folder.hidden = false;
+browse.addEventListener('click', () => {
+  if (!canPickFiles()) { picker.click(); return; }
+  void pickDiscFiles().then(usePicked).catch((error: unknown) => {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    picker.click();
+  });
+});
+folder.addEventListener('click', () => {
+  void pickDiscFolder().then((handle) => usePicked(handle ? [handle] : null)).catch((error: unknown) => {
+    if (error instanceof DOMException && error.name === 'AbortError') return;
+    disc.dataset.state = 'error';
+    discStatus.textContent = 'The disc folder could not be opened. Drop it on this page instead.';
+  });
+});
 picker.addEventListener('change', () => { if (picker.files?.length) void useFiles(Array.from(picker.files)); });
 addEventListener('dragover', (event) => { event.preventDefault(); $('disc').dataset.drag = 'on'; });
 addEventListener('dragleave', () => { $('disc').dataset.drag = ''; });
 addEventListener('drop', (event) => {
   event.preventDefault();
   $('disc').dataset.drag = '';
-  if (app.screen === 'disc' && event.dataTransfer) void droppedFiles(event.dataTransfer).then(useFiles);
+  if (app.screen !== 'disc' || !event.dataTransfer) return;
+  void droppedDisc(event.dataTransfer).then(
+    (dropped) => useFiles(dropped.files, dropped.handles),
+    (error: unknown) => {
+      disc.dataset.state = 'error';
+      discStatus.textContent = error instanceof DiscGone ? error.message : 'Those files could not be read.';
+    },
+  );
 });
 
 // ---- lobby ------------------------------------------------------------------
@@ -99,6 +229,8 @@ $('lobby').addEventListener('click', async (event) => {
     show('setup');
   } else if (action === 'garage' && app.rage) {
     enterGarage();
+  } else if (action === 'create-duel') {
+    send({ t: 'createDuel' });
   } else if (action === 'create-room' && app.rage) {
     const settings = await editSettings(app.rage, null, 1);
     if (settings) send({ t: 'createRoom', settings });

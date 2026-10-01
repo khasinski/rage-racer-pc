@@ -16,6 +16,25 @@ import {
 
 let connection: Connection | null = null;
 let room: RoomState | null = null;
+/* The page was opened with a duel link, and this connection has not followed it yet. */
+let followDuelLink = new URLSearchParams(location.search).has('duel');
+
+function duelParam(): string | null {
+  return new URLSearchParams(location.search).get('duel');
+}
+
+function setDuelParam(token: string | null): void {
+  const url = new URL(location.href);
+  if (token) url.searchParams.set('duel', token);
+  else url.searchParams.delete('duel');
+  if (url.href !== location.href) history.replaceState(null, '', url);
+}
+
+const DUEL_JOIN_ERRORS = new Set([
+  'That duel link is not valid.',
+  'That duel is over.',
+  'That duel already has two drivers.',
+]);
 let reconnectDelay = 1000;
 /* A spectator's frames. */
 const frames = new FrameBuffer();
@@ -38,7 +57,9 @@ const onlineRace = () => racing && race.mode !== 'offline';
 
 export function enterLobby(): void {
   connect();
+  const joining = room === null && duelParam() !== null;
   show(room ? 'room' : 'lobby');
+  if (joining) $('lobby-status').textContent = 'Joining the duel…';
   void refreshTables();
 }
 
@@ -94,6 +115,7 @@ export function disconnect(): void {
 }
 
 export function send(message: Parameters<Connection['send']>[0]): void {
+  if (message.t === 'createRoom' || message.t === 'createDuel' || message.t === 'joinRoom') followDuelLink = false;
   connection?.send(message);
 }
 
@@ -102,9 +124,18 @@ function onMessage(message: ServerMessage) {
   switch (message.t) {
     case 'welcome':
       session.discId = message.discId;
-      $('lobby-status').textContent = '';
       reconnectDelay = 1000;
       if (app.screen === 'race' && onlineRace()) setHint('');
+      if (followDuelLink) {
+        followDuelLink = false;
+        const token = duelParam();
+        if (token && room?.duel?.token !== token) {
+          $('lobby-status').textContent = 'Joining the duel…';
+          send({ t: 'joinDuel', token });
+          break;
+        }
+      }
+      $('lobby-status').textContent = '';
       break;
     case 'latency':
       app.latency = message.latency;
@@ -119,6 +150,8 @@ function onMessage(message: ServerMessage) {
     case 'room':
       if (!message.room) {
         room = null;
+        followDuelLink = false;
+        setDuelParam(null);
         $('chat-log').replaceChildren();
         if (app.screen === 'room') show('lobby');
         void refreshTables();
@@ -126,6 +159,7 @@ function onMessage(message: ServerMessage) {
       }
       if (!room || room.id !== message.room.id) $('chat-log').replaceChildren();
       room = message.room;
+      if (room.duel) setDuelParam(room.duel.token);
       renderRoom(rage, room, session.user!, app.automaticCars, app.latency);
       if (app.screen === 'lobby') show('room');
       break;
@@ -152,6 +186,11 @@ function onMessage(message: ServerMessage) {
       break;
     case 'error':
       toast(message.message);
+      if (DUEL_JOIN_ERRORS.has(message.message)) {
+        followDuelLink = false;
+        setDuelParam(null);
+        if (app.screen === 'lobby') $('lobby-status').textContent = message.message;
+      }
       break;
   }
 }
@@ -171,7 +210,19 @@ $('room').addEventListener('click', async (event) => {
 const sendCar = () => send({ t: 'setCar', ...readRoomCar(app.automaticCars) });
 $('car-model').addEventListener('change', sendCar);
 $('car-transmission').addEventListener('change', sendCar);
+$('car-tires').addEventListener('change', sendCar);
 const mine = () => room?.members.find((m) => m.userId === session.user?.id);
+$('duel-copy').addEventListener('click', async () => {
+  const input = $<HTMLInputElement>('duel-link');
+  const button = $<HTMLButtonElement>('duel-copy');
+  try {
+    await navigator.clipboard.writeText(input.value);
+    button.textContent = 'Copied';
+  } catch {
+    input.select();
+    button.textContent = 'Select the link';
+  }
+});
 $('ready-button').addEventListener('click', () => send({ t: 'setReady', ready: !mine()?.ready }));
 $('start-button').addEventListener('click', () => send({ t: 'startRace' }));
 $('spectate-button').addEventListener('click', () => send({ t: 'setSpectator', spectator: !mine()?.spectator }));
@@ -241,7 +292,7 @@ async function startOnlineRace(message: Extract<ServerMessage, { t: 'raceStart' 
     rage.setLogo(index, seat.logo ? fromBase64(seat.logo) : null);
     rage.setTag(index, seat.name);
   });
-  const ok = rage.startNetRace(message.settings, players.map(({ variant, manual }) => ({ variant, manual })),
+  const ok = rage.startNetRace(message.settings, players.map(({ variant, manual, tire }) => ({ variant, manual, tire })),
                                message.localSeat);
   send({ t: 'loaded', ok });
   if (!ok) {

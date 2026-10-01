@@ -34,11 +34,12 @@ int InitRaceSim(RaceSim *race, const TrackRoute *route,
 int AddRaceDriver(RaceSim *race, s32 slot, const GameCarSpec *spec,
                     const DriverHull *hull, const CarHullPoint *roadCorners, const LaunchSpeedThreshold *threshold,
                     const TrackRivalStart *position, s32 walkStart, s16 manual,
-                    s16 modelIndex, u32 seed) {
+                    s16 modelIndex, u32 seed, s32 launchThresholdIndex) {
     if (race == NULL || race->phase != SIM_SETUP || !HasRoute(&race->route) || (u32)slot >= DRIVER_SEAT_LIMIT ||
         race->drivers[slot].status != SIM_EMPTY || spec == NULL || hull == NULL ||
         hull->points == NULL || hull->corners == NULL || roadCorners == NULL || threshold == NULL || position == NULL ||
         (manual != 0 && manual != 1) ||
+        launchThresholdIndex < 0 || launchThresholdIndex >= CAR_LAUNCH_THRESHOLD_COUNT ||
         (u32)position->trackPointIndex >= (u32)race->route.count ||
         threshold->initial < 0 || threshold->sustain < 0) return 0;
     SimDriver *driver = &race->drivers[slot];
@@ -50,7 +51,7 @@ int AddRaceDriver(RaceSim *race, s32 slot, const GameCarSpec *spec,
     driver->threshold = *threshold;
     const DriverStart start = {.route = &race->route, .position = position,
         .walkStart = walkStart, .reverse = race->reverse, .manual = manual,
-        .modelIndex = modelIndex};
+        .launchThresholdIndex = launchThresholdIndex, .modelIndex = modelIndex};
     InitDriver(&driver->car, &driver->spec, &driver->engine, &start);
     driver->random = seed;
     driver->status = SIM_DRIVING;

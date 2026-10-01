@@ -180,7 +180,7 @@ export function editSettings(rage: Rage, initial: RoomSettings | null, minPlayer
 export function renderRooms(rage: Rage, rooms: RoomSummary[], join: (id: number) => void): void {
   const list = $<HTMLUListElement>('room-list');
   if (!rooms.length) {
-    list.replaceChildren(el('li', { className: 'empty' }, 'No rooms yet. Create one and invite your friends.'));
+    list.replaceChildren(el('li', { className: 'empty' }, 'No rooms yet. Create one, or start a duel and send the link.'));
     return;
   }
   list.replaceChildren(...rooms.map((room) => {
@@ -231,60 +231,95 @@ export function renderRoom(rage: Rage, room: RoomState, me: UserInfo, automatic:
   $('room-name').textContent = s.name;
   $('room-summary').textContent =
     `${courseLabel(rage, s.course, s.reverse)} · ${CLASS_NAMES[s.classIndex]} · ${s.laps} ${s.laps === 1 ? 'lap' : 'laps'}`;
-  $<HTMLButtonElement>('room').querySelector<HTMLButtonElement>('[data-action=edit-room]')!.hidden = !isHost;
+  $<HTMLButtonElement>('room').querySelector<HTMLButtonElement>('[data-action=edit-room]')!.hidden = !isHost || room.duel !== null;
   $<HTMLButtonElement>('room').querySelector<HTMLButtonElement>('[data-action=close-room]')!.hidden = !isHost && !me.admin;
 
   const racers = room.members.filter((m) => !m.spectator);
   const watchers = room.members.filter((m) => m.spectator);
   const players = $<HTMLTableElement>('room-players');
-  players.replaceChildren(row(['#', 'Driver', 'Car', 'Gearbox', '', 'Ping'], true),
+  const duel = room.duel !== null;
+  const headers = duel
+    ? ['#', 'Driver', 'Car', 'Gearbox', 'Tires', '', 'Ping']
+    : ['#', 'Driver', 'Car', 'Gearbox', '', 'Ping'];
+  players.replaceChildren(row(headers, true),
     ...racers.map((m, index) => row([String(index + 1), `${m.name}${m.host ? ' ★' : ''}`,
       carLabel(rage, m.variant), m.manual ? 'MT' : 'AT',
+      ...(duel ? [String(m.tire + 1)] : []),
       el('span', { className: m.ready ? 'ok' : 'dim' }, m.ready ? 'ready' : 'choosing'),
       el('span', { className: 'dim' }, pingLabel(latency[m.userId], m.online))])));
   if (watchers.length) {
-    players.append(el('tr', {}, el('td', { colSpan: 6, className: 'dim' },
+    players.append(el('tr', {}, el('td', { colSpan: headers.length, className: 'dim' },
       `Watching: ${watchers.map((m) => `${m.name}${m.host ? ' ★' : ''}`).join(', ')}`)));
   }
   const free = s.maxPlayers - racers.length;
-  $('room-fill').textContent = s.rivals
-    ? `${free > 0 ? `${free} more ${free === 1 ? 'player' : 'players'} can join; ` : ''}the rest of the grid races the retail rivals.`
-    : `${free > 0 ? `${free} more ${free === 1 ? 'player' : 'players'} can join. ` : ''}No rivals: only players race.`;
+  $('room-fill').textContent = room.duel
+    ? 'Same car for both of you. Choose your gearbox and tires, then both press Ready.'
+    : s.rivals
+      ? `${free > 0 ? `${free} more ${free === 1 ? 'player' : 'players'} can join; ` : ''}the rest of the grid races the retail rivals.`
+      : `${free > 0 ? `${free} more ${free === 1 ? 'player' : 'players'} can join. ` : ''}No rivals: only players race.`;
+  const invite = $('duel-invite');
+  if (room.duel) {
+    invite.hidden = false;
+    $('duel-car').textContent = `Both drivers: ${carLabel(rage, room.duel.variant)}.`;
+    const link = $<HTMLInputElement>('duel-link');
+    const url = duelUrl(room.duel.token);
+    if (link.value !== url) link.value = url;
+  } else {
+    invite.hidden = true;
+  }
 
   // Car picker: the class's models; automatic only where the disc offers it.
   const model = $<HTMLSelectElement>('car-model');
   const transmission = $<HTMLSelectElement>('car-transmission');
+  const tires = $<HTMLSelectElement>('car-tires');
   fillCars(rage, model, s.classIndex);
   if (mine && mine.variant >= 0) model.value = String(mine.variant);
   transmission.value = mine?.manual ? 'manual' : 'auto';
   syncTransmission(transmission, automatic[Number(model.value)] !== false);
+  tires.value = String(mine?.tire ?? 0);
   const racing = room.status !== 'lobby';
   const watching = mine?.spectator === true;
-  model.disabled = transmission.disabled = racing || watching;
+  model.disabled = racing || watching || duel;
+  transmission.disabled = tires.disabled = racing || watching;
   $('car-picker').hidden = watching;
+  $('car-model-field').hidden = duel;
+  $('car-tires-field').hidden = !duel;
   const spectate = $<HTMLButtonElement>('spectate-button');
+  spectate.hidden = duel;
   spectate.textContent = watching ? 'Join the grid' : 'Watch only';
   spectate.disabled = racing || (watching && free <= 0);
   $<HTMLButtonElement>('watch-button').hidden = !racing;
 
   const ready = $<HTMLButtonElement>('ready-button');
   const start = $<HTMLButtonElement>('start-button');
-  ready.hidden = isHost || watching;
+  ready.hidden = watching || (isHost && !duel);
   ready.textContent = mine?.ready ? 'Not ready' : 'Ready';
   ready.disabled = racing;
   start.hidden = !isHost;
   const waiting = racers.filter((m) => !m.ready).map((m) => m.name);
-  start.disabled = racing || waiting.length > 0 || racers.length === 0;
+  const alone = duel && racers.length < 2;
+  start.disabled = racing || waiting.length > 0 || racers.length === 0 || alone;
   $('room-status').textContent = racing ? 'The race is on…'
+    : alone ? 'Send the link. The duel starts when the other driver is here and ready.'
     : waiting.length ? `Waiting for ${waiting.join(', ')}.` : isHost ? 'Everyone is ready.' : 'Waiting for the host to start.';
 }
 
+/** The page link that puts the other driver in this duel. */
+export function duelUrl(token: string): string {
+  const url = new URL(location.href);
+  url.hash = '';
+  url.search = '';
+  url.searchParams.set('duel', token);
+  return url.href;
+}
+
 /** The room's car picker changed: the choice to send, Automatic only where offered. */
-export function readRoomCar(automatic: boolean[]): { variant: number; manual: boolean } {
+export function readRoomCar(automatic: boolean[]): { variant: number; manual: boolean; tire: number } {
   const variant = Number($<HTMLSelectElement>('car-model').value);
   const transmission = $<HTMLSelectElement>('car-transmission');
   syncTransmission(transmission, automatic[variant] !== false);
-  return { variant, manual: transmission.value === 'manual' };
+  const tire = Number($<HTMLSelectElement>('car-tires').value);
+  return { variant, manual: transmission.value === 'manual', tire: Number.isInteger(tire) ? tire : 0 };
 }
 
 export function appendChat(from: string, text: string, at: number): void {
