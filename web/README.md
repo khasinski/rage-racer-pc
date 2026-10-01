@@ -99,7 +99,9 @@ inside the image and the SQLite database in `/data`. The CapRover app needs:
   the host, preferably in host mode (not through the swarm routing mesh),
   and set `RAGE_RTC_PUBLIC_IP` to the server's public address. Without them
   every client stays on the WebSocket; a channel that goes silent falls back
-  to it within two seconds. `RAGE_RTC=0` turns the channel off.
+  to it within two seconds, and the client offers a new channel (after 1 s, then
+  up to every 30 s) until one works again. Either end uses a channel only once
+  it has heard the other over it. `RAGE_RTC=0` turns the channel off.
 
 ## Protocol
 
@@ -131,6 +133,8 @@ npm run test:grid -- "<disc>"     # 8-player grid on every course variant
 npm run test:finish -- "<disc>"   # finish fade, spectator hand-over, finish deadline
 npm run test:garage -- "<disc>"   # the garage preview, saving paint, seeing it in a race
 node scripts/logo-test.mjs         # the logo editor's pure operations
+node scripts/looks-test.mjs        # the server's checks of what the garage sends
+node scripts/rtc-fallback-check.mjs "<disc>"  # the data channel: fallback, recovery, a stalled page
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
 node scripts/audio-check.mjs "<disc.cue>"  # engine sound follows rpm; race tunes found
 # Native vs WebAssembly physics, tick by tick:
