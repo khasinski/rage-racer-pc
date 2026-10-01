@@ -39,6 +39,10 @@
 #include "web_hud.h"
 #include "web_rules.h"
 #include "web_audio.h"
+#include "web_bridge.h"
+#include "web_looks.h"
+#include "web_netstats.h"
+#include "web_showroom.h"
 #include "web_sky.h"
 
 enum {
@@ -198,62 +202,10 @@ static int32_t s_hud[16];
 
 const RaceData *WebLoadedArchive(void) { return s_archive; }
 
-/* The garage preview's pivot (see FindShowroomCentre). */
-static struct { int valid; Vec3 centre; } s_showroom;
 /* Renderer depth-bias units, applied as nearer. Enough to beat the bonnet on
  * every car (100 already does), but small: much above 500 pulls the quad in
  * front of the roof when the car is seen from behind. */
 enum { LOGO_DEPTH_BIAS = 150 };
-
-/* What a human seat looks like: its paint (two catalogue colours, or -1 for
- * the car's factory colours) and its logo and name. Presentation only: neither
- * the server's simulation nor the wire format knows about it. rw_set_look sets
- * each seat's for the next race prepared, which uses them up whether or not it
- * starts; the running race's logos and names stay in s_custom for its
- * textures to read. */
-typedef struct SeatLook {
-    int paint[2];
-    CarCustom custom;
-} SeatLook;
-static SeatLook s_nextLooks[DRIVER_SEAT_LIMIT];
-static CarCustom s_custom[DRIVER_SEAT_LIMIT];
-
-/* A logo: CAR_LOGO_BYTES of 4-bit pixels, then CAR_LOGO_COLORS little-endian
- * 15-bit colours (palette entry 0 is transparent); NULL removes it. */
-static void ReadLogo(CarCustom *custom, const uint8_t *data) {
-    uint16_t clut[CAR_LOGO_COLORS];
-    if (!data) {
-        CarCustomSetLogo(custom, NULL, NULL);
-        return;
-    }
-    for (int i = 0; i < CAR_LOGO_COLORS; ++i)
-        clut[i] = (uint16_t)(data[CAR_LOGO_BYTES + i * 2] | (data[CAR_LOGO_BYTES + i * 2 + 1] << 8));
-    CarCustomSetLogo(custom, data, clut);
-}
-/* A seat's look for the next race: paint (first and second colour, -1 for
- * the factory ones), logo (see ReadLogo; NULL for none) and windscreen name. */
-EMSCRIPTEN_KEEPALIVE void rw_set_look(int seat, int first, int second, const uint8_t *logo, const char *tag) {
-    if (seat < 0 || seat >= DRIVER_SEAT_LIMIT) return;
-    SeatLook *look = &s_nextLooks[seat];
-    const int valid = first >= 0 && first < RAGE_CAR_PAINT_COLOR_COUNT &&
-                      second >= 0 && second < RAGE_CAR_PAINT_COLOR_COUNT;
-    look->paint[0] = valid ? first : -1;
-    look->paint[1] = valid ? second : -1;
-    ReadLogo(&look->custom, logo);
-    CarCustomSetTag(&look->custom, tag);
-}
-
-static void ClearNextLooks(void) {
-    memset(s_nextLooks, 0, sizeof(s_nextLooks));
-    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) s_nextLooks[seat].paint[0] = s_nextLooks[seat].paint[1] = -1;
-}
-
-/* The catalogue for a colour picker: how many colours, and one's RGB. */
-EMSCRIPTEN_KEEPALIVE int rw_paint_count(void) { return RAGE_CAR_PAINT_COLOR_COUNT; }
-EMSCRIPTEN_KEEPALIVE const uint8_t *rw_paint_swatch(int color) {
-    static uint8_t rgb[3];
-    return CarPaintSwatch((uint8_t)color, rgb) ? rgb : NULL;
-}
 
 static void ReleaseRace(void) {
     WebAudioStopRace();
@@ -263,7 +215,7 @@ static void ReleaseRace(void) {
 
 EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
     ReleaseRace();
-    ClearNextLooks();
+    WebLooksClear();
     FreeRaceData(s_archive);
     s_archive = LoadRaceDisc(path);
     return s_archive != NULL;
@@ -274,16 +226,13 @@ EMSCRIPTEN_KEEPALIVE int rw_load_disc(const char *path) {
 static int PrepareRace(int classIndex, int course, int reverse, int laps, int rivals,
                        const WebSeat *humans, int humanCount, int localSeat) {
     RaceSetup setup;
-    SeatLook looks[DRIVER_SEAT_LIMIT];
-    /* The looks set for this race are used up whether or not it starts. */
-    memcpy(looks, s_nextLooks, sizeof(looks));
-    ClearNextLooks();
-    s_showroom.valid = 0;
+    WebSeatLook looks[DRIVER_SEAT_LIMIT];
+    WebLooksTake(looks); /* used up whether or not the race starts */
+    WebShowroomForget();
     if (!s_archive || laps < 1 || laps > WEB_MAX_LAPS || localSeat < -1 ||
         localSeat >= humanCount) return 0;
     ReleaseRace();
-    /* The old race no longer reads its logos and names. */
-    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) s_custom[seat] = looks[seat].custom;
+    WebLooksUseInRace(looks);
     memset(&setup, 0, sizeof(setup));
     setup.classIndex = classIndex;
     setup.courseIndex = course;
@@ -293,7 +242,7 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
                        setup.entrants)) return 0;
     for (int seat = 0; seat < humanCount; ++seat) {
         setup.looks[seat].variant = humans[seat].variant;
-        setup.looks[seat].custom = &s_custom[seat];
+        setup.looks[seat].custom = WebRaceCustom(seat);
         if (looks[seat].paint[0] >= 0) {
             setup.looks[seat].hasPaint = 1;
             setup.looks[seat].paint.paintColor1 = (u8)looks[seat].paint[0];
@@ -382,46 +331,6 @@ EMSCRIPTEN_KEEPALIVE uint32_t rw_input_seq(void) { return s_predict.inputSeq; }
  * arrivalTick the server tick that first used it. Returns how many ticks
  * later than predicted that input was used (the client clock's error; 0 for
  * a spectator), or INT32_MIN when the frame does not fit the race. */
-/* Network diagnostics for players: how far each server frame moved the
- * predicted cars (world units), own car and the others, and how many ticks
- * were replayed. Read and reset by the network checks (scripts/net-check.mjs). */
-static struct NetStats {
-    double frames, ownSum, ownMax, otherSum, otherMax, otherCount, replaySum;
-} s_netStats;
-static float s_netStatsOut[6];
-EMSCRIPTEN_KEEPALIVE const float *rw_net_stats(void) {
-    const double frames = s_netStats.frames > 0 ? s_netStats.frames : 1;
-    const double others = s_netStats.otherCount > 0 ? s_netStats.otherCount : 1;
-    s_netStatsOut[0] = (float)s_netStats.frames;
-    s_netStatsOut[1] = (float)(s_netStats.ownSum / frames);
-    s_netStatsOut[2] = (float)s_netStats.ownMax;
-    s_netStatsOut[3] = (float)(s_netStats.otherSum / others);
-    s_netStatsOut[4] = (float)s_netStats.otherMax;
-    s_netStatsOut[5] = (float)(s_netStats.replaySum / frames);
-    return s_netStatsOut;
-}
-EMSCRIPTEN_KEEPALIVE void rw_net_stats_reset(void) { memset(&s_netStats, 0, sizeof(s_netStats)); }
-
-static void RecordCorrections(const s32 before[DRIVER_SEAT_LIMIT][3], const int driving[DRIVER_SEAT_LIMIT],
-                              u32 replayed) {
-    s_netStats.frames += 1;
-    s_netStats.replaySum += replayed;
-    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
-        const PlayerCarRuntime *car = &s_race->sim.drivers[seat].car;
-        if (!driving[seat] || s_race->sim.drivers[seat].status != SIM_DRIVING) continue;
-        const double dx = car->x - before[seat][0], dy = car->y - before[seat][1], dz = car->z - before[seat][2];
-        const double moved = sqrt(dx * dx + dy * dy + dz * dz);
-        if (seat == s_localSeat) {
-            s_netStats.ownSum += moved;
-            if (moved > s_netStats.ownMax) s_netStats.ownMax = moved;
-        } else {
-            s_netStats.otherSum += moved;
-            s_netStats.otherCount += 1;
-            if (moved > s_netStats.otherMax) s_netStats.otherMax = moved;
-        }
-    }
-}
-
 static void SmoothCorrections(const s32 before[DRIVER_SEAT_LIMIT][3], const s32 beforeYaw[DRIVER_SEAT_LIMIT],
                               const int driving[DRIVER_SEAT_LIMIT]) {
     for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
@@ -476,7 +385,7 @@ EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint3
         }
         if (!StepRaceSim(&s_race->sim)) break;
     }
-    if (present >= restored) RecordCorrections(before, driving, present - restored);
+    if (present >= restored) WebNetStatsRecord(&s_race->sim, s_localSeat, before, driving, present - restored);
     SmoothCorrections(before, beforeYaw, driving);
     return error;
 }
@@ -1408,7 +1317,7 @@ static void PackSpanFields(float t) {
         out[12] = span->depthDecal;
         out[WEB_SPAN_ALPHA] = SpanAlpha(span, t);
         out[WEB_SPAN_CUSTOM] = span->assetSet == RAGE_RENDER_ASSET_MODEL_BANK && span->sourceEntity < DRIVER_SEAT_LIMIT
-                                   ? s_custom[span->sourceEntity].hash : 0;
+                                   ? WebRaceCustomHash(span->sourceEntity) : 0;
     }
 }
 
@@ -1502,24 +1411,35 @@ static int DrawSubmitted(float aspect, float t, int withMirror) {
     return (int)s_frame.vertexCount;
 }
 
-/* The garage preview: a race prepared for one car (rw_start_race, alone on
- * the grid), drawn without its field from a camera circling the car,
- * `angle` degrees round it. The paint follows rw_set_showroom_paint. */
-EMSCRIPTEN_KEEPALIVE void rw_set_showroom_paint(int first, int second) {
-    if (!s_race || !s_race->view) return;
-    RaceCarLook *look = &s_race->view->looks[0];
-    look->hasPaint = first >= 0 && first < RAGE_CAR_PAINT_COLOR_COUNT &&
-                     second >= 0 && second < RAGE_CAR_PAINT_COLOR_COUNT;
-    look->paint.paintColor1 = (u8)(look->hasPaint ? first : 0);
-    look->paint.paintColor2 = (u8)(look->hasPaint ? second : 0);
+/* ---- for the rest of the bridge (web_bridge.h) ------------------------------ */
+
+ClientRace *WebRace(void) { return s_race; }
+
+int WebDrawFieldScene(float aspect, Vec3 eye, s32 pitch, s32 yaw, float verticalFovDegrees) {
+    if (!s_race || !(aspect > 0.0f)) return -1;
+    PlayerCarRuntime cars[DRIVER_SEAT_LIMIT];
+    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) cars[seat] = s_race->sim.drivers[seat].car;
+    s_frame.page = cars[0].trackSection >= s_race->look.textureSectionLo &&
+                   cars[0].trackSection < s_race->look.textureSectionHi;
+    RenderCamera camera = CameraFromView(eye, pitch, yaw, 0, verticalFovDegrees, 0);
+    RenderWorldBeginFrame(&s_world, ++s_frame.number);
+    ApplyEnvironment(&camera, &s_race->env);
+    RenderWorldSetCamera(&s_world, &camera);
+    RenderDirectionalLight light;
+    RenderDirectionalLightFromSky(&camera, &light);
+    RenderWorldSetDirectionalLight(&s_world, &light);
+    if (!SubmitClientTerrain(s_race, s_frame.page, &s_world) ||
+        !SubmitRaceViewPoses(&s_race->sim, s_race->view, cars, cars, s_race->rivals,
+                             s_race->primaryMesh.cached.assetKey, 0, &s_world)) return -1;
+    RenderWorldFocus(&s_world, 0);
+    return DrawSubmitted(aspect, 1.0f, 0); /* no interpolation: the poses are the same */
 }
 
-/* The middle of the car as drawn (game coordinates), found from its own
- * vertices the first time a preview frame is built: the car's origin sits by
- * its rear axle, so circling that would swing the car round it. */
-
-static void FindShowroomCentre(void) {
-    float low[3] = {INFINITY, INFINITY, INFINITY}, high[3] = {-INFINITY, -INFINITY, -INFINITY};
+int WebDrawnCarBounds(float low[3], float high[3]) {
+    for (int axis = 0; axis < 3; ++axis) {
+        low[axis] = INFINITY;
+        high[axis] = -INFINITY;
+    }
     for (uint32_t i = 0; i < s_frame.spanCount; ++i) {
         const RageNativeDrawSpan *span = &s_spans[i];
         if (span->assetSet != RAGE_RENDER_ASSET_MODEL_BANK) continue;
@@ -1531,52 +1451,7 @@ static void FindShowroomCentre(void) {
             }
         }
     }
-    if (!(low[0] <= high[0])) return;
-    /* Drawn coordinates flip y and z relative to the game's. */
-    s_showroom.centre = (Vec3){(low[0] + high[0]) / 2, -(low[1] + high[1]) / 2, -(low[2] + high[2]) / 2};
-    s_showroom.valid = 1;
-}
-
-/* The preview's logo (see ReadLogo) and team name, changed live. */
-EMSCRIPTEN_KEEPALIVE void rw_set_showroom_logo(const uint8_t *data) { ReadLogo(&s_custom[0], data); }
-EMSCRIPTEN_KEEPALIVE void rw_set_showroom_tag(const char *text) { CarCustomSetTag(&s_custom[0], text); }
-
-EMSCRIPTEN_KEEPALIVE int rw_build_showroom(float aspect, float angle) {
-    enum { RADIUS = 330, HEIGHT = 105, FOCUS_HEIGHT = 30 };
-    if (!s_race || !(aspect > 0.0f)) return -1;
-    PlayerCarRuntime cars[DRIVER_SEAT_LIMIT];
-    for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) cars[seat] = s_race->sim.drivers[seat].car;
-    const PlayerCarRuntime *car = &cars[0];
-    s_frame.page = car->trackSection >= s_race->look.textureSectionLo &&
-                   car->trackSection < s_race->look.textureSectionHi;
-    /* Game coordinates: y points down, so the eye is HEIGHT above the focus
-     * when it is that far negative; the view angles are the retail chase
-     * camera's (yaw and pitch from the eye-to-focus direction). */
-    const float radians = angle * 0.017453292519943295f;
-    const Vec3 toFocus = {-RADIUS * sinf(radians), HEIGHT, -RADIUS * cosf(radians)};
-    const Vec3 focus = s_showroom.valid ? s_showroom.centre
-                                        : (Vec3){(float)car->x, (float)car->y - FOCUS_HEIGHT, (float)car->z};
-    const Vec3 eye = {focus.x - toFocus.x, focus.y - toFocus.y, focus.z - toFocus.z};
-    const s32 horizontal = (s32)lroundf(sqrtf(toFocus.x * toFocus.x + toFocus.z * toFocus.z));
-    const s32 yaw = 0x400 - (Atan2((s32)lroundf(toFocus.x), (s32)lroundf(toFocus.z)) & ANGLE_MASK);
-    const s32 pitch = 0x400 - (Atan2((s32)lroundf(toFocus.y), horizontal) & ANGLE_MASK);
-    RenderCamera camera = CameraFromView(eye, pitch, yaw, 0, 30.0f, 0);
-    RenderWorldBeginFrame(&s_world, ++s_frame.number);
-    ApplyEnvironment(&camera, &s_race->env);
-    RenderWorldSetCamera(&s_world, &camera);
-    RenderDirectionalLight light;
-    RenderDirectionalLightFromSky(&camera, &light);
-    RenderWorldSetDirectionalLight(&s_world, &light);
-    if (!SubmitClientTerrain(s_race, s_frame.page, &s_world) ||
-        !SubmitRaceViewPoses(&s_race->sim, s_race->view, cars, cars, s_race->rivals,
-                             s_race->primaryMesh.cached.assetKey, 0, &s_world)) return -1;
-    RenderWorldFocus(&s_world, 0);
-    const int count = DrawSubmitted(aspect, 1.0f, 0); /* no interpolation: the poses are the same */
-    if (count >= 0 && !s_showroom.valid) {
-        FindShowroomCentre();
-        if (s_showroom.valid) return rw_build_showroom(aspect, angle);
-    }
-    return count;
+    return low[0] <= high[0];
 }
 
 /* FNV-1a step. */
