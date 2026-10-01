@@ -115,12 +115,16 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
 .tabs button { background: transparent; color: var(--dim); border-radius: 6px 6px 0 0; border: 1px solid transparent; border-bottom: 0; }
 .tabs button[aria-selected=true] { color: var(--text); border-color: var(--line); background: var(--panel-2); }
 #pane-paint, #pane-logo { display: grid; gap: 12px; align-content: start; }
+.logo-layout { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: 12px; align-items: start; }
+.logo-tools { display: grid; gap: 8px; }
+.row.compact { gap: 6px; }
+.row.compact button, .row.compact .button { padding: 6px 10px; font-size: 13px; }
 #logo-canvas {
-  width: min(100%, 320px); aspect-ratio: 1; image-rendering: pixelated; border: 1px solid var(--line); border-radius: 4px;
+  width: 100%; aspect-ratio: 1; image-rendering: pixelated; border: 1px solid var(--line); border-radius: 4px;
   cursor: crosshair; touch-action: none; justify-self: start;
   background: repeating-conic-gradient(#2a333d 0% 25%, #1a2129 0% 50%) 0 0 / 16px 16px;
 }
-.palette { grid-template-columns: repeat(8, minmax(0, 1fr)); max-width: 320px; }
+.palette { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .palette .swatch[data-index="0"] { background: repeating-conic-gradient(#2a333d 0% 25%, #1a2129 0% 50%) 0 0 / 10px 10px; }
 .tool[aria-pressed=true] { border-color: var(--text); box-shadow: 0 0 0 2px var(--accent); }
 label.inline { display: flex; align-items: center; gap: 8px; }

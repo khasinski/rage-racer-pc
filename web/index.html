@@ -161,16 +161,22 @@
           <p class="hint">Your colours are kept for the car, whatever its grade, and everyone in your races sees them.</p>
         </div>
         <div id="pane-logo" role="tabpanel" hidden>
+          <div class="logo-layout">
           <canvas id="logo-canvas" width="64" height="64" aria-label="Your team logo"></canvas>
-          <div class="row">
-            <button type="button" class="secondary tool" id="tool-pen" aria-pressed="true" title="Draw">Draw</button>
+          <div class="logo-tools">
+          <div class="row compact">
+            <button type="button" class="secondary tool" id="tool-pen" aria-pressed="true" title="Draw (right button rubs out)">Draw</button>
             <button type="button" class="secondary tool" id="tool-fill" aria-pressed="false" title="Fill an area">Fill</button>
             <button type="button" class="secondary tool" id="tool-pick" aria-pressed="false" title="Take a colour from the picture">Pick</button>
+          </div>
+          <div class="row compact">
             <label class="inline">Brush <select id="logo-brush"><option>1</option><option>2</option><option>3</option><option>5</option></select></label>
+            <label class="inline">Colour <input type="color" id="logo-colour"></label>
           </div>
           <div id="logo-palette" class="swatches palette"></div>
-          <label class="check inline">Colour <input type="color" id="logo-colour"></label>
-          <div class="row">
+          </div>
+          </div>
+          <div class="row compact">
             <button type="button" class="secondary" data-logo="flipH" title="Mirror left to right">⇋</button>
             <button type="button" class="secondary" data-logo="flipV" title="Mirror top to bottom">⇅</button>
             <button type="button" class="secondary" data-logo="turnCcw" title="Turn left">⟲</button>
@@ -180,7 +186,7 @@
             <button type="button" class="secondary" data-logo="up" title="Move up">↑</button>
             <button type="button" class="secondary" data-logo="down" title="Move down">↓</button>
           </div>
-          <div class="row">
+          <div class="row compact">
             <button type="button" class="secondary" id="logo-undo" disabled>Undo</button>
             <button type="button" class="secondary" id="logo-clear">Clear</button>
             <label class="button secondary" for="logo-import">Import a picture…</label>

@@ -12,6 +12,9 @@ import { $, el } from './views';
 
 const TURN_DEGREES_PER_SECOND = 14;
 const DRAG_DEGREES_PER_PIXEL = 0.5;
+/* The front three-quarter view, which shows the bonnet (and the logo on it). */
+const FRONT_ANGLE = 320;
+const SETTLE_DEGREES_PER_SECOND = 150;
 const AUTOSAVE_MS = 600; // a quiet moment after the last change
 
 const canvas = $<HTMLCanvasElement>('garage-view');
@@ -22,7 +25,10 @@ const rows = [$('paint-first'), $('paint-second')];
 
 let renderer: Renderer | null = null;
 let open = false;
-let angle = 30; // degrees round the car
+let angle = FRONT_ANGLE; // degrees round the car
+/* While the logo is edited the camera settles on the bonnet instead of turning
+ * (until the player turns the car themselves). */
+let settleAt: number | null = null;
 let dragging = false;
 let lastFrame = 0;
 let shownSize = '';
@@ -77,7 +83,20 @@ function buildSwatches(rage: Rage): void {
   });
 }
 
+/** A car in the garage's list, marked when the player has painted it. */
+function carOption(rage: Rage, v: number): string {
+  return `${rage.carName(v)} ${'I'.repeat(rage.carGrade(v) + 1)}${paintOf(rage, v) ? ' · painted' : ''}`;
+}
+
+function markPaintedCars(rage: Rage): void {
+  for (const option of carSelect.options) {
+    const label = carOption(rage, Number(option.value));
+    if (option.textContent !== label) option.textContent = label;
+  }
+}
+
 function refresh(rage: Rage, message = ''): void {
+  markPaintedCars(rage);
   const canPaint = paintable(rage);
   if (!canPaint) draft = null;
   rage.setShowroomPaint(draft);
@@ -163,6 +182,7 @@ const editor = new LogoEditor(logoEdited, (message) => { statusLine.textContent 
 // ---- tabs -----------------------------------------------------------------------
 
 function selectTab(name: 'paint' | 'logo'): void {
+  settleAt = name === 'logo' ? FRONT_ANGLE : null;
   $('pane-paint').hidden = name !== 'paint';
   $('pane-logo').hidden = name !== 'logo';
   $('tab-paint').setAttribute('aria-selected', String(name === 'paint'));
@@ -182,7 +202,15 @@ function frame(now: number): void {
     previewStale = false;
     rage.setShowroomLogo(isEmpty(editor.logo) ? null : encodeLogo(editor.logo));
   }
-  if (!dragging) angle = (angle + ((now - lastFrame) / 1000) * TURN_DEGREES_PER_SECOND) % 360;
+  const seconds = (now - lastFrame) / 1000;
+  if (dragging) {
+    // the player turns the car
+  } else if (settleAt !== null) {
+    const towards = ((settleAt - angle + 540) % 360) - 180; // the short way round
+    angle = (angle + Math.sign(towards) * Math.min(Math.abs(towards), seconds * SETTLE_DEGREES_PER_SECOND) + 360) % 360;
+  } else {
+    angle = (angle + seconds * TURN_DEGREES_PER_SECOND) % 360;
+  }
   lastFrame = now;
   const size = `${canvas.clientWidth}x${canvas.clientHeight}`;
   if (size !== shownSize) {
@@ -200,13 +228,13 @@ export function enterGarage(): void {
   show('garage');
   renderer ??= new Renderer(canvas, rage);
   if (!carSelect.options.length) {
-    carSelect.replaceChildren(...rage.garageVariants().map((v) =>
-      new Option(`${rage.carName(v)} ${'I'.repeat(rage.carGrade(v) + 1)}`, String(v))));
+    carSelect.replaceChildren(...rage.garageVariants().map((v) => new Option(carOption(rage, v), String(v))));
     buildSwatches(rage);
   }
   editor.load(app.logo); // the saved logo
   $('logo-tag').textContent = teamTag(session.user?.name ?? '') || '(nothing the font can show)';
   open = true;
+  angle = FRONT_ANGLE;
   lastFrame = performance.now();
   showCar(rage);
   requestAnimationFrame(frame);
@@ -219,7 +247,10 @@ async function leave(): Promise<void> {
 }
 
 // The automated checks turn the car themselves.
-if (location.hash === '#e2e') Object.assign(window, { __garage: { turnTo: (degrees: number) => { dragging = true; angle = degrees; } } });
+if (location.hash === '#e2e') Object.assign(window, { __garage: {
+  turnTo: (degrees: number) => { dragging = true; angle = degrees; },
+  angle: () => angle,
+} });
 
 carSelect.onchange = async () => {
   await flush(); // the draft belongs to the car being left
@@ -232,7 +263,11 @@ factoryButton.onclick = () => {
 };
 $('garage').querySelector('[data-action=garage-back]')!.addEventListener('click', () => void leave());
 
-canvas.addEventListener('pointerdown', (event) => { dragging = true; canvas.setPointerCapture(event.pointerId); });
+canvas.addEventListener('pointerdown', (event) => {
+  dragging = true;
+  settleAt = null;
+  canvas.setPointerCapture(event.pointerId);
+});
 canvas.addEventListener('pointerup', () => { dragging = false; });
 canvas.addEventListener('pointercancel', () => { dragging = false; });
 canvas.addEventListener('pointermove', (event) => { if (dragging) angle = (angle - event.movementX * DRAG_DEGREES_PER_PIXEL + 360) % 360; });

@@ -77,6 +77,7 @@ try {
   check(!factory.equals(painted), 'the painted preview looks different from the factory one');
   await owner.waitForFunction(() => document.querySelector('#garage-status').textContent.startsWith('Saved'), null, { timeout: 10_000 });
   check(true, 'a paint change is saved by itself');
+  check((await owner.locator('#garage-car option:checked').textContent()).endsWith('· painted'), 'the car list marks a painted car');
 
   // A different grade of the same car shares the paint.
   const options = await owner.locator('#garage-car option').evaluateAll((all) => all.map((o) => ({ value: o.value, text: o.textContent })));
@@ -139,6 +140,9 @@ try {
   await owner.waitForFunction(() => !document.querySelector('#garage-status').textContent.startsWith('Loading'), null, { timeout: 60_000 });
   check(await logoPixels(owner) === 0, 'the car starts without a logo');
   await owner.click('#tab-logo');
+  await wait(2500);
+  const settled = await owner.evaluate(() => window.__garage.angle());
+  check(Math.abs(settled - 320) < 1, `editing the logo turns the car to show its bonnet (${settled.toFixed(1)}°)`);
   await owner.click('#logo-palette .swatch[data-index="3"]'); // 0x001f: red
   await owner.click('#tool-fill');
   await owner.click('#logo-canvas');
