@@ -14,14 +14,23 @@ browser draws them with three.js.
   ahead. The class decides which cars can be
   chosen, with the retail custom-race rule: every model the class has
   unlocked, at the grade that class buys. The Extreme Oval starts at class 3.
+  A guest can save their account with a name and password at any time (the
+  same account: races, paint and logo stay). The race forms start on the car
+  the player last chose and mark the cars they painted; the results offer
+  another race; next to each ping a mark shows a player who races over the
+  WebSocket fallback; a banner says when the connection is lost or another
+  window has the account (with a button to play here); and on a touch screen
+  the race has on-screen controls.
 - **The server** (`server/`) owns every race. It builds the field, runs the
   simulation at 50 Hz, applies the players' inputs and streams the complete
   race state (the engine's `RaceFrame` checkpoint) 25 times a second. It also
   sends lap, finish and retirement events, closes the race 90 s after the
   winner (at least), and stores the results. Accounts, sessions, rooms,
   races, results, lap records and each player's history live in SQLite
-  (`node:sqlite`). `rooms.ts` is the lobby (rooms, members, chat) and
-  `race.ts` one running race; `db.ts` the storage and `sim.ts` the
+  (`node:sqlite`). `rooms.ts` is the lobby (connections and what members ask
+  of rooms), `room.ts` one room, `room-rules.ts` what rooms accept,
+  `race-clock.ts` the 50 Hz clock and `race.ts` one running race; `db.ts` the
+  storage, `looks.ts` the checks of what the garage sends and `sim.ts` the
   simulation module.
 - **The garage** shows your car turning on a showroom camera (the same
   renderer, one car on the start grid, `rw_build_showroom`) while you pick its
@@ -132,9 +141,13 @@ npm run test:e2e -- "<disc>"      # two headless browsers race each other, then 
 npm run test:grid -- "<disc>"     # 8-player grid on every course variant
 npm run test:finish -- "<disc>"   # finish fade, spectator hand-over, finish deadline
 npm run test:garage -- "<disc>"   # the garage preview, saving paint, seeing it in a race
-node scripts/logo-test.mjs         # the logo editor's pure operations
-node scripts/looks-test.mjs        # the server's checks of what the garage sends
-node scripts/rtc-fallback-check.mjs "<disc>"  # the data channel: fallback, recovery, a stalled page
+npm run test:duel -- "<disc>"     # a duel by link: the shared car, both drivers
+npm run test:units                 # logo editing, the garage's requests, the prediction clock
+npm run test:fallback -- "<disc>" # the data channel: fallback, recovery, a stalled page
+npm run test:stall -- "<disc>"    # joining late, coming back, stalling: the page stays in the race
+npm run test:replaced -- "<disc>" # two windows on one account
+npm run test:connecting -- "<disc>" # messages sent while the socket opens
+npm run test:ux -- "<disc>"       # saving a guest, the last car, race again, ping marks, touch controls
 node scripts/smoke.mjs "<disc>"   # the simulation module on its own
 node scripts/audio-check.mjs "<disc.cue>"  # engine sound follows rpm; race tunes found
 # Native vs WebAssembly physics, tick by tick:

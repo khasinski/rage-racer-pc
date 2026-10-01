@@ -19,7 +19,11 @@
     "test:garage": "node scripts/garage-check.mjs",
     "test:replaced": "node scripts/replaced-check.mjs",
     "test:connecting": "node scripts/connecting-check.mjs",
-    "check:live": "node scripts/live-check.mjs"
+    "check:live": "node scripts/live-check.mjs",
+    "test:units": "node scripts/logo-test.mjs && node scripts/looks-test.mjs && node scripts/clock-sync-test.mjs",
+    "test:fallback": "node scripts/rtc-fallback-check.mjs",
+    "test:stall": "node scripts/stall-check.mjs",
+    "test:ux": "node scripts/ux-check.mjs"
   },
   "dependencies": {
     "node-datachannel": "^0.33.4",
