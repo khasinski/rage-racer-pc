@@ -1,49 +1,25 @@
-// The lobby: connections, rooms, their members and chat. Each room runs at
-// most one race at a time (race.ts); one 50 Hz timer steps every running race.
-import { randomBytes, randomInt } from 'node:crypto';
-import type { WebSocket } from 'ws';
+// The lobby: connections, the rooms (room.ts) and what members ask of them,
+// and the clock that steps every running race (race-clock.ts). Each room runs
+// at most one race at a time (race.ts).
+import { randomInt } from 'node:crypto';
 import {
-  CLOSE_REPLACED, PAINTABLE_MODELS, TIRE_COMPOUND_COUNT, type ClientMessage, type DuelSetup, type Paint, type RoomPlayer, type RoomSettings, type RoomState, type RoomSummary, type ServerMessage, type UserInfo,
+  CLOSE_REPLACED, PAINTABLE_MODELS, type ClientMessage, type Paint, type RoomSettings, type ServerMessage,
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
 import { Race } from './race.ts';
+import { RaceClock } from './race-clock.ts';
+import { Room, send, type Client } from './room.ts';
+import { carValid, checkSettings, firstCar, normalizeSettings, rollDuel, tireValid } from './room-rules.ts';
 import { RTC_ENABLED, RtcLink } from './rtc.ts';
 import type { Simulation } from './sim.ts';
 
-const TICK_MS = 1000 / 50;
+export type { Client } from './room.ts';
+
 const CHAT_LIMIT = 200;
 const MAX_SPECTATORS = 16;
 /* A dropped connection keeps its place this long outside a race (a racing
  * seat waits until the race is over), so a reconnect puts the player back. */
 const OFFLINE_GRACE_MS = Number(process.env.RAGE_OFFLINE_GRACE_MS ?? 60_000);
-
-export interface Client {
-  ws: WebSocket;
-  user: UserInfo;
-  roomId: number | null;
-  latencyMs: number | null; // measured by the keep-alive pings (main.ts)
-  replaced?: boolean; // superseded by a newer connection of the same account
-  rtc?: RtcLink; // the race's data channel, once the client offers one
-}
-
-interface Member {
-  client: Client;
-  variant: number;
-  manual: boolean;
-  tire: number; // 0..4; a duel picks it, every other room stays on 0
-  ready: boolean;
-  spectator: boolean;
-  offlineSince: number | null; // connection lost; the place waits OFFLINE_GRACE_MS
-}
-
-interface Room {
-  id: number;
-  settings: RoomSettings;
-  hostId: number;
-  members: Map<number, Member>; // insertion order is join order
-  race: Race | null;
-  duel: DuelSetup | null; // one shared car; joined by its token, not the room list
-}
 
 function shuffle<T>(items: T[]): T[] {
   for (let i = items.length - 1; i > 0; i--) {
@@ -53,11 +29,6 @@ function shuffle<T>(items: T[]): T[] {
   return items;
 }
 
-/** Sends a message, or its JSON when several clients get the same one. */
-const send = (client: Client, message: ServerMessage | string) => {
-  if (client.ws.readyState === client.ws.OPEN) client.ws.send(typeof message === 'string' ? message : JSON.stringify(message));
-};
-
 export class Lobby {
   private readonly rooms = new Map<number, Room>();
   private readonly duels = new Map<string, Room>(); // invite token → room
@@ -65,7 +36,7 @@ export class Lobby {
   private readonly clients = new Set<Client>();
   private readonly sim: Simulation;
   private readonly store: Store;
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private readonly clock = new RaceClock(() => this.tick());
   private roomList = JSON.stringify({ t: 'rooms', rooms: [] } satisfies ServerMessage); // as last broadcast
 
   constructor(sim: Simulation, store: Store) {
@@ -98,7 +69,7 @@ export class Lobby {
     member.client = client;
     member.offlineSince = null;
     client.roomId = room.id;
-    if (wasOffline) this.systemChat(room, `${client.user.name} is back.`);
+    if (wasOffline) room.systemChat(`${client.user.name} is back.`);
     this.publish(room);
     if (room.race?.involves(client.user.id)) this.sendRace(room, client);
   }
@@ -113,7 +84,7 @@ export class Lobby {
     member.offlineSince = Date.now();
     member.ready = false;
     room.race?.coast(client.user.id);
-    this.systemChat(room, `${client.user.name} lost the connection.`);
+    room.systemChat(`${client.user.name} lost the connection.`);
     this.publish(room);
   }
 
@@ -126,10 +97,7 @@ export class Lobby {
         if (room.race?.seated(member.client.user.id)) continue;
         this.leave(member.client, 'disconnected');
       }
-      if (!this.rooms.has(room.id)) continue;
-      const latency: Record<number, number | null> = {};
-      for (const [id, member] of room.members) latency[id] = member.offlineSince === null ? member.client.latencyMs : null;
-      this.toRoom(room, { t: 'latency', latency });
+      if (this.rooms.has(room.id)) room.toAll({ t: 'latency', latency: room.latencies() });
     }
   }
 
@@ -183,81 +151,22 @@ export class Lobby {
 
   // ---- rooms -------------------------------------------------------------
 
-  private validSettings(s: RoomSettings): string | null {
-    if (!s || typeof s !== 'object') return 'Missing room settings.';
-    const int = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
-    if (typeof s.name !== 'string' || !s.name.trim() || s.name.length > 40) return 'Give the room a name (up to 40 characters).';
-    if (!int(s.classIndex, 0, 5)) return 'Unknown class.';
-    if (!int(s.course, 0, 3) || !this.sim.courseAllowed(s.classIndex, s.course)) return 'That course is not raced in this class.';
-    if (!int(s.laps, 1, 6)) return 'Laps must be between 1 and 6.';
-    if (typeof s.reverse !== 'boolean' || typeof s.rivals !== 'boolean') return 'Malformed room settings.';
-    const most = this.sim.maxHumans(s.classIndex, s.course, s.reverse);
-    if (!int(s.maxPlayers, 1, most)) return `This course has ${most} starting places.`;
-    return null;
-  }
-
-  private normalize(s: RoomSettings): RoomSettings {
-    return { name: s.name.trim(), classIndex: s.classIndex, course: s.course, reverse: s.reverse,
-             laps: s.laps, rivals: s.rivals, maxPlayers: s.maxPlayers };
-  }
-
   private createRoom(client: Client, settings: RoomSettings): void {
-    const error = this.validSettings(settings);
+    const error = checkSettings(this.sim, settings);
     if (error) return this.fail(client, error);
     if (client.roomId !== null) this.leave(client, 'left');
-    const s = this.normalize(settings);
-    const id = this.store.createRoom(client.user.id, s);
-    const room: Room = { id, settings: s, hostId: client.user.id, members: new Map(), race: null, duel: null };
-    this.rooms.set(id, room);
+    const s = normalizeSettings(settings);
+    const room = new Room(this.store.createRoom(client.user.id, s), s, client.user.id);
+    this.rooms.set(room.id, room);
     this.addMember(room, client);
   }
 
-  /** One car and one course, drawn once, for two drivers who share the link. */
-  private rollDuel(hostName: string): { settings: RoomSettings; duel: DuelSetup } | null {
-    const classes: number[] = [];
-    for (let classIndex = 0; classIndex <= 5; classIndex++) {
-      for (let course = 0; course <= 3; course++) {
-        if (this.sim.courseAllowed(classIndex, course) && this.sim.maxHumans(classIndex, course, false) >= 2) {
-          classes.push(classIndex);
-          break;
-        }
-      }
-    }
-    if (!classes.length) return null;
-    const classIndex = classes[randomInt(classes.length)] ?? 0;
-    const courses: number[] = [];
-    for (let course = 0; course <= 3; course++) {
-      if (this.sim.courseAllowed(classIndex, course) && this.sim.maxHumans(classIndex, course, false) >= 2) courses.push(course);
-    }
-    const cars: number[] = [];
-    for (let model = 0; model < this.sim.carModels(); model++) {
-      const variant = this.sim.classCar(classIndex, model);
-      if (variant >= 0) cars.push(variant);
-    }
-    if (!courses.length || !cars.length) return null;
-    const course = courses[randomInt(courses.length)] ?? 0;
-    const variant = cars[randomInt(cars.length)] ?? 0;
-    let token: string;
-    do token = randomBytes(9).toString('base64url');
-    while (this.duels.has(token));
-    return {
-      settings: {
-        name: `${hostName}'s duel`.slice(0, 40), classIndex, course,
-        reverse: randomInt(2) === 1, laps: 3, rivals: false, maxPlayers: 2,
-      },
-      duel: { variant, manual: !this.sim.carAutomatic(variant), token },
-    };
-  }
-
   private createDuel(client: Client): void {
-    const rolled = this.rollDuel(client.user.name);
+    const rolled = rollDuel(this.sim, client.user.name, (token) => this.duels.has(token));
     if (!rolled) return this.fail(client, 'A duel could not be set up.');
     if (client.roomId !== null) this.leave(client, 'left');
-    const id = this.store.createRoom(client.user.id, rolled.settings);
-    const room: Room = {
-      id, settings: rolled.settings, hostId: client.user.id, members: new Map(), race: null, duel: rolled.duel,
-    };
-    this.rooms.set(id, room);
+    const room = new Room(this.store.createRoom(client.user.id, rolled.settings), rolled.settings, client.user.id, rolled.duel);
+    this.rooms.set(room.id, room);
     this.duels.set(rolled.duel.token, room);
     this.addMember(room, client);
   }
@@ -266,16 +175,16 @@ export class Lobby {
     const room = this.roomOf(client);
     if (!room) return;
     if (room.duel) return this.fail(client, 'A duel keeps the car and course it was given.');
-    if (room.hostId !== client.user.id) return this.fail(client, 'Only the host changes the room.');
+    if (!room.isHost(client)) return this.fail(client, 'Only the host changes the room.');
     if (room.race) return this.fail(client, 'Wait until the race is over.');
-    const error = this.validSettings(settings);
+    const error = checkSettings(this.sim, settings);
     if (error) return this.fail(client, error);
-    const racers = this.racers(room).length;
+    const racers = room.racers().length;
     if (settings.maxPlayers < racers) return this.fail(client, `${racers} players are already on the grid.`);
-    room.settings = this.normalize(settings);
+    room.settings = normalizeSettings(settings);
     for (const member of room.members.values()) {
       member.ready = false;
-      if (!this.carValid(room, member.variant, member.manual)) member.variant = -1;
+      if (!carValid(this.sim, room.settings.classIndex, member.variant, member.manual)) member.variant = -1;
     }
     this.publish(room);
   }
@@ -286,7 +195,7 @@ export class Lobby {
     if (room.members.has(client.user.id)) return;
     if (room.duel) return this.fail(client, 'That duel is joined with its link.');
     // A full or racing room still takes spectators.
-    const spectator = room.race !== null || this.racers(room).length >= room.settings.maxPlayers;
+    const spectator = room.race !== null || room.racers().length >= room.settings.maxPlayers;
     if (spectator && room.members.size >= room.settings.maxPlayers + MAX_SPECTATORS) return this.fail(client, 'That room is full.');
     if (client.roomId !== null) this.leave(client, 'left');
     this.addMember(room, client, spectator);
@@ -299,7 +208,7 @@ export class Lobby {
     const room = this.duels.get(token);
     if (!room) return this.fail(client, 'That duel is over.');
     if (room.members.has(client.user.id)) return this.publish(room);
-    if (room.race || this.racers(room).length >= room.settings.maxPlayers) {
+    if (room.race || room.racers().length >= room.settings.maxPlayers) {
       return this.fail(client, 'That duel already has two drivers.');
     }
     if (client.roomId !== null) this.leave(client, 'left');
@@ -312,33 +221,24 @@ export class Lobby {
     return model < PAINTABLE_MODELS ? this.store.garage(userId)[model] ?? null : null;
   }
 
-  private racers(room: Room): Member[] {
-    return [...room.members.values()].filter((m) => !m.spectator);
-  }
-
   private setSpectator(client: Client, spectator: boolean): void {
     const room = this.roomOf(client);
     const member = room?.members.get(client.user.id);
     if (!room || !member || room.race || typeof spectator !== 'boolean' || member.spectator === spectator) return;
     if (room.duel) return this.fail(client, 'A duel is the two drivers.');
-    if (!spectator && this.racers(room).length >= room.settings.maxPlayers) return this.fail(client, 'The grid is full.');
+    if (!spectator && room.racers().length >= room.settings.maxPlayers) return this.fail(client, 'The grid is full.');
     member.spectator = spectator;
     member.ready = false;
     this.publish(room);
   }
 
   private addMember(room: Room, client: Client, spectator = false): void {
-    // Start with the first car the class offers that the player can drive.
-    let variant = -1;
-    for (let model = 0; model < this.sim.carModels() && variant < 0; model++) {
-      const candidate = this.sim.classCar(room.settings.classIndex, model);
-      if (candidate >= 0) variant = candidate;
-    }
-    if (room.duel) variant = room.duel.variant;
+    // A duel's car, or the first car the class offers.
+    const variant = room.duel ? room.duel.variant : firstCar(this.sim, room.settings.classIndex);
     const manual = room.duel ? room.duel.manual : !this.sim.carAutomatic(variant);
     room.members.set(client.user.id, { client, variant, manual, tire: 0, ready: false, spectator, offlineSince: null });
     client.roomId = room.id;
-    this.systemChat(room, `${client.user.name} joined.`);
+    room.systemChat(`${client.user.name} joined.`);
     this.publish(room);
   }
 
@@ -351,16 +251,16 @@ export class Lobby {
     room.race?.leave(client.user.id, reason);
     send(client, { t: 'room', room: null });
     if (room.members.size === 0) return this.dropRoom(room);
-    if (room.hostId === client.user.id) room.hostId = room.members.keys().next().value as number;
-    this.systemChat(room, `${client.user.name} ${reason === 'disconnected' ? 'disconnected' : 'left'}.`);
+    if (room.isHost(client)) room.hostId = room.members.keys().next().value as number;
+    room.systemChat(`${client.user.name} ${reason === 'disconnected' ? 'disconnected' : 'left'}.`);
     this.publish(room);
   }
 
   private closeRoom(client: Client, roomId: number): void {
     const room = this.rooms.get(roomId);
     if (!room) return;
-    if (room.hostId !== client.user.id && !client.user.admin) return this.fail(client, 'Only the host or an admin can close a room.');
-    this.toRoom(room, { t: 'room', room: null });
+    if (!room.isHost(client) && !client.user.admin) return this.fail(client, 'Only the host or an admin can close a room.');
+    room.toAll({ t: 'room', room: null });
     for (const member of room.members.values()) {
       member.client.roomId = null;
       if (member.client !== client) send(member.client, { t: 'error', message: `The room “${room.settings.name}” was closed.` });
@@ -377,23 +277,16 @@ export class Lobby {
     this.broadcastRooms();
   }
 
-  private carValid(room: Room, variant: number, manual: boolean): boolean {
-    return this.sim.carAllowed(room.settings.classIndex, variant) && (manual || this.sim.carAutomatic(variant));
-  }
-
-  private tireValid(tire: unknown): tire is number {
-    return typeof tire === 'number' && Number.isInteger(tire) && tire >= 0 && tire < TIRE_COMPOUND_COUNT;
-  }
-
   private setCar(client: Client, variant: number, manual: boolean, tire?: number): void {
     const room = this.roomOf(client);
     const member = room?.members.get(client.user.id);
     if (!room || !member || room.race) return;
+    const classIndex = room.settings.classIndex;
     if (room.duel) {
       if (!Number.isInteger(variant) || variant !== room.duel.variant) {
         return this.fail(client, 'A duel gives both drivers the same car.');
       }
-      if (typeof manual !== 'boolean' || !this.carValid(room, variant, manual) || !this.tireValid(tire)) {
+      if (typeof manual !== 'boolean' || !carValid(this.sim, classIndex, variant, manual) || !tireValid(tire)) {
         return this.fail(client, 'That setup is not available for this car.');
       }
       if (member.manual === manual && member.tire === tire) return;
@@ -403,7 +296,7 @@ export class Lobby {
       this.publish(room);
       return;
     }
-    if (!Number.isInteger(variant) || typeof manual !== 'boolean' || !this.carValid(room, variant, manual)) {
+    if (!Number.isInteger(variant) || typeof manual !== 'boolean' || !carValid(this.sim, classIndex, variant, manual)) {
       return this.fail(client, 'That car is not available in this class.');
     }
     member.variant = variant;
@@ -426,11 +319,7 @@ export class Lobby {
     const room = this.roomOf(client);
     if (!room || typeof text !== 'string') return;
     const clean = text.replace(/\s+/g, ' ').trim().slice(0, CHAT_LIMIT);
-    if (clean) this.toRoom(room, { t: 'chat', from: client.user.name, text: clean, at: Date.now() });
-  }
-
-  private systemChat(room: Room, text: string): void {
-    this.toRoom(room, { t: 'chat', from: '', text, at: Date.now() });
+    if (clean) room.toAll({ t: 'chat', from: client.user.name, text: clean, at: Date.now() });
   }
 
   // ---- races -------------------------------------------------------------
@@ -438,17 +327,19 @@ export class Lobby {
   private startRace(client: Client): void {
     const room = this.roomOf(client);
     if (!room) return;
-    if (room.hostId !== client.user.id) return this.fail(client, 'Only the host starts the race.');
+    if (!room.isHost(client)) return this.fail(client, 'Only the host starts the race.');
     if (room.race) return;
     // Grid places are drawn afresh for every race: nobody always starts behind.
-    const members = shuffle(this.racers(room));
+    const members = shuffle(room.racers());
     if (!members.length) return this.fail(client, 'Nobody is racing: somebody has to leave the stands.');
     if (room.duel && members.length < 2) return this.fail(client, 'A duel starts when both drivers are here.');
     const unready = members.filter((m) => !m.ready && (room.duel || m.client.user.id !== room.hostId));
     if (unready.length) return this.fail(client, `Waiting for ${unready.map((m) => m.client.user.name).join(', ')}.`);
-    if (members.some((m) => !this.carValid(room, m.variant, m.manual))) return this.fail(client, 'Every player needs a car for this class.');
+    if (members.some((m) => !carValid(this.sim, room.settings.classIndex, m.variant, m.manual))) {
+      return this.fail(client, 'Every player needs a car for this class.');
+    }
     const race = Race.create(this.sim, this.store, {
-      broadcast: (message) => this.toRoom(room, message),
+      broadcast: (message) => room.toAll(message),
       client: (userId) => {
         const member = room.members.get(userId);
         return member && member.offlineSince === null ? member.client : undefined;
@@ -466,7 +357,7 @@ export class Lobby {
       this.sendRace(room, member.client);
     }
     this.publish(room);
-    this.ensureTimer();
+    this.clock.ensureRunning();
   }
 
   /** Sends the running race to a member: everyone at the start, then a
@@ -487,26 +378,8 @@ export class Lobby {
     else this.leave(client, 'could not load the race');
   }
 
-  private ensureTimer(): void {
-    if (this.timer) return;
-    let next = performance.now();
-    this.timer = setInterval(() => {
-      // Catch up on late timer callbacks so races keep the 50 Hz clock.
-      const now = performance.now();
-      let steps = 0;
-      while (next <= now && steps++ < 10) {
-        this.tick();
-        next += TICK_MS;
-      }
-      if (next < now) next = now;
-      if (!this.racing.size) {
-        clearInterval(this.timer!);
-        this.timer = null;
-      }
-    }, 4);
-  }
-
-  private tick(): void {
+  /** One 50 Hz step of every running race; false once none runs. */
+  private tick(): boolean {
     const now = Date.now();
     for (const room of this.racing) {
       for (const id of room.race!.overdue(now)) {
@@ -519,6 +392,7 @@ export class Lobby {
       if (outcome === 'over') this.endRace(room);
       if (outcome !== 'running') this.publish(room);
     }
+    return this.racing.size > 0;
   }
 
   private endRace(room: Room): void {
@@ -532,33 +406,15 @@ export class Lobby {
     return client.roomId === null ? undefined : this.rooms.get(client.roomId);
   }
 
-  /** Sends one message to every member of a room, serialized once. */
-  private toRoom(room: Room, message: ServerMessage): void {
-    const text = JSON.stringify(message);
-    for (const member of room.members.values()) send(member.client, text);
-  }
-
-  private summary(room: Room): RoomSummary {
-    const host = room.members.get(room.hostId)?.client.user.name ?? '';
-    const racers = this.racers(room).length;
-    return { id: room.id, settings: room.settings, host, players: racers, spectators: room.members.size - racers,
-             status: room.race ? (room.race.started ? 'racing' : 'loading') : 'lobby' };
-  }
-
   private publish(room: Room): void {
-    const members: RoomPlayer[] = [...room.members.values()].map((m) => ({
-      userId: m.client.user.id, name: m.client.user.name, variant: m.variant, manual: m.manual, tire: m.tire,
-      ready: room.duel ? m.ready : m.ready || m.client.user.id === room.hostId, host: m.client.user.id === room.hostId,
-      spectator: m.spectator, online: m.offlineSince === null,
-    }));
-    const state: RoomState = { ...this.summary(room), members, duel: room.duel };
-    this.toRoom(room, { t: 'room', room: state });
+    room.toAll({ t: 'room', room: room.state() });
     this.broadcastRooms();
   }
 
-  /** The room list goes to everyone, only when it changed. */
+  /** The room list goes to everyone, only when it changed. Duels stay off it. */
   private broadcastRooms(): void {
-    const list = JSON.stringify({ t: 'rooms', rooms: [...this.rooms.values()].filter((room) => !room.duel).map((room) => this.summary(room)) } satisfies ServerMessage);
+    const rooms = [...this.rooms.values()].filter((room) => !room.duel).map((room) => room.summary());
+    const list = JSON.stringify({ t: 'rooms', rooms } satisfies ServerMessage);
     if (list === this.roomList) return;
     this.roomList = list;
     for (const client of this.clients) send(client, list);

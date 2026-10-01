@@ -7,7 +7,7 @@ import {
 } from '../shared/protocol.ts';
 import { deflateRawSync } from 'node:zlib';
 import type { Store } from './db.ts';
-import type { Client } from './rooms.ts';
+import type { Client } from './room.ts';
 import {
   PHASE_FINISHED, STATUS_DRIVING, STATUS_EMPTY, STATUS_FINISHED, STATUS_RETIRED, type Simulation,
 } from './sim.ts';
