@@ -239,3 +239,5 @@ body[data-connection=down] .needs-server, body[data-connection=replaced] .needs-
 .ping.fallback { color: #ffd48a; cursor: help; }
 #hud #standings span.ping { font-size: 12px; font-weight: 400; text-align: right; }
 #hud #standings span.ping.fallback { color: #ffd48a; }
+/* ✕ asks for a second tap (touch.ts). */
+#touch button.armed { background: rgba(255, 107, 107, 0.6); border-color: var(--error); }

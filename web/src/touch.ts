@@ -8,6 +8,10 @@ const overlay = $('touch');
 const fingers = new Map<number, number>(); // pointer id → pad bit
 /* Keys some buttons stand for (leaving the race, which is not a pad button). */
 const keyTaps: string[] = [];
+/* ✕ leaves only when tapped twice within this long: one stray touch must not
+ * retire the car. */
+const LEAVE_CONFIRM_MS = 2000;
+let leaveArmedAt = -Infinity;
 
 /** The pad buttons fingers hold now. */
 export function touchHeld(): number {
@@ -44,7 +48,16 @@ overlay.addEventListener('pointerdown', (event) => {
   event.preventDefault();
   const name = button.dataset.touch!;
   if (name === 'leave') {
-    keyTaps.push('Escape');
+    const now = performance.now();
+    if (now - leaveArmedAt <= LEAVE_CONFIRM_MS) {
+      leaveArmedAt = -Infinity;
+      button.classList.remove('armed');
+      keyTaps.push('Escape');
+    } else {
+      leaveArmedAt = now;
+      button.classList.add('armed');
+      setTimeout(() => button.classList.remove('armed'), LEAVE_CONFIRM_MS);
+    }
     return;
   }
   fingers.set(event.pointerId, BITS[name]);

@@ -119,6 +119,18 @@ try {
   const speed = await page.evaluate(() => window.__race.rage.hud().speed);
   await touch('touchEnd');
   check(speed > 30, `holding GAS drives the car (${speed} km/h)`);
+  const leave = await page.locator('#touch [data-touch=leave]').boundingBox();
+  const tap = async () => {
+    const at = [{ x: leave.x + leave.width / 2, y: leave.y + leave.height / 2 }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: at });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  };
+  await tap();
+  await wait(500);
+  check(await page.evaluate(() => document.body.dataset.screen) === 'race', 'one tap on ✕ does not leave the race');
+  await tap();
+  await page.waitForFunction(() => document.body.dataset.screen !== 'race', null, { timeout: 5_000 }).catch(() => {});
+  check(await page.evaluate(() => document.body.dataset.screen) !== 'race', 'a second tap does');
   await phone.close();
 } finally {
   await browser.close();

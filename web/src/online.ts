@@ -218,6 +218,7 @@ $('room').addEventListener('click', async (event) => {
   if (action === 'leave-room') send({ t: 'leaveRoom' });
   else if (action === 'close-room' && room) send({ t: 'closeRoom', roomId: room.id });
   else if (action === 'edit-room' && room && app.rage) {
+    startWhenReady = false; // a changed room is not the race the host asked for again
     const settings = await editSettings(app.rage, room.settings, room.members.length);
     if (settings) send({ t: 'updateRoom', settings });
   }
