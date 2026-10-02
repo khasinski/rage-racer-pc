@@ -6,33 +6,20 @@
 // three.js never computes its own view.
 import * as THREE from 'three';
 import { PAL_HEIGHT, PAL_WIDTH } from './constants';
+import { ASSET_TRACK_MODEL_BANK_1, Rage, SPAN_FIELDS, type TextureLevel } from './rage';
+import { NameTags } from './name-tags';
+import { type Nameplate } from './nameplates';
 import {
-  ASSET_TRACK_MODEL_BANK_1, ASSET_TRACK_MODEL_BANK_2, MATERIAL_ENV_CLUT, NO_MATERIAL, Rage, SPAN_FIELDS, type DecodedTexture, type TextureLevel,
-} from './rage';
-import { NAMEPLATE_HEIGHT, type Nameplate } from './nameplates';
-import {
-  ATLAS_LAYER_HEIGHT, ATLAS_LAYER_WIDTH, ATLAS_LEVEL_ORIGINS, mirrorFragment, mirrorVertex, nameplateFragment, nameplateVertex, shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
+  mirrorFragment, mirrorVertex, shadowFragment, shadowVertex, skyFragment, skyVertex, worldFragment, worldVertex,
 } from './shaders';
+import { SPAN, TextureAtlas, type MaterialEntry } from './texture-atlas';
 
 const VERTEX_CAPACITY = 600_000;
-/* Decoding is the expensive part of a palette change; spread it out. */
-const DECODES_PER_FRAME = 48;
-/* Texture array layers: grown by doubling, and least-recently-drawn
- * materials give up their layer once the array is at its limit. */
-const ATLAS_INITIAL_LAYERS = 64;
-const ATLAS_MAX_LAYERS = 512;
-const ATLAS_LAYER_BYTES = ATLAS_LAYER_WIDTH * ATLAS_LAYER_HEIGHT * 4;
 /* Draw groups: the two world materials and the one shadow material. */
 const OPAQUE = 0;
 const TRANSPARENT = 1;
 /* render_world.h RenderAssetSet: vehicles are model-bank meshes. */
 const ASSET_MODEL_BANK = 0;
-/* Field offsets within one span of Rage.spans() (SPAN_FIELDS each). */
-const SPAN = {
-  firstVertex: 0, count: 1, material: 2, assetSet: 3, assetSource: 4, assetKey: 5, materialVariant: 6,
-  hasCarPaint: 7, paint1: 8, paint2: 9, instanceFlags: 10, materialFlags: 11, depthDecal: 12, alpha: 13, custom: 14,
-} as const;
-
 /* The mirror's place on the PAL screen (render/mirror_pass.c,
  * render/rear_view_mirror.c): 240 lines tall, centred horizontally. */
 const MIRROR_X = 0x56;
@@ -56,12 +43,6 @@ function addMerged(groups: Group[], start: number, count: number, material: numb
   if (last && last.material === material && last.start + last.count === start) last.count += count;
   else groups.push({ start, count, material });
 }
-interface MaterialEntry {
-  layer: number; // texture array layer, -1 when untextured
-  transparent: boolean;
-  lastUsed: number; // frame number
-}
-
 const vec4 = () => ({ value: new THREE.Vector4() });
 
 export class Renderer {
@@ -77,17 +58,7 @@ export class Renderer {
   private readonly layerAttribute: THREE.BufferAttribute;
   private readonly worldMaterials: THREE.RawShaderMaterial[];
   private readonly shadowMaterial: THREE.RawShaderMaterial;
-  private readonly atlasUniform = { value: null } as Uniform<THREE.DataArrayTexture | null>;
-  private atlas: THREE.DataArrayTexture | null = null;
-  /* A new array uploads whole; per-layer updates only after that (three.js
-   * would otherwise upload just the queued layers of a fresh array). */
-  private atlasFresh = false;
-  private readonly freeLayers: number[] = [];
-  private frameNumber = 0;
-  private readonly entries = new Map<string, MaterialEntry>();
-  /* Last entry each material was drawn with, shown while a new page decodes. */
-  private readonly shown = new Map<string, MaterialEntry>();
-  private readonly untextured: MaterialEntry;
+  private readonly atlas: TextureAtlas;
   private readonly shadowTarget: THREE.WebGLRenderTarget;
   private readonly shared = {
     uCameraPosition: vec4(), uViewRow0: vec4(), uViewRow1: vec4(), uViewRow2: vec4(),
@@ -107,9 +78,6 @@ export class Renderer {
   /* Without a panorama the native backend binds one transparent texel. */
   private readonly noPanorama = Renderer.panorama({ data: new Uint8Array(4), width: 1, height: 1 });
   private skyRevision: number | null = null;
-  private paletteHash = 0;
-  private page = 0;
-  private stale = new Set<string>();
   /* Rear-view mirror: the same materials over its own span groups, drawn
    * from the mirror camera into a small target, then flipped into the panel. */
   private readonly mirrorScene = new THREE.Scene();
@@ -121,8 +89,7 @@ export class Renderer {
   private mirrorView: View = { camera: new Float32Array(28), sky: new Float32Array(28) };
   private mirrorPanelY: number | null = null;
   shadows = true;
-  private readonly nameGeometry = nameQuad();
-  private readonly nameTags = new Map<number, NameTag>();
+  private readonly nameTags: NameTags;
 
   constructor(canvas: HTMLCanvasElement, private readonly rage: Rage) {
     this.webgl = new THREE.WebGLRenderer({
@@ -167,12 +134,12 @@ export class Renderer {
     this.shared.uShadowMap.value = this.shadowTarget.depthTexture;
     this.shared.uShadowResolution.value = resolution;
 
-    this.growAtlas(ATLAS_INITIAL_LAYERS);
+    this.atlas = new TextureAtlas(rage);
     const worldMaterial = (transparent: boolean) => new THREE.RawShaderMaterial({
       glslVersion: THREE.GLSL3,
       vertexShader: worldVertex,
       fragmentShader: worldFragment,
-      uniforms: { ...this.shared, uAtlas: this.atlasUniform },
+      uniforms: { ...this.shared, uAtlas: this.atlas.uniform },
       side: THREE.DoubleSide,
       depthFunc: THREE.LessEqualDepth,
       transparent,
@@ -184,11 +151,10 @@ export class Renderer {
       glslVersion: THREE.GLSL3,
       vertexShader: shadowVertex,
       fragmentShader: shadowFragment,
-      uniforms: { ...this.shared, uAtlas: this.atlasUniform },
+      uniforms: { ...this.shared, uAtlas: this.atlas.uniform },
       side: THREE.DoubleSide,
       blending: THREE.NoBlending,
     });
-    this.untextured = { layer: -1, transparent: false, lastUsed: 0 };
     const world = new THREE.Mesh(this.geometry, this.worldMaterials);
     world.frustumCulled = false;
     const casters = new THREE.Mesh(this.shadowGeometry, [this.shadowMaterial]);
@@ -219,62 +185,7 @@ export class Renderer {
       }));
     composite.frustumCulled = false;
     this.compositeScene.add(composite);
-  }
-
-  /** Recreates the texture array with room for `layers`, keeping its contents. */
-  private growAtlas(layers: number) {
-    const previous = this.atlas;
-    const data = new Uint8Array(layers * ATLAS_LAYER_BYTES);
-    const oldLayers = previous ? previous.image.depth : 0;
-    if (previous) data.set(previous.image.data as Uint8Array);
-    const atlas = new THREE.DataArrayTexture(data, ATLAS_LAYER_WIDTH, ATLAS_LAYER_HEIGHT, layers);
-    atlas.format = THREE.RGBAFormat;
-    atlas.type = THREE.UnsignedByteType;
-    atlas.magFilter = THREE.LinearFilter;
-    atlas.minFilter = THREE.LinearFilter;
-    atlas.generateMipmaps = false;
-    atlas.colorSpace = THREE.NoColorSpace;
-    atlas.needsUpdate = true;
-    this.atlas = atlas;
-    this.atlasFresh = true;
-    this.atlasUniform.value = atlas;
-    for (let layer = layers - 1; layer >= oldLayers; layer--) this.freeLayers.push(layer);
-    previous?.dispose();
-  }
-
-  /** A layer for a new material: a free one, a larger array, or the layer of
-   *  the material drawn longest ago (never one drawn this frame). */
-  private allocateLayer(): number {
-    if (!this.freeLayers.length) {
-      const layers = this.atlas!.image.depth;
-      if (layers < ATLAS_MAX_LAYERS) this.growAtlas(Math.min(ATLAS_MAX_LAYERS, layers * 2));
-    }
-    const free = this.freeLayers.pop();
-    if (free !== undefined) return free;
-    let oldest: [string, MaterialEntry] | null = null;
-    for (const item of this.entries) {
-      if (item[1].layer >= 0 && item[1].lastUsed < this.frameNumber && (!oldest || item[1].lastUsed < oldest[1].lastUsed)) oldest = item;
-    }
-    if (!oldest) return -1;
-    this.entries.delete(oldest[0]);
-    for (const [identity, entry] of this.shown) if (entry === oldest[1]) this.shown.delete(identity);
-    return oldest[1].layer;
-  }
-
-  /** Writes a decoded mip chain into its layer and queues the upload. */
-  private writeLayer(layer: number, decoded: DecodedTexture) {
-    const atlas = this.atlas!;
-    const data = atlas.image.data as Uint8Array;
-    const base = layer * ATLAS_LAYER_BYTES;
-    decoded.levels.forEach((level, index) => {
-      const [ox, oy] = ATLAS_LEVEL_ORIGINS[index];
-      for (let y = 0; y < level.height; y++) {
-        data.set(level.data.subarray(y * level.width * 4, (y + 1) * level.width * 4),
-                 base + ((oy + y) * ATLAS_LAYER_WIDTH + ox) * 4);
-      }
-    });
-    if (!this.atlasFresh) atlas.addLayerUpdate(layer);
-    atlas.needsUpdate = true;
+    this.nameTags = new NameTags(this.scene, this.shared);
   }
 
   /* The cloud sheet repeats round the turn but never upwards, and is sampled
@@ -303,69 +214,9 @@ export class Renderer {
     if (previous && previous !== this.noPanorama) previous.dispose();
   }
 
-  /* Track model banks decode against the current track texture page, which
-   * retail swaps by track section; terrain and course already carry the page
-   * in their material variant. */
-  private static keyOf(spans: Uint32Array, f: number, page: number): string {
-    const set = spans[f + SPAN.assetSet];
-    const paged = set === ASSET_TRACK_MODEL_BANK_1 || set === ASSET_TRACK_MODEL_BANK_2;
-    return `${Renderer.identityOf(spans, f)}:${spans[f + SPAN.materialVariant]}:${paged ? page : 0}`;
-  }
-
-  /** The material regardless of page and variant. */
-  private static identityOf(spans: Uint32Array, f: number): string {
-    return `${spans[f + SPAN.assetSet]}:${spans[f + SPAN.assetSource]}:${spans[f + SPAN.assetKey]}:` +
-           `${spans[f + SPAN.material]}:${spans[f + SPAN.hasCarPaint]}:` +
-           `${spans[f + SPAN.paint1]}:${spans[f + SPAN.paint2]}:${spans[f + SPAN.custom]}`;
-  }
-
-  private entryFor(spans: Uint32Array, span: number, budget: { decodes: number }): MaterialEntry | null {
-    const f = span * SPAN_FIELDS;
-    if (spans[f + SPAN.material] === NO_MATERIAL) return this.untextured;
-    const key = Renderer.keyOf(spans, f, this.page);
-    const identity = Renderer.identityOf(spans, f);
-    const existing = this.entries.get(key);
-    const palette = (spans[f + SPAN.materialFlags] & MATERIAL_ENV_CLUT) !== 0;
-    if (existing && !(palette && this.stale.has(key))) return this.show(identity, existing);
-    // Out of budget: keep what this material showed last (the previous page
-    // or variant), as retail keeps drawing while it swaps VRAM rows.
-    if (budget.decodes <= 0) return existing ?? this.shown.get(identity) ?? null;
-    budget.decodes--;
-    const decoded = this.rage.decodeTexture(span);
-    this.stale.delete(key);
-    if (!decoded) {
-      this.entries.set(key, this.untextured);
-      return this.show(identity, this.untextured);
-    }
-    if (existing && existing.layer >= 0) {
-      // Palette change: redraw the image in place, in the same layer.
-      this.writeLayer(existing.layer, decoded);
-      existing.transparent = decoded.transparent;
-      return this.show(identity, existing);
-    }
-    const layer = this.allocateLayer();
-    if (layer < 0) return this.show(identity, this.untextured);
-    this.writeLayer(layer, decoded);
-    const entry: MaterialEntry = { layer, transparent: decoded.transparent, lastUsed: this.frameNumber };
-    this.entries.set(key, entry);
-    return this.show(identity, entry);
-  }
-
-  private show(identity: string, entry: MaterialEntry): MaterialEntry {
-    entry.lastUsed = this.frameNumber;
-    this.shown.set(identity, entry);
-    return entry;
-  }
-
   /** Uploads the frame the bridge just built with `vertexCount` vertices. */
   update(vertexCount: number) {
-    this.frameNumber++;
-    this.page = this.rage.texturePage();
-    const hash = this.rage.paletteHash();
-    if (hash !== this.paletteHash) {
-      this.paletteHash = hash;
-      this.stale = new Set(this.entries.keys());
-    }
+    this.atlas.beginFrame();
     const mirror = this.rage.mirror();
     const totalVertices = vertexCount + (mirror ? mirror.vertexCount : 0);
     const packed = this.rage.packedVertices(totalVertices);
@@ -377,10 +228,9 @@ export class Renderer {
     const spanCount = spans.length / SPAN_FIELDS;
     const phases: Span[][] = [[], [], [], []];
     const mirrorPhases: Span[][] = [[], [], [], []];
-    const budget = { decodes: DECODES_PER_FRAME };
     for (let span = 0; span < spanCount; span++) {
       const f = span * SPAN_FIELDS;
-      const entry = this.entryFor(spans, span, budget);
+      const entry = this.atlas.entryFor(spans, span);
       if (!entry) continue;
       const set = spans[f + SPAN.assetSet];
       const vehicle = set === ASSET_MODEL_BANK || set === ASSET_TRACK_MODEL_BANK_1;
@@ -481,63 +331,9 @@ export class Renderer {
     k.uSkyGridParams.value.w = height;
   }
 
-  /** Names above the cars close to the one being followed. Drawn with the
-   *  world, so the depth test hides a plate behind nearer geometry. */
+  /** Names above the cars close to the one being followed. */
   setNameplates(plates: readonly Nameplate[]): void {
-    const live = new Set<number>();
-    for (const plate of plates) {
-      live.add(plate.seat);
-      let tag = this.nameTags.get(plate.seat);
-      if (!tag) {
-        tag = this.createNameTag();
-        this.nameTags.set(plate.seat, tag);
-      }
-      if (tag.name !== plate.name || tag.texture === null) {
-        tag.texture?.dispose();
-        tag.texture = paintName(plate.name);
-        tag.material.uniforms.uName.value = tag.texture;
-        tag.name = plate.name;
-      }
-      tag.material.uniforms.uAnchor.value.set(plate.anchor[0], plate.anchor[1], plate.anchor[2]);
-      const image = tag.texture.image as HTMLCanvasElement;
-      const height = plate.length * NAMEPLATE_HEIGHT;
-      tag.material.uniforms.uSize.value.set(height * (image.width / image.height), height);
-      tag.material.uniforms.uAlpha.value = plate.alpha;
-      tag.mesh.position.set(plate.anchor[0], plate.anchor[1], plate.anchor[2]);
-      tag.mesh.visible = true;
-    }
-    for (const [seat, tag] of this.nameTags) if (!live.has(seat)) tag.mesh.visible = false;
-  }
-
-  private createNameTag(): NameTag {
-    const material = new THREE.RawShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      vertexShader: nameplateVertex,
-      fragmentShader: nameplateFragment,
-      uniforms: {
-        uCameraPosition: this.shared.uCameraPosition,
-        uViewRow0: this.shared.uViewRow0,
-        uViewRow1: this.shared.uViewRow1,
-        uViewRow2: this.shared.uViewRow2,
-        uProjection: this.shared.uProjection,
-        uAnchor: { value: new THREE.Vector3() },
-        uSize: { value: new THREE.Vector2(1, 1) },
-        uAlpha: { value: 1 },
-        uName: { value: null },
-      },
-      transparent: true,
-      depthTest: true,
-      depthWrite: false,
-      depthFunc: THREE.LessEqualDepth,
-      side: THREE.DoubleSide,
-      blending: THREE.NormalBlending,
-    });
-    const mesh = new THREE.Mesh(this.nameGeometry, material);
-    mesh.frustumCulled = false;
-    mesh.renderOrder = 2;
-    mesh.visible = false;
-    this.scene.add(mesh);
-    return { mesh, material, texture: null, name: '' };
+    this.nameTags.set(plates);
   }
 
   render() {
@@ -550,7 +346,7 @@ export class Renderer {
     // gl_FragCoord is in drawing-buffer pixels.
     this.applyView(this.mainView, this.webgl.getContext().drawingBufferHeight);
     this.webgl.render(this.scene, this.camera);
-    this.atlasFresh = false; // uploaded whole by the pass above
+    this.atlas.uploaded(); // uploaded whole by the pass above
     if (this.mirrorPanelY !== null) this.renderMirror(this.mirrorPanelY);
   }
 
@@ -600,43 +396,3 @@ export class Renderer {
   }
 }
 
-interface NameTag {
-  mesh: THREE.Mesh;
-  material: THREE.RawShaderMaterial;
-  texture: THREE.CanvasTexture | null;
-  name: string;
-}
-
-function nameQuad(): THREE.BufferGeometry {
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('corner', new THREE.Float32BufferAttribute([-1, 0, 1, 0, 1, 1, -1, 1], 2));
-  geometry.setIndex([0, 1, 2, 0, 2, 3]);
-  geometry.boundingSphere = new THREE.Sphere(new THREE.Vector3(), Infinity);
-  return geometry;
-}
-
-function paintName(name: string): THREE.CanvasTexture {
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('name canvas unavailable');
-  const font = '700 32px "Helvetica Neue", Arial, sans-serif';
-  ctx.font = font;
-  canvas.width = Math.max(4, Math.ceil(ctx.measureText(name).width) + 24);
-  canvas.height = 48;
-  ctx.font = font;
-  ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.miterLimit = 2;
-  ctx.lineWidth = 6;
-  ctx.strokeStyle = 'rgba(0, 0, 0, 0.9)';
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeText(name, 12, 26);
-  ctx.fillText(name, 12, 26);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.NoColorSpace;
-  texture.generateMipmaps = false;
-  texture.minFilter = THREE.LinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.needsUpdate = true;
-  return texture;
-}
