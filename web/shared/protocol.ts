@@ -20,6 +20,7 @@
 // Types only: shared by the Vite client and the Node server (type stripping).
 
 export const DEFAULT_PORT = 7243;
+export type ErrorCode = 'replaced' | 'duelLink';
 export type Transport = 'rtc' | 'ws';
 export const BINARY_INPUT = 1;
 export const BINARY_FRAME = 2;
@@ -185,6 +186,9 @@ export type ServerMessage =
   | { t: 'latency'; latency: Record<number, number | null>; transport?: Record<number, Transport> }
   | { t: 'raceEvent'; event: RaceEvent }
   | { t: 'results'; results: RaceResult[] }
-  | { t: 'error'; message: string }
+  // `message` is for people; `code` marks the errors the client acts on
+  // ('replaced': this account connected elsewhere; 'duelLink': the duel
+  // link cannot be followed).
+  | { t: 'error'; message: string; code?: ErrorCode }
   | { t: 'rtcAnswer'; sdp: string }
   | { t: 'rtcCandidate'; candidate: string; mid: string };

@@ -34,11 +34,6 @@ function setDuelParam(token: string | null): void {
   if (url.href !== location.href) history.replaceState(null, '', url);
 }
 
-const DUEL_JOIN_ERRORS = new Set([
-  'That duel link is not valid.',
-  'That duel is over.',
-  'That duel already has two drivers.',
-]);
 let reconnectDelay = 1000;
 /* A spectator's frames. */
 const frames = new FrameBuffer();
@@ -200,9 +195,9 @@ function onMessage(message: ServerMessage) {
       void refreshTables();
       break;
     case 'error':
-      if (message.message === 'You connected somewhere else.') break; // the banner says it
+      if (message.code === 'replaced') break; // the banner says it
       toast(message.message);
-      if (DUEL_JOIN_ERRORS.has(message.message)) {
+      if (message.code === 'duelLink') {
         followDuelLink = false;
         setDuelParam(null);
         if (app.screen === 'lobby') $('lobby-status').textContent = message.message;

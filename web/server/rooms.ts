@@ -3,7 +3,7 @@
 // at most one race at a time (race.ts).
 import { randomInt } from 'node:crypto';
 import {
-  CLOSE_REPLACED, PAINTABLE_MODELS, type ClientMessage, type Paint, type RoomSettings, type ServerMessage, type UserInfo,
+  CLOSE_REPLACED, PAINTABLE_MODELS, type ClientMessage, type ErrorCode, type Paint, type RoomSettings, type ServerMessage, type UserInfo,
 } from '../shared/protocol.ts';
 import type { Store } from './db.ts';
 import { Race } from './race.ts';
@@ -53,7 +53,7 @@ export class Lobby {
       if (other.user.id === client.user.id) {
         other.replaced = true;
         this.clients.delete(other);
-        send(other, { t: 'error', message: 'You connected somewhere else.' });
+        send(other, { t: 'error', message: 'You connected somewhere else.', code: 'replaced' });
         other.ws.close(CLOSE_REPLACED, 'replaced');
       }
     }
@@ -156,8 +156,8 @@ export class Lobby {
     }
   }
 
-  private fail(client: Client, message: string): void {
-    send(client, { t: 'error', message });
+  private fail(client: Client, message: string, code?: ErrorCode): void {
+    send(client, { t: 'error', message, code });
   }
 
   // ---- rooms -------------------------------------------------------------
@@ -215,12 +215,12 @@ export class Lobby {
 
   /** The other driver, from the page link. A full duel does not take a third. */
   private joinDuel(client: Client, token: unknown): void {
-    if (typeof token !== 'string' || token.length === 0) return this.fail(client, 'That duel link is not valid.');
+    if (typeof token !== 'string' || token.length === 0) return this.fail(client, 'That duel link is not valid.', 'duelLink');
     const room = this.duels.get(token);
-    if (!room) return this.fail(client, 'That duel is over.');
+    if (!room) return this.fail(client, 'That duel is over.', 'duelLink');
     if (room.members.has(client.user.id)) return this.publish(room);
     if (room.race || room.racers().length >= room.settings.maxPlayers) {
-      return this.fail(client, 'That duel already has two drivers.');
+      return this.fail(client, 'That duel already has two drivers.', 'duelLink');
     }
     if (client.roomId !== null) this.leave(client, 'left');
     this.addMember(room, client);
