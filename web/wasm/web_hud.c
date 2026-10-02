@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "game/angle.h"
+#include "game/integer.h"
 #include "game/asset_index.h"
 #include "game/image_asset.h"
 #include "game/track.h"
@@ -150,9 +151,6 @@ int WebHudPrepare(const RaceData *archive, int variant) {
 
 const uint8_t *WebHudAtlas(void) { return s_ready ? s_atlas : NULL; }
 
-static s32 Word(int64_t value) { return (s32)(uint32_t)(uint64_t)value; }
-static s16 Half(int64_t value) { return (s16)(uint16_t)(uint64_t)value; }
-
 /* speed_display.c SpeedDisplayValue. */
 static s32 SpeedDisplay(s32 speed) {
     int64_t value;
@@ -227,7 +225,7 @@ const int32_t *WebHudTachometer(const ClientRace *race, int seat) {
         lighting = LIGHTING_FADE_TO_DARK;
         amount = clock - DUSK_FADE_START;
     }
-    rpm = Word((int64_t)engine->rpm + engine->jitter);
+    rpm = WrapSigned32((int64_t)engine->rpm + engine->jitter);
 
     /* draw_tachometer.c DrawTachometer. */
     centerX = spec->needleX;
@@ -239,27 +237,27 @@ const int32_t *WebHudTachometer(const ClientRace *race, int seat) {
     cosine = SinAngle(angle);
     for (int i = 0; i < 4; ++i) {
         const s32 width = spec->needleQuad[(i & 1) ? 1 : 3];
-        const s32 localX = Half(i < 2 ? -width : width);
-        const s32 localY = Half((i & 1) ? -spec->needleQuad[0] : spec->needleQuad[2]);
+        const s32 localX = WrapSigned16(i < 2 ? -width : width);
+        const s32 localY = WrapSigned16((i & 1) ? -spec->needleQuad[0] : spec->needleQuad[2]);
         s_tacho[T_NEEDLE + i * 2] =
-            Half(centerX + ((int64_t)sine * localX - (int64_t)cosine * localY) / 4096);
+            WrapSigned16(centerX + ((int64_t)sine * localX - (int64_t)cosine * localY) / 4096);
         s_tacho[T_NEEDLE + i * 2 + 1] =
-            Half(centerY + ((int64_t)cosine * localX + (int64_t)sine * localY) / 4096);
+            WrapSigned16(centerY + ((int64_t)cosine * localX + (int64_t)sine * localY) / 4096);
     }
     s_tacho[T_FACE + 2] = NeedleColor(spec, lighting, amount, &s_tacho[T_NEEDLE_COLOR]);
-    s_tacho[T_FACE] = Half(spec->needleX + spec->faceDX);
-    s_tacho[T_FACE + 1] = Half(spec->needleY + spec->faceDY);
+    s_tacho[T_FACE] = WrapSigned16(spec->needleX + spec->faceDX);
+    s_tacho[T_FACE + 1] = WrapSigned16(spec->needleY + spec->faceDY);
     s_tacho[T_FACE + 3] = s_faceDark;
-    s_tacho[T_GEAR] = Half(centerX + spec->gearDigitDX);
-    s_tacho[T_GEAR + 1] = Half(centerY + spec->gearDigitDY);
+    s_tacho[T_GEAR] = WrapSigned16(centerX + spec->gearDigitDX);
+    s_tacho[T_GEAR + 1] = WrapSigned16(centerY + spec->gearDigitDY);
     s_tacho[T_GEAR + 2] = driver->car.drive.gear < 0 ? 0 : driver->car.drive.gear > 9 ? 9
                                                           : driver->car.drive.gear;
-    s_tacho[T_SPEED] = Half(Word((int64_t)centerX + spec->digitsX));
-    s_tacho[T_SPEED + 1] = Half(Word((int64_t)centerY + spec->digitsY));
+    s_tacho[T_SPEED] = WrapSigned16(WrapSigned32((int64_t)centerX + spec->digitsX));
+    s_tacho[T_SPEED + 1] = WrapSigned16(WrapSigned32((int64_t)centerY + spec->digitsY));
     s_tacho[T_SPEED + 2] = SpeedDisplay(driver->car.speed);
     s_tacho[T_DIGIT_CLUT] = driver->car.drive.manual ? 0 : 1;
-    s_tacho[T_SHIFT_LIGHT] = Half((int64_t)centerX + spec->shiftLightDX);
-    s_tacho[T_SHIFT_LIGHT + 1] = Half((int64_t)centerY + spec->shiftLightDY);
+    s_tacho[T_SHIFT_LIGHT] = WrapSigned16((int64_t)centerX + spec->shiftLightDX);
+    s_tacho[T_SHIFT_LIGHT + 1] = WrapSigned16((int64_t)centerY + spec->shiftLightDY);
     s_tacho[T_SHIFT_LIGHT + 2] = engine->shiftLight ? 255 : 32;
     s_tacho[T_FACE_SIZE] = HUD_FACE_WIDTH;
     s_tacho[T_FACE_SIZE + 1] = HUD_FACE_HEIGHT;

@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "game/angle.h"
+#include "game/integer.h"
 #include "rage/chase_camera.h"
 #include "render/render_projection.h"
 #include "scene_matrix.h"
@@ -16,12 +17,10 @@
 /* PAL geom screen 320 at 240 lines. */
 #define RACE_FOV_DEGREES 41.112f
 
-/* Chase camera, mode 1.
- * The yaw settling is the retail integer code verbatim. The eye/look-at
- * geometry uses the same offsets, matrix order and angle formulas, evaluated
- * in floats instead of GTE fixed point: the camera is presentation only and
- * never feeds back into the simulation. */
-static s32 Word(int64_t value) { return (s32)(uint32_t)(uint64_t)value; }
+/* Chase camera, mode 1. The yaw settling is the retail integer code
+ * verbatim. The eye/look-at geometry uses the same offsets, matrix order and
+ * angle formulas, evaluated in floats instead of GTE fixed point: the camera
+ * is presentation only and never feeds back into the simulation. */
 
 static s32 SquareRootInt(s32 value) {
     uint32_t x = value > 0 ? (uint32_t)value : 0u, root = 0, bit = 1u << 30;
@@ -37,8 +36,8 @@ static s32 SquareRootInt(s32 value) {
 static void SettleChaseYaw(WebChase *chase, s32 stepLimit, s32 acceleratedStep, int negative) {
     if (stepLimit < acceleratedStep) {
         chase->yawLag = negative ? -stepLimit : stepLimit;
-        if (negative) chase->rampNeg = SquareRootInt(Word((int64_t)stepLimit * chase->damping));
-        else chase->rampPos = SquareRootInt(Word((int64_t)stepLimit * chase->damping));
+        if (negative) chase->rampNeg = SquareRootInt(WrapSigned32((int64_t)stepLimit * chase->damping));
+        else chase->rampPos = SquareRootInt(WrapSigned32((int64_t)stepLimit * chase->damping));
     } else {
         chase->yawLag = negative ? -acceleratedStep : acceleratedStep;
     }
@@ -48,35 +47,35 @@ static void AdvanceChaseYawRamp(WebChase *chase, s32 stepLimit, int negative) {
     s32 ramp, acceleratedStep;
     if (stepLimit > 0x40) stepLimit = 0x40;
     chase->stepLimit = stepLimit;
-    ramp = Word((int64_t)(negative ? chase->rampNeg : chase->rampPos) + 8);
-    acceleratedStep = Word((int64_t)ramp * ramp) / chase->damping;
-    if (negative) { chase->rampPos = 0; chase->rampNeg = Word((int64_t)chase->rampNeg + 8); }
-    else { chase->rampNeg = 0; chase->rampPos = Word((int64_t)chase->rampPos + 8); }
+    ramp = WrapSigned32((int64_t)(negative ? chase->rampNeg : chase->rampPos) + 8);
+    acceleratedStep = WrapSigned32((int64_t)ramp * ramp) / chase->damping;
+    if (negative) { chase->rampPos = 0; chase->rampNeg = WrapSigned32((int64_t)chase->rampNeg + 8); }
+    else { chase->rampNeg = 0; chase->rampPos = WrapSigned32((int64_t)chase->rampPos + 8); }
     chase->step = acceleratedStep;
     SettleChaseYaw(chase, stepLimit, acceleratedStep, negative);
 }
 
 static s32 ChaseYawDamping(s32 carSpeed) {
-    s32 difference = Word((int64_t)0x4E2 - carSpeed), damping;
+    s32 difference = WrapSigned32((int64_t)0x4E2 - carSpeed), damping;
     if (carSpeed >= 0x321) {
         if (difference < 6) difference = 6;
         return ((((difference * 8) / 50) + 8) / 10) + 1;
     }
-    damping = Word((int64_t)difference * 6);
-    damping = Word((int64_t)damping * difference) / 2500;
-    damping = Word((int64_t)damping - Word((int64_t)difference * 0x46) / 50);
-    damping = Word((int64_t)damping + 0xE0) / 10;
+    damping = WrapSigned32((int64_t)difference * 6);
+    damping = WrapSigned32((int64_t)damping * difference) / 2500;
+    damping = WrapSigned32((int64_t)damping - WrapSigned32((int64_t)difference * 0x46) / 50);
+    damping = WrapSigned32((int64_t)damping + 0xE0) / 10;
     return damping > 0 ? damping : 1;
 }
 
 static void UpdateChaseYawStep(WebChase *chase, s32 targetYaw, s32 previousYaw) {
-    s32 error = Word((int64_t)targetYaw - previousYaw);
+    s32 error = WrapSigned32((int64_t)targetYaw - previousYaw);
     if (error >= 5) {
         if (error >= 0x800) AdvanceChaseYawRamp(chase, (((0x1000 - error) / 17) * 2) & ANGLE_MASK, 1);
         else AdvanceChaseYawRamp(chase, ((error / 17) * 2) & ANGLE_MASK, 0);
     } else if (error < -4) {
         if (error < -0x7FF) AdvanceChaseYawRamp(chase, (((0x1000 + error) / 17) * 2) & ANGLE_MASK, 0);
-        else AdvanceChaseYawRamp(chase, ((Word(-(int64_t)error) / 17) * 2) & ANGLE_MASK, 1);
+        else AdvanceChaseYawRamp(chase, ((WrapSigned32(-(int64_t)error) / 17) * 2) & ANGLE_MASK, 1);
     } else {
         chase->yawLag = chase->rampNeg = chase->rampPos = 0;
     }
@@ -108,10 +107,10 @@ static void RetailChaseView(WebChase *chase, const PlayerCarRuntime *car, Vec3 *
     }
     chase->damping = ChaseYawDamping(car->speed);
     UpdateChaseYawStep(chase, target, chase->previousYaw);
-    settled = Word((int64_t)chase->previousYaw + chase->yawLag) & ANGLE_MASK;
-    lag = Word((int64_t)target - settled);
-    if (target < settled) { if (lag < -0x7FF) lag = Word((int64_t)lag + 0x1000); }
-    else if (lag >= 0x800) lag = Word((int64_t)lag - 0x1000);
+    settled = WrapSigned32((int64_t)chase->previousYaw + chase->yawLag) & ANGLE_MASK;
+    lag = WrapSigned32((int64_t)target - settled);
+    if (target < settled) { if (lag < -0x7FF) lag = WrapSigned32((int64_t)lag + 0x1000); }
+    else if (lag >= 0x800) lag = WrapSigned32((int64_t)lag - 0x1000);
     chase->yawLag = lag;
     chase->previousYaw = settled;
 
@@ -130,10 +129,10 @@ static void RetailChaseView(WebChase *chase, const PlayerCarRuntime *car, Vec3 *
     ex = (s32)lroundf(eyeWorld.x);
     ey = (s32)lroundf(eyeWorld.y);
     ez = (s32)lroundf(eyeWorld.z);
-    distance = SquareRootInt(Word((int64_t)ex * ex + (int64_t)ez * ez));
-    angleX = 0x400 - (Atan2(Word((int64_t)ey + 0x28), distance) & ANGLE_MASK);
+    distance = SquareRootInt(WrapSigned32((int64_t)ex * ex + (int64_t)ez * ez));
+    angleX = 0x400 - (Atan2(WrapSigned32((int64_t)ey + 0x28), distance) & ANGLE_MASK);
     *yaw = 0x400 - (Atan2(ex, ez) & ANGLE_MASK) + ChaseCameraYawOffset(car->steeringAngle);
-    *roll = Word((int64_t)car->bodyRoll - car->bodyRollVelocity);
+    *roll = WrapSigned32((int64_t)car->bodyRoll - car->bodyRollVelocity);
     *pitch = angleX - 0x90 + ChaseCameraPitchOffset();
 }
 
@@ -144,7 +143,7 @@ static void RetailCarView(const PlayerCarRuntime *car, Vec3 *eye, s32 *pitch, s3
     eye->x = (float)car->x + lift.x;
     eye->y = (float)car->y + lift.y;
     eye->z = (float)car->z + lift.z;
-    *pitch = Word((int64_t)car->bodyPitch + car->tiltCounter);
+    *pitch = WrapSigned32((int64_t)car->bodyPitch + car->tiltCounter);
     *yaw = car->bodyYaw;
     *roll = car->bodyRoll;
 }

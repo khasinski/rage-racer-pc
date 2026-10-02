@@ -3,13 +3,11 @@
 #include <string.h>
 
 #include "game/angle.h"
+#include "game/integer.h"
 #include "native_sky.h"
 #include "native_texture.h"
 #include "sky_panorama_layout.h"
 #include "track_texture_snapshot.h"
-
-/* Two's-complement wrap, as the retail 32-bit arithmetic behaves. */
-static s32 Wrap(int64_t value) { return (s32)(uint32_t)(uint64_t)value; }
 
 static s32 DivideBy32TowardZero(s32 value) {
     if (value < 0) value += 31;
@@ -36,7 +34,7 @@ static WebSkyGrid MeasureSkyGrid(s32 cameraY, s32 pitch, s32 yaw, s32 roll, int 
         pitch = -pitch;
         yaw = -yaw;
     }
-    const s32 cameraPitch = SignedAngle12(pitch) + 2 + DivideBy32TowardZero(Wrap((int64_t)cameraY - 6000));
+    const s32 cameraPitch = SignedAngle12(pitch) + 2 + DivideBy32TowardZero(WrapSigned32((int64_t)cameraY - 6000));
     const s32 yawAngle = (yaw + 0x200) & ANGLE_MASK;
     const s32 nearVerticalFixed = (-0x80 - cameraPitch / 2) * 256;
     const s32 farVerticalFixed = (-0x80 - (cameraPitch / 2 + 0x50)) * 256;
@@ -44,11 +42,11 @@ static WebSkyGrid MeasureSkyGrid(s32 cameraY, s32 pitch, s32 yaw, s32 roll, int 
     const s32 rollAngle = -roll;
     const s32 sinRoll = SinAngle(rollAngle);
     const s32 cosRoll = CosAngle(rollAngle);
-    const s32 rotatedHorizontalY = Wrap((int64_t)-sinRoll * horizontalFixed);
-    const s32 nearX = Wrap((int64_t)cosRoll * horizontalFixed + (int64_t)sinRoll * nearVerticalFixed);
-    const s32 nearY = Wrap((int64_t)rotatedHorizontalY + (int64_t)cosRoll * nearVerticalFixed);
-    const s32 farX = Wrap((int64_t)cosRoll * horizontalFixed + (int64_t)sinRoll * farVerticalFixed);
-    const s32 farY = Wrap((int64_t)rotatedHorizontalY + (int64_t)cosRoll * farVerticalFixed);
+    const s32 rotatedHorizontalY = WrapSigned32((int64_t)-sinRoll * horizontalFixed);
+    const s32 nearX = WrapSigned32((int64_t)cosRoll * horizontalFixed + (int64_t)sinRoll * nearVerticalFixed);
+    const s32 nearY = WrapSigned32((int64_t)rotatedHorizontalY + (int64_t)cosRoll * nearVerticalFixed);
+    const s32 farX = WrapSigned32((int64_t)cosRoll * horizontalFixed + (int64_t)sinRoll * farVerticalFixed);
+    const s32 farY = WrapSigned32((int64_t)rotatedHorizontalY + (int64_t)cosRoll * farVerticalFixed);
     const s32 verticalOrigin = mirrorPass ? 0x2400 : 0x7800;
 
     grid.panelXFixed = nearX / 4096 + 0xA000;
