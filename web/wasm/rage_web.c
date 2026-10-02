@@ -26,7 +26,6 @@
 #include "game/track_data.h"
 #include "game/state.h"
 #include "race_view.h"
-#include "rage/chase_camera.h"
 #include "render/car_lamps.h"
 #include "car_custom.h"
 #include "render/car_paint.h"
@@ -35,11 +34,12 @@
 #include "render/render_shadow.h"
 #include "render/render_world_frame.h"
 #include "render/texture_mipmap.h"
-#include "scene_matrix.h"
 #include "web_hud.h"
 #include "web_rules.h"
 #include "web_audio.h"
 #include "web_bridge.h"
+#include "web_camera.h"
+#include "web_finish.h"
 #include "web_looks.h"
 #include "web_netstats.h"
 #include "web_showroom.h"
@@ -94,7 +94,7 @@ static struct Prediction {
  * too large to be prediction error (a respawn) are shown at once. */
 enum { SMOOTH_SNAP_DISTANCE = 3000 };
 #define SMOOTH_DECAY 0.55f /* kept per 25 Hz step: ~90% gone after 4 steps */
-static struct Smooth { float x, y, z, yaw; } s_smooth[DRIVER_SEAT_LIMIT];
+static WebSmooth s_smooth[DRIVER_SEAT_LIMIT];
 
 /* The local controls. Gear, camera and mirror requests are edges: they stay
  * pending until a tick (or game frame) uses them. */
@@ -105,37 +105,6 @@ static struct Controls {
     int pendingCamera; /* a camera-button press not yet used */
     int pendingMirror; /* +1 on, -1 off */
 } s_controls;
-
-/* Past the line the simulation leaves the car where it crossed. Presentation
- * keeps it on the road for this many physics steps (2.5 s), braking to a
- * stop, then removes the whole car. A partial vertex alpha is not used: the
- * shell is drawn blended with depth writes off, which shows the cockpit. */
-enum { FINISH_COAST_STEPS = 62 };
-typedef struct FinishRun {
-    int steps;          /* physics steps since the finish, 0 while racing */
-    float motion[3];    /* its last step's motion while driving */
-    s32 raw[3];         /* its last simulated position (no smoothing) */
-    int placed;         /* route snapshot taken */
-    s32 pointIndex;
-    s32 fraction;       /* 0..0x400 along the current segment */
-    s32 lateral;        /* lane offset at the line, world units */
-    s32 yawSlip;        /* body yaw relative to the route heading */
-    s32 progress;       /* trackProgress, advanced with the coast */
-    float along;        /* world units per step toward increasing point index */
-    float errX, errY, errZ;
-    float pitchErr, rollErr;
-} FinishRun;
-
-/* Retail chase camera state (see RetailChaseView). */
-typedef struct WebChase {
-    s32 previousYaw, rampNeg, rampPos, yawLag, damping, stepLimit, step;
-    int active;
-} WebChase;
-
-/* race_scene.c: the race starts in the car view; the camera button swaps it
- * with the chase view (chase preset 0, the only one retail selects), and
- * holding down in the chase view looks behind. */
-typedef enum WebView { WEB_VIEW_CAR, WEB_VIEW_CHASE, WEB_VIEW_LOOK_BEHIND } WebView;
 
 /* Presentation history at the simulation's physics steps (every second
  * 50 Hz tick): the browser draws between the last two, so motion is smooth
@@ -159,7 +128,6 @@ static struct Presentation {
  * button is held switch it on/off (race_scene.c); finishing switches it off.
  * Retail also waits for an unlock and Grand Prix mode; the browser does not. */
 enum { MIRROR_PANEL_HIDDEN_Y = -44, MIRROR_PANEL_VISIBLE_Y = 18 };
-#define MIRROR_FOV_DEGREES 20.0f
 /* 148x36 PAL pixels (mirror_pass.c MIRROR_WIDTH x MIRROR_HEIGHT). */
 #define MIRROR_ASPECT (148.0f / 36.0f)
 static struct Mirror {
@@ -335,7 +303,7 @@ static void SmoothCorrections(const s32 before[DRIVER_SEAT_LIMIT][3], const s32 
                               const int driving[DRIVER_SEAT_LIMIT]) {
     for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
         const PlayerCarRuntime *car = &s_race->sim.drivers[seat].car;
-        struct Smooth *smooth = &s_smooth[seat];
+        WebSmooth *smooth = &s_smooth[seat];
         const float dx = (float)(before[seat][0] - car->x), dy = (float)(before[seat][1] - car->y);
         const float dz = (float)(before[seat][2] - car->z);
         if (!driving[seat] || s_race->sim.drivers[seat].status != SIM_DRIVING ||
@@ -431,7 +399,7 @@ EMSCRIPTEN_KEEPALIVE int rw_seat_gone(int seat) {
     if (!s_race || seat < 0 || seat >= DRIVER_SEAT_LIMIT) return 1;
     const SimDriverStatus status = s_race->sim.drivers[seat].status;
     return status == SIM_EMPTY || status == SIM_RETIRED ||
-           (status == SIM_DRIVER_FINISHED && s_view.run[seat].steps > FINISH_COAST_STEPS);
+           (status == SIM_DRIVER_FINISHED && FinishRunGone(&s_view.run[seat]));
 }
 
 /* ---- Controls: the desktop pad path --------------------------------------
@@ -532,9 +500,6 @@ static float Daylight(const ClientRace *race) {
     return CarLightDaylight(environment.skyTopColor, environment.skyHorizonColor);
 }
 
-static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView view,
-                                    RenderCamera *mirror);
-
 /* One game frame of the mirror panel (car_render_rules.c AdvanceMirrorPanelY
  * as rear_view_mirror.c drives it) and its on/off switches. */
 static void AdvanceMirror(const RaceSim *sim, WebView view) {
@@ -560,170 +525,6 @@ static void AdvanceMirror(const RaceSim *sim, WebView view) {
     m->draw = m->enabled && view == WEB_VIEW_CAR && racing;
 }
 
-/* car_track_math.c. Prototypes stay local so the coast does not include the
- * physics headers. */
-s32 InterpolateCarTrackValue(s32 start, s32 end, s32 alongSegment, s16 segmentLength);
-s32 CarTrackFixed12ToInteger(s32 value);
-
-static s32 SegmentSpan(const GameTrackPoint *point) {
-    s32 length = (s16)point->segmentLength;
-    return length > 0 ? length : 1;
-}
-
-/* World units per step toward increasing point index. The sign follows the
- * last driving step, so a reverse course and a spun car coast the way they
- * were going. */
-static float SpeedAlongRoute(const TrackRoute *route, s32 pointIndex, s32 fraction,
-                             float mx, float mz) {
-    LVec here, ahead;
-    s32 aheadIndex = pointIndex;
-    s32 aheadFraction = fraction + 64;
-    float fx, fz, len;
-    if (aheadFraction > 0x400) {
-        aheadFraction -= 0x400;
-        aheadIndex = RouteIndex(route, pointIndex + 1);
-    }
-    InterpolateRoutePoint(route, pointIndex, &here, fraction);
-    InterpolateRoutePoint(route, aheadIndex, &ahead, aheadFraction);
-    fx = (float)(ahead.x - here.x);
-    fz = (float)(ahead.z - here.z);
-    len = sqrtf(fx * fx + fz * fz);
-    if (!(len > 1.0f)) return 0.0f;
-    return (mx * fx + mz * fz) / len;
-}
-
-/* `distance` is world units toward increasing point index. */
-static void AdvanceRouteDistance(const TrackRoute *route, s32 *pointIndex, s32 *fraction,
-                                 float distance) {
-    float along, remaining;
-    int guard;
-    if (!route || route->count <= 0 || distance == 0.0f) return;
-    along = (float)(*fraction) * (float)SegmentSpan(RoutePoint(route, *pointIndex)) / 1024.0f;
-    remaining = distance;
-    for (guard = 0; guard < route->count + 2 && remaining != 0.0f; ++guard) {
-        s32 length = SegmentSpan(RoutePoint(route, *pointIndex));
-        if (remaining > 0.0f) {
-            float room = (float)length - along;
-            if (room < 0.0f) room = 0.0f;
-            if (remaining <= room) {
-                along += remaining;
-                remaining = 0.0f;
-            } else {
-                remaining -= room;
-                *pointIndex = RouteIndex(route, *pointIndex + 1);
-                along = 0.0f;
-            }
-        } else if (-remaining <= along) {
-            along += remaining;
-            remaining = 0.0f;
-        } else {
-            remaining += along;
-            *pointIndex = RouteIndex(route, *pointIndex - 1);
-            along = (float)SegmentSpan(RoutePoint(route, *pointIndex));
-        }
-    }
-    {
-        s32 length = SegmentSpan(RoutePoint(route, *pointIndex));
-        s32 out = length > 0 ? (s32)lroundf(along * 1024.0f / (float)length) : 0;
-        if (out < 0) out = 0;
-        if (out > 0x400) out = 0x400;
-        *fraction = out;
-    }
-}
-
-/* Race progress shrinks as the point index grows on a normal course
- * (MoveCarTrackProgress). `distance` is toward increasing point index. */
-static void AdvanceCoastProgress(FinishRun *run, const TrackRoute *route, int reverse,
-                                 float distance) {
-    s32 progress;
-    if (!route || route->length <= 0) return;
-    progress = run->progress + (s32)lroundf(reverse ? distance : -distance);
-    progress %= route->length;
-    if (progress < 0) progress += route->length;
-    run->progress = progress;
-}
-
-static s32 CoastSection(const FinishRun *run, const TrackRoute *route, int reverse) {
-    s32 section;
-    if (!route || route->length <= 0) return 0;
-    section = reverse ? route->length - run->progress : run->progress;
-    return (s16)(section >> 8);
-}
-
-/* Centreline plus the frozen lane offset, sitting on the surface. */
-static int SampleCoastPose(const TrackRoute *route, s32 pointIndex, s32 fraction,
-                           s32 lateral, s32 yawSlip, PlayerCarRuntime *pose) {
-    const GameTrackPoint *point;
-    const GameTrackPoint *next;
-    s32 length, along, left, right, heading, trackSin, trackCos;
-    s32 cross, height, width, surfacePitch, camber;
-    s32 nextCamber, pointCamber, cosH, sinH;
-    s16 relative;
-    LVec center;
-    if (!route || !pose || route->count <= 0 || !route->points) return 0;
-    if (fraction < 0) fraction = 0;
-    if (fraction > 0x400) fraction = 0x400;
-    pointIndex = RouteIndex(route, pointIndex);
-    point = RoutePoint(route, pointIndex);
-    next = RoutePoint(route, pointIndex + 1);
-    length = SegmentSpan(point);
-    along = (s32)(((int64_t)fraction * length) >> 10);
-    if (along < 0) along = 0;
-    if (along > length) along = length;
-    left = InterpolateCarTrackValue(point->leftHalfWidth, next->leftHalfWidth, along, (s16)length);
-    right = InterpolateCarTrackValue(point->rightHalfWidth, next->rightHalfWidth, along, (s16)length);
-    if (lateral < -left) lateral = -left;
-    if (lateral > right) lateral = right;
-    InterpolateRoutePoint(route, pointIndex, &center, fraction);
-    heading = InterpolateRouteAngle(route, pointIndex, fraction);
-    trackSin = SinAngle(heading);
-    trackCos = CosAngle(heading);
-    pose->x = WrapSigned32((int64_t)center.x +
-                           (((int64_t)-trackSin * lateral) / ANGLE_FULL_TURN));
-    pose->z = WrapSigned32((int64_t)center.z +
-                           (((int64_t)trackCos * lateral) / ANGLE_FULL_TURN));
-    cross = WrapSigned16(InterpolateCarTrackValue(point->crossSlope, next->crossSlope, along, (s16)length));
-    height = InterpolateCarTrackValue(point->y, next->y, along, (s16)length);
-    pose->y = WrapSigned32((((int64_t)cross * lateral) >> 7) + height);
-    pose->modelY = pose->y;
-    pose->bodyYaw = (ANGLE_THREE_QUARTER_TURN - heading + yawSlip) & ANGLE_MASK;
-    pose->trackPointIndex = pointIndex;
-    pose->segmentFraction = fraction;
-    pose->trackLateralOffset = lateral;
-    relative = WrapSigned16((int64_t)(u16)pose->bodyYaw - ANGLE_THREE_QUARTER_TURN + (u16)heading);
-    surfacePitch = WrapSigned16(InterpolateCarTrackValue(
-        point->surfacePitch, next->surfacePitch, along, (s16)length));
-    width = WrapSigned16((int64_t)(u16)right + (u16)left);
-    nextCamber = Atan2(width, (next->crossSlope * width) >> 7);
-    pointCamber = Atan2(width, (point->crossSlope * width) >> 7);
-    camber = WrapSigned16(InterpolateCarTrackValue(pointCamber, nextCamber, along, (s16)length));
-    cosH = CosAngle(relative);
-    sinH = SinAngle(relative);
-    pose->bodyPitch = CarTrackFixed12ToInteger(surfacePitch * cosH) +
-                      CarTrackFixed12ToInteger(camber * sinH);
-    pose->bodyRoll = CarTrackFixed12ToInteger(-cosH * camber) +
-                     CarTrackFixed12ToInteger(surfacePitch * sinH);
-    return 1;
-}
-
-static void RememberCoastError(FinishRun *run, const PlayerCarRuntime *simPose,
-                               const PlayerCarRuntime *placed, const struct Smooth *smooth) {
-    run->errX = (float)(simPose->x - placed->x) + smooth->x;
-    run->errY = (float)(simPose->y - placed->y) + smooth->y;
-    run->errZ = (float)(simPose->z - placed->z) + smooth->z;
-    run->pitchErr = (float)(simPose->bodyPitch - placed->bodyPitch);
-    run->rollErr = (float)(simPose->bodyRoll - placed->bodyRoll);
-}
-
-static void DecayCoastError(FinishRun *run) {
-    const float settle = 0.90f;
-    run->errX *= settle;
-    run->errY *= settle;
-    run->errZ *= settle;
-    run->pitchErr *= settle;
-    run->rollErr *= settle;
-}
-
 /* Snapshots every car. A finished one follows the road, brakes, and is then
  * removed with its wheels (see InterpolateVehicles). */
 static void AdvanceFinishRuns(const RaceSim *sim) {
@@ -731,73 +532,11 @@ static void AdvanceFinishRuns(const RaceSim *sim) {
         const SimDriver *driver = &sim->drivers[seat];
         PlayerCarRuntime pose = driver->car;
         FinishRun *run = &s_view.run[seat];
-        struct Smooth *smooth = &s_smooth[seat];
-        if (driver->status != SIM_DRIVER_FINISHED && (run->steps || run->placed)) {
-            run->steps = 0;
-            run->placed = 0;
-            run->along = 0.0f;
-            run->errX = run->errY = run->errZ = 0.0f;
-            run->pitchErr = run->rollErr = 0.0f;
-        }
+        WebSmooth *smooth = &s_smooth[seat];
+        if (driver->status != SIM_DRIVER_FINISHED && (run->steps || run->placed))
+            FinishRunReset(run);
         if (driver->status == SIM_DRIVER_FINISHED) {
-            int coasting = 0;
-            if (!run->placed && sim->route.count > 0 && sim->route.points) {
-                s32 routeAngle, aligned;
-                PlayerCarRuntime basis;
-                run->pointIndex = RouteIndex(&sim->route, pose.trackPointIndex);
-                run->fraction = pose.segmentFraction;
-                if (run->fraction < 0) run->fraction = 0;
-                if (run->fraction > 0x400) run->fraction = 0x400;
-                run->lateral = pose.trackLateralOffset;
-                run->progress = pose.trackProgress;
-                routeAngle = InterpolateRouteAngle(&sim->route, run->pointIndex, run->fraction);
-                aligned = (ANGLE_THREE_QUARTER_TURN - routeAngle) & ANGLE_MASK;
-                run->yawSlip = (pose.bodyYaw + (s32)lroundf(smooth->yaw) - aligned) & ANGLE_MASK;
-                run->along = SpeedAlongRoute(&sim->route, run->pointIndex, run->fraction,
-                                             run->motion[0], run->motion[2]);
-                basis = pose;
-                if (SampleCoastPose(&sim->route, run->pointIndex, run->fraction,
-                                    run->lateral, run->yawSlip, &basis))
-                    RememberCoastError(run, &pose, &basis, smooth);
-                run->placed = 1;
-            }
-            if (run->steps <= FINISH_COAST_STEPS) {
-                /* Full speed at the line, stopped on the last step. */
-                const float pace = 1.0f - (float)run->steps / (float)FINISH_COAST_STEPS;
-                const float distance = run->along * pace;
-                ++run->steps;
-                if (run->placed) {
-                    AdvanceRouteDistance(&sim->route, &run->pointIndex, &run->fraction, distance);
-                    AdvanceCoastProgress(run, &sim->route, sim->reverse, distance);
-                }
-                coasting = 1;
-            }
-            if (run->placed) {
-                PlayerCarRuntime placed = pose;
-                if (SampleCoastPose(&sim->route, run->pointIndex, run->fraction,
-                                    run->lateral, run->yawSlip, &placed)) {
-                    s32 surfaceY = placed.y;
-                    s32 y = surfaceY + (s32)lroundf(run->errY);
-                    pose.x = WrapSigned32((int64_t)placed.x + lroundf(run->errX));
-                    pose.z = WrapSigned32((int64_t)placed.z + lroundf(run->errZ));
-                    /* Game Y grows downwards; a value past the surface is in the road. */
-                    pose.y = y > surfaceY ? surfaceY : y;
-                    pose.modelY = surfaceY;
-                    pose.bodyYaw = placed.bodyYaw;
-                    pose.bodyPitch = WrapSigned32((int64_t)placed.bodyPitch + lroundf(run->pitchErr));
-                    pose.bodyRoll = WrapSigned32((int64_t)placed.bodyRoll + lroundf(run->rollErr));
-                    pose.trackPointIndex = placed.trackPointIndex;
-                    pose.segmentFraction = placed.segmentFraction;
-                    pose.trackLateralOffset = placed.trackLateralOffset;
-                    pose.trackProgress = run->progress;
-                    pose.trackSection = (s16)CoastSection(run, &sim->route, sim->reverse);
-                    CopyPlayerBodyRotationToModel(&pose);
-                }
-            }
-            /* This frame still shows the error captured at the line, so the
-             * car does not jump onto the centreline sample. Later steps ease
-             * that error out and the car settles into the lane. */
-            if (coasting) DecayCoastError(run);
+            FinishRunCoast(run, &sim->route, sim->reverse, smooth, &pose);
         } else if (driver->status == SIM_DRIVING && s_view.haveStep) {
             run->motion[0] = (float)(pose.x - run->raw[0]);
             run->motion[1] = (float)(pose.y - run->raw[1]);
@@ -850,7 +589,7 @@ static void RecordPresentation(void) {
     if (!v->lastTickStepped) return;
     AdvanceFinishRuns(sim);
     const WebView view = SelectView(sim->phase == SIM_RACING /* CanToggleRaceCamera */);
-    camera = BuildRaceCamera(&v->poseCurrent[v->viewSeat], view, &mirror);
+    camera = WebRaceCamera(&v->chase, s_race, &v->poseCurrent[v->viewSeat], view, &mirror);
     AdvanceMirror(sim, view);
     /* A new view or car cuts; only frames within one view are interpolated. */
     if (v->viewCut) v->haveStep = 0;
@@ -892,204 +631,6 @@ EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
 
 /* 1 when the last tick produced a new presentation snapshot. */
 EMSCRIPTEN_KEEPALIVE int rw_last_tick_stepped(void) { return s_view.lastTickStepped; }
-
-/* ---- Retail chase camera (track/camera_chase.c, mode 1) ------------------
- * The yaw settling is the retail integer code verbatim. The eye/look-at
- * geometry uses the same offsets, matrix order and angle formulas, evaluated
- * in floats instead of GTE fixed point: the camera is presentation only and
- * never feeds back into the simulation. */
-static s32 Word(int64_t value) { return (s32)(uint32_t)(uint64_t)value; }
-
-static s32 SquareRootInt(s32 value) {
-    uint32_t x = value > 0 ? (uint32_t)value : 0u, root = 0, bit = 1u << 30;
-    while (bit > x) bit >>= 2;
-    while (bit) {
-        if (x >= root + bit) { x -= root + bit; root = (root >> 1) + bit; }
-        else root >>= 1;
-        bit >>= 2;
-    }
-    return (s32)root;
-}
-
-static void SettleChaseYaw(WebChase *chase, s32 stepLimit, s32 acceleratedStep, int negative) {
-    if (stepLimit < acceleratedStep) {
-        chase->yawLag = negative ? -stepLimit : stepLimit;
-        if (negative) chase->rampNeg = SquareRootInt(Word((int64_t)stepLimit * chase->damping));
-        else chase->rampPos = SquareRootInt(Word((int64_t)stepLimit * chase->damping));
-    } else {
-        chase->yawLag = negative ? -acceleratedStep : acceleratedStep;
-    }
-}
-
-static void AdvanceChaseYawRamp(WebChase *chase, s32 stepLimit, int negative) {
-    s32 ramp, acceleratedStep;
-    if (stepLimit > 0x40) stepLimit = 0x40;
-    chase->stepLimit = stepLimit;
-    ramp = Word((int64_t)(negative ? chase->rampNeg : chase->rampPos) + 8);
-    acceleratedStep = Word((int64_t)ramp * ramp) / chase->damping;
-    if (negative) { chase->rampPos = 0; chase->rampNeg = Word((int64_t)chase->rampNeg + 8); }
-    else { chase->rampNeg = 0; chase->rampPos = Word((int64_t)chase->rampPos + 8); }
-    chase->step = acceleratedStep;
-    SettleChaseYaw(chase, stepLimit, acceleratedStep, negative);
-}
-
-static s32 ChaseYawDamping(s32 carSpeed) {
-    s32 difference = Word((int64_t)0x4E2 - carSpeed), damping;
-    if (carSpeed >= 0x321) {
-        if (difference < 6) difference = 6;
-        return ((((difference * 8) / 50) + 8) / 10) + 1;
-    }
-    damping = Word((int64_t)difference * 6);
-    damping = Word((int64_t)damping * difference) / 2500;
-    damping = Word((int64_t)damping - Word((int64_t)difference * 0x46) / 50);
-    damping = Word((int64_t)damping + 0xE0) / 10;
-    return damping > 0 ? damping : 1;
-}
-
-static void UpdateChaseYawStep(WebChase *chase, s32 targetYaw, s32 previousYaw) {
-    s32 error = Word((int64_t)targetYaw - previousYaw);
-    if (error >= 5) {
-        if (error >= 0x800) AdvanceChaseYawRamp(chase, (((0x1000 - error) / 17) * 2) & ANGLE_MASK, 1);
-        else AdvanceChaseYawRamp(chase, ((error / 17) * 2) & ANGLE_MASK, 0);
-    } else if (error < -4) {
-        if (error < -0x7FF) AdvanceChaseYawRamp(chase, (((0x1000 + error) / 17) * 2) & ANGLE_MASK, 0);
-        else AdvanceChaseYawRamp(chase, ((Word(-(int64_t)error) / 17) * 2) & ANGLE_MASK, 1);
-    } else {
-        chase->yawLag = chase->rampNeg = chase->rampPos = 0;
-    }
-}
-
-static SceneMat3 CarRotation(const PlayerCarRuntime *car) {
-    return SceneMat3Multiply(SceneRotationZ(car->bodyRoll),
-                             SceneMat3Multiply(SceneRotationX(car->bodyPitch),
-                                               SceneRotationY(car->bodyYaw)));
-}
-
-/* Eye position and PS1 view angles, as CameraViewFromChaseCamera leaves them
- * for chase preset 0 (eye 0x3A up, 0x118 back). */
-static void RetailChaseView(const PlayerCarRuntime *car, Vec3 *eye,
-                            s32 *pitch, s32 *yaw, s32 *roll) {
-    WebChase *chase = &s_view.chase;
-    s32 target = car->bodyYaw & ANGLE_MASK, settled, lag;
-    SceneMat3 cameraRotation, object, inverseObject, work;
-    Vec3 focus, eyeWorld;
-    s32 ex, ey, ez, distance, angleX;
-
-    if (chase->active) {
-        chase->previousYaw &= ANGLE_MASK;
-        chase->rampNeg &= ANGLE_MASK;
-        chase->rampPos &= ANGLE_MASK;
-    } else {
-        chase->previousYaw = target;
-        chase->rampNeg = chase->rampPos = 0;
-        chase->active = 1;
-    }
-    chase->damping = ChaseYawDamping(car->speed);
-    UpdateChaseYawStep(chase, target, chase->previousYaw);
-    settled = Word((int64_t)chase->previousYaw + chase->yawLag) & ANGLE_MASK;
-    lag = Word((int64_t)target - settled);
-    if (target < settled) { if (lag < -0x7FF) lag = Word((int64_t)lag + 0x1000); }
-    else if (lag >= 0x800) lag = Word((int64_t)lag - 0x1000);
-    chase->yawLag = lag;
-    chase->previousYaw = settled;
-
-    cameraRotation = SceneMat3Multiply(SceneRotationX(-0x80), SceneRotationY(-lag));
-    object = CarRotation(car);
-    inverseObject = SceneMat3Transpose(object);
-    work = SceneMat3Transpose(SceneMat3Multiply(cameraRotation, object));
-
-    focus = SceneRotatePoint(inverseObject, 0.0f, -0x3C, 0x32);
-    eyeWorld = SceneRotatePoint(work, 0.0f, (float)ChaseCameraHeight(0x3A),
-                           (float)ChaseCameraDistance(0x118));
-    eye->x = (float)car->x + focus.x - eyeWorld.x;
-    eye->y = (float)car->y + focus.y - eyeWorld.y;
-    eye->z = (float)car->z + focus.z - eyeWorld.z;
-
-    ex = (s32)lroundf(eyeWorld.x);
-    ey = (s32)lroundf(eyeWorld.y);
-    ez = (s32)lroundf(eyeWorld.z);
-    distance = SquareRootInt(Word((int64_t)ex * ex + (int64_t)ez * ez));
-    angleX = 0x400 - (Atan2(Word((int64_t)ey + 0x28), distance) & ANGLE_MASK);
-    *yaw = 0x400 - (Atan2(ex, ez) & ANGLE_MASK) + ChaseCameraYawOffset(car->steeringAngle);
-    *roll = Word((int64_t)car->bodyRoll - car->bodyRollVelocity);
-    *pitch = angleX - 0x90 + ChaseCameraPitchOffset();
-}
-
-/* Mode 0, CameraViewFromCarBlock: the car's own pose, lifted along its up
- * axis and pitched by its tilt counter. */
-static void RetailCarView(const PlayerCarRuntime *car, Vec3 *eye, s32 *pitch, s32 *yaw, s32 *roll) {
-    const Vec3 lift = SceneRotatePoint(SceneMat3Transpose(CarRotation(car)), 0.0f, -0x1C0 / 16.0f, 0.0f);
-    eye->x = (float)car->x + lift.x;
-    eye->y = (float)car->y + lift.y;
-    eye->z = (float)car->z + lift.z;
-    *pitch = Word((int64_t)car->bodyPitch + car->tiltCounter);
-    *yaw = car->bodyYaw;
-    *roll = car->bodyRoll;
-}
-
-/* CameraViewFromLookBehind: the orbit camera turned round behind the car. */
-static void RetailLookBehindView(const PlayerCarRuntime *car, Vec3 *eye, s32 *pitch, s32 *yaw,
-                                 s32 *roll) {
-    enum { LOOK_BEHIND_YAW = 0x800, LOOK_BEHIND_DISTANCE = 0xE0, LOOK_BEHIND_HEIGHT = 0x50 };
-    const SceneMat3 object = CarRotation(car);
-    const SceneMat3 cameraToWorld =
-        SceneMat3Transpose(SceneMat3Multiply(SceneRotationY(-LOOK_BEHIND_YAW), object));
-    const Vec3 focus = SceneRotatePoint(SceneMat3Transpose(object), 0.0f, 0.0f, 0x32);
-    const Vec3 eyeWorld = SceneRotatePoint(cameraToWorld, 0.0f, LOOK_BEHIND_HEIGHT, LOOK_BEHIND_DISTANCE);
-    eye->x = (float)car->x + focus.x - eyeWorld.x;
-    eye->y = (float)car->y + focus.y - 0x28 - eyeWorld.y;
-    eye->z = (float)car->z + focus.z - eyeWorld.z;
-    *pitch = 0x400 - (Atan2((s32)lroundf(eyeWorld.y), LOOK_BEHIND_DISTANCE) & ANGLE_MASK);
-    *yaw = 0x400 - (Atan2((s32)lroundf(eyeWorld.x), (s32)lroundf(eyeWorld.z)) & ANGLE_MASK);
-    *roll = car->bodyRoll;
-}
-
-/* render_world_game.c's GameRenderWorldBuildCamera: near 1, the verified
- * race depth limit. A rear-facing (mirror) camera pre-rotates the view basis
- * by 180 degrees in its own local space, like an attached camera rig. */
-static RenderCamera CameraFromView(Vec3 eye, s32 pitch, s32 yaw, s32 roll,
-                                   float verticalFovDegrees, int rearFacing) {
-    RenderCamera camera;
-    SceneMat3 view, converted;
-
-    memset(&camera, 0, sizeof(camera));
-    camera.transform.position = (Vec3){eye.x, -eye.y, -eye.z};
-    view = SceneMat3Multiply(SceneMat3Multiply(SceneRotationZ(roll), SceneRotationX(pitch)),
-                             SceneRotationY(yaw));
-    if (rearFacing) view = SceneMat3Multiply(SceneRotationY(0x800), view);
-    RenderConvertPsxMatrix(view.m, converted.m);
-    camera.transform.orientation = SceneQuaternion(SceneMat3Transpose(converted));
-    camera.transform.hasOrientation = 1;
-    camera.transform.rotation = (Vec3){-AngleToDegrees(pitch), -AngleToDegrees(yaw),
-                                       -AngleToDegrees(roll)};
-    camera.transform.scale = (Vec3){1.0f, 1.0f, 1.0f};
-    camera.verticalFovDegrees = verticalFovDegrees;
-    camera.nearPlane = 1.0f;
-    camera.farPlane = 16384.0f;
-    WebSkySetCamera(&camera, s_race, (s32)lroundf(eye.y), pitch, yaw, roll, rearFacing);
-    return camera;
-}
-
-/* The race view with the PAL 320x240 projection (geom screen 320: 41.112
- * degrees), plus the rear-view mirror camera render_world_game.c's
- * GameRenderWorldPublishCurrentCamera derives from the same view: 20 degrees
- * vertically on the wide mirror target. The chase camera only settles while
- * it is the view, as retail's previousMode check restarts it otherwise. */
-static RenderCamera BuildRaceCamera(const PlayerCarRuntime *car, WebView selected,
-                                    RenderCamera *mirror) {
-    Vec3 eye;
-    s32 pitch, yaw, roll;
-
-    if (selected == WEB_VIEW_CHASE) {
-        RetailChaseView(car, &eye, &pitch, &yaw, &roll);
-    } else {
-        s_view.chase.active = 0;
-        if (selected == WEB_VIEW_LOOK_BEHIND) RetailLookBehindView(car, &eye, &pitch, &yaw, &roll);
-        else RetailCarView(car, &eye, &pitch, &yaw, &roll);
-    }
-    *mirror = CameraFromView(eye, pitch, yaw, roll, MIRROR_FOV_DEGREES, 1);
-    return CameraFromView(eye, pitch, yaw, roll, 41.112f, 0);
-}
 
 /* Same rotation as modern_native_gpu.c's ModernNativeRotate. */
 static void RotateByCamera(float out[3], const float in[3], const RenderCamera *camera) {
@@ -1245,7 +786,7 @@ static void InterpolateVehicles(float t) {
             instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
         /* Body and wheels share the seat as their entity, so this removes
          * both once the car has stopped. */
-        if (s_view.run[instance->entity].steps > FINISH_COAST_STEPS)
+        if (FinishRunGone(&s_view.run[instance->entity]))
             instance->flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
     }
     for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) {
@@ -1443,7 +984,7 @@ int WebDrawFieldScene(float aspect, Vec3 eye, s32 pitch, s32 yaw, float vertical
     for (int seat = 0; seat < DRIVER_SEAT_LIMIT; ++seat) cars[seat] = s_race->sim.drivers[seat].car;
     s_frame.page = cars[0].trackSection >= s_race->look.textureSectionLo &&
                    cars[0].trackSection < s_race->look.textureSectionHi;
-    RenderCamera camera = CameraFromView(eye, pitch, yaw, 0, verticalFovDegrees, 0);
+    RenderCamera camera = WebCameraFromView(s_race, eye, pitch, yaw, 0, verticalFovDegrees, 0);
     RenderWorldBeginFrame(&s_world, ++s_frame.number);
     ApplyEnvironment(&camera, &s_race->env);
     RenderWorldSetCamera(&s_world, &camera);

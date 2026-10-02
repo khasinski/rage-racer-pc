@@ -239,7 +239,7 @@ set(BRIDGE_LIBRARIES web-data web-render-world web-audio)
 set(AUDIO_BRIDGE_SOURCES wasm/web_audio.c wasm/web_spu.c)
 # Race rules shared by the browser module and the race server module.
 set(RULES_SOURCES wasm/web_rules.c wasm/web_rules_exports.c)
-set(BRIDGE_PART_SOURCES wasm/web_looks.c wasm/web_netstats.c wasm/web_showroom.c)
+set(BRIDGE_PART_SOURCES wasm/web_camera.c wasm/web_finish.c wasm/web_looks.c wasm/web_netstats.c wasm/web_showroom.c)
 
 if(EMSCRIPTEN)
     add_executable(rage-web wasm/rage_web.c ${BRIDGE_PART_SOURCES} wasm/web_hud.c wasm/web_sky.c ${AUDIO_BRIDGE_SOURCES} ${RULES_SOURCES} ${CLIENT_SOURCES})
