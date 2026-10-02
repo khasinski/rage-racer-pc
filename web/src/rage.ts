@@ -299,6 +299,9 @@ export class Rage {
     try { use(pointer); } finally { this.m._free(pointer); }
   }
 
+  /** How many server frames so far needed a resync after a jump (rw_apply_frame). */
+  resyncCount(): number { return this.call('rw_resync_count') >>> 0; }
+
   /** Bonnet logo triangles found in the last built frame. */
   logoQuads(): number { return this.call('rw_logo_quads'); }
 

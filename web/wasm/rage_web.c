@@ -350,15 +350,26 @@ static void SmoothCorrections(const s32 before[DRIVER_SEAT_LIMIT][3], const s32 
     }
 }
 
-/* A frame far from what this page last showed (it stalled, its tab was in the
- * background, a spectator caught up): the scenery's animation and the race
- * view resync, where the per-tick catch-up would refuse the gap and rw_tick
- * would stop the race. */
+/* A frame far ahead of what this page last showed (it stalled, its tab was in
+ * the background, a spectator caught up, a player came back): the scenery's
+ * animation and the race view resync, where the per-tick catch-up would
+ * refuse the gap and rw_tick would stop the race. Only forward jumps: a player
+ * rewinds to every frame and replays to the present, which is no gap. */
+static u32 s_resyncs; /* how many frames needed it, for the checks */
 static void ResyncAfterJump(void) {
-    if (s_race->sim.tick - s_race->sceneryTick > CLIENT_SCENERY_CATCHUP_LIMIT) ResyncClientScenery(s_race);
-    if (s_race->view && s_race->view->tickSeen && s_race->sim.tick - s_race->view->tick > RACE_VIEW_CATCHUP_LIMIT)
+    int resynced = 0;
+    if ((s32)(s_race->sim.tick - s_race->sceneryTick) > CLIENT_SCENERY_CATCHUP_LIMIT) {
+        ResyncClientScenery(s_race);
+        resynced = 1;
+    }
+    if (s_race->view && s_race->view->tickSeen &&
+        (s32)(s_race->sim.tick - s_race->view->tick) > RACE_VIEW_CATCHUP_LIMIT) {
         ResyncRaceView(s_race->view);
+        resynced = 1;
+    }
+    s_resyncs += (u32)resynced;
 }
+EMSCRIPTEN_KEEPALIVE uint32_t rw_resync_count(void) { return s_resyncs; }
 
 EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint32_t ackSeq,
                                             uint32_t arrivalTick) {

@@ -190,11 +190,6 @@ int TickClientScenery(ClientRace *race) {
 }
 
 int ResyncClientScenery(ClientRace *race) {
-    if (!race) return 0;
-    if (race->sim.tick < race->sceneryTick) {
-        race->sceneryTick = race->sim.tick; /* moved back: animate on from here */
-        return 1;
-    }
     return AdvanceClientScenery(race, CLIENT_SCENERY_RESYNC_LIMIT);
 }
 

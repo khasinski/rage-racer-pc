@@ -24,9 +24,11 @@ async function keepsRacing(who, page, other) {
   await wait(6000); // a player's clock may first settle back to its lead over the server
   const off = (await tickOf(other)) - (await tickOf(page));
   check(Math.abs(off) < 150, `${who}: caught up (${off} ticks off the other page)`);
+  // Over a few seconds: a player's clock may still ease or jump to its lead.
   const t0 = await tickOf(page);
-  await wait(1000);
-  check((await tickOf(page)) - t0 >= 30, `${who}: keeps going`);
+  await wait(3000);
+  const ran = (await tickOf(page)) - t0;
+  check(ran >= 75, `${who}: keeps going (${ran} ticks in 3 s)`);
 }
 
 try {
@@ -42,6 +44,9 @@ try {
   await player.waitForFunction(() => window.__race?.rage.hud().phase === 2, null, { timeout: 120_000 });
   await player.keyboard.down('KeyX');
   await wait(GAP_MS);
+  const resyncs = (page) => page.evaluate(() => window.__race.rage.resyncCount());
+  // A player rewinds to every frame and replays to the present: no jump.
+  check(await resyncs(player) === 0, `an ordinary race needs no resync (${await resyncs(player)})`);
 
   // A spectator joins a race that has run for a while.
   const watch = watcher.locator('#room-list li', { hasText: 'stall' }).locator('button');
@@ -49,6 +54,8 @@ try {
   await watch.click();
   await watcher.waitForFunction(() => window.__race?.rage.hud().phase === 2, null, { timeout: 120_000 });
   await keepsRacing('a spectator joining late', watcher, player);
+  check(await resyncs(watcher) >= 1, 'joining late resynced the spectator');
+  check(await resyncs(player) === 0, 'and still none for the player');
 
   // Pages that stall.
   for (const [who, page, other] of [['a stalled spectator', watcher, player], ['a stalled player', player, watcher]]) {

@@ -86,8 +86,8 @@ enum { CLIENT_SCENERY_RESYNC_LIMIT = SIM_TICK_RATE * 60 * 30 };
  * Includes PAL environment cues at 25 Hz and scenery at the prototype clock.
  * Repeated ticks are inert; rewind/long gaps reject atomically. No physics runs. */
 int TickClientScenery(ClientRace *race);
-/* Brings the scenery to the race's tick however far it jumped (within
- * CLIENT_SCENERY_RESYNC_LIMIT), or back when it moved back. */
+/* Brings the scenery forward to the race's tick however far it jumped
+ * (within CLIENT_SCENERY_RESYNC_LIMIT). */
 int ResyncClientScenery(ClientRace *race);
 /* Publishes current/previous shuttle poses without advancing animation.
  * Replaces only this semantic entity range; failure preserves the world. */
