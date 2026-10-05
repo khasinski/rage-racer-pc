@@ -34,6 +34,7 @@ s32 g_CourseIndex;
 s16 g_GrandPrixMode;
 s32 g_LapCount;
 PlayerCarRuntime g_PlayerCar;
+s32 g_DuelRaceActive;
 FinishCamera g_FinishCamera;
 s32 g_RaceSeries;
 s16 g_RaceCueDelay;
@@ -471,6 +472,23 @@ int main(int argc, char **argv) {
         puts("FAIL overflowed progress crossed the lap line");
         return 1;
     }
+    /* Second place is a loss only when a duel actually started. */
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = 0x10000;
+    g_PlayerCar.drive.racePosition = 2;
+    g_LapCount = 1;
+    g_TrackLength = 0x10000;
+    g_RacePhase = 0;
+    g_GrandPrixMode = 1;
+    g_DuelRaceActive = 1;
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 1);
+    if (g_RacePhase != RACE_PHASE_RETIRED) {
+        puts("FAIL duel second place did not retire");
+        return 1;
+    }
+    g_DuelRaceActive = 0;
+
     printf("laps and finishing take the same %d states they always did\n",
            steps);
     return 0;

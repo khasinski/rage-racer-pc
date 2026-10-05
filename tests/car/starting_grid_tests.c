@@ -8,6 +8,7 @@
 #include <string.h>
 
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
+PlayerCarRuntime g_PlayerCar;
 RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
 RaceGridSlot g_AttractGridSlots[RACE_GRID_STORAGE_COUNT];
 s32 g_ClosestRivalRank;
@@ -154,6 +155,24 @@ int main(void) {
     CHECK(s_initCalls[4] == 1);
     CHECK(g_Cars[4].activeFlag == -1 && g_Cars[4].aiEnabled == 0);
     CHECK(s_aiCalls[4] == 0);
+
+    s_disabledStart = -1;
+    g_DuelEnabled = 1;
+    g_DuelRivalCar = 4;
+    BuildStartingGrid();
+    CHECK(g_Cars[4].activeFlag == 1);
+    CHECK(g_PlayerCar.drive.racePosition == 2);
+    CHECK(g_ClosestRivalRank == 0);
+    CHECK(g_DuelRaceActive == 1);
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        if (index != 4) CHECK(g_Cars[index].activeFlag == -1);
+    }
+
+    g_DuelRivalCar = 3; /* Slot absent: preserve the normal starting grid. */
+    BuildStartingGrid();
+    CHECK(g_Cars[4].activeFlag == 1);
+    CHECK(g_ClosestRivalRank == 3);
+    CHECK(g_DuelRaceActive == 0);
 
     puts("starting grid initialization tests passed");
     return 0;

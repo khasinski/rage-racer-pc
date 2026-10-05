@@ -9,6 +9,7 @@
  */
 
 #include "game/audio.h"
+#include "game/car.h"
 #include "game/player_car_internal.h"
 #include "game/cd.h"
 #include "game/menu.h"
@@ -175,8 +176,9 @@ static s32 CrossTheLine(RaceScene *state, PlayerCarRuntime *car,
 
     lapsRun = g_LapCount;
     if (car->lap == lapsRun + 1) {
-        /* Anything below fourth is not a finish; the race is retired. */
-        if (car->drive.racePosition <= FINISHING_PLACE_LIMIT) {
+        /* A duel requires first place; normal races retain the podium rule. */
+        if (car->drive.racePosition <= FINISHING_PLACE_LIMIT &&
+            (!g_DuelRaceActive || car->drive.racePosition == 1)) {
             FinishRace(&state->timing, car, recordMode, lapsRun);
         } else {
             RetireAtLastLap();

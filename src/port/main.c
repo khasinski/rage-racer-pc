@@ -21,6 +21,8 @@
 #include "native_asset_importer.h"
 #include "platform_paths.h"
 #include "menu_music_runtime.h"
+#include "game/car.h"
+#include "game/render.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -127,6 +129,21 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     ContentOptionsApply();
+    g_DuelEnabled = RuntimeConfigEnabled("duel.enabled");
+    g_DuelRivalCar = RuntimeConfigInt("duel.rival_slot", 0, 0,
+                                      RACE_CAR_SLOT_COUNT - 1);
+    g_CpuChaseMode = RuntimeConfigInt("cpu_chase.mode", 0, 0, 2);
+    g_CpuChaseRivalCar = RuntimeConfigInt("cpu_chase.rival_slot", 0, 0,
+                                         RACE_CAR_SLOT_COUNT - 1);
+    g_CpuChaseNearDistance = RuntimeConfigInt("cpu_chase.near_distance", 8,
+                                              -999, 999);
+    g_CpuChaseFarDistance = RuntimeConfigInt("cpu_chase.far_distance", 50,
+                                             1, 1000);
+    g_CpuChaseSpeedPercent = RuntimeConfigInt("cpu_chase.speed_percent", 115,
+                                              100, 300);
+    if (g_DuelEnabled) {
+        g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT - 1].w = 8;
+    }
     CarCatalogClearOverrides();
     if (!CarCatalogPrepareProfile(argc > 0 ? argv[0] : NULL,
                                   HostDiscRegion(), carCatalogPath,

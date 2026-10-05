@@ -7,6 +7,7 @@
 #include <string.h>
 
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
+PlayerCarRuntime g_PlayerCar;
 static TrackEventData s_events;
 const TrackEventData *g_TrackEventData = &s_events;
 s32 g_RaceSeries;
@@ -47,6 +48,31 @@ int main(void) {
             if (r == 0) reference[tick] = *car;
             else CHECK(memcmp(car, &reference[tick], sizeof(*car)) == 0);
         }
+    }
+    /* A negative threshold keeps the pursuit active until the rival has
+     * pulled ahead by the requested distance. */
+    {
+        GameCarRuntime *car = &g_Cars[0];
+        int normal, boosted;
+        g_CpuChaseMode = 0;
+        car->trackProgress = 64 * 16;
+        car->speedKeyIndex = 0;
+        UpdateCarAiTargetSpeed(car, 0);
+        normal = car->accelerationLimit;
+        g_CpuChaseMode = 1;
+        g_CpuChaseRivalCar = 0;
+        g_CpuChaseNearDistance = -10;
+        g_CpuChaseFarDistance = 50;
+        g_CpuChaseSpeedPercent = 150;
+        g_PlayerCar.progressA = 20 * 32;
+        car->progressA = 0;
+        car->progressB = 0;
+        UpdateCarAiTargetSpeed(car, 0);
+        boosted = car->accelerationLimit;
+        CHECK(boosted > normal);
+        car->progressA = g_PlayerCar.progressA + 11 * 32;
+        UpdateCarAiTargetSpeed(car, 0);
+        CHECK(car->accelerationLimit == normal);
     }
     puts("regional speed units: rival state identical for all 300 ticks");
     return 0;

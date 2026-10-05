@@ -72,6 +72,7 @@ static RaceTiming s_timing;
 s32 g_RaceSeries;
 s32 g_BestTotalTimes[2][4][2];
 PlayerCarRuntime g_PlayerCar;
+s32 g_DuelRaceActive;
 GameSpriteDesc g_TachoNeedleSprite;
 s32 g_CourseIndex;
 

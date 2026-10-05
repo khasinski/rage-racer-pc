@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/car_internal.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/state.h"
 #include "game/track.h"
@@ -10,6 +11,10 @@
 enum {
     RACE_SCENE_ID = 11,
 };
+
+s32 g_DuelEnabled = 0;
+s32 g_DuelRaceActive = 0;
+s32 g_DuelRivalCar = 0;
 
 static void DisableRivalCar(GameCarRuntime *car) {
     memset(car, 0, sizeof(*car));
@@ -23,6 +28,7 @@ void BuildStartingGrid(void) {
     s32 index;
 
     g_ClosestRivalRank = 3;
+    g_DuelRaceActive = 0;
     g_RaceSeries = g_GrandPrixSeries & (TRACK_SERIES_COUNT - 1);
 
     if (g_TrackEventData == NULL || g_TrackPoints == NULL ||
@@ -45,6 +51,19 @@ void BuildStartingGrid(void) {
         if (car->activeFlag != -1) {
             InitRivalCarAi(car, index, grid);
         }
+    }
+
+    if (g_DuelEnabled && g_SceneId == RACE_SCENE_ID &&
+        (u32)g_DuelRivalCar < RACE_CAR_SLOT_COUNT &&
+        g_Cars[g_DuelRivalCar].activeFlag != -1) {
+        for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+            if (index != g_DuelRivalCar) {
+                DisableRivalCar(&g_Cars[index]);
+            }
+        }
+        g_PlayerCar.drive.racePosition = 2;
+        g_ClosestRivalRank = 0;
+        g_DuelRaceActive = 1;
     }
 
     SeedCarAiSpeedKeys();

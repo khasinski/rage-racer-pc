@@ -1,6 +1,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "game/integer.h"
+#include "game/player_car_internal.h"
 #include "game/race.h"
 #include "game/track.h"
 
@@ -11,7 +12,14 @@ enum {
     ACCELERATION_LIMIT_PERCENT = 6,
     PERCENT_SCALE = 100,
     AI_TABLE_LAP_START_PROGRESS = 0x20,
+    CHASE_PROGRESS_UNITS_PER_METER = 32,
 };
+
+s32 g_CpuChaseMode = 0;
+s32 g_CpuChaseRivalCar = 0;
+s32 g_CpuChaseNearDistance = 8;
+s32 g_CpuChaseFarDistance = 50;
+s32 g_CpuChaseSpeedPercent = 115;
 
 static s32 RivalTargetSpeed(const TrackAiSpeedKey *key, s32 carIndex) {
     if (carIndex < RIVAL_CONTENDER_COUNT) {
@@ -28,6 +36,38 @@ static s32 TargetSpeedAccelerationLimit(s32 targetSpeed) {
 
     return WrapSigned32(
         (int64_t)scaledSpeed * ACCELERATION_LIMIT_PERCENT) / PERCENT_SCALE;
+}
+
+static s32 ApplyCpuChaseSpeed(s32 targetSpeed,
+                             const GameCarRuntime *car, s32 carIndex) {
+    s32 gap;
+    s32 nearGap;
+    s32 farGap;
+    s32 chasePercent;
+
+    if (!g_CpuChaseMode || g_CpuChaseSpeedPercent <= PERCENT_SCALE ||
+        (g_CpuChaseMode == 1 && carIndex != g_CpuChaseRivalCar)) {
+        return targetSpeed;
+    }
+    gap = WrapSigned32((int64_t)g_PlayerCar.progressA +
+                       g_PlayerCar.progressB - car->progressA - car->progressB);
+    nearGap = g_CpuChaseNearDistance * CHASE_PROGRESS_UNITS_PER_METER;
+    farGap = g_CpuChaseFarDistance * CHASE_PROGRESS_UNITS_PER_METER;
+    if (farGap <= nearGap) {
+        farGap = nearGap + 1;
+    }
+    if (gap <= nearGap) {
+        return targetSpeed;
+    }
+
+    if (gap >= farGap) {
+        chasePercent = g_CpuChaseSpeedPercent;
+    } else {
+        chasePercent = PERCENT_SCALE +
+            (g_CpuChaseSpeedPercent - PERCENT_SCALE) *
+            (gap - nearGap) / (farGap - nearGap);
+    }
+    return WrapSigned32((int64_t)targetSpeed * chasePercent / PERCENT_SCALE);
 }
 
 /*
@@ -86,6 +126,7 @@ void UpdateCarAiTargetSpeed(GameCarRuntime *car, s32 carIndex) {
             (int64_t)(highSpeed - lowSpeed) *
             (position - lowProgress));
         blended = WrapSigned32((int64_t)lowSpeed + blended / range);
+        blended = ApplyCpuChaseSpeed(blended, car, carIndex);
         car->accelerationLimit = WrapSigned16(
             TargetSpeedAccelerationLimit(blended));
     } else {
