@@ -28,3 +28,20 @@ Dekodowanie struktur drogi, modeli i instancji do katalogu/viewportu, źródłow
 identyfikacja regionu i rewizji oraz wspólny resolver parametrów auta. Następnie
 jeden projekt z historią i atomowym Save & apply, zamiast nowego moda dla każdej
 operacji. UI torów i pełny import GLB nadal nie są zaimplementowane.
+
+## Odczyt drogi i pierwszy widok torów
+
+- C `RoadOpen`/`RoadRead` dekodują wszystkie pola 24-bajtowego punktu i zachowują
+  referencje do centrów łuków. Runtime używa tego samego walidatora co edytor;
+  usunięto wcześniejszą, osobną implementację walidacji punktów w grze.
+- Sekcja Tracks w istniejącej aplikacji pokazuje dane wybranej trasy/klasy,
+  mapę jej rzeczywistych punktów i parametry wskazanego punktu. Obsługa myszy
+  i Enter/Space. Wciąż tylko odczyt; linie łączą punkty, nie zastępują geometrii
+  łuków ani podglądu nawierzchni.
+- Odczyt wszystkich 24 oryginalnych pakietów PAL przeszedł. Mythical Coast:
+  333 punkty, 22 centra łuków, długość 154154 w jednostkach danych gry.
+- Headless Chromium wyrenderował rzeczywiste dane Mythical Coast z 333 punktami;
+  screenshot `build/editor-evidence/original-road.png` sprawdzony wizualnie.
+- Testy `track_pack`, `install_track_points`, `race_asset_loading` przechodzą;
+  build gry i CLI przechodzi. Suite launchera: 89 pass, 3 skip (92 testy).
+- Nie ma jeszcze zapisu drogi, sceny 3D terenu, importu GLB ani pełnego Project.

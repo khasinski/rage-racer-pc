@@ -50,7 +50,7 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
-    if(argc==3 && strcmp(argv[1],"--track-pack")==0) {
+    if(argc==3 && (strcmp(argv[1],"--track-pack")==0 || strcmp(argv[1],"--track-scene")==0)) {
         TrackBlock blocks[TRACK_PACK_BLOCK_COUNT];
         f=fopen(argv[2],"rb");if(!f)return 1;
         if(fseek(f,0,SEEK_END)||(size=ftell(f))<44||size>128*1024*1024||fseek(f,0,SEEK_SET)){fclose(f);return 1;}
@@ -64,7 +64,25 @@ int main(int argc,char **argv) {
             printf("%s{\"role\":",i?",":"");String(TrackBlockName((unsigned)i));
             printf(",\"offset\":%zu,\"size\":%zu}",(size_t)(blocks[i].data-(unsigned char *)bytes),blocks[i].size);
         }
-        puts("]}");free(bytes);return 0;
+        if(strcmp(argv[1],"--track-scene")==0) {
+            Road road;
+            if(!RoadOpen(blocks[4].data,blocks[4].size,&road)) {
+                free(bytes);fprintf(stderr,"Invalid road data\n");return 1;
+            }
+            printf("],\"road\":{\"length\":%u,\"points\":[",road.length);
+            for(i=0;i<road.count;i++) {
+                RoadPoint p;RoadRead(&road,(uint32_t)i,&p);
+                printf("%s{\"x\":%d,\"y\":%d,\"z\":%d,\"angle\":%d,\"pitch\":%d,\"crossSlope\":%d,\"leftWidth\":%d,\"rightWidth\":%d,\"arc\":%u,\"length\":%u}",
+                       i?",":"",p.x,p.y,p.z,p.angle,p.pitch,p.crossSlope,p.leftWidth,p.rightWidth,p.arc,p.length);
+            }
+            printf("],\"arcs\":[");
+            for(i=0;i<road.arcCount;i++) {
+                const unsigned char *p=road.arcs+i*12;
+                printf("%s{\"x\":%d,\"z\":%d,\"reserved\":%d}",i?",":"",(int32_t)SpecU32(p),(int32_t)SpecU32(p+4),(int32_t)SpecU32(p+8));
+            }
+            printf("]}");
+        } else printf("]");
+        puts("}");free(bytes);return 0;
     }
     if(argc==2 && strcmp(argv[1],"--mod-directory")==0) {
         char directory[4096];

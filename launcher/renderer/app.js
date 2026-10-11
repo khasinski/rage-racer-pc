@@ -1,4 +1,5 @@
 import {carWorkspace,workshopTabs} from './car-workshop.mjs';
+import {trackWorkspace} from './tracks.mjs';
 import {displayedShiftSpeed,storedShiftSpeed} from './car-speed.mjs';
 import {parseTimeClipboard} from './time-input.mjs';
 import {modCarBanks,modCarTargets,carModChanges} from './mod-car-targets.mjs';
@@ -11,6 +12,8 @@ const api=window.launcher;
 const schema=await (await fetch('./settings.json')).json();
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state, page='home',tab='video',draft={},dirty=false,modalDirty=false,save=null,saveList=[],edits={},assets=[],carParts=[],filter='',toastTimer;
+let trackList=[],trackBank=88,trackScene=null,trackPoint=0;
+function tracks(){return trackWorkspace(trackList,trackBank,trackScene,trackPoint);}
 async function request(name,...args){const response=await api[name](...args);if(!response.ok)throw Error(response.error);return response.value;}
 function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,5000);}
 function error(e){const dialog=$('#dialog');if(dialog.open&&dialog.querySelector('form')){let alert=dialog.querySelector('[data-form-error]');if(!alert){alert=document.createElement('p');alert.dataset.formError='';alert.className='banner error';alert.setAttribute('role','alert');alert.tabIndex=-1;dialog.querySelector('form').prepend(alert);}alert.textContent=e.message||String(e);alert.focus();return;}$('#dialog').innerHTML=`<h2>Could not complete the operation</h2><p>${esc(e.message||e)}</p><footer><button data-action="close">Close</button></footer>`;if(!$('#dialog').open)$('#dialog').showModal();}
@@ -77,11 +80,14 @@ function render(){
  if(!state)return;const unlocked=state.ready&&!state.busy;
  $('#status').textContent=state.running?'Game running':state.busy||(!state.ready?'No game loaded':state.disc.region);
  $('#nav').querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b.dataset.page===page);b.disabled=b.dataset.page==='saves'?Boolean(state.busy)||!state.toolsReady:(!unlocked&&!['home','source'].includes(b.dataset.page));});
- $('#main').innerHTML=(state.busy?`<div class="busy"><span><i class="spinner"></i>${esc(state.busy)}</span><button data-action="cancel" ${state.canCancel?'':'disabled'}>Cancel</button></div>`:'')+(state.error?`<div class="banner error">${esc(state.error)} <button data-action="logs">View logs</button></div>`:'')+((!state.ready&&page!=='saves')||page==='source'?source():({home,settings,saves,mods,assets:library,cars}[page])());
+ $('#main').innerHTML=(state.busy?`<div class="busy"><span><i class="spinner"></i>${esc(state.busy)}</span><button data-action="cancel" ${state.canCancel?'':'disabled'}>Cancel</button></div>`:'')+(state.error?`<div class="banner error">${esc(state.error)} <button data-action="logs">View logs</button></div>`:'')+((!state.ready&&page!=='saves')||page==='source'?source():({home,settings,saves,mods,assets:library,cars,tracks}[page])());
 }
 document.addEventListener('change',e=>{if(e.target.dataset.rivalFilter){if(e.target.dataset.rivalFilter==='class')rivalClass=Number(e.target.value);else rivalCourse=Number(e.target.value);selectedCar='';render();}});
 async function navigate(next){if(next===page)return;if(dirty){$('#dialog').innerHTML=`<h2>Discard unsaved changes?</h2><p>Your edits have not been saved.</p><footer><button data-action="close">Keep editing</button><button data-discard="${next}">Discard and continue</button></footer>`;$('#dialog').showModal();return;}await enter(next);}
-async function enter(next){if(!state.ready&&!['home','source','saves'].includes(next))return;page=next;if(page==='settings')draft={...state.settings};if(page==='saves'&&!save)saveList=await request('saves');if(page==='cars')carParts=(await request('cars')).parts;if(page==='assets')assets=(await request('assets')).entries;render();}
+async function enter(next){if(!state.ready&&!['home','source','saves'].includes(next))return;page=next;if(page==='settings')draft={...state.settings};if(page==='saves'&&!save)saveList=await request('saves');if(page==='cars')carParts=(await request('cars')).parts;if(page==='assets')assets=(await request('assets')).entries;if(page==='tracks'){trackList=(await request('tracks')).tracks;trackScene=await request('trackScene',trackBank);}render();}
+document.addEventListener('change',e=>{if(e.target.matches('[data-track-select]'))perform(async()=>{trackBank=Number(e.target.value);trackPoint=0;trackScene=null;trackScene=await request('trackScene',trackBank);render();});});
+document.addEventListener('click',e=>{const point=e.target.closest('[data-track-point]');if(point){trackPoint=Number(point.dataset.trackPoint);render();}});
+document.addEventListener('keydown',e=>{if(e.target.matches('[data-track-point]')&&['Enter',' '].includes(e.key)){e.preventDefault();trackPoint=Number(e.target.dataset.trackPoint);render();}});
 async function perform(task){try{await task();}catch(e){if(e.message==='Operation canceled')toast('Operation canceled. Your previous game data is unchanged.');else error(e);}}
 document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(!b.type||b.type==='submit'){if(b.closest('form')&&!b.dataset.action&&!b.dataset.tab)return;}e.preventDefault();perform(async()=>{
  if(b.dataset.action==='logs'){const logs=await request('logs');$('#dialog').innerHTML='<h2>Game logs</h2><p class="muted">Recent output from the last game sessions. Logs can contain local file paths.</p>'+logs.map(log=>`<h3>${esc(log.name)}</h3>${log.truncated?'<p class="muted">Showing the last 64 KiB.</p>':''}<pre class="log-output" tabindex="0">${esc(log.missing?'No log yet. Launch the game to create it.':log.text||'The log is empty.')}</pre>`).join('')+'<footer><button data-action="close">Close</button></footer>';$('#dialog').showModal();return;}

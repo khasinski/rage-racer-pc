@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   assets:()=>ipcRenderer.invoke('launcher:assets'),
   cars:()=>ipcRenderer.invoke('launcher:cars'),
   tracks:()=>ipcRenderer.invoke('launcher:tracks'),
+  trackScene:bank=>ipcRenderer.invoke('launcher:track-scene',bank),
   exportCarSet:key=>ipcRenderer.invoke('launcher:export-car-set',key),
   importCarSet:key=>ipcRenderer.invoke('launcher:import-car-set',key),
   previewWholeCar:(bank,body,rival,modId)=>ipcRenderer.invoke('launcher:preview-whole-car',bank,body,rival,modId),

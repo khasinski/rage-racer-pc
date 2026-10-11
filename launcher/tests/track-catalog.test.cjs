@@ -22,6 +22,8 @@ test('original track catalog preserves every class, direction and named block wi
     assert.equal(tracks[0].blocks.length,11);
     assert.equal(tracks[0].blocks[4].role,'road');
     assert.equal(tracks[0].blocks[10].role,'cameras');
+    await assert.rejects(service.trackScene(87),/Invalid track/);
+    await assert.rejects(service.trackScene('../88'),/Invalid track/);
     // A broken source cannot yield a partially successful catalog.
     await fs.writeFile(path.join(root,'raw','asset_134.bin'),Buffer.alloc(44));
     await assert.rejects(service.tracks(),/Invalid track pack/);

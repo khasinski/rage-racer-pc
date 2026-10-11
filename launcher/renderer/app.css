@@ -12,3 +12,6 @@
 #mod-details-form textarea{width:100%;min-width:0;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font:inherit}#mod-details-form .setting{display:grid;grid-template-columns:110px minmax(0,1fr);gap:16px}#mod-details-form input{width:100%;min-width:0}
 .model-comparison{margin:12px 0}
 .workshop-tabs{margin-top:20px}.car-project>section{min-height:240px}.car-project h2{margin:6px 0 12px}.car-project dl{display:grid;grid-template-columns:140px 1fr;gap:8px}.car-project dd{margin:0;overflow-wrap:anywhere}.car-slots button strong{font-weight:500}.car-advanced>summary{font-weight:600}.car-advanced[open]>summary{margin-bottom:16px}
+.track-map {display:block;width:100%;max-height:65vh;background:#121a23;border-radius:8px}
+.track-map [data-track-point] {cursor:pointer;stroke:transparent;stroke-width:8px;paint-order:stroke}
+.track-map [data-track-point]:hover,.track-map [data-track-point]:focus {fill:#ffcf70;outline:none}

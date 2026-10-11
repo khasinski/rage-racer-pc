@@ -1188,7 +1188,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         "${RAGE_QUOTE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/include"
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
-target_link_libraries(install_track_points_tests PRIVATE psyz)
+target_link_libraries(install_track_points_tests PRIVATE psyz rage-content)
 add_test(NAME install_track_points COMMAND install_track_points_tests)
 set_tests_properties(install_track_points PROPERTIES LABELS functional)
 

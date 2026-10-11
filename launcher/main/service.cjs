@@ -82,6 +82,14 @@ class LauncherService {
       return {tracks};
     });
   }
+  async trackScene(bank) {
+    this.requireReady();
+    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid track');
+    return this.operation('Reading track scene',async signal=>{
+      const file=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
+      return JSON.parse(await run(this.tool('rage-mod-cli'),['--track-scene',file],{signal,maxOutput:8*1024*1024}));
+    });
+  }
   carSpecFile(bank) {
     if(!Number.isInteger(bank)||bank<10||bank>72||bank%2)throw Error('Invalid player car bank');
     return path.join(this.state.disc.data,'raw',`asset_${String(bank+1).padStart(3,'0')}.bin`);
