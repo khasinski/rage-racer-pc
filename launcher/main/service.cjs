@@ -195,24 +195,13 @@ class LauncherService {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     return this.operation('Exporting car model',signal=>this.exportCarData(key,destination,signal));
   }
-  async exportCarData(key,destination,signal,format='png'){
+  async exportCarData(key,destination,signal,format='png',view){
+    return require('./car-view.cjs').withView(this,signal,view,async mod=>{
       const target=path.join(destination,key);await fs.mkdir(target);
-      let composed='';
       try{
         const mesh=path.join(target,'model.rmesh');
         const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+mesh],signal));
-        await this.loadProject();
-        const selection=this.editor?.project.snapshot().selection;
-        let mod=null;
-        if(selection?.packages.length){
-          composed=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
-          if(composed){
-            mod={root:composed,project:true,files:await require('./mods.cjs').inventory(composed,this.tool('rage-mod-cli')),manifest:JSON.parse(await run(this.tool('rage-mod-cli'),[path.join(composed,'mod.toml')],{signal}))};
-            if(mod.manifest.meshes[key])await fs.copyFile(path.join(composed,mod.manifest.meshes[key]),mesh);
-          }
-        }
-        const change=this.editor?.project.snapshot().changes.find(c=>c.kind==='car'&&c.id===key&&c.field==='mesh');
-        if(change)await fs.writeFile(mesh,await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).read(change.value));
+        await require('./car-view.cjs').model(this,key,mesh,mod);
         await run(this.tool('rage-mesh-obj'),['export',mesh,'0',path.join(target,'model.obj')],{signal});
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',mesh],{signal,maxOutput:16*1024*1024}));
         const appearance=await require('./preview-materials.cjs')(this,key,metadata,mod,signal);
@@ -233,7 +222,7 @@ class LauncherService {
         await fs.writeFile(path.join(target,'README.txt'),'Current model and textures: original disc, selected packages, then project edits.\nKeep the OBJ, MTL and PNG textures together. Lighting and glass are simplified.\nEdit model.obj in a 3D editor. Preserve rage_* material names and export triangulated OBJ with UVs and normals. Use Import car set to import shared texture edits; Import model only changes geometry.\n');
         return target;
       }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
-      finally{if(composed)await fs.rm(composed,{recursive:true,force:true});}
+    });
   }
   async exportCarSet(key,destination){return require('./car-set.cjs').exportSet(this,key,destination);}
   async importCarSet(key,source){return require('./car-set.cjs').importSet(this,key,source);}
@@ -269,26 +258,23 @@ class LauncherService {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     return this.operation('Loading model preview',signal=>this.previewCarData(key,modId,signal));
   }
-  async previewCarData(key,modId,signal,appearanceModId=modId) {
+  async previewCarData(key,modId,signal,appearanceModId=modId,view) {
+    const selected=view??(appearanceModId===undefined?undefined:this.state.mods.find(m=>m.id===appearanceModId));
+    if(appearanceModId!==undefined&&!selected)throw Error('Unknown mod model');
+    return require('./car-view.cjs').withView(this,signal,selected,async mod=>{
       const staging=path.join(this.root,'car-preview-'+randomUUID());await fs.mkdir(staging);
       try{
         let file=path.join(staging,'model.rmesh');
         const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+file],signal));
-        if(modId!==undefined){
-          const mod=this.state.mods.find(m=>m.id===modId),relative=mod?.manifest.meshes?.[key];
-          if(!relative||!mod.files.includes(relative)||!/^meshes\/[A-Za-z0-9_./-]+\.rmesh$/.test(relative)||relative.split('/').includes('..'))throw Error('Unknown mod model');
-          file=path.join(this.root,'mods',mod.id,relative);
-        }else{
-          await this.loadProject();
-          const change=this.editor?.project.snapshot().changes.find(c=>c.kind==='car'&&c.id===key&&c.field==='mesh');
-          if(change)await fs.writeFile(file,await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).read(change.value));
-        }
+        if(modId!==undefined&&!mod.manifest.meshes?.[key])throw Error('Unknown mod model');
+        await require('./car-view.cjs').model(this,key,file,mod);
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',file],{signal,maxOutput:16*1024*1024}));
-        geometry.textures=await require('./preview-textures.cjs')(this,key,geometry,metadata,staging,signal);
-        geometry.materials=await require('./preview-materials.cjs')(this,key,metadata,this.state.mods.find(m=>m.id===appearanceModId),signal);
+        geometry.materials=await require('./preview-materials.cjs')(this,key,metadata,mod,signal);
+        geometry.textures=await require('./preview-textures.cjs')(this,key,geometry,{...metadata,materials:metadata.materials.filter(m=>!geometry.materials[m.source]?.texture)},staging,signal);
         for(const [source,material]of Object.entries(geometry.materials))if(material.texture)geometry.textures[source]=material.texture;
         return geometry;
       }finally{await fs.rm(staging,{recursive:true,force:true});}
+    });
   }
   async previewWholeCar(bank,body=0,rival=false,modId) {
     this.requireReady();
@@ -297,18 +283,18 @@ class LauncherService {
     else{this.carSpecFile(bank);if(body!==0)throw Error('Invalid player body');}
     const mod=modId===undefined?null:this.state.mods.find(m=>m.id===modId);
     if(modId!==undefined&&!mod)throw Error('Unknown mod');
-    return this.operation('Loading car preview',async signal=>{
+    return this.operation('Loading car preview',signal=>require('./car-view.cjs').withView(this,signal,modId===undefined?undefined:mod,async view=>{
       const file=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
       const layout=JSON.parse(await run(this.tool('rage-mod-cli'),rival?['--rival-layout',file,String(body)]:['--car-layout',file],{signal}));
       const parts=new Map();
       for(const {part}of layout.instances)if(!parts.has(part)){
         const key=`car.${rival?'rival':'player'}.${bank}.part.${part}`;
-        parts.set(part,await this.previewCarData(key,mod?.manifest.meshes?.[key]?modId:undefined,signal,modId));
+        parts.set(part,await this.previewCarData(key,mod?.manifest.meshes?.[key]?modId:undefined,signal,modId,view));
       }
       const geometry=require('./assemble-preview.cjs')(layout,parts);
       if(mod)geometry.modName=mod.name;
       return geometry;
-    });
+    }));
   }
   async init() {
     await fs.mkdir(this.root,{recursive:true});

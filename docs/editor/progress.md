@@ -276,3 +276,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Oświetlenie i szkło w OBJ/MTL nadal są uproszczone; GLB oraz pełne parametry
   materiałów wymagają dalszej pracy. Domyślny podgląd wymaga jeszcze wspólnej
   kompozycji paczek zgodnej z eksportem i builderem.
+
+### Wspólny podgląd i eksport wyglądu
+
+- `car-view` zarządza czasem życia prywatnej kompozycji oraz pierwszeństwem
+  modeli paczek/projektu. Podgląd części, całego auta i eksport korzystają
+  z tej samej ścieżki. Jedna kompozycja wystarcza dla wszystkich części pełnego
+  auta, również podczas eksportu zestawu.
+- Domyślny podgląd pokazuje wybrane paczki i zmiany projektu; jawny podgląd
+  paczki pomija zmiany projektu. Zastąpione tekstury nie są dekodowane ponownie
+  z oryginału. Usunięto z serwisu powtórzoną obsługę geometrii/kompozycji.
+- Testy sprawdzają jedną kompozycję dla wielu części, sprzątanie po sukcesie
+  i błędzie, pierwszeństwo projektu oraz izolację porównania paczki. Test
+  pełnego zestawu dodatkowo sprawdza geometrię i PNG domyślnego podglądu.
+- Pełny suite przed ostatnim dodatkowym testem pierwszeństwa: 111 pass / 3 skip
+  (114 testów), native save_format pass. Oba testy car-view: pass.
+- Nadal brak wizualnego odbioru zmodyfikowanego auta w grze i pełnego zakresu
+  torów/media/GLB z planu. Właściwości materiałów wymagają edycji w projekcie.

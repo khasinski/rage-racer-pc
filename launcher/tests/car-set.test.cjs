@@ -61,6 +61,9 @@ test('complete car import installs all models and textures atomically and reject
    return originalTool(args);
   };
   const exported=await service.exportCarSet(key,root);
+  const preview=await service.previewCar(key);
+  assert.equal(preview.materials[0].texture.png,png.toString('base64'));
+  assert.equal(preview.vertices.length,27);
   const exportedManifest=JSON.parse(await fs.readFile(path.join(exported,'car-set.json')));
   assert.deepEqual(await fs.readFile(path.join(exported,exportedManifest.textures[0])),png);
   for(const role of ['body','front-wheels','rear-wheels'])assert.match(await fs.readFile(path.join(exported,exportedManifest.parts[role]),'utf8'),/usemtl rage_0/);

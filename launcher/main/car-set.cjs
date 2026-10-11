@@ -11,13 +11,13 @@ async function boundedFile(root,relative,max){
  const stat=await fs.stat(file);if(!stat.isFile()||stat.size>max)throw Error('Car set file is too large or not a file');return file;
 }
 exports.exportSet=async(service,key,destination)=>{
- service.requireReady();return service.operation('Exporting complete car',async signal=>{
+ service.requireReady();return service.operation('Exporting complete car',signal=>require('./car-view.cjs').withView(service,signal,undefined,async view=>{
   const c=await car(service,key,signal),materials=await table(service,c,signal),target=path.join(destination,'car-set-'+randomUUID());await fs.mkdir(target);
   try{
    const manifest={format:1,region:service.state.disc.region,key,parts:{},textures:{}};await fs.mkdir(path.join(target,'textures'));
    for(const [role,offset]of [['body',0],['front-wheels',2],['rear-wheels',3]]){
     const partKey=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
-    const folder=await service.exportCarData(partKey,target,signal,'png'),named=path.join(target,role);await fs.rename(folder,named);
+    const folder=await service.exportCarData(partKey,target,signal,'png',view),named=path.join(target,role);await fs.rename(folder,named);
     manifest.parts[role]=role+'/model.obj';
     const meta=JSON.parse(await fs.readFile(path.join(named,'materials.json')));let mtl=await fs.readFile(path.join(named,'model.obj.mtl'),'utf8');
     for(const m of meta){
@@ -34,7 +34,7 @@ exports.exportSet=async(service,key,destination)=>{
    await fs.writeFile(path.join(target,'README.txt'),'Edit the three OBJ files and the shared PNG textures, then Import car set on the same slot.\nKeep rage_* material names, UVs and normals. Export triangulated OBJ.\nShared PNG files are referenced by body and wheel materials; edit each shared image once.\ncar-set.json maps the files to this disc version and car slot. Other slots require material remapping.\n');
    return target;
   }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
- });
+ }));
 };
 exports.importSet=async(service,key,source)=>{
  service.requireReady();return service.operation('Importing complete car',async signal=>{
