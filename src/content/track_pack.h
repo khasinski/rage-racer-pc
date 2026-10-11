@@ -35,6 +35,13 @@ typedef struct RoadArc { int32_t x, z; } RoadArc;
 int RoadArcRead(const Road *road, uint32_t index, RoadArc *arc);
 /* Reserved bytes in the original arc record are preserved. */
 int RoadArcWrite(void *data, size_t size, uint32_t index, const RoadArc *arc);
+enum { TERRAIN_GRID_CELLS=1024, TERRAIN_EMPTY_MODEL=1023 };
+typedef struct Terrain { const unsigned char *grid; uint32_t models; } Terrain;
+/* Validates grid, model offsets and primitive streams, with unaligned reads. */
+int TerrainOpen(const void *data,size_t size,Terrain *terrain);
+int TerrainRead(const Terrain *terrain,uint32_t cell,uint16_t *word);
+/* Changes the low ten model bits only; visibility-region bits survive. */
+int TerrainWriteModel(void *data,size_t size,uint32_t cell,uint16_t model);
 
 typedef struct Placement {
     int16_t model, yaw;

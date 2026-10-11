@@ -111,5 +111,23 @@ int main(void) {
         Write32(p,UINT32_MAX);assert(!PlacementsOpen(p,46,2,&objects));
         assert(!PlacementsOpen(NULL,46,2,&objects));
     }
+    {
+        unsigned char storage[6161]={0},saved[6160];unsigned char *p=storage+1;
+        Write32(p+6144,1);Write32(p+6148,12);Write32(p+6152,12);
+        p[1]=0xfc; /* region 63 survives a model change */
+        Terrain terrain,prior;uint16_t word;
+        assert(TerrainOpen(p,6160,&terrain));prior=terrain;
+        assert(TerrainRead(&terrain,0,&word)&&word==0xfc00);
+        assert(TerrainWriteModel(p,6160,0,TERRAIN_EMPTY_MODEL));
+        assert(TerrainRead(&terrain,0,&word)&&word==0xffff);
+        memcpy(saved,p,6160);assert(!TerrainWriteModel(p,6160,0,1));
+        assert(!TerrainWriteModel(p,6160,1024,0));assert(!memcmp(saved,p,6160));
+        assert(TerrainWriteModel(p,6160,0,0));
+        Write32(p+6152,13);assert(!TerrainOpen(p,6160,&terrain));
+        assert(!memcmp(&terrain,&prior,sizeof(prior)));
+        Write32(p+6152,12);p[6158]=1;assert(!TerrainOpen(p,6160,&terrain));
+        p[6158]=0;assert(!TerrainOpen(p,6159,&terrain));
+        assert(!TerrainRead(&prior,1024,&word));assert(!TerrainRead(&prior,0,NULL));
+    }
     return 0;
 }

@@ -532,6 +532,7 @@ add_executable(model_banks_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/car_asset_slots.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/car_catalog.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/render/init_render_state.c)
+target_link_libraries(model_banks_tests PRIVATE rage-content)
 target_include_directories(model_banks_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/src/port

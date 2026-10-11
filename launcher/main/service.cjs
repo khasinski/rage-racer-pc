@@ -214,6 +214,7 @@ class LauncherService {
   async saveTrackObject(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'object');}
   async saveRoadPoint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'road');}
   async saveRoadArc(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'arc');}
+  async saveTerrainCell(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'cell');}
   async saveTrackEntry(bank,index,values,revision,type){
     this.requireReady();
     if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='road'?10:6))throw Error('Invalid track object edit');

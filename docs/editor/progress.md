@@ -645,3 +645,21 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   `build/reports/editor/track-terrain-model.png`.
 - UI test sprawdza przycisk Preview dla source modelu. Nadal nie ma
   scene gizmo/manipulacji bezpośredniej, GLB i classic mesh adaptera.
+
+### Natywna edycja przypisania komórki terenu
+
+- `TerrainOpen` przenosi dotychczasową runtime walidację grid/offsets/streams
+  do shared C codec z unaligned reads. `IsValidTerrainCellAsset` deleguje do
+  niego zamiast utrzymywać osobny validator. Zasady akceptacji zachowane.
+- `TerrainWriteModel` zmienia tylko low 10 model bits wskazanej komórki,
+  zachowując region bits, visibility rows, model streams i inne banki.
+  1023 oznacza brak komórki. Index/model bounds walidowane przed zapisem.
+- Project slot `track.<course><grade>.cell.<index>` kompiluje się przez ten
+  sam track writer. Publiczne `saveTerrainCell` używa pełnego draft validation
+  i shared history. Formularz wyboru modelu komórki nie jest jeszcze podłączony.
+- C tests: unaligned data, region 63, missing model, invalid index/model,
+  bad offsets/truncated stream i brak mutacji po błędzie. Runtime model_banks
+  tests również pass. CLI test kontroluje byte preservation całego packa.
+- Wszystkie 24 rzeczywiste PAL terrain blocks przeszły native no-op edit
+  i byte-exact comparison. Mythical Coast cell 259: hide → effective preview
+  203→202 instances, undo →203. Temp root, oryginały read-only.

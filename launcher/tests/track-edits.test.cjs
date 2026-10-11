@@ -89,3 +89,14 @@ test('curve center edits preserve reserved bytes and reject out-of-table indices
  project=await service.projectHistory('redo',project.revision);assert.equal((await service.trackScene(88)).road.arcs[0].x,-555);
 
 });
+test('terrain cell model edits preserve region bits and every other byte',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-cell-edit-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const original=pack(),start=original.readUInt32LE(28),end=original.readUInt32LE(32),terrain=Buffer.alloc(6160);
+ terrain.writeUInt16LE(0xfc00);terrain.writeUInt32LE(1,6144);terrain.writeUInt32LE(12,6148);terrain.writeUInt32LE(12,6152);
+ const bytes=Buffer.concat([original.subarray(0,start),terrain,original.subarray(end)]);for(let i=8;i<11;i++)bytes.writeUInt32LE(original.readUInt32LE(i*4)+terrain.length-(end-start),i*4);
+ const source=path.join(root,'source.bin'),out=path.join(root,'out.bin'),tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli');await fs.writeFile(source,bytes);
+ await run(tool,['--edit-track-stdin',source,out],{input:Buffer.from('[[0,"cell.model",1023]]')});const result=await fs.readFile(out);
+ assert.equal(result.readUInt16LE(start),0xffff);assert.deepEqual(result.subarray(0,start),bytes.subarray(0,start));assert.deepEqual(result.subarray(start+2),bytes.subarray(start+2));
+ await fs.rm(out);for(const edit of [[0,'cell.model',1],[1024,'cell.model',0]]){await assert.rejects(run(tool,['--edit-track-stdin',source,out],{input:Buffer.from(JSON.stringify([edit]))}),/Invalid track object edit/);await assert.rejects(fs.stat(out),{code:'ENOENT'});}
+ assert.deepEqual(require('../main/track-edits.cjs').group([{kind:'track',id:'track.big1.cell.0',field:'model',value:1023}]).get(88),[[0,'cell.model',1023]]);
+});

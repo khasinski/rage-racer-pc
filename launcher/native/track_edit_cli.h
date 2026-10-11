@@ -33,6 +33,11 @@ static int TrackEditCommand(const char *source,const char *output) {
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
         if(yyjson_get_uint(index)>UINT32_MAX)goto done;
         uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strcmp(name,"cell.model")){
+            if(value<0||value>1023||!TerrainWriteModel((unsigned char *)bytes+
+                (blocks[7].data-(unsigned char *)bytes),blocks[7].size,at,(uint16_t)value))goto done;
+            continue;
+        }
         if(!strncmp(name,"arc.",4)){
             Road road;RoadArc arc;
             if(!RoadOpen(blocks[4].data,blocks[4].size,&road)||!RoadArcRead(&road,at,&arc))goto done;

@@ -147,3 +147,43 @@ int RoadArcWrite(void *data,size_t size,uint32_t index,const RoadArc *arc) {
     unsigned char *p=(unsigned char *)data+(road.arcs-(const unsigned char *)data)+(size_t)index*12;
     Store32(p,(uint32_t)value.x);Store32(p+4,(uint32_t)value.z);return 1;
 }
+
+int TerrainOpen(const void *data,size_t size,Terrain *terrain) {
+    enum { PREFIX=6144 };
+    if(!data||!terrain||size<PREFIX+8||size>INT32_MAX)return 0;
+    const unsigned char *bytes=data,*payload=bytes+PREFIX;
+    size_t payloadSize=size-PREFIX;uint32_t count=Read32(payload);
+    if(count>TERRAIN_EMPTY_MODEL||count>(payloadSize-8)/4)return 0;
+    size_t first=8+(size_t)count*4;
+    for(unsigned i=0;i<TERRAIN_GRID_CELLS;i++){
+        uint16_t model=Read16(bytes+i*2)&1023u;
+        if(model!=TERRAIN_EMPTY_MODEL&&model>=count)return 0;
+    }
+    for(uint32_t i=0;i<=count;i++){
+        uint32_t offset=Read32(payload+4+i*4);
+        if(offset%4||offset<first||offset>=payloadSize)return 0;
+        if(!i)continue; /* faces table is validated as an offset by runtime */
+        size_t cursor=offset;
+        for(;;){
+            if(cursor>payloadSize||payloadSize-cursor<4)return 0;
+            unsigned primitive=Read16(payload+cursor),records=Read16(payload+cursor+2);cursor+=4;
+            if(!records)break;
+            unsigned stride=primitive==0||primitive==2||primitive==3?32:
+                primitive==1||primitive==4||primitive==5?36:0;
+            if(!stride||records>(payloadSize-cursor)/stride)return 0;
+            cursor+=(size_t)records*stride;
+        }
+    }
+    Terrain value={bytes,count};*terrain=value;return 1;
+}
+int TerrainRead(const Terrain *terrain,uint32_t cell,uint16_t *word) {
+    if(!terrain||!terrain->grid||!word||cell>=TERRAIN_GRID_CELLS)return 0;
+    *word=Read16(terrain->grid+(size_t)cell*2);return 1;
+}
+int TerrainWriteModel(void *data,size_t size,uint32_t cell,uint16_t model) {
+    Terrain terrain;uint16_t word;
+    if(!TerrainOpen(data,size,&terrain)||!TerrainRead(&terrain,cell,&word)||
+       (model!=TERRAIN_EMPTY_MODEL&&model>=terrain.models))return 0;
+    word=(uint16_t)((word&~1023u)|model);
+    unsigned char *p=(unsigned char *)data+(size_t)cell*2;p[0]=(unsigned char)word;p[1]=(unsigned char)(word>>8);return 1;
+}
