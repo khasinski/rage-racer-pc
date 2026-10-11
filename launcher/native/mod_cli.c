@@ -7,6 +7,8 @@
 #include "render/mod_package.h"
 #include "render/rmesh.h"
 #include "content/track_pack.h"
+#include "content/sha256.h"
+#include "content/active_build.h"
 #include "port/car_catalog.h"
 #include <string.h>
 #include <stdio.h>
@@ -51,6 +53,17 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
+    if(argc==5&&strcmp(argv[1],"--active-build")==0){
+        ActiveBuild build;char error[160];int result=ActiveBuildOpen(argv[2],argv[3],argv[4],&build,error,sizeof(error));
+        if(result<0){fprintf(stderr,"%s\n",error);return 1;}
+        if(result==0){puts("{\"active\":false}");return 0;}
+        printf("{\"active\":true,\"directory\":");String(build.directory);
+        printf(",\"profile\":");String(build.profile);puts("}");return 0;
+    }
+    if(argc==3&&strcmp(argv[1],"--hash-file")==0){
+        char hex[65];if(!Sha256File(argv[2],SIZE_MAX,hex))return 1;
+        printf("{\"sha256\":\"%s\"}\n",hex);return 0;
+    }
     if(argc==5 && strcmp(argv[1],"--compose-car-profile")==0) {
         RageCarCatalog base,overlay;char error[256];
         if(!CarCatalogReadFile(argv[2],&base,error,sizeof(error))||

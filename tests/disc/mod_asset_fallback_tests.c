@@ -15,6 +15,7 @@
 #include "archive_index.h"
 #include "mod_assets.h"
 #include "render/mod_manifest.h"
+#include "content/sha256.h"
 
 static size_t s_room;
 static int s_patchCalls;
@@ -108,6 +109,46 @@ int main(int argc, char **argv) {
     EXPECT(WriteFixtureFile(asset1, oversized, sizeof(oversized)));
     configuredDirectory = root;
     snprintf(manifestPath, sizeof(manifestPath), "%s/mod.toml", root);
+    if(argc==2 && strcmp(argv[1],"active")==0){
+        char builds[1024],build[1024],profile[1100],pointer[1100],buildManifest[1100];
+        char profileHash[65],manifestHash[65],json[1024];
+        const char *id="00000000-0000-4000-8000-000000000001";
+        const char *source="sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        const char *text="[[cars]]\nid=\"car_00_g0\"\nmodel=0\ngrade=0\nprice=0\n";
+        const char *manifest="[mod]\nid=\"active-project\"\n";
+        snprintf(builds,sizeof(builds),"%s/builds",root);EXPECT(MakeDirectory(builds)==0);
+        snprintf(build,sizeof(build),"%s/%s",builds,id);EXPECT(MakeDirectory(build)==0);
+        snprintf(profile,sizeof(profile),"%s/cars.toml",build);
+        snprintf(buildManifest,sizeof(buildManifest),"%s/mod.toml",build);
+        snprintf(pointer,sizeof(pointer),"%s/active.json",root);
+        EXPECT(WriteFixtureFile(profile,(const unsigned char *)text,strlen(text)));
+        EXPECT(WriteFixtureFile(buildManifest,(const unsigned char *)manifest,strlen(manifest)));
+        EXPECT(Sha256File(profile,1024*1024,profileHash));EXPECT(Sha256File(buildManifest,1024*1024,manifestHash));
+        snprintf(json,sizeof(json),"{\"format\":1,\"build\":\"%s\",\"source\":{\"region\":\"PAL\",\"fingerprint\":\"%s\"},\"profileHash\":\"%s\",\"manifestHash\":\"%s\"}",id,source,profileHash,manifestHash);
+        EXPECT(WriteFixtureFile(pointer,(const unsigned char *)json,strlen(json)));
+        defaultDirectory=root;configuredDirectory=NULL;
+        EXPECT(ModAssetsNeedsSource());
+        ModAssetsSetSource("PAL",source);
+        EXPECT(ModAssetsDirectory() && !strcmp(ModAssetsDirectory(),build));
+        EXPECT(ModAssetsCarProfile() && !strcmp(ModAssetsCarProfile(),profile));
+        EXPECT(ModAssetsManifest() && !strcmp(ModAssetsManifest()->id,"active-project"));
+        s_room=sizeof(destination);EXPECT(ModAssetLoad(0,destination,2)==0); /* old root/raw is not mixed in */
+        ModAssetsShutdown();EXPECT(ModAssetsCarProfile()!=NULL); /* reload retains mounted source */
+        ModAssetsShutdown();ModAssetsSetSource("NTSC-J",source);
+        EXPECT(ModAssetsDirectory()==NULL && ModAssetsCarProfile()==NULL);
+        EXPECT(ModAssetLoad(0,destination,2)==0);
+        ModAssetsShutdown();ModAssetsSetSource("PAL",source);
+        EXPECT(WriteFixtureFile(profile,(const unsigned char *)"damaged",7));
+        EXPECT(ModAssetsDirectory()==NULL && ModAssetsCarProfile()==NULL);
+        EXPECT(WriteFixtureFile(profile,(const unsigned char *)text,strlen(text)));
+        EXPECT(ModAssetsCarProfile()==NULL); /* no hot reload after rejection */
+        ModAssetsShutdown();configuredDirectory="";
+        EXPECT(!ModAssetsNeedsSource());EXPECT(ModAssetsCarProfile()==NULL);
+        ModAssetsShutdown();configuredDirectory=root;ModAssetsSetSource("PAL",source);
+        EXPECT(ModAssetsCarProfile()!=NULL);
+        unlink(pointer);unlink(profile);unlink(buildManifest);rmdir(build);rmdir(builds);
+        goto cleanup;
+    }
     if (argc == 2) {
         if (strcmp(argv[1], "auto") == 0) {
             defaultDirectory = root;

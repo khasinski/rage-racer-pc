@@ -113,11 +113,31 @@ operacji. UI torów i pełny import GLB nadal nie są zaimplementowane.
 
 ### Ważne granice aktualnego etapu
 
-Buildy projektu są na razie pod profilem edytora (`projects/<hash>/builds`),
-przekazywane grze przez config. To **jeszcze nie** docelowa automatyczna detekcja
-wspólnego `mods/active.json` dla samodzielnie odpalanej binarki gry. Nie wykonano
-jeszcze wizualnego pełnego e2e zakupu/wyścigu z tym formularzem. Resolver edytora
+Nie wykonano jeszcze wizualnego pełnego e2e zakupu/wyścigu z tym formularzem. Resolver edytora
 nie uwzględnia jeszcze parametrów istniejących raw modów. Pierwszy builder
 obsługuje profil auta; edity torów/media blokuje jawnie, zamiast je pomijać.
 Sceny toru, pełny GLB, media, draft recovery, rozszerzanie rosteru/tras i komplet
 platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
+
+## Wspólny aktywny build wykrywany przez grę
+
+- Builder zapisuje niezmienne wyniki w katalogu gry `mods/builds/<uuid>`
+  i atomowo zmienia `mods/active.json`. Zapis dokumentu bez zastosowania nadal
+  pozostawia poprzedni wynik aktywny.
+- Gra i edytor używają tego samego walidatora C. Wskaźnik wiąże build z regionem
+  i SHA-256 oryginalnego RAGE.BIN; sprawdzane są również bajty profilu i manifestu
+  oraz poprawność profilu przez parser runtime. Błąd odrzuca cały build, bez
+  domieszki starych plików z korzenia mods.
+- Import raportuje odcisk faktycznie odczytanego archiwum; późniejsza zmiana
+  źródła jest wykrywana. Zwykły start bez aktywnego projektu nie oblicza hasha.
+- Test C obejmuje automatyczną detekcję, reload, inną płytę, uszkodzony profil,
+  brak mieszania z legacy root oraz jawne wyłączenie modów. Testy CLI porównują
+  SHA z Node na granicach bloków i sprawdzają powtórzone klucze JSON, traversal,
+  zły region/odcisk, uszkodzone pliki i niepoprawny profil z poprawnym hashem.
+- Sprawdzono 12 testów C oraz suite launchera: 99 pass, 3 skip (102 testy).
+  Trzy pominięte testy wymagają regionalnych obrazów płyty. Bez okien gry.
+- Ten build nadal obejmuje wyłącznie profil auta. Kompozycja istniejących
+  paczek jest jawnie blokowana i wymaga połączenia z nowym builderem. Starszy
+  publisher paczek odmawia zastąpienia katalogu należącego do nowego edytora;
+  nie stanowi jeszcze wspólnej ścieżki publikacji. Nie ma jeszcze kompletnego
+  rejestru/hashowania wszystkich przyszłych plików scen i modeli.

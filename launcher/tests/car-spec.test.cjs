@@ -42,7 +42,7 @@ test('car parameters edit the shared project and apply without touching source p
   const source=path.join(data,'raw/asset_011.bin');await fs.writeFile(source,bytes);
   const model=Buffer.alloc(128);model.writeUInt32LE(40,32);model.writeUInt32LE(80,36);model[8]=1;await fs.writeFile(path.join(data,'raw/asset_010.bin'),model);
   const archive=path.join(root,'RAGE.BIN');await fs.writeFile(archive,'test source');
-  const service=new LauncherService({root:path.join(root,'profile'),bin:path.dirname(tool),config:path.resolve(__dirname,'../resources/rage-port.ini')});
+  const service=new LauncherService({root:path.join(root,'profile'),modsRoot:path.join(root,'game-mods'),bin:path.dirname(tool),config:path.resolve(__dirname,'../resources/rage-port.ini')});
   await service.init();service.state.disc={region:'NTSC-U',data,archive,path:archive};
   const original=await service.carSpec(10);
   assert.equal(original.fields.find(f=>f.key==='revLimit').origin,'built-in profile');

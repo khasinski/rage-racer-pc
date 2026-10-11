@@ -38,6 +38,7 @@
 #include "chd_disc.h"
 #include "disc_stream_table.h"
 #include "fmv_audio.h"
+#include "content/sha256.h"
 
 typedef struct RageHostDisc {
     FILE *file;
@@ -452,12 +453,13 @@ int HostInitDisc(void) {
 
 /* Write the whole RAGE.BIN out of the mounted disc, so the modding tools can
  * work on a plain file instead of reimplementing ISO and CUE parsing. */
-int HostDumpArchive(const char *path) {
+int HostDumpArchive(const char *path,char fingerprint[72]) {
     unsigned char buffer[64 * 1024];
     FILE *output;
     unsigned int offset = 0;
     unsigned int remaining;
     int ok = 1;
+    Sha256 hash;char hex[65];
 
     if (path == NULL || g_RageHostDisc.archive.size == 0 ||
         g_RageHostDisc.source_path[0] == '\0' ||
@@ -465,6 +467,7 @@ int HostDumpArchive(const char *path) {
         return 0;
     }
     remaining = g_RageHostDisc.archive.size;
+    Sha256Init(&hash);
     output = fopen(path, "wb");
     if (output == NULL) return 0;
     while (remaining > 0) {
@@ -478,11 +481,26 @@ int HostDumpArchive(const char *path) {
             break;
         }
         offset += chunk;
+        Sha256Update(&hash,buffer,chunk);
         remaining -= chunk;
     }
     if (fclose(output) != 0) ok = 0;
     if (!ok) remove(path);
+    if(ok&&fingerprint){Sha256Finish(&hash,hex);snprintf(fingerprint,72,"sha256:%s",hex);}
     return ok;
+}
+
+int HostDiscFingerprint(char fingerprint[72]) {
+    unsigned char bytes[65536];unsigned int offset=0,remaining=g_RageHostDisc.archive.size;
+    Sha256 hash;char hex[65];
+    if(!fingerprint||!remaining)return 0;
+    Sha256Init(&hash);
+    while(remaining){
+        unsigned int chunk=remaining<sizeof(bytes)?remaining:(unsigned int)sizeof(bytes);
+        if(!HostReadArchive(offset,bytes,chunk))return 0;
+        Sha256Update(&hash,bytes,chunk);offset+=chunk;remaining-=chunk;
+    }
+    Sha256Finish(&hash,hex);snprintf(fingerprint,72,"sha256:%s",hex);return 1;
 }
 
 /*

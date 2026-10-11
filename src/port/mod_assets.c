@@ -10,6 +10,7 @@
 #include "texture_patch.h"
 #include "runtime_config.h"
 #include "platform_paths.h"
+#include "content/active_build.h"
 
 /*
  * Asset overrides read from a directory, laid out the way rage-extract writes
@@ -29,6 +30,7 @@ static RageModManifest s_manifest;
 static int s_manifestReady;
 static int s_legacyLayout;
 static int s_initialized;
+static char s_region[16],s_source[72],s_carProfile[1024];
 static int s_announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
 static int s_patchedAnnounced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
 
@@ -41,6 +43,22 @@ void ModAssetsShutdown(void) {
     s_manifestReady = 0;
     s_legacyLayout = 0;
     s_initialized = 0;
+    /* Disc identity survives asset reload; installed views and profile paths
+     * do not. A new disc supplies a new identity before the next session. */
+    s_carProfile[0]='\0';
+}
+
+int ModAssetsNeedsSource(void) {
+    char root[1024],path[1100];const char *configured=RuntimeConfigGet("mods.directory");FILE *file;
+    if(configured&&!*configured)return 0;
+    if(configured){if(strlen(configured)>=sizeof(root))return 0;strcpy(root,configured);}
+    else if(!PlatformUserConfigPath("mods",root,sizeof(root)))return 0;
+    if(snprintf(path,sizeof(path),"%s/active.json",root)<0)return 0;
+    file=fopen(path,"rb");if(!file)return 0;fclose(file);return 1;
+}
+void ModAssetsSetSource(const char *region,const char *fingerprint) {
+    if(s_initialized||!region||!fingerprint||strlen(region)>=sizeof(s_region)||strlen(fingerprint)>=sizeof(s_source))return;
+    strcpy(s_region,region);strcpy(s_source,fingerprint);
 }
 
 /* Missing manifests retain legacy-only compatibility. Any other read/parse
@@ -114,7 +132,7 @@ static void ModAssetsInit(void) {
         written = snprintf(probe, sizeof(probe), "%s/mod.toml", s_directoryStorage);
         if (written < 0 || (size_t)written >= sizeof(probe)) return;
         test = fopen(probe, "rb");
-        if (test == NULL && errno == ENOENT) return;
+        if (test == NULL && errno == ENOENT && !ModAssetsNeedsSource()) return;
         if (test != NULL) fclose(test);
         s_directory = s_directoryStorage;
     }
@@ -125,8 +143,15 @@ static void ModAssetsInit(void) {
     }
     if (s_directory != s_directoryStorage) strcpy(s_directoryStorage, s_directory);
     s_directory = s_directoryStorage;
+    {
+        ActiveBuild build;char error[160];
+        int result=ActiveBuildOpen(s_directory,s_region,s_source,&build,error,sizeof(error));
+        if(result<0){fprintf(stderr,"rage-port: %s; active project disabled\n",error);s_directory=NULL;return;}
+        if(result>0){strcpy(s_directoryStorage,build.directory);strcpy(s_carProfile,build.profile);}
+    }
     if (!ModAssetsReadManifest()) {
         s_directory = NULL;
+        s_carProfile[0]='\0';
         return;
     }
     /* Say plainly when the directory is not the shape rage-extract writes,
@@ -154,6 +179,9 @@ static void ModAssetsInit(void) {
 const char *ModAssetsDirectory(void) {
     ModAssetsInit();
     return s_directory;
+}
+const char *ModAssetsCarProfile(void) {
+    ModAssetsInit();return s_directory&&s_carProfile[0]?s_carProfile:NULL;
 }
 
 const RageModManifest *ModAssetsManifest(void) {

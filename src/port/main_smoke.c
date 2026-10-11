@@ -17,6 +17,7 @@
 #include "content_options.h"
 #include "car_catalog.h"
 #include "car_catalog_profile.h"
+#include "mod_assets.h"
 #include "diagnostic_log.h"
 #include "runtime_config.h"
 #include "timing_control.h"
@@ -47,8 +48,12 @@ int InitNativeGameData(void);
 
 static int LoadCarCatalogForSmoke(void) {
     char path[4096], error[256] = {0};
+    const char *configuredProfile = RuntimeConfigGet("cars.profile");
     CarCatalogClearOverrides();
-    if (!CarCatalogPrepareProfile(NULL, HostDiscRegion(), RuntimeConfigGet("cars.profile"), path, sizeof(path)) ||
+    if (!CarCatalogPrepareProfile(NULL, HostDiscRegion(),
+                                 configuredProfile && *configuredProfile
+                                     ? configuredProfile : ModAssetsCarProfile(),
+                                 path, sizeof(path)) ||
         !CarCatalogLoadFile(path, error, sizeof(error))) {
         fprintf(stderr, "rage-port: ignoring car catalog override: %s\n", error);
         CarCatalogClearOverrides();
@@ -554,6 +559,10 @@ int main(int argc, char **argv) {
         Psyz_SetKeyboardKey(inputIndex, inputConfig.keys[inputIndex]);
     }
     if (!HostInitDisc()) return EXIT_FAILURE;
+    if(ModAssetsNeedsSource()) {
+        char fingerprint[72];
+        if(HostDiscFingerprint(fingerprint))ModAssetsSetSource(HostDiscRegion(),fingerprint);
+    }
     if (!NativeAssetImporterInit()) return EXIT_FAILURE;
     if (RuntimeConfigGet("trace.spu") != NULL &&
         Psyz_SpuSetKeyOnTracePath(RuntimeConfigGet("trace.spu")) != 0) {

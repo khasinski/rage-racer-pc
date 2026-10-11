@@ -131,8 +131,13 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-sim PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
-add_library(rage-content STATIC src/content/region_profile.c src/content/track_pack.c)
+add_library(rage-content STATIC src/content/region_profile.c src/content/track_pack.c src/content/sha256.c)
 target_include_directories(rage-content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+if(MSVC)
+    target_compile_options(rage-content PRIVATE /W4 /WX)
+else()
+    target_compile_options(rage-content PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
 add_library(rage-car-catalog STATIC src/content/car_catalog.c)
 target_include_directories(rage-car-catalog PUBLIC src src/port/include include external/psyz/psyz/include)
 target_compile_definitions(rage-car-catalog PRIVATE __psyz=1)
@@ -144,6 +149,9 @@ endif()
 
 add_library(rage-json STATIC external/yyjson/yyjson.c)
 target_include_directories(rage-json PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/yyjson)
+target_sources(rage-content PRIVATE src/content/active_build.c)
+target_link_libraries(rage-content PRIVATE rage-json rage-car-catalog)
+target_compile_definitions(rage-content PRIVATE __psyz=1)
 add_library(rage-mod-package STATIC src/render/mod_package.c)
 target_include_directories(rage-mod-package PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(rage-mod-package PRIVATE rage-json)
@@ -426,7 +434,7 @@ if(RAGE_BUILD_PORT)
     )
     add_library(rage-port-legacy OBJECT ${RAGE_PORT_LEGACY_SOURCES})
     target_include_directories(rage-port-legacy PRIVATE src/port/include include)
-    target_link_libraries(rage-port-legacy PRIVATE psyz)
+    target_link_libraries(rage-port-legacy PRIVATE psyz rage-content)
     target_compile_options(rage-port-legacy PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
     add_executable(rage-racer
         MACOSX_BUNDLE
@@ -568,6 +576,7 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-frame-replay PRIVATE
         src src/port src/port/include include)
     target_link_libraries(rage-frame-replay PRIVATE
+        rage-content
         rage-render-world rage-ray SDL3::SDL3 miniz rage-json)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-frame-replay PRIVATE

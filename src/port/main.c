@@ -11,6 +11,7 @@
 #include "content_options.h"
 #include "car_catalog.h"
 #include "car_catalog_profile.h"
+#include "mod_assets.h"
 #include "diagnostic_log.h"
 #include "host_storage.h"
 #include "host_disc.h"
@@ -44,6 +45,7 @@ static void LoadInputConfig(RageInputConfig *config, const char *argv0) {
 
 static ArchiveDumpResult DumpRequestedArchive(void) {
     const char *path = RuntimeConfigGet("tools.dump_archive");
+    char fingerprint[72];
 
     if (path == NULL || path[0] == '\0') {
         return ARCHIVE_DUMP_NOT_REQUESTED;
@@ -51,7 +53,7 @@ static ArchiveDumpResult DumpRequestedArchive(void) {
     if (!HostInitDisc()) {
         return ARCHIVE_DUMP_FAILED;
     }
-    if (!HostDumpArchive(path)) {
+    if (!HostDumpArchive(path,fingerprint)) {
         fprintf(stderr, "rage-port: cannot write %s\n", path);
         return ARCHIVE_DUMP_FAILED;
     }
@@ -59,7 +61,7 @@ static ArchiveDumpResult DumpRequestedArchive(void) {
     if (RuntimeConfigEnabled("tools.launcher_report")) {
         /* Machine-readable completion, only after the archive is fully written.
          * Region is one of the fixed strings supplied by DiscIdentify. */
-        printf("{\"region\":\"%s\"}\n", HostDiscRegion());
+        printf("{\"region\":\"%s\",\"fingerprint\":\"%s\"}\n", HostDiscRegion(),fingerprint);
         fflush(stdout);
     }
     return ARCHIVE_DUMP_COMPLETE;
@@ -83,6 +85,10 @@ int main(int argc, char **argv) {
     if (!HostInitStorage()) {
         fprintf(stderr, "failed to initialize user save storage\n");
         return EXIT_FAILURE;
+    }
+    if(ModAssetsNeedsSource()) {
+        char fingerprint[72];
+        if(HostDiscFingerprint(fingerprint))ModAssetsSetSource(HostDiscRegion(),fingerprint);
     }
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     PortConfigDefaults(&portConfig);
@@ -128,8 +134,12 @@ int main(int argc, char **argv) {
     }
     ContentOptionsApply();
     CarCatalogClearOverrides();
+    const char *configuredProfile = RuntimeConfigGet("cars.profile");
     if (!CarCatalogPrepareProfile(argc > 0 ? argv[0] : NULL,
-                                  HostDiscRegion(), RuntimeConfigGet("cars.profile"), carCatalogPath,
+                                  HostDiscRegion(),
+                                  configuredProfile && *configuredProfile
+                                      ? configuredProfile : ModAssetsCarProfile(),
+                                  carCatalogPath,
                                   sizeof(carCatalogPath)) ||
         !CarCatalogLoadFile(carCatalogPath, carCatalogError,
                             sizeof(carCatalogError))) {

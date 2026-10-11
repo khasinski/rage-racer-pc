@@ -20,7 +20,9 @@ async function source(disc) {
     after=await handle.stat();
   }finally{await handle.close();}
   if(before.size!==after.size||before.mtimeMs!==after.mtimeMs)throw Error('Source archive changed while reading it');
-  return {region:disc.region,fingerprint:'sha256:'+hash.digest('hex')};
+  const fingerprint='sha256:'+hash.digest('hex');
+  if(disc.fingerprint&&disc.fingerprint!==fingerprint)throw Error('Source archive changed since extraction; import the disc again');
+  return {region:disc.region,fingerprint};
 }
 function run(executable, args, {cwd,signal,onLog,input,maxOutput=2*1024*1024}={}) {
   return new Promise((resolve,reject)=>{
@@ -60,8 +62,8 @@ function run(executable, args, {cwd,signal,onLog,input,maxOutput=2*1024*1024}={}
   });
 }
 class LauncherService {
-  constructor({root,bin,config,onChange=()=>{}}) {
-    this.root=root;this.bin=bin;this.baseConfig=config;this.onChange=onChange;
+  constructor({root,bin,config,modsRoot,onChange=()=>{}}) {
+    this.root=root;this.bin=bin;this.baseConfig=config;this.modsRoot=modsRoot;this.onChange=onChange;
     this.state={settings:{...defaults},disc:null,mods:[]};this.busy=null;this.game=null;
   }
   tool(name) { return path.join(this.bin,name+(process.platform==='win32'?'.exe':'')); }
@@ -78,6 +80,11 @@ class LauncherService {
     });
   }
   async publishMods() {return require('./publish-mods.cjs')(this);}
+  async gameModRoot() {
+    const directory=this.modsRoot??JSON.parse(await run(this.tool('rage-mod-cli'),['--mod-directory'])).directory;
+    if(typeof directory!=='string'||!path.isAbsolute(directory))throw Error('Invalid game mod directory');
+    return directory;
+  }
   async project() {
     this.requireReady();
     return this.operation('Opening editing project',async()=>{
@@ -109,7 +116,7 @@ class LauncherService {
     if(this.game)throw Error('Close the game before applying project changes');
     if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
     this.editor.project.checkRevision(revision);
-    return this.operation('Building and applying project',()=>require('./project-build.cjs').apply(this),false);
+    return this.operation('Building and applying project',async()=>{const result=await require('./project-build.cjs').apply(this);this.projectError=null;return result;},false);
   }
   async tracks() {
     this.requireReady();
@@ -242,7 +249,7 @@ class LauncherService {
     let ready=false;
     if(this.state.disc)try{await fs.access(this.state.disc.path);await fs.access(path.join(this.state.disc.data,'manifest.json'));ready=true;}catch{}
     let toolsReady=true;for(const name of ['rage-racer','rage-extract','rage-pack','rage-save-cli','rage-mod-cli','rage-mesh-obj'])try{await fs.access(this.tool(name));}catch{toolsReady=false;}
-    return {...this.state,ready,toolsReady,overlaps:this.overlaps(),conflicts:this.conflicts(),busy:this.busy?.label||null,canCancel:!!this.busy?.cancellable,running:!!this.game,error:this.startupError||this.gameError||null};
+    return {...this.state,ready,toolsReady,overlaps:this.overlaps(),conflicts:this.conflicts(),busy:this.busy?.label||null,canCancel:!!this.busy?.cancellable,running:!!this.game,error:this.startupError||this.projectError||this.gameError||null};
   }
   async update() {this.onChange(await this.snapshot());}
   async logs() {
@@ -275,7 +282,7 @@ class LauncherService {
         const archive=path.join(staging,'RAGE.BIN');
         const stdout=await run(this.tool('rage-racer'),['--config',config,'--set',`disc.image=${image}`,'--set',`tools.dump_archive=${archive}`,'--set','tools.launcher_report=true','--set',`diagnostics.log=${path.join(staging,'import.log')}`],{cwd:staging,signal});
         const line=stdout.split(/\r?\n/).find(x=>x.startsWith('{"region":'));
-        const region=line?JSON.parse(line).region:null;
+        const report=line?JSON.parse(line):null,region=report?.region;
         if(!['PAL','NTSC-U','NTSC-J'].includes(region))throw Error('The selected image is not a recognized Rage Racer release');
         this.busy.label='Preparing the asset library';await this.update();
         const data=path.join(staging,'data');await run(this.tool('rage-extract'),[archive,data],{cwd:staging,signal});
@@ -289,7 +296,9 @@ class LauncherService {
         if(signal.aborted)throw Error('Operation canceled');
         this.busy.cancellable=false;await this.update();
         const previous=this.state.disc;
-        this.state.disc={path:image,region,data,archive};
+        const identity=await source({archive,region});
+        if(report.fingerprint&&report.fingerprint!==identity.fingerprint)throw Error('Native disc fingerprint does not match the extracted archive');
+        this.state.disc={path:image,region,data,archive,fingerprint:identity.fingerprint};
         // A different regional archive cannot inherit active overrides implicitly.
         const previousMods=this.state.mods;this.state.mods=this.state.mods.map(m=>({...m,enabled:false}));
         try{await this.persist();}catch(e){this.state.disc=previous;this.state.mods=previousMods;throw e;}
@@ -310,7 +319,8 @@ class LauncherService {
     if(!ownedJob)this.requireReady();let text='';
     try{text=await fs.readFile(path.join(this.root,'rage-port.ini'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;text=await fs.readFile(this.baseConfig,'utf8');}
     const style=this.state.disc.region==='NTSC-J'?'japanese':'international';
-    const profile=await require('./project-build.cjs').activeProfile(this);
+    let profile='';this.projectError=null;
+    try{profile=await require('./project-build.cjs').activeProfile(this);}catch(e){this.projectError='Project activation failed: '+e.message;}
     return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'cars.profile':profile,'audio.menu_music':path.join(this.state.disc.data,'menu_music.wav'),'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
   }
   async launch() {

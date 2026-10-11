@@ -1981,7 +1981,7 @@ add_executable(modern_assets_retry_tests
 target_include_directories(modern_assets_retry_tests PRIVATE
     ${PROJECT_SOURCE_DIR}/src ${PROJECT_SOURCE_DIR}/src/port
     ${PROJECT_SOURCE_DIR}/src/port/include ${PROJECT_SOURCE_DIR}/include)
-target_link_libraries(modern_assets_retry_tests PRIVATE rage-render-world SDL3::SDL3 miniz rage-json)
+target_link_libraries(modern_assets_retry_tests PRIVATE rage-render-world rage-content SDL3::SDL3 miniz rage-json)
 add_dependencies(modern_assets_retry_tests rage-authored-cars)
 add_test(NAME modern_assets_retry COMMAND ${CMAKE_COMMAND} -E env
     --unset=RAGE_PORT_MODERN_ASSETS $<TARGET_FILE:modern_assets_retry_tests>
