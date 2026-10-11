@@ -31,7 +31,21 @@ exports.exportSet=async(service,key,destination)=>{
     for(const name of await fs.readdir(named))if(!['model.obj','model.obj.mtl'].includes(name))await fs.rm(path.join(named,name));
    }
    await fs.writeFile(path.join(target,'car-set.json'),JSON.stringify(manifest,null,2));
-   await fs.writeFile(path.join(target,'README.txt'),'Edit the three OBJ files and the shared PNG textures, then Import car set on the same slot.\nKeep rage_* material names, UVs and normals. Export triangulated OBJ.\nShared PNG files are referenced by body and wheel materials; edit each shared image once.\ncar-set.json maps the files to this disc version and car slot. Other slots require material remapping.\n');
+   const {run}=require('./service.cjs'),raw=path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`);
+   const layout=JSON.parse(await run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));
+   const parts=[],folders=[];
+   try{
+    for(const offset of [0,2,3]){
+     const id=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
+     const folder=await service.exportCarData(id,target,signal,'png',view,'glb');folders.push(folder);parts.push({id,file:path.join(folder,'model.glb')});
+    }
+    const instances=layout.instances.map((instance,i)=>{
+     const mesh=[0,2,3].indexOf(instance.part-c.part);if(mesh<0)throw Error('Unknown car layout part');
+     return {mesh,name:mesh===0?'body':mesh===2?'rear-wheels':`front-wheel-${i}`,position:instance.position,scale:instance.scale};
+    });
+    await run(service.tool('rage-mesh-obj'),['assemble-glb',path.join(target,'car.glb')],{signal,input:JSON.stringify({source:{region:manifest.region,key},parts,instances})});
+   }finally{for(const folder of folders)await fs.rm(folder,{recursive:true,force:true});}
+   await fs.writeFile(path.join(target,'README.txt'),'car.glb contains the assembled car with embedded PNG textures and separate body/wheel nodes for inspection in Blender. Native game units, Y-up. Complete GLB re-import is not supported yet.\nEdit the three OBJ files and the shared PNG textures, then Import car set on the same slot.\nKeep rage_* material names, UVs and normals. Export triangulated OBJ.\nShared PNG files are referenced by body and wheel materials; edit each shared image once.\ncar-set.json maps the files to this disc version and car slot. Other slots require material remapping.\n');
    return target;
   }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
  }));

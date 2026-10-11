@@ -206,3 +206,62 @@ int GlbImportTextures(const char *input,const char *output,const char *textureDi
 
 int GlbExport(const char *input,unsigned part,const char *output){return GlbExportTextures(input,part,output,NULL);}
 int GlbImport(const char *input,const char *output){return GlbImportTextures(input,output,NULL);}
+
+/* Assemble validated part GLBs without baking away wheel instances/pivots. */
+static int Shift(yyjson_mut_doc *doc,yyjson_mut_val *obj,const char *key,uint32_t offset){
+ yyjson_mut_val *v=yyjson_mut_obj_get(obj,key);if(!v)return 1;if(!yyjson_mut_is_uint(v)||yyjson_mut_get_uint(v)>UINT32_MAX-offset)return 0;
+ uint32_t n=(uint32_t)yyjson_mut_get_uint(v)+offset;yyjson_mut_obj_remove_str(obj,key);Number(doc,obj,key,n);return 1;
+}
+int GlbAssemble(const char *output){
+ enum { INPUT_LIMIT=1024*1024 };char *input=malloc(INPUT_LIMIT+1u),*json=NULL;unsigned char *bin=NULL,*file=NULL;yyjson_doc *manifest=NULL,*partDoc=NULL;yyjson_mut_doc *doc=NULL;int ok=0;size_t binSize=0,jsonSize=0;
+ if(!input)goto done;size_t n=fread(input,1,INPUT_LIMIT+1u,stdin);if(ferror(stdin)||n>INPUT_LIMIT)goto done;manifest=yyjson_read(input,n,0);if(!manifest)goto done;
+ yyjson_val *spec=yyjson_doc_get_root(manifest),*parts=yyjson_obj_get(spec,"parts"),*instances=yyjson_obj_get(spec,"instances");
+ if(!yyjson_is_obj(yyjson_obj_get(spec,"source"))||!yyjson_is_arr(parts)||yyjson_arr_size(parts)!=3||!yyjson_is_arr(instances)||yyjson_arr_size(instances)<3||yyjson_arr_size(instances)>8)goto done;
+ doc=yyjson_mut_doc_new(NULL);if(!doc)goto done;yyjson_mut_val *root=yyjson_mut_obj(doc);yyjson_mut_doc_set_root(doc,root);
+ yyjson_mut_val *asset=Object(doc,root,"asset");Text(doc,asset,"version","2.0");Text(doc,asset,"generator","Rage Racer Editor");Text(doc,Object(doc,asset,"extras"),"rr_units","native Y-up");
+ yyjson_mut_val *source=yyjson_val_mut_copy(doc,yyjson_obj_get(spec,"source"));if(!source)goto done;yyjson_mut_obj_add_val(doc,Object(doc,root,"extras"),"rr_source",source);
+ const char *names[]={"bufferViews","accessors","materials","images","textures","samplers","meshes"};yyjson_mut_val *arrays[7];for(unsigned i=0;i<7;i++)arrays[i]=Array(doc,root,names[i]);
+ for(unsigned part=0;part<3;part++){
+  yyjson_val *description=yyjson_arr_get(parts,part),*path=yyjson_obj_get(description,"file"),*id=yyjson_obj_get(description,"id");
+  if(!yyjson_is_str(path)||strlen(yyjson_get_str(path))!=yyjson_get_len(path)||!yyjson_is_str(id)||!yyjson_get_len(id)||yyjson_get_len(id)>159||strlen(yyjson_get_str(id))!=yyjson_get_len(id))goto done;
+  size_t size=0;unsigned char *bytes=Load(yyjson_get_str(path),&size);if(!bytes)goto done;
+  cgltf_data *parsed=NULL;size_t budget=LIMIT;cgltf_options opts={0};opts.memory.alloc_func=Allocate;opts.memory.free_func=Release;opts.memory.user_data=&budget;
+  if(cgltf_parse(&opts,bytes,size,&parsed)!=cgltf_result_success||parsed->file_type!=cgltf_file_type_glb||parsed->buffers_count!=1||parsed->buffers[0].uri||parsed->meshes_count!=1||parsed->nodes_count!=1||parsed->extensions_used_count||cgltf_load_buffers(&opts,parsed,NULL)!=cgltf_result_success||cgltf_validate(parsed)!=cgltf_result_success){cgltf_free(parsed);free(bytes);goto done;}
+  partDoc=yyjson_read(parsed->json,parsed->json_size,0);if(!partDoc){cgltf_free(parsed);free(bytes);goto done;}yyjson_val *partRoot=yyjson_doc_get_root(partDoc);
+  if(parsed->buffers[0].size>LIMIT-binSize){cgltf_free(parsed);free(bytes);goto done;}size_t partSize=(parsed->buffers[0].size+3)&~(size_t)3;if(partSize>LIMIT-binSize){cgltf_free(parsed);free(bytes);goto done;}
+  unsigned char *next=realloc(bin,binSize+partSize);if(!next){cgltf_free(parsed);free(bytes);goto done;}bin=next;memcpy(bin+binSize,parsed->buffers[0].data,parsed->buffers[0].size);memset(bin+binSize+parsed->buffers[0].size,0,partSize-parsed->buffers[0].size);
+  uint32_t offsets[7];for(unsigned i=0;i<7;i++)offsets[i]=(uint32_t)yyjson_mut_arr_size(arrays[i]);
+  for(unsigned group=0;group<7;group++){
+   yyjson_val *table=yyjson_obj_get(partRoot,names[group]),*entry;size_t i,count;
+   if(!table)continue;if(!yyjson_is_arr(table)){cgltf_free(parsed);free(bytes);goto done;}
+   yyjson_arr_foreach(table,i,count,entry){
+    yyjson_mut_val *copy=yyjson_val_mut_copy(doc,entry);if(!copy||!yyjson_mut_is_obj(copy)){cgltf_free(parsed);free(bytes);goto done;}
+    int valid=1;
+    if(group==0){if(!yyjson_mut_obj_get(copy,"byteOffset"))Number(doc,copy,"byteOffset",0);valid=Shift(doc,copy,"byteOffset",(uint32_t)binSize);}
+    else if(group==1)valid=Shift(doc,copy,"bufferView",offsets[0]);
+    else if(group==2){yyjson_mut_val *pbr=yyjson_mut_obj_get(copy,"pbrMetallicRoughness"),*texture=pbr?yyjson_mut_obj_get(pbr,"baseColorTexture"):NULL;if(texture)valid=Shift(doc,texture,"index",offsets[4]);}
+    else if(group==3)valid=Shift(doc,copy,"bufferView",offsets[0]);
+    else if(group==4)valid=Shift(doc,copy,"source",offsets[3])&&Shift(doc,copy,"sampler",offsets[5]);
+    else if(group==6){yyjson_mut_val *primitives=yyjson_mut_obj_get(copy,"primitives"),*primitive;size_t j,number;
+     if(!yyjson_mut_is_arr(primitives))valid=0;
+     yyjson_mut_arr_foreach(primitives,j,number,primitive){valid=valid&&Shift(doc,primitive,"indices",offsets[1])&&Shift(doc,primitive,"material",offsets[2]);yyjson_mut_val *attributes=yyjson_mut_obj_get(primitive,"attributes"),*k,*v;size_t a,total;yyjson_mut_obj_foreach(attributes,a,total,k,v){if(!yyjson_mut_is_uint(v)||yyjson_mut_get_uint(v)>UINT32_MAX-offsets[1])valid=0;else yyjson_mut_set_uint(v,yyjson_mut_get_uint(v)+offsets[1]);}}
+     yyjson_mut_obj_remove_str(copy,"name");Text(doc,copy,"name",yyjson_get_str(id));Text(doc,Object(doc,copy,"extras"),"rr_part",yyjson_get_str(id));
+    }
+    if(!valid){cgltf_free(parsed);free(bytes);goto done;}yyjson_mut_arr_add_val(arrays[group],copy);
+   }
+  }
+  binSize+=partSize;cgltf_free(parsed);free(bytes);yyjson_doc_free(partDoc);partDoc=NULL;
+ }
+ yyjson_mut_val *nodes=Array(doc,root,"nodes"),*car=Element(doc,nodes),*children=Array(doc,car,"children");Text(doc,car,"name","Car");
+ yyjson_val *instance;size_t i,count;yyjson_arr_foreach(instances,i,count,instance){
+  yyjson_val *index=yyjson_obj_get(instance,"mesh"),*name=yyjson_obj_get(instance,"name"),*position=yyjson_obj_get(instance,"position"),*scale=yyjson_obj_get(instance,"scale");
+  if(!yyjson_is_uint(index)||yyjson_get_uint(index)>=3||!yyjson_is_str(name)||!yyjson_get_len(name)||yyjson_get_len(name)>159||strlen(yyjson_get_str(name))!=yyjson_get_len(name)||!yyjson_is_arr(position)||yyjson_arr_size(position)!=3||!yyjson_is_arr(scale)||yyjson_arr_size(scale)!=3)goto done;
+  for(unsigned c=0;c<3;c++){yyjson_val *p=yyjson_arr_get(position,c),*s=yyjson_arr_get(scale,c);if(!yyjson_is_num(p)||!yyjson_is_num(s)||!isfinite(yyjson_get_num(p))||!isfinite(yyjson_get_num(s))||yyjson_get_num(s)==0)goto done;}
+  yyjson_mut_arr_add_uint(doc,children,i+1);yyjson_mut_val *node=Element(doc,nodes);Number(doc,node,"mesh",(uint32_t)yyjson_get_uint(index));Text(doc,node,"name",yyjson_get_str(name));yyjson_mut_obj_add_val(doc,node,"translation",yyjson_val_mut_copy(doc,position));yyjson_mut_obj_add_val(doc,node,"scale",yyjson_val_mut_copy(doc,scale));Text(doc,Object(doc,node,"extras"),"rr_part",yyjson_get_str(yyjson_obj_get(yyjson_arr_get(parts,(size_t)yyjson_get_uint(index)),"id")));
+ }
+ Number(doc,Element(doc,Array(doc,root,"buffers")),"byteLength",(uint32_t)binSize);yyjson_mut_arr_add_uint(doc,Array(doc,Element(doc,Array(doc,root,"scenes")),"nodes"),0);Number(doc,root,"scene",0);
+ for(unsigned group=0;group<7;group++)if(!yyjson_mut_arr_size(arrays[group]))yyjson_mut_obj_remove_str(root,names[group]);
+ json=yyjson_mut_write(doc,0,&jsonSize);if(!json||jsonSize>8*1024*1024)goto done;size_t padded=(jsonSize+3)&~(size_t)3,total=28+padded+binSize;if(total>LIMIT)goto done;file=malloc(total);if(!file)goto done;Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)binSize);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,bin,binSize);
+ cgltf_data *check=NULL;cgltf_options validation={0};if(cgltf_parse(&validation,file,total,&check)==cgltf_result_success&&cgltf_load_buffers(&validation,check,NULL)==cgltf_result_success&&cgltf_validate(check)==cgltf_result_success)ok=Write(output,file,total);cgltf_free(check);
+ done:free(input);free(json);free(bin);free(file);yyjson_doc_free(partDoc);yyjson_doc_free(manifest);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot assemble complete car GLB; invalid part/layout or output limit\n",stderr);return ok;
+}

@@ -1118,3 +1118,25 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   import/export, complete-car single GLB, roles/pivots, material wizard,
   shader-property mapping, all-platform coverage i standard units nadal
   pozostają do wykonania; nie deklarujemy pełnego C03/C08 completion.
+
+### Complete-car GLB export in the real editor
+
+- Existing Export car set now also produces `car.glb`: embedded base-color PNGs,
+  three role-tagged meshes, body/rear-wheel nodes and two shared front-wheel
+  instances. Positions/scales come from the same compiled disc layout decoder
+  used by the whole-car preview; wheels are not flattened into the body.
+- Compiled bounded GLB assembly remaps buffer views, accessors, material/image/
+  texture/sampler references, carries source region/slot and part IDs, validates
+  the final GLB and writes exclusively. Temporary part exports are removed.
+- Complete OBJ/PNG import remains available. README explicitly states that
+  complete GLB re-import is not implemented; this is export progress, not full
+  interchange completion. No mock or additional UI was introduced.
+- Existing native-backed car-set regression now checks the assembled hierarchy,
+  shared wheel mesh, native part IDs, embedded PNG bytes and remapped references.
+  Focused car-set/GLB tests: 4 PASS. Full npm suite: 157 PASS, 7 optional skips,
+  0 failures (164 tests), plus save-format native checks.
+- Actual read-only PAL source exports: player bank10/body0, 685088-byte GLB,
+  10 embedded images, front pivots ±88/0/296; rival bank88/body0, 609012-byte
+  GLB, 5 embedded images, front pivots ±120/0/368. Both validate through cgltf
+  and export via LauncherService in private temporary projects, without a
+  visible game window. Blender verification and complete import remain open.

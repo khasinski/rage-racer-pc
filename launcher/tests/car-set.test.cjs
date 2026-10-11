@@ -68,6 +68,21 @@ test('complete car import installs all models and textures atomically and reject
    return originalTool(args);
   };
   const exported=await service.exportCarSet(key,root);
+  const whole=await fs.readFile(path.join(exported,'car.glb')),jsonLength=whole.readUInt32LE(12),glb=JSON.parse(whole.subarray(20,20+jsonLength).toString());
+  assert.equal(glb.meshes.length,3);assert.equal(glb.nodes.length,5);
+  assert.deepEqual(glb.extras.rr_source,{region:'NTSC-U',key});
+  assert.deepEqual(glb.nodes.slice(1).map(n=>n.mesh),[0,2,1,1]);
+  assert.deepEqual(glb.nodes[4].scale,[-1,1,-1]);
+  assert.deepEqual(glb.meshes.map(m=>m.extras.rr_part),[key,'car.player.10.part.2','car.player.10.part.3']);
+  const bin=whole.subarray(28+jsonLength);
+  for(const image of glb.images){const v=glb.bufferViews[image.bufferView];assert.deepEqual(bin.subarray(v.byteOffset,v.byteOffset+v.byteLength),png);}
+  for(const mesh of glb.meshes)for(const primitive of mesh.primitives){
+   const accessor=glb.accessors[primitive.attributes.POSITION],v=glb.bufferViews[accessor.bufferView];
+   assert.ok(v.byteOffset+v.byteLength<=bin.length);assert.equal(accessor.count,3);
+   assert.equal(glb.materials[primitive.material].extras.rr_material,0);
+   const texture=glb.materials[primitive.material].pbrMetallicRoughness.baseColorTexture;
+   assert.ok(glb.images[glb.textures[texture.index].source]);
+  }
   const preview=await service.previewCar(key);
   assert.equal(preview.materials[0].texture.png,png.toString('base64'));
   assert.equal(preview.vertices.length,27);
