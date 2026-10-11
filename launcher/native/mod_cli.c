@@ -6,6 +6,7 @@
 #include "render/mod_manifest.h"
 #include "render/mod_package.h"
 #include "render/rmesh.h"
+#include "render/rmesh_replace.h"
 #include "content/track_pack.h"
 #include "content/sha256.h"
 #include "content/active_build.h"
@@ -90,6 +91,23 @@ done:
     return ok?0:1;
 }
 int main(int argc,char **argv) {
+    if(argc==6&&!strcmp(argv[1],"--replace-mesh")){
+        void *baseBytes=NULL,*partBytes=NULL,*result=NULL;size_t baseSize=0,partSize=0,size=0;
+        RageRuntimeMesh base,part;SDL_PathInfo info;int ok=0;char *end;
+        unsigned long index=strtoul(argv[3],&end,10);
+        if(!argv[3][0]||argv[3][0]<'0'||argv[3][0]>'9'||*end||index>UINT32_MAX)goto replaceDone;
+        if(!SDL_GetPathInfo(argv[2],&info)||info.type!=SDL_PATHTYPE_FILE||info.size>128u*1024u*1024u)goto replaceDone;
+        if(!SDL_GetPathInfo(argv[4],&info)||info.type!=SDL_PATHTYPE_FILE||info.size>128u*1024u*1024u)goto replaceDone;
+        baseBytes=SDL_LoadFile(argv[2],&baseSize);partBytes=SDL_LoadFile(argv[4],&partSize);
+        if(!baseBytes||!partBytes||!RuntimeMeshOpen(&base,baseBytes,baseSize)||!RuntimeMeshOpen(&part,partBytes,partSize))goto replaceDone;
+        result=RuntimeMeshReplace(&base,(uint32_t)index,&part,NULL,0,&size);
+        if(!result||size>128u*1024u*1024u)goto replaceDone;
+        ok=ModFileWriteExclusive(argv[5],result,size);
+replaceDone:
+        SDL_free(baseBytes);SDL_free(partBytes);free(result);
+        if(!ok)fputs("Invalid mesh replacement or output failure\n",stderr);
+        return ok?0:1;
+    }
     FILE *f;long size;char *bytes;size_t i;
     if(argc==3&&strcmp(argv[1],"--hash-files-stdin")==0)return HashFiles(argv[2]);
     if((argc==5&&strcmp(argv[1],"--active-build")==0)||

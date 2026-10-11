@@ -177,6 +177,8 @@ class LauncherService {
       return {tracks};
     });
   }
+  async importTrackPart(id,part,file,revision){return require('./track-meshes.cjs').importPart(this,id,part,file,revision);}
+  async exportTrackPart(id,part,directory){return require('./track-meshes.cjs').exportPart(this,id,part,directory);}
   async importTrackMesh(id,file,revision){return require('./track-meshes.cjs').importMesh(this,id,file,revision);}
   async exportTrackMesh(id,file){return require('./track-meshes.cjs').exportMesh(this,id,file);}
   async trackScene(bank,preview=false) {

@@ -55,6 +55,8 @@ handle('assets',()=>service.assets());
 handle('cars',()=>service.cars());
 handle('tracks',()=>service.tracks());
 handle('track-scene',bank=>service.trackScene(bank));
+handle('import-track-part',async(id,part,revision)=>{const file=await open({title:'Import track model OBJ',filters:[{name:'OBJ model',extensions:['obj']}],properties:['openFile']});return file?service.importTrackPart(id,part,file,revision):null;});
+handle('export-track-part',async(id,part)=>{const dir=await open({title:'Export track model OBJ to folder',properties:['openDirectory','createDirectory']});return dir?service.exportTrackPart(id,part,dir):null;});
 handle('import-track-mesh',async(id,revision)=>{const file=await open({title:'Import native track model bank',filters:[{name:'Native model bank',extensions:['rmesh']}],properties:['openFile']});return file?service.importTrackMesh(id,file,revision):null;});
 handle('export-track-mesh',async id=>{const file=await output({title:'Export native track model bank',defaultPath:id+'.rmesh',filters:[{name:'Native model bank',extensions:['rmesh']}]});return file?service.exportTrackMesh(id,file):null;});
 handle('track-preview',bank=>service.trackScene(bank,true));

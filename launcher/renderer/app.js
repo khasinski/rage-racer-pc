@@ -109,6 +109,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(b.dataset.page)return navigate(b.dataset.page);
  if(b.dataset.discard){dirty=false;edits={};draft={...state.settings};$('#dialog').close();return enter(b.dataset.discard);}
  if(b.dataset.tab){if(!$('#settings-form').reportValidity())return;tab=b.dataset.tab;render();return;}
+ if(b.dataset.exportTrackPart){if(await request('exportTrackPart',b.dataset.exportTrackPart,Number(b.dataset.part)))toast('Track model OBJ exported');return;}
+ if(b.dataset.importTrackPart){const result=await request('importTrackPart',b.dataset.importTrackPart,Number(b.dataset.part),Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);render();toast('Track model saved to project; Save & apply to use it in game');}return;}
  if(b.dataset.exportTrackMesh){if(await request('exportTrackMesh',b.dataset.exportTrackMesh))toast('Current track model bank exported');return;}
  if(b.dataset.importTrackMesh){const result=await request('importTrackMesh',b.dataset.importTrackMesh,Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);render();toast('Track model saved to project; Save & apply to use it in game');}return;}
  if(b.dataset.trackPreview){await mountModelPreview($('#dialog'),await request('trackPreview',Number(b.dataset.trackPreview)),{onSelectObject:index=>{trackObject=index;$('#dialog').close();render();document.querySelector('#track-object-form')?.scrollIntoView({block:'nearest'});}});return;}

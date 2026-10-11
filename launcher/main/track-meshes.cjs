@@ -78,3 +78,26 @@ async function exportMesh(service,id,output){
 module.exports.importMesh=importMesh;module.exports.exportMesh=exportMesh;
 
 module.exports.checkBank=checkBank;
+async function importPart(service,id,part,input,revision){
+ service.requireReady();slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
+ return service.operation('Importing track model OBJ',signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
+  const project=service.editor?.project;if(!project)throw Error('Open a source project first');project.checkRevision(revision);
+  await model(service,id,file,view.root,view.files,signal,metadata.meshes);
+  if(path.extname(input).toLowerCase()!=='.obj'||(await fs.stat(input)).size>128*1024*1024)throw Error('Choose a triangulated OBJ smaller than 128 MiB');
+  const {run}=require('./service.cjs'),replacement=path.join(directory,'part.rmesh'),output=path.join(directory,'replacement.rmesh');
+  await run(service.tool('rage-mesh-obj'),['import',input,replacement],{signal});
+  await run(service.tool('rage-mod-cli'),['--replace-mesh',file,String(part),replacement,output],{signal});
+  checkBank(JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh-bank',output],{signal})),metadata);
+  const reference=await new ProjectFiles(service.editor.file).put(output);
+  if(signal.aborted)throw Error('Operation canceled');return project.edit([{kind:'track',id,field:'mesh',value:reference}],revision);
+ }));
+}
+async function exportPart(service,id,part,destination){
+ service.requireReady();slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
+ return service.operation('Exporting track model OBJ',signal=>withBank(service,id,signal,async({file,metadata,view})=>{
+  await model(service,id,file,view.root,view.files,signal,metadata.meshes);
+  const {randomUUID}=require('node:crypto'),{run}=require('./service.cjs'),folder=path.join(destination,'track-model-'+randomUUID());await fs.mkdir(folder);
+  try{await run(service.tool('rage-mesh-obj'),['export',file,String(part),path.join(folder,'model.obj')],{signal});await fs.writeFile(path.join(folder,'README.txt'),'Edit model.obj in Blender. Preserve rage_N material names and export triangulated OBJ with normals, UVs and vertex colors. Import it back on the same track model. Coordinates are local Y-up renderer units (4 per game world unit). PNG texture exchange is not included in this export yet.\n');return folder;}catch(e){await fs.rm(folder,{recursive:true,force:true});throw e;}
+ }));
+}
+module.exports.importPart=importPart;module.exports.exportPart=exportPart;

@@ -570,3 +570,23 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Testy kontrolują native bank contract i slot/revision w UI. Ograniczenia
   są jawne: to natywny advanced workflow dla modern, bez OBJ/GLB i classic
   adaptera. Pełny, prosty model exchange nadal wymaga dalszego wdrożenia.
+
+### OBJ dla wybranego obiektu kursu
+
+- Wybrany placed object udostępnia Export/Import model OBJ. Operacja dotyczy
+  źródłowego modelu, wspólnego dla wszystkich instancji z tym model ID;
+  UI opisuje ten zakres. Eksport tworzy osobny folder z OBJ/MTL i instrukcją.
+- Import korzysta z istniejącego compiled OBJ codec i RuntimeMeshReplace,
+  zachowując kolejność/ranges pozostałych modeli. Wynik zapisuje się jako
+  immutable bank geometry w tej samej historii projektu.
+- Nowa natywna komenda `--replace-mesh` waliduje oba wejścia, zakres modelu
+  oraz ograniczenia rozmiaru i zapisuje wynik wyłącznie do nowego pliku.
+- Compiled integration: zachowanie innego modelu, replacement range,
+  brak nadpisania istniejącego output, zły index bez output. UI test:
+  source slot, model number, revision i opis wspólnej geometrii.
+- Prawdziwy PAL Mythical Coast: export model 55 → zmiana vertex → import
+  → bank nadal 64 modeli → effective textured preview pass. Temp root,
+  oryginalny obraz i dane wyłącznie do odczytu; bez widocznej gry.
+- PNG tekstury nie są jeszcze dołączane do tego OBJ exportu (opisane w UI
+  i README). Pełny track interchange, GLB, wygodny wybór modeli terenu i
+  classic adapter nadal wymagają pracy.

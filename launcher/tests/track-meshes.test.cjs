@@ -20,3 +20,13 @@ test('bank import contract accepts original and untextured materials and rejects
  assert.throws(()=>checkBank({meshes:63,materials:[0]},metadata),/model count/);
  assert.throws(()=>checkBank({meshes:64,materials:[131]},metadata),/unknown material slots/);
 });
+test('compiled replacement preserves other bank models and never overwrites an existing output',async t=>{
+ const {run}=require('../main/service.cjs'),root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-track-replace-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const base=path.join(root,'base.rmesh'),part=path.join(root,'part.rmesh'),out=path.join(root,'out.rmesh'),tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli');
+ await fs.writeFile(base,mesh(2,1));await fs.writeFile(part,mesh(1,9));
+ await run(tool,['--replace-mesh',base,'1',part,out]);
+ const preview=JSON.parse(await run(tool,['--preview-bank',out]));assert.deepEqual(preview.ranges,[[0,3],[3,3]]);assert.equal(preview.vertices[0],1);assert.equal(preview.vertices[27],9);
+ const saved=await fs.readFile(out);await assert.rejects(run(tool,['--replace-mesh',base,'0',part,out]),/Invalid mesh replacement/);assert.deepEqual(await fs.readFile(out),saved);
+ await fs.rm(out);await assert.rejects(run(tool,['--replace-mesh',base,'2',part,out]),/Invalid mesh replacement/);await assert.rejects(fs.stat(out),{code:'ENOENT'});
+ assert.deepEqual(await fs.readFile(base),mesh(2,1));
+});
