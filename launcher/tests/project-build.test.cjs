@@ -73,7 +73,9 @@ test('one applied build retains car edits and selected model packages, freezes b
     await fs.writeFile(path.join(mod,'mod.toml'),'[meshes]\n"car.player.10.part.0" = "meshes/body.rmesh"\n');
     await s.importMod(mod);const installed=s.state.mods[0];await s.toggleMod(installed.id,true);
     let p=await s.project();p=await s.editProject([{kind:'car',id:'car_00_g0',field:'price',value:0}],p.revision);
+    installed.enabled=false; // launcher cache must not override document selection
     await s.applyProject(p.revision);
+    installed.enabled=true;
     const profile=await activeProfile(s),build=path.dirname(profile);
     const manifest=JSON.parse(await run(s.tool('rage-mod-cli'),[path.join(build,'mod.toml')]));
     const mesh=path.join(build,manifest.meshes['car.player.10.part.0']);
@@ -107,9 +109,38 @@ test('one applied build retains car edits and selected model packages, freezes b
     assert.equal((await fs.readdir(root)).some(n=>n.startsWith('active-mods-')||n.startsWith('mod-sources-')),false);
     await fs.appendFile(mesh,'changed');await assert.rejects(activeProfile(s),/payload.*damaged/);
     await fs.writeFile(mesh,original);
-    await s.toggleMod(installed.id,false);await s.applyProject(p.revision);
+    await s.toggleMod(installed.id,false);
+    await assert.rejects(s.applyProject(p.revision),/Project changed/);
+    p=await s.project();await s.applyProject(p.revision);
     const next=path.dirname(await activeProfile(s));assert.notEqual(next,build);
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(next,'files.json'))),[]);
     assert.deepEqual(await fs.readFile(mesh),original);
+  }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+
+test('a source project saved without applying never composes its package draft at launch',async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-save-only-launch-'));
+  try{
+    const archive=path.join(root,'RAGE.BIN');await fs.writeFile(archive,'source revision');
+    await fs.writeFile(path.join(root,'manifest.json'),'{}');await fs.writeFile(path.join(root,'menu_music.wav'),'fixture');
+    let notify;const stopped=new Promise(resolve=>notify=resolve);
+    const s=new LauncherService({root,modsRoot:path.join(root,'game-mods'),bin:path.resolve(__dirname,'../resources/bin'),config:path.resolve(__dirname,'../resources/rage-port.ini'),onChange:state=>{if(!state.running&&state.error?.includes('exited with code'))notify();}});
+    await s.init();s.state.disc={archive,path:archive,data:root,region:'PAL'};
+    const folder=path.join(root,'package');await fs.mkdir(folder);
+    await fs.writeFile(path.join(folder,'mod.toml'),'[materials]\n"car.0.material.0" = "lit opaque 0.3 0 1 1 1 1 0 0 0"\n');
+    const mod=await s.importMod(folder);await s.toggleMod(mod.id,true);
+    let p=await s.project();p=await s.editProject([{kind:'car',id:'car_00_g0',field:'price',value:0}],p.revision);
+    await s.saveProject(p.revision);
+    s.composeMods=async()=>{throw Error('Save-only draft must not become game content');};
+    const tool=s.tool.bind(s);s.tool=name=>name==='rage-racer'?process.execPath:tool(name);
+    await s.launch(); // Exercise the launch transport without opening a game.
+    await Promise.race([stopped,new Promise((_,reject)=>{const timer=setTimeout(()=>reject(Error('Child did not stop')),5000);timer.unref();})]);
+    assert.equal(await activeProfile(s),'');
+    const config=await fs.readFile(path.join(root,'rage-port.ini'),'utf8');
+    assert.ok(!config.includes('directory = '+s.modsRoot));
+    assert.ok(!config.includes('profile = '+path.join(s.modsRoot,'builds')));
+    const saved=JSON.parse(await fs.readFile(s.editor.file));
+    assert.deepEqual(saved.selection.packages,[mod.id]);assert.equal(saved.changes[0].value,0);
+    await assert.rejects(fs.access(path.join(s.modsRoot,'active.json')),{code:'ENOENT'});
   }finally{await fs.rm(root,{recursive:true,force:true});}
 });

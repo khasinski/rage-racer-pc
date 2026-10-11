@@ -24,6 +24,7 @@ function setupIPC(){
 handle('publish-mods',()=>service.publishMods());
 handle('project',()=>service.project());
 handle('edit-project',(changes,revision)=>service.editProject(changes,revision));
+handle('edit-project-selection',(selected,revision)=>service.editProjectSelection(selected,revision));
 handle('project-history',(direction,revision)=>service.projectHistory(direction,revision));
 handle('save-project',revision=>service.saveProject(revision));
 handle('apply-project',revision=>service.applyProject(revision));

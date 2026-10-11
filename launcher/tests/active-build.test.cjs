@@ -27,7 +27,7 @@ test('native SHA-256 matches Node across block and streaming boundaries',async()
 });
 
 test('native active build rejects ambiguous identity and damaged or invalid profiles',async()=>{
-  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-active-build-'));
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-active-Łódź-東京-'));
   try{
     const id='12345678-1234-1234-1234-123456789abc',dir=path.join(root,'builds',id);
     await fs.mkdir(dir,{recursive:true});
@@ -40,7 +40,8 @@ test('native active build rejects ambiguous identity and damaged or invalid prof
     const read=()=>run(cli,['--active-build',root,source.region,source.fingerprint]);
     assert.deepEqual(JSON.parse(await read()),{active:false});
     await fs.writeFile(file,JSON.stringify(pointer));
-    assert.deepEqual(JSON.parse(await read()),{active:true,directory:dir,profile:path.join(dir,'cars.toml')});
+    const result=JSON.parse(await read());assert.equal(result.active,true);
+    assert.equal(path.normalize(result.directory),dir);assert.equal(path.normalize(result.profile),path.join(dir,'cars.toml'));
     for(const bad of [
       JSON.stringify(pointer).replace('"format":1','"format":1,"format":1'),
       JSON.stringify({...pointer,format:1.5}),

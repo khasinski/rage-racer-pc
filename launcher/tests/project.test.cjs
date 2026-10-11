@@ -27,6 +27,33 @@ test('array parameter edits copy caller data and participate in undo without mut
   p.history('undo',1);assert.equal(p.snapshot().changes.length,0);
   p.history('redo',2);assert.equal(p.snapshot().changes[0].value[0],0);
 });
+test('package choices and conflict priorities participate in the same history as car and track edits',()=>{
+  const p=new Project(source),selected={packages:['b','a'],resolutions:{'mesh:car.player.10.part.0':{winner:'b',candidates:['b','a']}}};
+  p.edit([change('car','istante','price',0)],0);
+  p.select(selected,1);selected.packages.length=0;selected.resolutions['mesh:car.player.10.part.0'].winner='a';
+  assert.deepEqual(p.snapshot().selection.packages,['a','b']);
+  assert.equal(p.snapshot().selection.resolutions['mesh:car.player.10.part.0'].winner,'b');
+  p.edit([change('track','coast','width',500)],2);
+  p.history('undo',3);assert.equal(p.snapshot().changes.length,1);assert.equal(p.snapshot().selection.packages.length,2);
+  p.history('undo',4);assert.deepEqual(p.snapshot().selection,{packages:[],resolutions:{}});assert.equal(p.snapshot().changes.length,1);
+  assert.equal(p.usesPackage('a'),true);
+  p.history('redo',5);assert.equal(p.snapshot().selection.resolutions['mesh:car.player.10.part.0'].winner,'b');
+  const reordered={packages:['b','a'],resolutions:{'mesh:car.player.10.part.0':{winner:'b',candidates:['b','a']}}};
+  assert.equal(p.select(reordered,6).revision,6); // canonical order is a no-op
+  assert.throws(()=>p.select(reordered,0),/changed/);
+});
+test('invalid selections and oversized document edits leave the draft and history untouched',()=>{
+  const p=new Project(source),before=p.snapshot();
+  for(const bad of [
+    null,{packages:['a','a'],resolutions:{}},{packages:['../escape'],resolutions:{}},
+    {packages:['a'],resolutions:[]},{packages:[],resolutions:{constructor:{winner:'a',candidates:['a','b']}}},
+    {packages:[],resolutions:{'mesh:car.0':{winner:'c',candidates:['a','b']}}},
+    {packages:[],resolutions:{'textures/../escape.png':{winner:'a',candidates:['a','b']}}},
+  ])assert.throws(()=>p.select(bad,0),/Invalid project/);
+  const large=Array.from({length:2200},(_,i)=>change('car','car'+i,'description','x'.repeat(4096)));
+  assert.throws(()=>p.edit(large,0),/size limit/);
+  assert.deepEqual(p.snapshot(),before);
+});
 test('save and reopen preserve deltas, enforce exact source and retain dirty state on write failure',async()=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-'));
   try{
@@ -42,4 +69,37 @@ test('save and reopen preserve deltas, enforce exact source and retain dirty sta
     const d=JSON.parse(await fs.readFile(file));d.changes.push(d.changes[0]);await fs.writeFile(file,JSON.stringify(d));
     await assert.rejects(Project.open(file,source),/Duplicate/);
   }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+test('saved selections reopen exactly and old car-only documents adopt legacy selection once',async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-selection-'));
+  try{
+    const file=path.join(root,'project.rrproject'),p=new Project(source);
+    const selected={packages:['a','b'],resolutions:{'material:car.0.material.0':{winner:'a',candidates:['a','b']}}};
+    p.select(selected,0);await p.save(file);
+    const opened=await Project.open(file,source,{packages:['other'],resolutions:{}});
+    assert.deepEqual(opened.snapshot().selection,selected);assert.equal(opened.snapshot().dirty,false);
+    const old=JSON.parse(await fs.readFile(file));old.format=1;delete old.selection;await fs.writeFile(file,JSON.stringify(old));
+    const migrated=await Project.open(file,source,selected);assert.equal(migrated.snapshot().format,2);
+    assert.deepEqual(migrated.snapshot().selection,selected);await migrated.save(file);
+    assert.deepEqual((await Project.open(file,source)).snapshot().selection,selected);
+    const broken=JSON.parse(await fs.readFile(file));broken.selection.packages.push('a');await fs.writeFile(file,JSON.stringify(broken));
+    await assert.rejects(Project.open(file,source),/Invalid project package selection/);
+    delete broken.selection;await fs.writeFile(file,JSON.stringify(broken));
+    await assert.rejects(Project.open(file,source),/Invalid project package selection/);
+    broken.selection=selected;broken.id='-'.repeat(36);await fs.writeFile(file,JSON.stringify(broken));
+    await assert.rejects(Project.open(file,source),/Invalid project document/);
+  }finally{await fs.rm(root,{recursive:true,force:true});}
+});
+test('large edit history evicts distant states while retaining working undo and redo',()=>{
+  const p=new Project(source);
+  for(let revision=0;revision<12;revision++){
+    const value=String(revision).padEnd(4096,'.');
+    p.edit(Array.from({length:1000},(_,i)=>change('car','car'+i,'description',value)),p.revision);
+  }
+  let state=p.snapshot(),undos=0;
+  while(state.canUndo){state=p.history('undo',state.revision);undos++;}
+  assert.ok(undos>0&&undos<12);assert.equal(state.changes.length,1000);
+  assert.equal(state.canRedo,true);
+  const value=state.changes[0].value;
+  state=p.history('redo',state.revision);assert.notEqual(state.changes[0].value,value);
 });

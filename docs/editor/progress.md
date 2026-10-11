@@ -163,9 +163,52 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   damaged payload, wyłączenie paczki, zachowana historia buildów oraz cykl
   procesu gry bez otwierania okna. Test C sprawdza odrzucenie payloadu podczas
   inicjalizacji asset session i zachowanie odrzucenia do jawnego reloadu.
-- Nadal brakuje: pełnej wizualnej próby w grze, przeniesienia wyboru paczek
-  i edycji geometrii do historii samego dokumentu, resolvera raw parametrów,
+- Nadal brakuje: pełnej wizualnej próby w grze, przeniesienia edycji geometrii
+  do historii samego dokumentu (wybór paczek zrealizowany poniżej), resolvera raw parametrów,
   pełnego GLB/scen tras, mediów i pozostałych gates pełnego planu.
 - Walidacja etapu: suite launchera 100 pass / 3 skip (103 testy), 12 testów
   C dla hash/provider/session oraz modern_assets_retry przechodzą. Przebudowano
   grę, smoke, frame replay i narzędzia; testy nie otwierały okna gry.
+
+## Wybór paczek i priorytety w historii projektu
+
+- Dokument formatu 2 przechowuje wybór paczek i rozstrzygnięcia konfliktów
+  razem z deltami parametrów. Jedno undo/redo obejmuje operacje przeplatane
+  między ekranami. Historia jest ograniczona do 200 wpisów i 32 MB, dokument
+  do 8 MB; edycja przekraczająca limit nie zmienia istniejącego draftu.
+- Format 1 przy otwarciu przejmuje dotychczasowy wybór z profilu launchera.
+  Po zapisaniu format 2 jest samodzielnym źródłem wyboru. Przy ponownym otwarciu
+  dokument wygrywa nad starszym/nowszym cache enablement/priorities w launcher.json.
+- Lista modów jest projekcją wyboru w dokumencie. Toggle i wybór priorytetu
+  walidują zależności przez istniejący kompilowany resolver. Błąd zapisu cache
+  nie dodaje wpisu historii ani nie zmienia rewizji/draftu. Stare formularze
+  otrzymują konflikt rewizji po zmianie wyboru w innym ekranie.
+- Builder czyta wybór i priorytety bezpośrednio z dokumentu, a nie z flag
+  `enabled` cache. Brak wskazanej paczki/wrong region blokuje build jawnie.
+  Projekt pokazuje brakujące referencje i pozwala wyczyścić wybór z undo.
+- Usunięcie paczki używanej przez bieżący, zapisany lub historyczny stan tego
+  projektu jest blokowane, aby undo nie prowadziło do skasowanych plików.
+- Launch z zaimportowanego źródła nie komponuje niezastosowanego draftu nawet
+  wtedy, gdy nie ma jeszcze aktywnego buildu. Save-only pozostawia grę w stanie
+  ostatniego zastosowanego projektu albo oryginału. Starszy profil bez archive
+  zachowuje dotychczasową kompozycję do czasu migracji.
+- Projects pokazuje wybrane paczki, przyciski usunięcia referencji/wyczyszczenia
+  wyboru oraz rozwijane priorytety. Statusy głównego ekranu i modów rozróżniają
+  wybór od zastosowania. Snapshot serwisu przekazuje aktualną rewizję do UI.
+- Poprawiono kodowanie JSON native CLI: UTF-8 nazw/ścieżek jest zachowywany,
+  zamiast traktowania każdego bajtu jako osobnego punktu Unicode. Test używa
+  rzeczywistego katalogu `Łódź-東京` i sprawdza zwrócone ścieżki.
+- Sprawdzono rzeczywisty renderer w headless Chromium z LauncherService i
+  kompilowanymi narzędziami za testowym mostem HTTP: toggle dwóch paczek,
+  priorytet, mouse/keyboard undo/redo, clear, save-only, apply i wynik manifestu.
+  Brak wyjątków JS i overflow przy 1440 px / 1100 px. Screeny w
+  `build/reports/editor/project-selection-{desktop,compact}.png`.
+  To nie jest jeszcze test transportu Electron IPC ani wizualny wyścig w grze.
+- Nadal do realizacji: immutable referencje importowanej/edytowanej geometrii
+  i tekstur w samym dokumencie (paczek nadal nie wersjonujemy), draft recovery,
+  pełna scena toru i GLB, media, rozszerzanie rosteru/tras oraz cały zestaw
+  platformowych acceptance gates z planu.
+- Suite launchera: 107 pass / 3 skip (110 testów). Dodatkowe nowe przypadki
+  obejmują limity historii/dokumentu, malformed format 2, brakujący wybór,
+  rollback zapisu, odtworzenie cache i start po save-only. Native tools
+  przebudowano i wystage'owano; brak widocznych okien podczas testowania.

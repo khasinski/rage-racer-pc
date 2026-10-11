@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   publishMods:()=>ipcRenderer.invoke('launcher:publish-mods'),
   project:()=>ipcRenderer.invoke('launcher:project'),
   editProject:(changes,revision)=>ipcRenderer.invoke('launcher:edit-project',changes,revision),
+  editProjectSelection:(selected,revision)=>ipcRenderer.invoke('launcher:edit-project-selection',selected,revision),
   projectHistory:(direction,revision)=>ipcRenderer.invoke('launcher:project-history',direction,revision),
   saveProject:revision=>ipcRenderer.invoke('launcher:save-project',revision),
   applyProject:revision=>ipcRenderer.invoke('launcher:apply-project',revision),

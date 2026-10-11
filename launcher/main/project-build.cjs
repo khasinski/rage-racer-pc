@@ -25,7 +25,7 @@ async function apply(service){
   await fs.mkdir(staging,{recursive:true});
   let published=false,composed='';
   try{
-    composed=await service.composeMods();
+    composed=await service.composeMods(service.modsForSelection(snapshot.selection),snapshot.selection.resolutions);
     let files=[];
     if(composed){
       files=await require('./mods.cjs').inventory(composed,service.tool('rage-mod-cli'));

@@ -1,6 +1,7 @@
 # Kontrakty i backlog techniczny
 
-Proponowane API/schemata — nie istniejąca implementacja. [Plan](plan.md).
+Docelowe API/schemata. [Plan](plan.md) · [Stan wdrożenia](progress.md).
+Poniższe kontrakty nie oznaczają, że wszystkie obszary zostały już wdrożone.
 Nazwy funkcji są krótkie i robocze; nie tworzymy pliku lub klasy na każdą operację.
 
 ## 1. Najmniejsze sensowne granice

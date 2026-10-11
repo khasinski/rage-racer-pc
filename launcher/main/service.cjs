@@ -88,13 +88,54 @@ class LauncherService {
   async project() {
     this.requireReady();
     return this.operation('Opening editing project',async()=>{
-      const disc=this.state.disc;
-      if(this.editor?.disc===disc)return this.editor.project.snapshot();
-      const identity=await source(disc),digest=identity.fingerprint.slice(7);
-      const file=path.join(this.root,'projects',digest,'project.rrproject');
-      let project;
-      try{project=await Project.open(file,identity);}catch(e){if(e.code!=='ENOENT')throw e;project=new Project(identity);}
-      this.editor={disc,file,project};return project.snapshot();
+      const project=await this.loadProject();
+      if(!project)throw Error('Import the source archive before editing a project');
+      return project.snapshot();
+    },false);
+  }
+  // Internal operations call this while already owning the service job lock.
+  async loadProject() {
+    const disc=this.state.disc;if(!disc?.archive)return null;
+    if(this.editor?.disc===disc)return this.editor.project;
+    const identity=await source(disc),digest=identity.fingerprint.slice(7);
+    const file=path.join(this.root,'projects',digest,'project.rrproject');
+    const selected=this.modSelection();let project;
+    try{project=await Project.open(file,identity,selected);}catch(e){if(e.code!=='ENOENT')throw e;project=new Project(identity,'My project',selected);}
+    this.editor={disc,file,project};this.syncProjectSelection();return project;
+  }
+  modSelection() {
+    return {packages:this.state.mods.filter(mod=>mod.enabled).map(mod=>mod.id),resolutions:this.state.resolutions||{}};
+  }
+  modsForSelection(selected) {
+    return selected.packages.map(id=>{
+      const mod=this.state.mods.find(mod=>mod.id===id);
+      if(!mod)throw Error('Project package is unavailable: '+id+'. Remove this reference and select an imported replacement.');
+      if(mod.region!==this.state.disc.region)throw Error('Project package belongs to a different disc region: '+mod.name);
+      return {...mod,enabled:true};
+    });
+  }
+  syncProjectSelection() {
+    const selected=this.editor.project.snapshot().selection;
+    for(const mod of this.state.mods)mod.enabled=selected.packages.includes(mod.id);
+    this.state.resolutions=selected.resolutions;
+  }
+  async changeModSelection(input,revision) {
+    const project=this.editor?.disc===this.state.disc?this.editor.project:null;
+    if(project)project.checkRevision(revision);
+    const selected=Project.selection(input);
+    if(project)project.checkSize({...project.document,selection:selected});
+    await this.validateModSelection(this.modsForSelection(selected));
+    const enabled=this.state.mods.map(mod=>mod.enabled),resolutions=this.state.resolutions;
+    for(const mod of this.state.mods)mod.enabled=selected.packages.includes(mod.id);
+    this.state.resolutions=selected.resolutions;
+    try{await this.persist();}catch(e){this.state.mods.forEach((mod,i)=>mod.enabled=enabled[i]);this.state.resolutions=resolutions;throw e;}
+    if(project)return project.select(selected,revision);
+  }
+  async editProjectSelection(selected,revision) {
+    this.requireReady();
+    return this.operation('Updating project packages',async()=>{
+      if(!await this.loadProject())throw Error('Open a source project first');
+      return this.changeModSelection(selected,revision);
     },false);
   }
   async editProject(changes,revision) {
@@ -105,7 +146,9 @@ class LauncherService {
   async projectHistory(direction,revision) {
     if(this.busy)throw Error('Wait for the current operation to finish');
     if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
-    return this.editor.project.history(direction,revision);
+    return this.operation('Updating project history',()=>{
+      const result=this.editor.project.history(direction,revision);this.syncProjectSelection();return result;
+    },false);
   }
   async saveProject(revision) {
     if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
@@ -242,6 +285,7 @@ class LauncherService {
     try { const state=JSON.parse(await fs.readFile(path.join(this.root,'launcher.json'),'utf8'));this.state={...this.state,...state,settings:{...defaults,...validate(state.settings)}}; }
     catch(e) { if(e.code!=='ENOENT')this.startupError=`Could not load launcher settings: ${e.message}`; }
     try{await this.refreshLegacyTextures();}catch(e){this.startupError=`Could not read installed texture mods: ${e.message}`;for(const mod of this.state.mods)mod.enabled=false;}
+    try{await this.loadProject();}catch(e){this.projectError=`Could not open editing project: ${e.message}`;}
     return this.snapshot();
   }
   async persist() { await atomic(path.join(this.root,'launcher.json'),JSON.stringify(this.state,null,2)); }
@@ -249,7 +293,7 @@ class LauncherService {
     let ready=false;
     if(this.state.disc)try{await fs.access(this.state.disc.path);await fs.access(path.join(this.state.disc.data,'manifest.json'));ready=true;}catch{}
     let toolsReady=true;for(const name of ['rage-racer','rage-extract','rage-pack','rage-save-cli','rage-mod-cli','rage-mesh-obj'])try{await fs.access(this.tool(name));}catch{toolsReady=false;}
-    return {...this.state,ready,toolsReady,overlaps:this.overlaps(),conflicts:this.conflicts(),busy:this.busy?.label||null,canCancel:!!this.busy?.cancellable,running:!!this.game,error:this.startupError||this.projectError||this.gameError||null};
+    return {...this.state,project:this.editor?.disc===this.state.disc?this.editor.project.snapshot():null,ready,toolsReady,overlaps:this.overlaps(),conflicts:this.conflicts(),busy:this.busy?.label||null,canCancel:!!this.busy?.cancellable,running:!!this.game,error:this.startupError||this.projectError||this.gameError||null};
   }
   async update() {this.onChange(await this.snapshot());}
   async logs() {
@@ -339,12 +383,9 @@ class LauncherService {
         await fs.access(menuMusic);
         this.busy.label='Starting game';await this.update();
       }
-      // Applied projects use their immutable tree on both launch paths. Only
-      // pre-project installations retain the temporary composition path.
-      let applied=null;this.projectError=null;
-      try{applied=await require('./project-build.cjs').activeBuild(this);}
-      catch(e){this.projectError='Project activation failed: '+e.message;}
-      const active=applied||this.projectError?'':await this.composeMods();
+      // Imported source libraries launch the committed project (or originals),
+      // never unsaved package choices. Legacy profiles lack a source archive.
+      const active=this.state.disc.archive?'':await this.composeMods();
       const config=path.join(this.root,'rage-port.ini');
       let log;
       try {

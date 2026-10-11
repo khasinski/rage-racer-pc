@@ -49,7 +49,9 @@ static int ValidatePng(const char *path) {
 }
 static void String(const char *s) {
     const unsigned char *p=(const unsigned char *)s;putchar('"');
-    for(;*p;p++){if(*p=='"'||*p=='\\')printf("\\%c",*p);else if(*p<32||*p>=127)printf("\\u%04x",*p);else putchar(*p);}putchar('"');
+    /* argv, SDL paths and TOML text are UTF-8. Escaping each byte above 127
+     * as a Unicode code point corrupts non-ASCII project paths and names. */
+    for(;*p;p++){if(*p=='"'||*p=='\\')printf("\\%c",*p);else if(*p<32)printf("\\u%04x",*p);else putchar(*p);}putchar('"');
 }
 static int HashFiles(const char *directory){
     enum { LIMIT=8*1024*1024 };

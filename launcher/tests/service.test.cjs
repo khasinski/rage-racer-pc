@@ -213,7 +213,7 @@ test('settings and priority saves hold the profile lock until persistence finish
  try{
   const service=new LauncherService({root,bin:path.resolve(__dirname,'../resources/bin'),config:path.resolve(__dirname,'../resources/rage-port.ini')});
   await service.init();service.state.disc={region:'NTSC-U'};
-  service.state.mods=['a','b'].map(id=>({id,name:id,enabled:true,files:[],manifest:{materials:{'car.0.material.0':'lit opaque 0.3 0 1 1 1 1 0 0 0'},textures:{},meshes:{}}}));
+  service.state.mods=['a','b'].map(id=>({id,name:id,region:'NTSC-U',enabled:true,files:[],manifest:{materials:{'car.0.material.0':'lit opaque 0.3 0 1 1 1 1 0 0 0'},textures:{},meshes:{}}}));
   const key=service.overlaps()[0].key,persist=service.persist;
   for(const save of [()=>service.saveSettings({'video.internal_scale':'3'}),()=>service.resolveConflict(key,'a')]){
    let release,entered;const gate=new Promise(resolve=>release=resolve),started=new Promise(resolve=>entered=resolve);

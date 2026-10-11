@@ -142,13 +142,18 @@ function installMethods(Service){
   if(!mod||typeof enabled!=='boolean')throw Error('Unknown mod');
   if(enabled&&mod.region!==this.state.disc.region)throw Error('This mod was imported for a different disc region');
   return this.operation('Updating mod',async()=>{
-   const previous=mod.enabled;mod.enabled=enabled;
-   try{await this.validateModSelection();await this.persist();}catch(e){mod.enabled=previous;throw e;}
+   const project=await this.loadProject(),snapshot=project?.snapshot();
+   const selected=structuredClone(snapshot?.selection||this.modSelection());
+   selected.packages=selected.packages.filter(selected=>selected!==id);
+   if(enabled)selected.packages.push(id);
+   await this.changeModSelection(selected,snapshot?.revision);
   },false);
  };
  Service.prototype.removeMod=async function(id){
   this.requireReady();if(!this.state.mods.some(m=>m.id===id))throw Error('Unknown mod');
   return this.operation('Removing mod',async()=>{
+   const project=await this.loadProject();
+   if(project?.usesPackage(id))throw Error('This package is used by the project or its undo history. Disable it in the project instead of deleting it.');
    const previous=this.state.mods;this.state.mods=previous.filter(m=>m.id!==id);
    try{await this.validateModSelection();await this.persist();}catch(e){this.state.mods=previous;throw e;}
    await fs.rm(path.join(this.root,'mods',id),{recursive:true,force:true});
@@ -196,16 +201,17 @@ function installMethods(Service){
  Service.prototype.resolveConflict=async function(key,winner){
   this.requireReady();if(this.game)throw Error('Close the game before changing priorities');
   return this.operation('Saving mod priority',async()=>{
+  const project=await this.loadProject(),snapshot=project?.snapshot();
   const conflict=this.overlaps().find(c=>c.key===key);
   if(!conflict||!conflict.candidates.some(c=>c.id===winner))throw Error('The conflict changed. Review the current mod list.');
-  const previous=this.state.resolutions;
-  this.state.resolutions={...previous,[key]:{winner,candidates:conflict.candidates.map(c=>c.id).sort()}};
-  try{await this.persist();}catch(e){this.state.resolutions=previous;throw e;}
+  const selected=structuredClone(snapshot?.selection||this.modSelection());
+  selected.resolutions[key]={winner,candidates:conflict.candidates.map(c=>c.id).sort()};
+  await this.changeModSelection(selected,snapshot?.revision);
   },false);
  };
- Service.prototype.composeMods=async function(){
-   const requested=structuredClone(this.state.mods.filter(m=>m.enabled));if(!requested.length)return '';
-   const decisions=structuredClone(this.state.resolutions||{}),discData=this.state.disc.data;
+ Service.prototype.composeMods=async function(mods=this.state.mods,resolutions=this.state.resolutions||{}){
+   const requested=structuredClone(mods.filter(m=>m.enabled));if(!requested.length)return '';
+   const decisions=structuredClone(resolutions),discData=this.state.disc.data;
    const staging=path.join(this.root,'mod-sources-'+randomUUID());
    await fs.mkdir(staging);
    try {
