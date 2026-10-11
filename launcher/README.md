@@ -285,3 +285,9 @@ the existing sky image's pixel indices. These edits recolor that image, without
 changing its shapes. Timeline cues using the palette share the change. Palette
 and cue edits save together and participate in the same Undo/Redo operation.
 This is the original indexed sky path, not a replacement PNG skybox importer.
+
+**Atmosphere → Loop & sky layout** changes the loop length and the pair of
+original sky texture rows. Save these settings together with cue times when
+extending or shortening the loop; every cue start must fit within the final
+length. The first cue remains at tick zero. Discard restores both the values
+and the cue-time limits. Sky layout selects existing image rows, not a new PNG.

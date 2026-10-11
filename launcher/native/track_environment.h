@@ -25,7 +25,7 @@ static void EnvPrint(const TrackBlock *block,const TrackBlock *palette){
 static int EnvEdit(TrackBlock *block,uint32_t count,uint32_t at,const char *field,int64_t value){
  if(at>=count)return 0;
  unsigned char *p=(unsigned char *)block->data+8+(size_t)at*48;
- if(!strcmp(field,"time")){if(value<0||value>=SpecU32(block->data+4)||(at==0&&value!=0))return 0;
+ if(!strcmp(field,"time")){if(value<0||(at==0&&value!=0))return 0;
   TrackStore32(p,(uint32_t)value);
  }else if(!strcmp(field,"duration")){if(value<0||value>32767)return 0;p[40]=(unsigned char)value;p[41]=(unsigned char)(value>>8);
  }else if(!strcmp(field,"mode")){if(value<0||value>=5)return 0;p[44]=(unsigned char)value;p[45]=0;

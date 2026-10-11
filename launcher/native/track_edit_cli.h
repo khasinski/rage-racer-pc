@@ -48,6 +48,13 @@ static int TrackEditCommand(const char *source,const char *output) {
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
         if(yyjson_get_uint(index)>UINT32_MAX)goto done;
         uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strncmp(name,"environment.",12)){
+            if(!envValid||at!=0)goto done;
+            unsigned char *header=(unsigned char *)blocks[2].data;
+            if(!strcmp(name+12,"length")){if(value<1)goto done;TrackStore32(header+4,(uint32_t)value);}
+            else if(!strcmp(name+12,"sky_row")){if(value<0||value>3)goto done;TrackStore32(header,(uint32_t)value);}
+            else goto done;envChanged=1;continue;
+        }
         if(!strncmp(name,"palette.",8)){if(!PaletteEdit(&blocks[1],at,name+8,value))goto done;continue;}
         if(!strncmp(name,"env.",4)){if(!envValid||!EnvEdit(&blocks[2],envCount,at,name+4,value))goto done;envChanged=1;continue;}
         if(!strcmp(name,"cell.model")){

@@ -1018,3 +1018,30 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Native CLI rebuilt/staged. Original indexed sky nadal ma 16-color palettes;
   PNG/hi-res sky image replacement, header/timeline add/delete, fog density
   i tunnel/event editing nadal pozostają osobnymi nieukończonymi wymaganiami.
+
+### Atmosfera: loop length i sky texture-row pair
+
+- Header changes mają typed environment.0 IDs w tym samym track patch path:
+  positive int32 loop length i sky row 0–3. Walidacja całego końcowego scriptu
+  pozwala razem wydłużyć loop i przesunąć cue poza poprzedni zakres; błędne
+  final ordering/ranges nie zapisują output ani nie zmieniają projektu.
+- Loop & sky layout pod details we wspólnym Atmosphere form. Cue time limits
+  aktualizują się przy zmianie długości i wracają do original przy discard.
+  Global click handler błędnie preventDefault dla type=reset: poprawiono,
+  przywracając natywny reset w Atmosphere oraz Audio.
+- Native service/header tests sprawdzają extend+cue move, exact header bytes,
+  reserved payload preservation, invalid length/row/index, build i Undo.
+  Environment focused 4 PASS. Full npm test save_format PASS; 160 JS tests:
+  154 PASS, 6 optional skips, zero failures.
+- Actual PAL headless UI: length 40000, row 1, mixed cue/palette changes,
+  native readback i publish PASS; discard restores length 28800 + max 28799.
+  Osobny actual Audio UI test: discard gain 25 → 100 oraz późniejszy
+  trim/export/import/publish/reset PASS. Zero pageerrors w obu przebiegach.
+- Normal race: updated length/row + scenery/colors/palettes load and stop at
+  race timer 20 PASS na classic/modern. Green-sky-pixels gate PASS. Capture
+  atmosphere-layout-modern.ppm obejrzano: inne rozmieszczenie oryginalnych
+  clouds niż w atmosphere-palettes-modern.ppm, zgodne ze zmienionym row pair.
+  Nie testowano pełnego zawinięcia długiej pętli ani wszystkich row/region pairs.
+- Native CLI rebuilt/staged; gameplay loader nie wymagał nowej implementacji.
+  Timeline add/delete, new sky images, fog density oraz tunnel/events są nadal
+  nieukończonymi wymaganiami, więc pełny T11 pozostaje otwarty.
