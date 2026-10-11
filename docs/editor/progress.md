@@ -310,3 +310,21 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Formularz nadal otwierany jest z biblioteki materiałów; wybór nazwanej części
   w głównym warsztacie powinien prowadzić do tych samych ustawień. Eksport OBJ
   nie zachowuje pełnej semantyki materiałów, a pozostały zakres planu trwa.
+
+### Materiały wybranej części w warsztacie
+
+- Appearance udostępnia edycję materiałów nadwozia oraz każdej nazwanej części.
+  Natywne metadane page/CLUT wyznaczają listę faktycznie używanych tekstur;
+  użytkownik wybiera pozycję listy, bez wpisywania semantycznego ID.
+- Lista odczytuje aktualne właściwości z kompozycji paczek i projektu.
+  Ten sam formularz działa bez paczki biblioteki; techniczny ID jest zwinięty,
+  a zapis przekazuje rewizję projektu i trafia do wspólnej historii.
+- Test zestawu sprawdza katalog materiałów części, edycję bez paczki,
+  aktualne wartości i cofnięcie. Test formularza sprawdza brak zależności od
+  biblioteki, aktualną rewizję, wszystkie 11 kontrolek i zablokowany ID.
+- Suite przed dodaniem ostatniego testu formularza: 113 pass / 3 skip
+  (116 testów), native save_format pass. Testy formularzy po zmianie: 3 pass.
+- Etykiety materiałów są uczciwie numerowanymi teksturami używanymi przez
+  nazwaną część; źródło nie nadaje im nazw typu „lakier”/„reflektor”. Wybieranie
+  powierzchni bezpośrednio w 3D i wizualna weryfikacja UI pozostają do zrobienia,
+  podobnie jak pozostały zakres torów, mediów i popularnych formatów z planu.

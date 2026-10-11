@@ -16,6 +16,14 @@ test('material hierarchy preserves every control and its storage index',()=>{
  assert.match(dialog.innerHTML,/Opacity: 0 = invisible, 1 = solid/);
  assert.match(dialog.innerHTML,/does not create a headlight beam/);
 });
+test('part material form works without a library package and carries the project revision',()=>{
+ const {context,dialog}=dialogs();context.project={revision:9,changes:[{kind:'car',id:'car.0.material.0',field:'material',value:'lit opaque 0.7 0 1 1 1 1 0 0 0'}]};
+ context.materialDialog('','car.0.material.0',{materials:{'car.0.material.0':'lit opaque 0.35 0 1 1 1 1 0 0 0'}});
+ assert.match(dialog.innerHTML,/data-revision="9"/);assert.match(dialog.innerHTML,/Technical identity/);
+ assert.match(dialog.innerHTML,/id="property-2"[^>]*value="0.7"/);
+ assert.match(dialog.innerHTML,/id="material-key"[^>]*readonly/);
+ assert.equal([...dialog.innerHTML.matchAll(/data-property="/g)].length,11);
+});
 test('basic transmission is visible and advanced engine and shift values remain editable',()=>{
  const {context,dialog}=dialogs();
  const keys=['manualOnly','topGear','revLimit','redline','automaticAccelerationScale',...Array.from({length:6},(_,i)=>['downshift'+(i+1),'upshift'+(i+1)]).flat()];

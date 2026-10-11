@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   carSpec:bank=>ipcRenderer.invoke('launcher:car-spec',bank),
   saveCarSpec:(bank,edits,revision)=>ipcRenderer.invoke('launcher:save-car-spec',bank,edits,revision),
   previewCar:(key,modId)=>ipcRenderer.invoke('launcher:preview-car',key,modId),
+  carMaterials:key=>ipcRenderer.invoke('launcher:car-materials',key),
   exportCar:key=>ipcRenderer.invoke('launcher:export-car',key),
   importCar:key=>ipcRenderer.invoke('launcher:import-car',key),
   exportAsset:index=>ipcRenderer.invoke('launcher:export-asset',index),

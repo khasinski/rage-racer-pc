@@ -48,6 +48,13 @@ test('complete car import installs all models and textures atomically and reject
   const changes=project.changes;
   const appearance=await require('../main/preview-materials.cjs')(service,key,{materials:[{source:0,page:11,clut:22}]},null,new AbortController().signal);
   assert.equal(appearance[0].texture.png,png.toString('base64'));
+  const materialList=await service.carMaterials(key);
+  assert.equal(materialList.revision,project.revision);assert.equal(materialList.materials[0].id,'car.0.material.0');
+  assert.equal(materialList.materials[0].name,'Texture 1');
+  const properties='lit opaque 0.7 0.2 1 0.5 0.5 1 0 0 0';
+  project=await service.saveMaterial('',materialList.materials[0].id,properties,project.revision);
+  assert.match((await service.carMaterials(key)).materials[0].properties,/0.7/);
+  project=await service.projectHistory('undo',project.revision);assert.deepEqual(project.changes,changes);
   project=await service.projectHistory('undo',project.revision);assert.equal(project.changes.length,0);
   project=await service.projectHistory('redo',project.revision);assert.deepEqual(project.changes,changes);
   const originalTool=service.carTool;

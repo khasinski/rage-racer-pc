@@ -61,6 +61,7 @@ handle('preview-whole-car',(bank,body,rival,modId)=>service.previewWholeCar(bank
 handle('car-spec',bank=>service.carSpec(bank));
 handle('save-car-spec',(bank,edits,revision)=>service.saveCarSpec(bank,edits,revision));
 handle('preview-car',(key,modId)=>service.previewCar(key,modId));
+handle('car-materials',key=>service.carMaterials(key));
 handle('import-car',async key=>{const file=await open({title:'Import a replacement car part',filters:[{name:'Car models',extensions:['obj','rmesh']}],properties:['openFile']});if(file)return service.importCar(key,file);return null;});
 handle('export-car',async key=>{const dir=await open({title:'Export car model to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCar(key,dir);return null;});
 handle('export-asset',async index=>{const file=await output({title:'Export raw asset',defaultPath:`asset_${String(index).padStart(3,'0')}.bin`});if(file)await service.exportAsset(index,file);return !!file;});
