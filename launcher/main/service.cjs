@@ -239,17 +239,25 @@ class LauncherService {
   async saveTerrainCell(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'cell');}
   async saveTrackEntry(bank,index,values,revision,type){
     this.requireReady();
-    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='road'?10:6))throw Error('Invalid track object edit');
-    return this.operation(type==='object'?'Editing track object':'Editing road',async signal=>{
+    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='env'?12:type==='road'?10:6))throw Error('Invalid track object edit');
+    const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.${type}.${index}`;
+    return this.saveTrackChanges(bank,Object.entries(values).map(([field,value])=>({kind:'track',id,field,value})),revision);
+  }
+  async saveEnvironment(bank,entries,revision){
+    this.requireReady();if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Array.isArray(entries)||!entries.length||entries.length>10000)throw Error('Invalid environment edits');
+    const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.env.`;
+    const changes=[];for(const entry of entries){if(!Number.isInteger(entry.index)||entry.index<0||!entry.values||Array.isArray(entry.values)||typeof entry.values!=='object'||Object.keys(entry.values).length>12)throw Error('Invalid environment cue');for(const [field,value]of Object.entries(entry.values))changes.push({kind:'track',id:prefix+entry.index,field,value});}
+    if(!changes.length||changes.length>10000)throw Error('Invalid environment edits');return this.saveTrackChanges(bank,changes,revision);
+  }
+  async saveTrackChanges(bank,changes,revision){
+    return this.operation('Editing track',async signal=>{
       await this.loadProject();if(!this.editor)throw Error('Open a source project first');
       const project=this.editor.project;project.checkRevision(revision);
-      const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.${type}.${index}`;
-      const changes=Object.entries(values).map(([field,value])=>({kind:'track',id,field,value}));
       require('./track-edits.cjs').group(changes);
       let directory='';
       try{
         const snapshot=project.snapshot(),selection=snapshot.selection;
-        const prefix=id.slice(0,id.indexOf('.'+type+'.'))+'.';
+        const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
         const effective=new Map([...snapshot.changes.filter(c=>c.kind==='track'&&c.id.startsWith(prefix)),...changes].map(c=>[c.id+':'+c.field,c]));
         if(selection.packages.length)directory=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
         const files=directory?await require('./mods.cjs').inventory(directory,this.tool('rage-mod-cli')):[];

@@ -4,6 +4,7 @@
  * after every edit validates. Appending shifts subsequent block offsets;
  * field edits preserve all other bytes, including block tails. */
 static void TrackStore32(unsigned char *p,uint32_t n){for(unsigned i=0;i<4;i++)p[i]=(unsigned char)(n>>(i*8));}
+#include "track_environment.h"
 static int TrackAppend(void **bytes,size_t *size,TrackBlock *blocks,uint32_t models,Placements *placements){
  if(placements->count>=10000||*size>128u*1024u*1024u-20)return 0;
  size_t at=(size_t)(blocks[8].data-(unsigned char *)*bytes)+4+(size_t)placements->count*20;
@@ -35,6 +36,7 @@ static int TrackEditCommand(const char *source,const char *output) {
     if(!TrackPackOpen(bytes,size,blocks)||blocks[5].size<4)goto done;
     uint32_t models=SpecU32(blocks[5].data);
     if(!PlacementsOpen(blocks[8].data,blocks[8].size,models,&placements))goto done;
+    uint32_t envCount=0;int envValid=EnvCount(&blocks[2],&envCount),envChanged=0;
     size_t i,count;yyjson_val *edit;
     yyjson_arr_foreach(edits,i,count,edit){
         if(!yyjson_is_arr(edit)||yyjson_arr_size(edit)!=3)goto done;
@@ -46,6 +48,7 @@ static int TrackEditCommand(const char *source,const char *output) {
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
         if(yyjson_get_uint(index)>UINT32_MAX)goto done;
         uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strncmp(name,"env.",4)){if(!envValid||!EnvEdit(&blocks[2],envCount,at,name+4,value))goto done;envChanged=1;continue;}
         if(!strcmp(name,"cell.model")){
             if(value<0||value>1023||!TerrainWriteModel((unsigned char *)bytes+
                 (blocks[7].data-(unsigned char *)bytes),blocks[7].size,at,(uint16_t)value))goto done;
@@ -93,6 +96,7 @@ static int TrackEditCommand(const char *source,const char *output) {
         else goto done;
         if(!PlacementWrite((unsigned char *)bytes+(blocks[8].data-(unsigned char *)bytes),blocks[8].size,models,at,&p))goto done;
     }
+    if(envChanged&&!EnvCount(&blocks[2],&envCount))goto done;
     ok=ModFileWriteExclusive(output,bytes,size);
 done:
     SDL_free(bytes);yyjson_doc_free(doc);free(input);

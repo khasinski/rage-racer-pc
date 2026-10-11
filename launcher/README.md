@@ -262,3 +262,19 @@ and flags; move the copy with Shift-drag in 3D or the position fields.
 **Remove** hides that instance and preserves all other object IDs. Project
 Undo/Redo includes each operation. **Save & apply project** activates the changed
 track for the next game session. Model geometry remains shared by its instances.
+
+## Track atmosphere
+
+**Tracks → Atmosphere** edits the original color timeline: fog, sky top/middle,
+horizon and sky bottom. Expand **Timing, palette & ground colors** for cue start,
+transition duration, palette choice and four background ground colors. Times
+are logic ticks, not rendering frames. Starts must increase, and the first cue
+starts at zero. Fog `#808080` disables the original fog effect; other colors
+enable it. Palette choice also affects the original environment shading and
+fog range. These controls do not replace sky textures, add tunnel lighting or
+set a custom fog density.
+
+**Save atmosphere to project** saves all changed cues together, so Undo restores
+the entire edit. **Save & apply project** activates it for the next game session.
+**Discard unsaved colors** restores the form. Save or discard your current track
+form before changing its context. Reserved bytes and other track blocks are kept.

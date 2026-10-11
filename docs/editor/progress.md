@@ -962,3 +962,35 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Chosen-model dropdown + actual native preview modal open/close sprawdzono
   w tym samym headless PAL UI przebiegu. Dodatkowy workspace test obejmuje
   empty object list oraz add/duplicate/remove IDs i model choices.
+
+### Tory: rzeczywisty timeline atmosfery
+
+- Native CLI dekoduje environment script z block 2: sky row, loop length,
+  ordered cues, duration, mode i dziewięć RGB slots. Nowy panel Atmosphere
+  pokazuje nazwane fog/sky colors; timing/palette/ground są pod details.
+- Edycja wszystkich changed cues jest jedną zmianą wspólnego projektu. C
+  kompilator waliduje wynikowy timeline po całym batchu, a nie przejściowe
+  stany. Cue 0 pozostaje time 0; starts rosną i mieszczą się w loop length;
+  mode 0–4, duration 0–32767 i RGB 0–0xffffff. Reserved bytes, alpha/unused
+  bytes, sentinel oraz reszta toru pozostają nietknięte.
+- SaveTrackChanges współdzieli istniejący compiled track patch path z object,
+  road, arc i terrain edits. Nie dodano alternatywnego runtime środowiska.
+  Niezapisane formy nie są tracone podczas wyboru object/course/road context;
+  jeden aktywny track form draft naraz, z możliwością discard atmosphere.
+- Native service test sprawdza przesunięcie kilku cues przez ich stare granice,
+  exact RGB readback, invalid ranges/order/modes, preserved unrelated bytes,
+  source preservation, build i Undo/Redo. Form test nazywa wszystkie 9 slots.
+- Actual PAL UI headless: zmiana Fog #123456, unsaved context guard, Save,
+  native bank readback i publish PASS, zero pageerrors. Normal race opt-in
+  scenery-game test rozszerzono o zmienione kolory wszystkich cues: game load
+  i race timer 20 PASS na classic/modern. Modern capture:
+  build/reports/editor/atmosphere-modern.ppm; magenta sky gradient jest
+  widoczny w faktycznie renderowanym kadrze, nie tylko w UI swatch.
+- Native CLI rebuilt/staged; full npm test save_format PASS oraz 158 JS tests:
+  152 PASS, 6 optional skips. T11 pozostaje częściowy: custom fog density,
+  sky image/palettes, timeline add/delete, loop length/sky row editing,
+  tunnel/event lighting i zgodność preview authoring jeszcze nie są gotowe.
+- Kontrolny normal-game capture bez moda, z tym samym race/timer/renderer:
+  build/reports/editor/atmosphere-original.ppm. Obejrzano oba kadry: zmienił
+  się gradient nieba, a ciemny startup frame występuje także w oryginale.
+  Ta obserwacja nie jest oceną pełnego wyścigu ani wszystkich palette variants.
