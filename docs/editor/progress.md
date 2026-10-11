@@ -629,3 +629,19 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   projektu i effective textured preview pass. Temp root, source read-only.
 - Brak gizmo/przesuwania komórek terenu, edycji topologii całego toru i GLB;
   wybór wspólnego modelu terenu nie zastępuje tych wymagań.
+
+### Podgląd wybranego modelu toru
+
+- Course object i panel klikniętego terrain model udostępniają Preview model.
+  Podgląd składa tylko wybrany submesh, więc kadr nie obejmuje innych modeli
+  ani nieużywanych wierzchołków banku. Zachowuje source material IDs/PNG.
+- Preview i OBJ export dzielą `texturedPart`, zamiast drugiej ścieżki
+  dekodowania tekstur. Pusty/nieistniejący model zgłasza czytelny błąd.
+- Prawdziwy PAL: course model 55 ma 68 vertices / 2 textures, terrain model
+  197 ma 12 vertices / 2 textures. Publiczne preview API zwraca pojedynczą
+  instancję; niepoprawny index odrzucony. Headless WebGL bez błędów JS,
+  screenshoty obu modeli obejrzano:
+  `build/reports/editor/track-course-model.png`,
+  `build/reports/editor/track-terrain-model.png`.
+- UI test sprawdza przycisk Preview dla source modelu. Nadal nie ma
+  scene gizmo/manipulacji bezpośredniej, GLB i classic mesh adaptera.

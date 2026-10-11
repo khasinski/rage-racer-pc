@@ -67,6 +67,7 @@ test('native track bank actions use selected course/class, revision and explicit
 test('placed object OBJ actions address shared source model and remain separate from native banks',async()=>{
  const {trackWorkspace}=await import('../renderer/tracks.mjs');
  const html=trackWorkspace([{name:'Coast',bank:88}],88,{revision:5,objects:[{model:7,x:0,y:0,z:0,yaw:0,flags:0}]});
+ assert.match(html,/data-preview-track-part="track.big1.course" data-part="7"/);
  assert.match(html,/data-export-track-part="track.big1.course" data-part="7"/);
  assert.match(html,/data-import-track-part="track.big1.course" data-part="7" data-revision="5"/);
  assert.match(html,/shared by every object/);assert.match(html,/OBJ export includes PNG textures/);

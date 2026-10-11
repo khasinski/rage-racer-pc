@@ -99,8 +99,7 @@ async function exportPart(service,id,part,destination){
   await model(service,id,file,view.root,view.files,signal,metadata.meshes);
   const {randomUUID}=require('node:crypto'),{run}=require('./service.cjs'),folder=path.join(destination,'track-model-'+randomUUID());await fs.mkdir(folder);
   try{await run(service.tool('rage-mesh-obj'),['export',file,String(part),path.join(folder,'model.obj')],{signal});
-   const {bank,name}=slot(id),geometry=JSON.parse(await run(service.tool('rage-mod-cli'),['--preview-bank',file],{signal,maxOutput:64*1024*1024}));
-   await require('./track-textures.cjs')(service,bank,{[name]:{geometry,instances:[{mesh:part}]}},{[name]:metadata},directory,[],signal,view);
+   const geometry=await texturedPart(service,id,part,{file,directory,metadata,view},signal);
    const textures={};for(const [source,texture]of Object.entries(geometry.textures)){const relative='texture-'+source+'.png';await fs.writeFile(path.join(folder,relative),Buffer.from(texture.png,'base64'));textures[source]=relative;}
    const mtlFile=path.join(folder,'model.obj.mtl');let mtl=await fs.readFile(mtlFile,'utf8');
    mtl=mtl.replace(/newmtl rage_(\d+)\n/g,(line,word)=>{const texture=textures[Number(word)&65535];return line+(texture?'map_Kd '+texture+'\n':'');});await fs.writeFile(mtlFile,mtl);
@@ -128,3 +127,21 @@ async function importTextures(service,id,part,input,metadata,signal,staging){
  return changes;
 }
 module.exports.importTextures=importTextures;
+async function previewPart(service,id,part){
+ service.requireReady();const {name}=slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
+ return service.operation('Previewing track model',signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
+  await model(service,id,file,view.root,view.files,signal,metadata.meshes);
+  const geometry=await texturedPart(service,id,part,{file,directory,metadata,view},signal);
+  const banks={[name]:{geometry,instances:[{mesh:part,position:[0,0,0],yaw:0}]}};
+  const result=require('./track-preview.cjs')(banks);result.previewName=(name==='course'?'Course':'Terrain')+' model '+part;return result;
+ }));
+}
+module.exports.previewPart=previewPart;
+
+async function texturedPart(service,id,part,{file,directory,metadata,view},signal){
+ const {bank,name}=slot(id),{run}=require('./service.cjs');
+ const geometry=JSON.parse(await run(service.tool('rage-mod-cli'),['--preview-bank',file],{signal,maxOutput:64*1024*1024}));
+ if(!geometry.ranges[part]||!geometry.ranges[part][1])throw Error('This track model has no geometry');
+ await require('./track-textures.cjs')(service,bank,{[name]:{geometry,instances:[{mesh:part}]}},{[name]:metadata},directory,[],signal,view);
+ return geometry;
+}
