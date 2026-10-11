@@ -87,6 +87,12 @@ static const struct SpecField {
     {"redline", offsetof(GameCarSpec, redline), 1, 32767},
     {"topGear", offsetof(GameCarSpec, topGear), 1, CAR_FORWARD_GEAR_COUNT},
     {"automaticAccelerationScale", offsetof(GameCarSpec, automaticAccelerationScale), 1, 32767},
+    {"steeringGripResponse", offsetof(GameCarSpec, steeringGripResponse), 1, 32767},
+    {"steerResponse", offsetof(GameCarSpec, steerResponse), 1, 32767},
+    {"referenceTurnRadius", offsetof(GameCarSpec, referenceTurnRadius), 1, 32767},
+    {"negconSteeringAssistScale", offsetof(GameCarSpec, negconSteeringAssistScale), 0, 32767},
+    {"speedDragDivisor", offsetof(GameCarSpec, speedDragDivisor), 1, 32767},
+    {"baseSteeringGrip", offsetof(GameCarSpec, baseSteeringGrip), 0, 32767},
 #define SHIFT_FIELDS(n) \
     {"downshift" #n, offsetof(GameCarSpec, shiftPoints)+(n-1)*sizeof(GameCarSpecShiftPoint), -32768, 32767}, \
     {"upshift" #n, offsetof(GameCarSpec, shiftPoints)+(n-1)*sizeof(GameCarSpecShiftPoint)+2, -32768, 32767}
@@ -171,7 +177,8 @@ static int CarSpecCommand(int argc, char **argv) {
     printf("{\"fields\":[");
     for (i=0; i<sizeof(specFields)/sizeof(specFields[0]); ++i) {
         const struct SpecField *field=&specFields[i];
-        int value=(int16_t)(spec[field->offset] | (unsigned)spec[field->offset+1]<<8);
+        unsigned word=spec[field->offset] | (unsigned)spec[field->offset+1]<<8;
+        int value=field->offset==offsetof(GameCarSpec,steerResponse)?(int)word:(int16_t)word;
         printf("%s{\"key\":\"%s\",\"value\":%d,\"min\":%d,\"max\":%d}",
                i?",":"", field->key, value, field->min, field->max);
     }

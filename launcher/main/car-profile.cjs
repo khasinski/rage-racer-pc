@@ -1,5 +1,5 @@
 const path=require('node:path');
-const names={manualOnly:'manual_only',revLimit:'rev_limit',redline:'redline',topGear:'top_gear',automaticAccelerationScale:'automatic_acceleration_scale',price:'price',upgradePrice:'upgrade_price',unlockClass:'unlock_class'};
+const names={steeringGripResponse:'steering_grip_response',steerResponse:'steer_response',referenceTurnRadius:'reference_turn_radius',negconSteeringAssistScale:'negcon_steering_assist_scale',speedDragDivisor:'speed_drag_divisor',baseSteeringGrip:'base_steering_grip',manualOnly:'manual_only',revLimit:'rev_limit',redline:'redline',topGear:'top_gear',automaticAccelerationScale:'automatic_acceleration_scale',price:'price',upgradePrice:'upgrade_price',unlockClass:'unlock_class'};
 async function read(service,bank){
   service.requireReady();const file=service.carSpecFile(bank),project=await service.project();
   const {run}=require('./service.cjs');

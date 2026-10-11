@@ -10,11 +10,14 @@ test('car parameter edits preserve the source and unrelated pack bytes',async()=
   const bytes=Buffer.alloc(2048,0xa5),base=32;
   [base,512,640,768,1024].forEach((v,i)=>bytes.writeUInt32LE(v,i*4));
   [8000,1000,5,7000].forEach((v,i)=>bytes.writeInt16LE(v,base+0x100+i*2));
+  bytes.writeUInt16LE(40000,base+0x10a);
   await fs.writeFile(source,bytes);
   const read=JSON.parse(await run(tool,['--car-spec','read',source]));
   assert.equal(read.fields.find(f=>f.key==='revLimit').value,8000);
-  await run(tool,['--car-spec','write',source,output,'revLimit','9000','topGear','6','downshift2','123','upshift2','456']);
+  assert.equal(read.fields.find(f=>f.key==='steerResponse').value,40000);
+  await run(tool,['--car-spec','write',source,output,'revLimit','9000','topGear','6','downshift2','123','upshift2','456','steeringGripResponse','1200','steerResponse','32767','referenceTurnRadius','750','negconSteeringAssistScale','0','speedDragDivisor','2500','baseSteeringGrip','325']);
   const expected=Buffer.from(bytes);expected.writeInt16LE(9000,base+0x100);expected.writeInt16LE(6,base+0x104);expected.writeInt16LE(123,base+0x124);expected.writeInt16LE(456,base+0x126);
+  [1200,32767,750,0,2500,325].forEach((v,i)=>expected.writeInt16LE(v,base+0x108+i*2));
   assert.deepEqual(await fs.readFile(output),expected);
   assert.deepEqual(await fs.readFile(source),bytes);
   await assert.rejects(run(tool,['--car-spec','write',source,source,'revLimit','9500']));
@@ -46,7 +49,7 @@ test('car parameters edit the shared project and apply without touching source p
   await service.init();service.state.disc={region:'NTSC-U',data,archive,path:archive};
   const original=await service.carSpec(10);
   assert.equal(original.fields.find(f=>f.key==='revLimit').origin,'built-in profile');
-  const p=await service.saveCarSpec(10,{revLimit:9000,manualOnly:1,upshift3:1200,price:0,unlockClass:0},original.revision);
+  const p=await service.saveCarSpec(10,{revLimit:9000,manualOnly:1,upshift3:1200,price:0,unlockClass:0,steeringGripResponse:1200,steerResponse:90,referenceTurnRadius:750,negconSteeringAssistScale:0,speedDragDivisor:2500,baseSteeringGrip:325},original.revision);
   assert.equal(service.state.mods.length,0);assert.equal(p.dirty,true);
   const changed=await service.carSpec(10);
   assert.equal(changed.fields.find(f=>f.key==='revLimit').value,9000);
@@ -55,8 +58,9 @@ test('car parameters edit the shared project and apply without touching source p
   const profile=await require('../main/project-build.cjs').activeProfile(service);
   const compiled=JSON.parse(await run(tool,['--car-profile',profile])).cars[0];
   assert.equal(compiled.rev_limit,9000);assert.equal(compiled.manual_only,true);assert.equal(compiled.shift_points[5],1200);assert.equal(compiled.price,0);
+  for(const [field,value] of Object.entries({steering_grip_response:1200,steer_response:90,reference_turn_radius:750,negcon_steering_assist_scale:0,speed_drag_divisor:2500,base_steering_grip:325}))assert.equal(compiled[field],value);
   assert.deepEqual(await fs.readFile(source),bytes);assert.deepEqual(await fs.readFile(path.join(data,'raw/asset_010.bin')),model);
-  for(const edits of [{revLimit:0},{topGear:7},{unknown:1},{revLimit:'9000'},{}])await assert.rejects(service.saveCarSpec(10,edits,p.revision));
+  for(const edits of [{speedDragDivisor:0},{steerResponse:32768},{negconSteeringAssistScale:-1},{revLimit:0},{topGear:7},{unknown:1},{revLimit:'9000'},{}])await assert.rejects(service.saveCarSpec(10,edits,p.revision));
   await assert.rejects(service.saveCarSpec(10,{revLimit:9500},original.revision),/changed/);
   await assert.rejects(service.carSpec(11));await assert.rejects(service.saveCarSpec(88,{revLimit:9000},p.revision));
   service.game={};await assert.rejects(service.applyProject(p.revision),/Close the game/);service.game=null;

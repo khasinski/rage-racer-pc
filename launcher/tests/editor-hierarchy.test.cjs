@@ -39,3 +39,11 @@ test('basic transmission is visible and advanced engine and shift values remain 
  for(const key of ['price','upgradePrice','unlockClass'])assert.ok(basicWithShop.includes(`data-spec="${key}"`));
  assert.match(dialog.innerHTML,/data-revision="7"/);assert.match(dialog.innerHTML,/Save & apply/);
 });
+
+test('all handling scalars are editable once and grouped separately from basic purchasing',()=>{
+ const {context,dialog}=dialogs();const keys=['steeringGripResponse','steerResponse','referenceTurnRadius','negconSteeringAssistScale','speedDragDivisor','baseSteeringGrip'];
+ const required=['manualOnly','topGear',...Array.from({length:6},(_,i)=>['downshift'+(i+1),'upshift'+(i+1)]).flat()];
+ context.carSpecDialog(10,{revision:4,fields:[...required,...keys].map(key=>({key,value:100,min:0,max:32767}))});
+ const basic=dialog.innerHTML.split('<details')[0];for(const key of keys){assert.ok(!basic.includes('data-spec="'+key+'"'));assert.equal(dialog.innerHTML.split('data-spec="'+key+'"').length-1,1);}
+ assert.match(dialog.innerHTML,/Advanced handling &amp; drag|Advanced handling & drag/);assert.match(dialog.innerHTML,/Larger values reduce drag/);
+});

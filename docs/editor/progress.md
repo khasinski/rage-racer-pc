@@ -743,3 +743,21 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   przed komunikatem, zamiast zachęcać do operacji przy zajętym backendzie.
 - Powtórzono test po poprawce. Nadal nie jest to weryfikacja Electron IPC ani
   wizualnego efektu w rendererze gry; browser bridge wywołuje prawdziwy service.
+
+### Parametry prowadzenia samochodów
+
+- Native car-spec reader/writer i shared profile service obsługują sześć
+  dotąd niewidocznych pól: steering grip response, AI steer response,
+  reference turn radius, neGcon assist scale, speed drag divisor, base grip.
+  Odczyt zachowuje typ unsigned steerResponse. Edycja AI response jest
+  ograniczona do dodatniego signed zakresu używanego przez obecną fizykę.
+- GUI umieszcza je w osobnym Advanced handling & drag z opisami. Engine/AT
+  pozostają w dotychczasowej sekcji; nie dodano osobnego backendu zapisu.
+- Tests: native write porównuje cały pack byte-exact, read unsigned 40000,
+  bounds, project read/apply wszystkich sześciu pól, UI brak duplikatów.
+  Full launcher: 140 tests, 137 pass, 3 optional regional skips. Po dodaniu
+  unsigned fixture focused car-spec: 5 pass.
+- Rzeczywisty PAL: odczyt builtin origin, edycja drag/AI response, apply
+  i odczyt aktywnego cars.toml pass w temp profile. Nie weryfikuje to jeszcze
+  odczuwalnego prowadzenia w wyścigu. Krzywe torque/gear arrays nadal brakuje
+  w GUI i pozostają częścią pełnego zakresu.
