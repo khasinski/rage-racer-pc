@@ -1,5 +1,5 @@
 // The native helper decodes disc textures; WebGL provides inspection lighting.
-import {pickScene} from './scene-pick.mjs';
+import {pickScene,groundDrag} from './scene-pick.mjs';
 const activePreviews=new WeakMap();
 export async function mountModelPreview(dialog,data,options={}){
  const stale=()=>options.previousPreview&&(!dialog.open||activePreviews.get(dialog)!==options.previousPreview);
@@ -48,11 +48,13 @@ export async function mountModelPreview(dialog,data,options={}){
   }dialog.querySelector('canvas').before(controls);
  }
  function draw(){canvas.width=Math.round(canvas.clientWidth*Math.min(devicePixelRatio,2));canvas.height=Math.round(canvas.clientHeight*Math.min(devicePixelRatio,2));gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(...background,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.bindBuffer(gl.ARRAY_BUFFER,buffers[wire?1:0]);attributes.forEach((a,i)=>{gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,i===3?2:3,gl.FLOAT,false,44,i*12);});gl.uniform4f(view,yaw,pitch,zoom,canvas.width/canvas.height);if(wire){appearance(-1);gl.uniform1i(textured,0);gl.drawArrays(gl.LINES,0,lines.length/11);}else for(const group of groups){const id=group.material&0xffff,source=data.worldScene?id:id%64;appearance(id===65535?-1:source);const texture=!data.worldScene&&(id>>>6)===1?null:textures.get(source);gl.uniform1i(textured,texture?1:0);gl.bindTexture(gl.TEXTURE_2D,texture||null);gl.drawArrays(gl.TRIANGLES,group.start,group.count);}}
- let press=null;
- canvas.onpointerdown=e=>{press=[e.clientX,e.clientY];drag=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);canvas.focus();};
- canvas.onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-drag[0])*.01;pitch+=(e.clientY-drag[1])*.01;drag=[e.clientX,e.clientY];draw();};
- canvas.onpointerup=e=>{drag=null;if(press&&Math.hypot(e.clientX-press[0],e.clientY-press[1])<4&&options.onSelectEntity){const rect=canvas.getBoundingClientRect();const entity=pickScene(data,frame,{yaw,pitch,zoom,aspect:rect.width/rect.height},(e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2);if(entity)options.onSelectEntity(entity);}press=null;};
- canvas.onpointercancel=()=>{drag=null;press=null;};
+ let press=null,moving=null;
+ const point=e=>{const r=canvas.getBoundingClientRect();return [(e.clientX-r.left)/r.width*2-1,1-(e.clientY-r.top)/r.height*2];};
+ if(options.onMoveEntity)dialog.querySelector('p.muted').textContent+=' · Shift-drag an object to move it on the ground';
+ canvas.onpointerdown=e=>{press=[e.clientX,e.clientY];if(e.shiftKey&&options.onMoveEntity){const hit=pickScene(data,frame,{yaw,pitch,zoom,aspect:canvas.clientWidth/canvas.clientHeight},...point(e));if(hit?.bank==='course'&&Number.isInteger(hit.object))moving={entity:hit,start:point(e)};}drag=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);canvas.focus();};
+ canvas.onpointermove=e=>{if(!drag||moving)return;yaw+=(e.clientX-drag[0])*.01;pitch+=(e.clientY-drag[1])*.01;drag=[e.clientX,e.clientY];draw();};
+ canvas.onpointerup=async e=>{drag=null;if(moving){const move=moving;moving=null;press=null;const end=point(e);try{const delta=groundDrag(frame,{yaw,pitch,zoom,aspect:canvas.clientWidth/canvas.clientHeight},end[0]-move.start[0],end[1]-move.start[1]);if(delta.x||delta.z){canvas.style.pointerEvents='none';const next=await options.onMoveEntity(move.entity,delta);if(dialog.open&&activePreviews.get(dialog)===dispose)await mountModelPreview(dialog,next,{...options,frame,view:{yaw,pitch,zoom,wire,background}});}}catch(error){const note=document.createElement('p');note.setAttribute('role','alert');note.textContent=error.message;canvas.after(note);}finally{canvas.style.pointerEvents='';}return;}if(press&&Math.hypot(e.clientX-press[0],e.clientY-press[1])<4&&options.onSelectEntity){const rect=canvas.getBoundingClientRect();const entity=pickScene(data,frame,{yaw,pitch,zoom,aspect:rect.width/rect.height},(e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2);if(entity)options.onSelectEntity(entity);}press=null;};
+ canvas.onpointercancel=()=>{drag=null;press=null;moving=null;};
  canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.15,Math.min(5,zoom*Math.exp(-e.deltaY*.001)));draw();},{passive:false});
  canvas.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-'].includes(e.key))return;e.preventDefault();yaw+=e.key==='ArrowLeft'?-.1:e.key==='ArrowRight'?.1:0;pitch+=e.key==='ArrowUp'?-.1:e.key==='ArrowDown'?.1:0;zoom=Math.max(.15,Math.min(5,zoom*(e.key==='+'?1.1:e.key==='-'?.9:1)));draw();};
  for(const button of dialog.querySelectorAll('[data-model-view]'))button.onclick=()=>{const preset={front:[Math.PI,0],side:[Math.PI/2,0],rear:[0,0],top:[0,-Math.PI/2]}[button.dataset.modelView];[yaw,pitch]=preset;draw();};

@@ -713,3 +713,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - UI odrzuca Apply przy zmienionych, niezapisanych polach data-original,
   zamiast po cichu publikować poprzednie wartości. Headless actual app.js + PAL
   service potwierdza komunikat i brak zapisu projektu przed submit formularza.
+
+### Zmiana położenia obiektu z podglądu 3D
+
+- Shift-drag trafionego course object zapisuje poziome przesunięcie przez
+  istniejące `saveTrackObject`. Y, model i flags pozostają nietknięte; zmiana
+  korzysta z rewizji oraz historii projektu. Podgląd przeładowuje effective
+  geometry, zachowując kadr i obrót. Bez drugiego formatu lub writer backendu.
+- Współrzędne ruchu odwracają projekcję ortograficzną na płaszczyźnie XZ;
+  source Z ma przeciwny znak. Niemal poziomy widok odrzuca ruch z instrukcją
+  użycia Top/tilt, zamiast zgadywać głębokość.
+- Unit sprawdza odwracanie yaw/pitch/aspect/scale; headless WebGL sprawdza
+  rzeczywisty Shift-drag, target object, kierunki delta i odświeżenie bez
+  błędów JS. Zapis/native publication mają osobną istniejącą regresję.
+- Pełny launcher suite: 139 tests, 136 pass, 3 optional regional skips.
+- To przesunięcie stosowane po puszczeniu przycisku, jeszcze bez live gizmo,
+  uchwytów wysokości/obrotu i snapping. Test gestu używa synthetic geometry,
+  nie dowodzi jeszcze kompletnego PAL scene → ruch → wyścig.

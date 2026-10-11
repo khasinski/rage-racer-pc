@@ -202,3 +202,13 @@ trusting cached dependency information. Exact JSON versions and disc regions
 remain enforced; resource conflict choices remain explicit. The current UI
 still displays JSON dependencies only. See `../docs/mod-manifest.md` for limits
 and the remaining source-snapshot/provider-stack work.
+
+## Moving track scenery
+
+In **Tracks**, save any edited form, then open **View track in 3D**.
+Hold Shift and drag a placed object to move it horizontally. Use **Top** or
+an angled view; a level side view cannot determine ground depth. The updated
+project geometry appears after release. Height and the shared model stay
+unchanged. Click an object normally to edit its numeric transform. Use project
+Undo to revert, then **Save & apply project** to make changes available to the
+game. Terrain cells use model assignment rather than free movement.

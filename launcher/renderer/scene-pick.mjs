@@ -22,3 +22,13 @@ export function pickScene(data,frame,view,x,y){
  }
  return hit;
 }
+
+// Invert the inspection projection on the horizontal world plane. A level
+// side view cannot determine ground depth; reject it instead of guessing.
+export function groundDrag(frame,view,dx,dy){
+ const sp=Math.sin(view.pitch);
+ if(Math.abs(sp)<.05)throw Error('Use the top view or tilt the view before moving an object');
+ const rx=dx*view.aspect/(view.zoom*frame.scale),rz=-dy/(sp*view.zoom*frame.scale);
+ const c=Math.cos(view.yaw),s=Math.sin(view.yaw);
+ return {x:Math.round(c*rx-s*rz),z:Math.round(s*rx+c*rz)};
+}

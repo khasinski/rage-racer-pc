@@ -12,3 +12,13 @@ test('scene picking selects nearest object and respects terrain occlusion and vi
  assert.equal(pickScene(rotated,frame,{...view,yaw:Math.PI/2},0,0).object,4);
  assert.equal(pickScene(rotated,frame,view,0,0),null);
 });
+test('ground dragging reverses projection across yaw and tilt without guessing a side-view depth',async()=>{
+ const {groundDrag}=await import('../renderer/scene-pick.mjs');
+ const frame={scale:.002,center:[100,200,300]};
+ for(const yaw of [0,.7,Math.PI/2,-2])for(const pitch of [-Math.PI/2,-.35,.6]){
+  const view={yaw,pitch,zoom:1.5,aspect:2},x=120,z=-70;
+  const rx=Math.cos(yaw)*x+Math.sin(yaw)*z,rz=-Math.sin(yaw)*x+Math.cos(yaw)*z;
+  assert.deepEqual(groundDrag(frame,view,rx*frame.scale*view.zoom/view.aspect,-Math.sin(pitch)*rz*frame.scale*view.zoom),{x,z});
+ }
+ assert.throws(()=>groundDrag(frame,{pitch:0},1,1),/top view or tilt/);
+});
