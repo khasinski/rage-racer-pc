@@ -219,6 +219,37 @@ int main(void) {
         fprintf(stderr, "shipped catalog did not parse: %s\n", error);
         return 1;
     }
+    {
+        RageCarCatalog read, before;
+        memset(&read,0x5a,sizeof(read));before=read;
+        if(CarCatalogReadFile("this-profile-does-not-exist.toml",&read,error,sizeof(error)) ||
+           memcmp(&read,&before,sizeof(read)) != 0) return 1;
+        if(!CarCatalogReadFile(RAGE_SOURCE_DIRECTORY "/cars.toml",&read,error,sizeof(error)) ||
+           read.count!=CAR_MODEL_VARIANT_COUNT) return 1;
+        before=read;
+        remove("car_catalog_roundtrip.toml");
+        if(!CarCatalogWriteFile("car_catalog_roundtrip.toml",&read,error,sizeof(error)) ||
+           !CarCatalogReadFile("car_catalog_roundtrip.toml",&read,error,sizeof(error)) ||
+           memcmp(&read,&before,sizeof(read)) != 0) return 1;
+        remove("car_catalog_roundtrip.toml");
+        {
+            RageCarCatalog overlay;
+            if(!CarCatalogParse("[[cars]]\nid = \"car_00_g0\"\nmodel = 0\ngrade = 0\nprice = 0\nmanual_only = true\n",&overlay,error,sizeof(error)) ||
+               !CarCatalogMerge(&read,&overlay,error,sizeof(error)))return 1;
+            if(read.entries[0].price!=0 || read.entries[0].manualOnly!=1 ||
+               memcmp(&read.entries[0].specification,&before.entries[0].specification,sizeof(GameCarSpec)))return 1;
+            before=read;
+            overlay.entries[0].price=-1;
+            if(CarCatalogMerge(&read,&overlay,error,sizeof(error)) ||
+               memcmp(&read,&before,sizeof(read)))return 1;
+        }
+        if(CarCatalogVariant(0,0)!=0 || CarCatalogVariant(0,3)!=3 ||
+           CarCatalogVariant(0,4)!=-1 || CarCatalogVariant(12,0)!=31 ||
+           CarCatalogVariant(12,1)!=-1 || CarCatalogVariant(-1,0)!=-1 ||
+           CarCatalogVariant(13,0)!=-1 || CarCatalogVariant(1,-1)!=-1) return 1;
+        read.count=RAGE_CAR_CATALOG_ENTRY_COUNT+1;
+        if(CarCatalogValidate(&read,error,sizeof(error)))return 1;
+    }
     free(valid); free(shortCatalog); free(bad);
     puts("car catalog parse and application passed"); return 0;
 }

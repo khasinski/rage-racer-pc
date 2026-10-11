@@ -16,6 +16,7 @@ for(const name of ['rage-racer','rage-extract','rage-pack','rage-save-cli','rage
   fs.copyFileSync(source,path.join(bin,name+ext));if(process.platform!=='win32')fs.chmodSync(path.join(bin,name),0o755);
 }
 // Windows runtime libraries beside the game must travel with the launcher.
+for(const name of ['cars.toml','cars.ntscj.toml'])fs.copyFileSync(path.join(root,name),path.join(bin,name));
 if(process.platform==='win32')for(const dir of [build,path.join(build,'Release')])if(fs.existsSync(dir))for(const name of fs.readdirSync(dir))if(name.toLowerCase().endsWith('.dll'))fs.copyFileSync(path.join(dir,name),path.join(bin,name));
 // resources/rage-port.ini is the launcher's checked-in distribution template.
 // The repository-root INI may contain a developer's local paths or diagnostics.

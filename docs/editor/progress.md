@@ -66,3 +66,26 @@ operacji. UI torów i pełny import GLB nadal nie są zaimplementowane.
 - TypeSafe zainstalowany żądaną metodą `npx skills add` dla Codexa. Zgodnie ze
   skillem odczyt i walidacja danych pozostają deterministyczne w kodzie, bez
   zależności edytora od API AI. Przeczytano lokalny skill i live docs index.
+
+## Wspólny profil samochodów i kompilacja nadpisań
+
+- Parser/validator profilu wydzielony do `rage-car-catalog` bez globalnego stanu
+  gry. Runtime, native CLI oraz testy linkują tę samą implementację C.
+- Jedna tabela 28 pól steruje parsowaniem, łączeniem i serializacją; usunięto
+  osobne schematy parsera dla skalarów/torque scale/shift points. Nie ma parsera
+  TOML samochodów napisanego drugi raz w JS.
+- `--car-profile` opisuje tożsamość 32 wariantów i obecne pola metadanych.
+  Nie emituje jeszcze pełnych wartości specyfikacji ani domyślnych danych płyty.
+- `--compose-car-profile` łączy bazę z deltasem przez model/grade, waliduje całość
+  i tworzy nowy plik bez nadpisywania istniejącego wyniku. Nieaktywne pola
+  zachowują bazę. Błąd nie publikuje częściowego profilu.
+- Test C dowodzi roundtrip wszystkich pól w katalogu, zachowania specyfikacji
+  przy zmianie ceny/AT, atomowego odrzucenia złej ceny i bounds wariantów.
+  Naprawiono też błąd: grade poza rodziną nie wskazuje już wariantu następnego auta.
+- Test CLI sprawdza oba regionalne katalogi, zmianę ceny/MT-only, zachowanie
+  pozostałych aut, odmowę nadpisania wyniku i odrzucenie przepełnionej liczby.
+- Build:native bundluje teraz oba cars*.toml obok binarki; packager wymaga ich
+  obecności. Wcześniejsza ścieżka stage nie kopiowała tych plików.
+- Build gry, smoke i narzędzi oraz testy car_catalog/race_asset_loading przeszły.
+  Aktywacja profilu projektu i migracja formularza samochodu nadal pozostają
+  niepodłączone: samo złożenie pliku nie jest jeszcze dowodem efektu w grze.

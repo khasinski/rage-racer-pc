@@ -35,6 +35,7 @@ set_tests_properties(car_catalog_profile PROPERTIES LABELS unit)
 add_executable(port_car_catalog_tests
     car_catalog_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/car_catalog.c)
+target_link_libraries(port_car_catalog_tests PRIVATE rage-car-catalog)
 target_include_directories(port_car_catalog_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
@@ -535,7 +536,7 @@ add_executable(race_asset_loading_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/track_data_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_texture_assets.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/asset/install_track_runtime_assets.c)
-target_link_libraries(race_asset_loading_tests PRIVATE rage-content)
+target_link_libraries(race_asset_loading_tests PRIVATE rage-content rage-car-catalog)
 target_include_directories(race_asset_loading_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/src/port

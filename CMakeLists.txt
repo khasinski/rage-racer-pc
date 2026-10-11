@@ -133,6 +133,14 @@ endif()
 
 add_library(rage-content STATIC src/content/region_profile.c src/content/track_pack.c)
 target_include_directories(rage-content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_library(rage-car-catalog STATIC src/content/car_catalog.c)
+target_include_directories(rage-car-catalog PUBLIC src src/port/include include external/psyz/psyz/include)
+target_compile_definitions(rage-car-catalog PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(rage-car-catalog PRIVATE /W4 /WX)
+else()
+    target_compile_options(rage-car-catalog PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
 
 add_library(rage-json STATIC external/yyjson/yyjson.c)
 target_include_directories(rage-json PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/yyjson)
@@ -506,7 +514,7 @@ if(RAGE_BUILD_PORT)
     target_compile_definitions(rage-mod-cli PRIVATE __psyz=1)
     target_include_directories(rage-mod-cli PRIVATE
         src src/port/include include external/psyz/psyz/include)
-    target_link_libraries(rage-mod-cli PRIVATE rage-render-world rage-mod-package rage-json rage-content SDL3::SDL3)
+    target_link_libraries(rage-mod-cli PRIVATE rage-render-world rage-mod-package rage-json rage-content rage-car-catalog SDL3::SDL3)
     add_executable(rage-frame-replay
         tools/rage_frame_replay.c
         src/port/platform_paths.c
@@ -579,7 +587,7 @@ if(RAGE_BUILD_PORT)
         src/port/include
         include
     )
-    target_link_libraries(rage-game-full PUBLIC psyz rage-content)
+    target_link_libraries(rage-game-full PUBLIC psyz rage-content rage-car-catalog)
     # The recovered game sources retain PS1-era tentative globals.  Host
     # initialized state deliberately provides their concrete definitions; GCC
     # otherwise treats the tentative copies as duplicate ELF definitions.
@@ -617,7 +625,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world rage-ray rage-content chdr-static miniz rage-json)
+            rage-sim psyz rage-render-world rage-ray rage-content rage-car-catalog chdr-static miniz rage-json)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()
@@ -625,14 +633,14 @@ if(RAGE_BUILD_PORT)
     if(RAGE_ENABLE_SANITIZERS AND
        CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
         foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state rage-port-legacy
-                                      rage-racer rage-racer-smoke rage-sim rage-content
+                                      rage-racer rage-racer-smoke rage-sim rage-content rage-car-catalog
                                       rage-mod-package rage-rmesh rage-render-world rage-ray)
             target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
                 -fsanitize=address,undefined -fno-omit-frame-pointer)
         endforeach()
         # Instrument the native renderer/asset libraries too. Their tools and
         # tests need the runtime even when they do not link a game executable.
-        foreach(RAGE_SANITIZER_TARGET rage-sim rage-content rage-mod-package
+        foreach(RAGE_SANITIZER_TARGET rage-sim rage-content rage-car-catalog rage-mod-package
                                       rage-rmesh rage-render-world rage-ray)
             target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE
                 -fsanitize=address,undefined)

@@ -7,6 +7,7 @@
 #include "render/mod_package.h"
 #include "render/rmesh.h"
 #include "content/track_pack.h"
+#include "port/car_catalog.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +51,35 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
+    if(argc==5 && strcmp(argv[1],"--compose-car-profile")==0) {
+        RageCarCatalog base,overlay;char error[256];
+        if(!CarCatalogReadFile(argv[2],&base,error,sizeof(error))||
+           !CarCatalogReadFile(argv[3],&overlay,error,sizeof(error))||
+           !CarCatalogMerge(&base,&overlay,error,sizeof(error))||
+           !CarCatalogWriteFile(argv[4],&base,error,sizeof(error))) {
+            fprintf(stderr,"%s\n",error);return 1;
+        }
+        puts("{\"valid\":true}");return 0;
+    }
+    if(argc==3 && strcmp(argv[1],"--car-profile")==0) {
+        RageCarCatalog catalog;char error[256];
+        if(!CarCatalogReadFile(argv[2],&catalog,error,sizeof(error))){fprintf(stderr,"%s\n",error);return 1;}
+        printf("{\"cars\":[");
+        for(i=0;i<catalog.count;i++) {
+            const RageCarCatalogEntry *e=&catalog.entries[i];
+            printf("%s{\"id\":",i?",":"");String(e->id);
+            printf(",\"model\":%d,\"grade\":%d,\"variant\":%d,\"fields\":%llu",e->modelIndex,e->grade,CarCatalogVariant(e->modelIndex,e->grade),(unsigned long long)e->fields);
+            if(e->fields&RAGE_CAR_FIELD_PRICE)printf(",\"price\":%d",e->price);
+            if(e->fields&RAGE_CAR_FIELD_UPGRADE_PRICE)printf(",\"upgrade_price\":%d",e->upgradePrice);
+            if(e->fields&RAGE_CAR_FIELD_UNLOCK_CLASS)printf(",\"unlock_class\":%d",e->unlockClass);
+            if(e->fields&RAGE_CAR_FIELD_MANUAL_ONLY)printf(",\"manual_only\":%s",e->manualOnly?"true":"false");
+            if(e->fields&RAGE_CAR_FIELD_NAME){printf(",\"name\":");String(e->name);}
+            if(e->fields&RAGE_CAR_FIELD_MANUFACTURER){printf(",\"manufacturer\":");String(e->manufacturer);}
+            if(e->fields&RAGE_CAR_FIELD_CLASS){printf(",\"class\":");String(e->className);}
+            printf("}");
+        }
+        puts("]}");return 0;
+    }
     if(argc==3 && (strcmp(argv[1],"--track-pack")==0 || strcmp(argv[1],"--track-scene")==0)) {
         TrackBlock blocks[TRACK_PACK_BLOCK_COUNT];
         f=fopen(argv[2],"rb");if(!f)return 1;

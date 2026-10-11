@@ -51,6 +51,15 @@ int CarCatalogParse(const char *text, RageCarCatalog *catalog,
                     char *error, size_t errorSize);
 int CarCatalogValidate(const RageCarCatalog *catalog, char *error,
                        size_t errorSize);
+/* Pure profile I/O shared by runtime and editor. Failure preserves output. */
+int CarCatalogReadFile(const char *path, RageCarCatalog *catalog,
+                       char *error, size_t errorSize);
+int CarCatalogVariant(int modelIndex, int grade);
+int CarCatalogMerge(RageCarCatalog *base, const RageCarCatalog *overlay,
+                    char *error, size_t errorSize);
+/* Creates a new file; existing output is never overwritten. */
+int CarCatalogWriteFile(const char *path, const RageCarCatalog *catalog,
+                        char *error, size_t errorSize);
 /* Loads and validates a profile atomically.  These are called before the
  * title menu, so no menu state can observe a partial catalog. */
 int CarCatalogLoadFile(const char *path, char *error, size_t errorSize);
