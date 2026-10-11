@@ -523,6 +523,14 @@ int main(int argc, char **argv) {
     if (RuntimeConfigEnabled("diagnostics.test_log") &&
         !DiagnosticLogOpen(logPath, sizeof(logPath))) return EXIT_FAILURE;
 
+    /* Automated runs stay hidden unless explicitly requested for inspection. */
+    if (getenv("PSYZ_HEADLESS") == NULL) {
+#ifdef _WIN32
+        if (_putenv_s("PSYZ_HEADLESS", "1") != 0) return EXIT_FAILURE;
+#else
+        if (setenv("PSYZ_HEADLESS", "1", 0) != 0) return EXIT_FAILURE;
+#endif
+    }
     Psyz_SetTitle("Rage Racer smoke");
     if (!HostInitStorage()) return EXIT_FAILURE;
     if (getenv("RAGE_PORT_TEST_MODE") == NULL) {

@@ -561,6 +561,13 @@ place the runtime tests reach a race and check what they were written to check;
 without it they stop at the title screen, because every asset read returns
 nothing.
 
+Automated tests render on the real GPU with hidden windows and do not take
+keyboard focus. The smoke executable also defaults to this mode when launched
+directly. For visual inspection, run it with `PSYZ_HEADLESS=0`. To show windows
+in CTest, configure with `-DRAGE_TEST_VISIBLE_WINDOWS=ON`; turn it back off for
+unattended runs. A normal launch of the game still shows its window. For a
+hidden production-game scenario, set `PSYZ_HEADLESS=1` in its environment.
+
 Nothing in the suite shares state between tests, so it parallelises: `ctest -j 6`
 runs it in well under half the time one job takes.
 

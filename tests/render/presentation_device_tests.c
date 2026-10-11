@@ -7,6 +7,7 @@
 
 /* Backend reset entry point, exercised here without a game loop. */
 void ResetPlatform(void);
+void Draw_DisplayEnable(unsigned int enabled);
 bool InitPlatform(void);
 static int failures, initialized, destroyed;
 static SDL_Window *currentWindow;
@@ -14,10 +15,30 @@ static SDL_GPUDevice *currentDevice;
 #define CHECK(x) do { if (!(x)) { ++failures; \
     fprintf(stderr, "line %d: %s\n", __LINE__, #x); } } while (0)
 
+static int presented;
+static void CheckHiddenWindow(SDL_Window *window) {
+    if (!SDL_GetHintBoolean("PSYZ_HEADLESS", false)) return;
+    SDL_WindowFlags flags = SDL_GetWindowFlags(window);
+    CHECK(flags & SDL_WINDOW_HIDDEN);
+    CHECK(!(flags & (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_FULLSCREEN)));
+    CHECK(SDL_GetKeyboardFocus() != window);
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        CHECK(event.type != SDL_EVENT_WINDOW_SHOWN);
+        CHECK(event.type != SDL_EVENT_WINDOW_FOCUS_GAINED);
+    }
+}
+static void Present(PsyzPresentSourceInfo *info) {
+    (void)info;
+    ++presented;
+    CHECK(Psyz_VideoGetVramTexture_SDL3GPU() != NULL);
+    CheckHiddenWindow(currentWindow);
+}
 static void Init(SDL_Window *window, SDL_GPUDevice *device) {
     ++initialized;
     currentWindow = window;
     currentDevice = device;
+    CheckHiddenWindow(window);
     SDL_Window *queriedWindow = NULL;
     SDL_GPUDevice *queriedDevice = NULL;
     CHECK(Psyz_VideoGetPresentationDevice_SDL3GPU(&queriedWindow, &queriedDevice));
@@ -59,7 +80,15 @@ int main(void) {
         Psyz_VideoVSync(0);
         CHECK(initialized == pass);
         CHECK(Psyz_VideoGetPresentationDevice_SDL3GPU(&window, &device));
-        CHECK(window == currentWindow && device == currentDevice);
+        CHECK(window == currentWindow && device == currentDevice);        PsyzPresentSourceCB_SDL3GPU previousPresent = Psyz_PresentSource_SDL3GPU(Present);
+        Draw_DisplayEnable(1);
+        Psyz_VideoSetInternalResolution(2);
+        int before = presented;
+        Psyz_VideoPresentIntermediate();
+        CHECK(presented > before);
+        CheckHiddenWindow(currentWindow);
+        Psyz_PresentSource_SDL3GPU(previousPresent);
+
         CHECK(!Psyz_VideoGetPresentationDevice_SDL3GPU(&window, NULL));
         CHECK(window == NULL);
         CHECK(!Psyz_VideoGetPresentationDevice_SDL3GPU(NULL, &device));
