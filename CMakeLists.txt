@@ -381,6 +381,7 @@ if(RAGE_BUILD_PORT)
         src/port/hud_config.c
         src/port/speed_display.c
         src/port/mod_assets.c
+        src/port/menu_images.c
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c

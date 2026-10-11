@@ -24,6 +24,8 @@
  * refused rather than discovered later as corruption somewhere unrelated.
  */
 
+static unsigned s_generation=1;
+unsigned ModAssetsGeneration(void){return s_generation;}
 static const char *s_directory;
 static char s_directoryStorage[1024];
 static RageModManifest s_manifest;
@@ -35,6 +37,7 @@ static int s_announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
 static int s_patchedAnnounced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
 
 void ModAssetsShutdown(void) {
+    s_generation++;
     s_directory = NULL;
     memset(s_directoryStorage, 0, sizeof(s_directoryStorage));
     memset(&s_manifest, 0, sizeof(s_manifest));

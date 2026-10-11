@@ -799,3 +799,25 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   Save project only, potwierdzono pełny array oraz nową nazwę na liście.
   Test czeka na koniec odświeżenia, nie jedynie zamknięcie dialogu. Source
   read-only, temp project, headless, zero pageerrors; nie Electron IPC.
+
+### PNG przycisków menu: runtime i project build
+
+- Runtime akceptuje `ui.title.<grand-prix|extra-grand-prix|time-attack|custom|
+  load-save|options>` oraz `.selected` w semantic texture manifest. Menu czyta
+  112×16 RGBA PNG bez quantization do PS1 palety i bez uploadu do VRAM atlasu.
+  Obecny rasterizer używa logicznych pixel runs, alpha <128 jest przezroczysta;
+  nie jest to jeszcze hi-res/partial-alpha sprite renderer.
+- Loaded pixels należą do cache sesji moda. Shutdown zwiększa generation,
+  więc ponowna sesja nie zachowuje starego PNG lub negative cache. Brak
+  override pozostawia istniejący przycisk. Normal/selected są osobnymi slotami.
+- Wykorzystano existing bounded PNG decoder, aby odrzucić oversize header
+  przed alokacją obrazu. Nie dodano nowego image dependency ani launchera tool.
+- Project builder obsługuje interface texture slots, immutable PNG blobs,
+  native decode i exact layout validation. Wadliwy import nie podmienia
+  active pointer. Formularz import/export tych slotów nadal do podłączenia.
+- Compiled menu_images test ma włączone assertions także w Release i sprawdza
+  RGBA, transparent pixel, tile colors, reveal height, normal/selected slot,
+  cache, session invalidation i invalid dimensions. CTest pass. Project-build
+  focused tests: 6 pass, w tym interface build i previous-build preservation.
+- Pełny game build jest osobną weryfikacją; screenshot title screen i GUI
+  flow import/apply pozostają wymagane przed stwierdzeniem gotowości.

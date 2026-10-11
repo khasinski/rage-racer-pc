@@ -39,19 +39,20 @@ async function apply(service){
     await require('./track-edits.cjs').apply(service,snapshot.changes,staging,files);
     for(const c of snapshot.changes){
       if(c.kind==='track'&&!['mesh','texture','material'].includes(c.field))continue;
-      if(c.kind!=='car'&&!(c.kind==='track'&&['mesh','texture','material'].includes(c.field)))throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
+      if(c.kind!=='car'&&!(c.kind==='track'&&['mesh','texture','material'].includes(c.field))&&!(c.kind==='interface'&&c.field==='texture'))throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
       if(c.field==='material'){
         materials[c.id]=c.value;continue; // Native profile writer validates both ID and values.
       }
       if(c.field==='mesh'||c.field==='texture'){
         const mesh=c.field==='mesh';
-        if(mesh?!(/^(car\.(player|rival)\.\d+\.part\.\d+|track\.(big|mid|hi|oval)[1-6]\.(course|terrain))$/.test(c.id)):! /^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.(model-bank-1|course|terrain))\.material\.\d+$/.test(c.id))throw Error('Invalid car asset slot');
+        if(c.kind==='interface'?!/^ui\.title\.(grand-prix|extra-grand-prix|time-attack|custom|load-save|options)(\.selected)?$/.test(c.id):mesh?!(/^(car\.(player|rival)\.\d+\.part\.\d+|track\.(big|mid|hi|oval)[1-6]\.(course|terrain))$/.test(c.id)):! /^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.(model-bank-1|course|terrain))\.material\.\d+$/.test(c.id))throw Error('Invalid car asset slot');
         if(!c.value.endsWith(mesh?'.rmesh':'.png'))throw Error('Invalid project asset type');
         const bytes=await new (require('./project-files.cjs').ProjectFiles)(editor.file).read(c.value);
         const relative=(mesh?'meshes':'textures')+'/project/'+c.value.slice(7);
         await fs.mkdir(path.dirname(path.join(staging,relative)),{recursive:true});
         await fs.writeFile(path.join(staging,relative),bytes);
-        await run(service.tool('rage-mod-cli'),[mesh?(c.kind==='track'?'--mesh-bank':'--mesh'):'--png',path.join(staging,relative)]);
+        const checked=await run(service.tool('rage-mod-cli'),[mesh?(c.kind==='track'?'--mesh-bank':'--mesh'):'--png',path.join(staging,relative)]);
+        if(c.kind==='interface'){const png=JSON.parse(checked);if(png.width!==112||png.height!==16)throw Error('Title menu images must be 112×16 PNGs');}
         (mesh?models:textures)[c.id]=relative;if(!files.includes(relative))files.push(relative);
         continue;
       }

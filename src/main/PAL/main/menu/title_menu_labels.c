@@ -1,5 +1,7 @@
 #include "game/menu_internal.h"
 #include "game/prim.h"
+#include "menu_images.h"
+#include <string.h>
 
 enum {
     CUSTOM_MENU_TEXTURE_WIDTH = 112,
@@ -59,6 +61,17 @@ u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
     }
     if (visibleHeight > CUSTOM_MENU_TEXTURE_HEIGHT)
         visibleHeight = CUSTOM_MENU_TEXTURE_HEIGHT;
+
+    const u8 *image=MenuImage(item,selected);
+    if(image){
+        for(row=0;row<visibleHeight;row++)for(s32 column=0;column<CUSTOM_MENU_TEXTURE_WIDTH;){
+            const u8 *pixel=image+(row*CUSTOM_MENU_TEXTURE_WIDTH+column)*4;
+            s32 start=column++;
+            while(column<CUSTOM_MENU_TEXTURE_WIDTH&&!memcmp(pixel,image+(row*CUSTOM_MENU_TEXTURE_WIDTH+column)*4,4))column++;
+            if(pixel[3]>=128)packet=AddTilePrim(ot,packet,x+start,y+row,column-start,1,pixel[0],pixel[1],pixel[2]);
+        }
+        return packet;
+    }
 
     for (row = 0; row < visibleHeight; row++) {
         s32 column = 0;

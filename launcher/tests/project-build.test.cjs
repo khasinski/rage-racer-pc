@@ -186,3 +186,19 @@ test('a source project saved without applying never composes its package draft a
     await assert.rejects(fs.access(path.join(s.modsRoot,'active.json')),{code:'ENOENT'});
   }finally{await fs.rm(root,{recursive:true,force:true});}
 });
+test('title menu PNG project edits publish semantic textures and preserve the previous build on bad layout',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-title-project-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini');await fs.writeFile(archive,'title source');await fs.writeFile(config,'[video]\nrenderer=modern\n');
+ const s=new LauncherService({root,bin:path.resolve(__dirname,'../resources/bin'),config,modsRoot:path.join(root,'mods')});await s.init();s.requireReady=()=>{};s.state.disc={archive,path:archive,region:'PAL',data:root};
+ let p=await s.project();const {ProjectFiles}=require('../main/project-files.cjs');
+ const bytes=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAHAAAAAQCAYAAADOFPsRAAAAHUlEQVR4nO3BAQ0AAADCoPdPbQ8HFAAAAAAAAPBqHBAAAXumE0gAAAAASUVORK5CYII=','base64');
+ const input=path.join(root,'custom.png');await fs.writeFile(input,bytes);const reference=await new ProjectFiles(s.editor.file).put(input,'png');
+ p=await s.editProject([{kind:'interface',id:'ui.title.custom',field:'texture',value:reference}],p.revision);
+ p=await s.applyProject(p.revision);const pointerFile=path.join(s.modsRoot,'active.json'),pointer=await fs.readFile(pointerFile,'utf8');
+ const directory=path.join(s.modsRoot,'builds',JSON.parse(pointer).build),manifest=JSON.parse(await run(s.tool('rage-mod-cli'),[path.join(directory,'mod.toml')]));
+ assert.deepEqual(await fs.readFile(path.join(directory,manifest.textures['ui.title.custom'])),bytes);
+ const small=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64');
+ await fs.writeFile(input,small);const invalid=await new ProjectFiles(s.editor.file).put(input,'png');
+ p=await s.editProject([{kind:'interface',id:'ui.title.custom',field:'texture',value:invalid}],p.revision);
+ await assert.rejects(s.applyProject(p.revision));assert.equal(await fs.readFile(pointerFile,'utf8'),pointer);
+});

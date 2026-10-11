@@ -20,6 +20,7 @@ const struct RageModManifest *ModAssetsManifest(void);
  * retains mounted-disc identity, does not unload already-installed game data;
  * not a mid-race hot-reload API. */
 void ModAssetsShutdown(void);
+unsigned ModAssetsGeneration(void);
 
 /* Load archive entry `index` from the override directory into `destination`.
  * Returns the byte count on success, with the low two bits cleared the way a
