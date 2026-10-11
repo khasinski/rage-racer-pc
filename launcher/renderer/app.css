@@ -15,3 +15,4 @@
 .track-map {display:block;width:100%;max-height:65vh;background:#121a23;border-radius:8px}
 .track-map [data-track-point] {cursor:pointer;stroke:transparent;stroke-width:8px;paint-order:stroke}
 .track-map [data-track-point]:hover,.track-map [data-track-point]:focus {fill:#ffcf70;outline:none}
+.car-parameters-dialog #car-spec-form{scroll-padding-block:24px 90px}.car-parameters-dialog #car-spec-form input{scroll-margin-block:24px 90px}

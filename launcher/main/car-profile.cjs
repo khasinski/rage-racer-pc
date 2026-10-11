@@ -1,5 +1,10 @@
 const path=require('node:path');
 const names={steeringGripResponse:'steering_grip_response',steerResponse:'steer_response',referenceTurnRadius:'reference_turn_radius',negconSteeringAssistScale:'negcon_steering_assist_scale',speedDragDivisor:'speed_drag_divisor',baseSteeringGrip:'base_steering_grip',manualOnly:'manual_only',revLimit:'rev_limit',redline:'redline',topGear:'top_gear',automaticAccelerationScale:'automatic_acceleration_scale',price:'price',upgradePrice:'upgrade_price',unlockClass:'unlock_class'};
+const arrays={torqueCurve:'torque_curve',torqueBand:'torque_band',torqueLossValue:'torque_loss_value',torqueLossRpm:'torque_loss_rpm',gearLoad:'gear_load',gearRatio:'gear_ratio',torqueScale:'torque_scale'};
+function binding(key){
+ const shift=/^(downshift|upshift)([1-6])$/.exec(key);if(shift)return {stored:'shift_points',index:(Number(shift[2])-1)*2+(shift[1]==='upshift'?1:0)};
+ const array=/^(torqueCurve|torqueBand|torqueLossValue|torqueLossRpm|gearLoad|gearRatio|torqueScale)(\d+)$/.exec(key);return array?{stored:arrays[array[1]],index:Number(array[2])}:{stored:names[key],index:null};
+}
 async function read(service,bank){
   service.requireReady();const file=service.carSpecFile(bank),project=await service.project();
   const {run}=require('./service.cjs');
@@ -14,10 +19,8 @@ async function read(service,bank){
     for(const [key,max]of [['price',2147483647],['upgradePrice',2147483647],['unlockClass',5]])if(Object.hasOwn(car,names[key]))spec.fields.push({key,value:car[names[key]],min:0,max});
     const overrides=Object.fromEntries(project.changes.filter(c=>c.kind==='car'&&c.id===car.id).map(c=>[c.field,c.value]));
     for(const field of spec.fields){
-      const shift=/^(downshift|upshift)([1-6])$/.exec(field.key);
-      const stored=shift?'shift_points':names[field.key];
-      const index=shift?(Number(shift[2])-1)*2+(shift[1]==='upshift'?1:0):null;
-      const extract=value=>shift?value[index]:field.key==='manualOnly'?Number(value):value;
+      const {stored,index}=binding(field.key);
+      const extract=value=>index!==null?value[index]:field.key==='manualOnly'?Number(value):value;
       field.origin='disc';
       if(Object.hasOwn(car,stored)){field.value=extract(car[stored]);field.origin='built-in profile';}
       field.baseValue=field.value;
@@ -31,16 +34,20 @@ async function edit(service,bank,edits,revision){
   const spec=await read(service,bank);
   service.editor.project.checkRevision(revision);
   const fields=new Map(spec.fields.map(f=>[f.key,f])),changes=[];
-  let shifted=false;
-  const points=Array.from({length:12},(_,i)=>fields.get((i%2?'upshift':'downshift')+(Math.floor(i/2)+1)).value);
+  const modified=new Map();
   for(const [key,value]of Object.entries(edits)){
     const f=fields.get(key);
     if(!f||!Number.isInteger(value)||value<f.min||value>f.max)throw Error('Invalid car parameter: '+key);
-    const shift=/^(downshift|upshift)([1-6])$/.exec(key);
-    if(shift){points[(Number(shift[2])-1)*2+(shift[1]==='upshift'?1:0)]=value;shifted=true;}
-    else changes.push({kind:'car',id:spec.id,field:names[key],value:value===f.baseValue?null:key==='manualOnly'?Boolean(value):value});
+    const {stored,index}=binding(key);
+    if(index!==null){
+      if(!modified.has(stored)){
+        const values=[],base=[];for(const field of spec.fields){const b=binding(field.key);if(b.stored===stored&&b.index!==null){values[b.index]=field.value;base[b.index]=field.baseValue;}}
+        modified.set(stored,{values,base});
+      }
+      modified.get(stored).values[index]=value;
+    }else changes.push({kind:'car',id:spec.id,field:stored,value:value===f.baseValue?null:key==='manualOnly'?Boolean(value):value});
   }
-  if(shifted)changes.push({kind:'car',id:spec.id,field:'shift_points',value:points.every((v,i)=>v===fields.get((i%2?'upshift':'downshift')+(Math.floor(i/2)+1)).baseValue)?null:points});
+  for(const [field,{values,base}]of modified)changes.push({kind:'car',id:spec.id,field,value:values.every((v,i)=>v===base[i])?null:values});
   return service.editProject(changes,revision);
 }
 module.exports={read,edit};

@@ -47,3 +47,11 @@ test('all handling scalars are editable once and grouped separately from basic p
  const basic=dialog.innerHTML.split('<details')[0];for(const key of keys){assert.ok(!basic.includes('data-spec="'+key+'"'));assert.equal(dialog.innerHTML.split('data-spec="'+key+'"').length-1,1);}
  assert.match(dialog.innerHTML,/Advanced handling &amp; drag|Advanced handling & drag/);assert.match(dialog.innerHTML,/Larger values reduce drag/);
 });
+
+test('engine arrays expose every original index without duplicate controls',()=>{
+ const {context,dialog}=dialogs();const arrays={torqueCurve:16,torqueBand:16,torqueLossValue:10,torqueLossRpm:9,gearLoad:6,gearRatio:7,torqueScale:6};
+ const keys=['manualOnly',...Array.from({length:6},(_,i)=>['downshift'+(i+1),'upshift'+(i+1)]).flat(),...Object.entries(arrays).flatMap(([key,count])=>Array.from({length:count},(_,i)=>key+i))];
+ context.carSpecDialog(10,{fields:keys.map(key=>({key,value:100,min:0,max:10000}))});
+ for(const [key,count]of Object.entries(arrays))for(let i=0;i<count;i++)assert.equal(dialog.innerHTML.split('data-spec="'+key+i+'"').length-1,1);
+ assert.match(dialog.innerHTML,/Advanced engine curves & gearing/);assert.match(dialog.innerHTML,/not a conventional ratio display/);
+});

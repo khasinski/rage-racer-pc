@@ -761,3 +761,23 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   i odczyt aktywnego cars.toml pass w temp profile. Nie weryfikuje to jeszcze
   odczuwalnego prowadzenia w wyścigu. Krzywe torque/gear arrays nadal brakuje
   w GUI i pozostają częścią pełnego zakresu.
+
+### Krzywe silnika i tablice przekładni
+
+- Native spec reader/writer obsługuje torque_curve/band/loss_value/loss_rpm,
+  gear_load/ratio oraz torque_scale. Indexed fields zachowują 32/16-bit LE
+  szerokości; test porównuje cały wynikowy pack i graniczne wartości.
+- Shared service wiąże indeksy z pełną tablicą profilu. Zmiana jednej próbki
+  zachowuje pozostałe; shift points używają teraz tego samego mechanizmu.
+  Przywrócenie wszystkich bazowych próbek usuwa override tej tablicy.
+- GUI ma rozwijane siedem grup z oryginalnymi indeksami i opisem jednostek.
+  Dane liczbowe są edytowalne; jeszcze bez wykresów i przeciągania punktów.
+  Dodano margines przewijania dla pól nad sticky footer.
+- Full suite: 141 tests, 138 pass, 3 optional regional skips. Po rozszerzeniu
+  undo/reset fixture focused car-spec: 5 pass.
+- Actual app.js + compiled PAL catalog/spec: Cars → Driving → engine curves,
+  edycja torque sample 0, Save project only, odczyt zmienionej pełnej tablicy
+  pass. Temp root, read-only source, headless browser, brak pageerrors.
+  Screenshot formularza obejrzano: build/reports/editor/car-engine-arrays.png.
+- GUI weryfikacja używa bridge do service, nie Electron IPC; test nie dowodzi
+  jeszcze zmiany osiągów podczas wyścigu ani kompletnej walidacji fizyki.

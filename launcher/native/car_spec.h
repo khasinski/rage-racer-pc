@@ -93,6 +93,78 @@ static const struct SpecField {
     {"negconSteeringAssistScale", offsetof(GameCarSpec, negconSteeringAssistScale), 0, 32767},
     {"speedDragDivisor", offsetof(GameCarSpec, speedDragDivisor), 1, 32767},
     {"baseSteeringGrip", offsetof(GameCarSpec, baseSteeringGrip), 0, 32767},
+#define ARRAY_FIELD(key,member,n,limit) {#key #n, offsetof(GameCarSpec,member)+(n)*sizeof(((GameCarSpec*)0)->member[0]), -(limit)-1, limit},
+    ARRAY_FIELD(torqueCurve,torqueCurve,0,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,1,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,2,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,3,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,4,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,5,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,6,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,7,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,8,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,9,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,10,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,11,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,12,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,13,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,14,INT32_MAX)
+    ARRAY_FIELD(torqueCurve,torqueCurve,15,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,0,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,1,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,2,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,3,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,4,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,5,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,6,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,7,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,8,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,9,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,10,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,11,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,12,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,13,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,14,INT32_MAX)
+    ARRAY_FIELD(torqueBand,torqueBand.values,15,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,0,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,1,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,2,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,3,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,4,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,5,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,6,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,7,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,8,INT32_MAX)
+    ARRAY_FIELD(torqueLossValue,torqueLossValue,9,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,0,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,1,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,2,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,3,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,4,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,5,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,6,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,7,INT32_MAX)
+    ARRAY_FIELD(torqueLossRpm,torqueLossRpm,8,INT32_MAX)
+    ARRAY_FIELD(gearLoad,gearLoad,0,INT32_MAX)
+    ARRAY_FIELD(gearLoad,gearLoad,1,INT32_MAX)
+    ARRAY_FIELD(gearLoad,gearLoad,2,INT32_MAX)
+    ARRAY_FIELD(gearLoad,gearLoad,3,INT32_MAX)
+    ARRAY_FIELD(gearLoad,gearLoad,4,INT32_MAX)
+    ARRAY_FIELD(gearLoad,gearLoad,5,INT32_MAX)
+    ARRAY_FIELD(gearRatio,gearRatio,0,INT32_MAX)
+    ARRAY_FIELD(gearRatio,gearRatio,1,INT32_MAX)
+    ARRAY_FIELD(gearRatio,gearRatio,2,INT32_MAX)
+    ARRAY_FIELD(gearRatio,gearRatio,3,INT32_MAX)
+    ARRAY_FIELD(gearRatio,gearRatio,4,INT32_MAX)
+    ARRAY_FIELD(gearRatio,gearRatio,5,INT32_MAX)
+    ARRAY_FIELD(gearRatio,gearRatio,6,INT32_MAX)
+    ARRAY_FIELD(torqueScale,torqueScale,0,INT16_MAX)
+    ARRAY_FIELD(torqueScale,torqueScale,1,INT16_MAX)
+    ARRAY_FIELD(torqueScale,torqueScale,2,INT16_MAX)
+    ARRAY_FIELD(torqueScale,torqueScale,3,INT16_MAX)
+    ARRAY_FIELD(torqueScale,torqueScale,4,INT16_MAX)
+    ARRAY_FIELD(torqueScale,torqueScale,5,INT16_MAX)
+#undef ARRAY_FIELD
 #define SHIFT_FIELDS(n) \
     {"downshift" #n, offsetof(GameCarSpec, shiftPoints)+(n-1)*sizeof(GameCarSpecShiftPoint), -32768, 32767}, \
     {"upshift" #n, offsetof(GameCarSpec, shiftPoints)+(n-1)*sizeof(GameCarSpecShiftPoint)+2, -32768, 32767}
@@ -164,8 +236,8 @@ static int CarSpecCommand(int argc, char **argv) {
             errno=0; value=strtol(argv[i+1], &end, 10);
             if (errno || !argv[i+1][0] || *end ||
                 value<specFields[j].min || value>specFields[j].max) goto done;
-            spec[specFields[j].offset]=(unsigned char)value;
-            spec[specFields[j].offset+1]=(unsigned char)(value>>8);
+            for(unsigned byte=0;byte<(specFields[j].max==INT32_MAX?4u:2u);byte++)
+                spec[specFields[j].offset+byte]=(unsigned char)((uint32_t)value>>(byte*8));
         }
         /* Exclusive creation also protects the source through aliases/hard links. */
         file=fopen(argv[4], "wbx");
@@ -178,7 +250,7 @@ static int CarSpecCommand(int argc, char **argv) {
     for (i=0; i<sizeof(specFields)/sizeof(specFields[0]); ++i) {
         const struct SpecField *field=&specFields[i];
         unsigned word=spec[field->offset] | (unsigned)spec[field->offset+1]<<8;
-        int value=field->offset==offsetof(GameCarSpec,steerResponse)?(int)word:(int16_t)word;
+        int value=field->max==INT32_MAX?(int32_t)SpecU32(spec+field->offset):field->offset==offsetof(GameCarSpec,steerResponse)?(int)word:(int16_t)word;
         printf("%s{\"key\":\"%s\",\"value\":%d,\"min\":%d,\"max\":%d}",
                i?",":"", field->key, value, field->min, field->max);
     }
