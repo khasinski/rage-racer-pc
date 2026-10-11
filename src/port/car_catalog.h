@@ -46,6 +46,15 @@ typedef struct RageCarCatalog {
     size_t count;
 } RageCarCatalog;
 
+typedef enum CarFieldType { FIELD_TEXT,FIELD_INT,FIELD_BOOL,FIELD_SHORT,FIELD_USHORT } CarFieldType;
+typedef struct CarField {
+    const char *name;
+    uint64_t bit;
+    size_t offset,count;
+    CarFieldType type;
+} CarField;
+const CarField *CarCatalogFields(size_t *count);
+
 /* Parses a flat TOML overlay without changing global game state. */
 int CarCatalogParse(const char *text, RageCarCatalog *catalog,
                     char *error, size_t errorSize);

@@ -32,34 +32,34 @@ test('car parameter edits preserve the source and unrelated pack bytes',async()=
  } finally {await fs.rm(dir,{recursive:true,force:true});}
 });
 
-test('car parameter service installs a disabled raw mod and composes it',async()=>{
+test('car parameters edit the shared project and apply without touching source packs',async()=>{
  const {LauncherService}=require('../main/service.cjs');
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-spec-service-'));
  try {
   const data=path.join(root,'data');await fs.mkdir(path.join(data,'raw'),{recursive:true});
-  await fs.writeFile(path.join(data,'raw/asset_000.bin'),'base marker');
   const bytes=Buffer.alloc(2048,0xa5);[32,512,640,768,1024].forEach((v,i)=>bytes.writeUInt32LE(v,i*4));
   [8000,1000,5,7000].forEach((v,i)=>bytes.writeInt16LE(v,32+0x100+i*2));
   const source=path.join(data,'raw/asset_011.bin');await fs.writeFile(source,bytes);
   const model=Buffer.alloc(128);model.writeUInt32LE(40,32);model.writeUInt32LE(80,36);model[8]=1;await fs.writeFile(path.join(data,'raw/asset_010.bin'),model);
+  const archive=path.join(root,'RAGE.BIN');await fs.writeFile(archive,'test source');
   const service=new LauncherService({root:path.join(root,'profile'),bin:path.dirname(tool),config:path.resolve(__dirname,'../resources/rage-port.ini')});
-  await service.init();service.state.disc={region:'NTSC-U',data};
-  // Only the registry lookup is stubbed; reads, edits, import and composition use native tools.
-  service.carTool=async()=>JSON.stringify({parts:[{bank:10,part:0,rival:false,name:'Esperanza'}]});
-  assert.equal((await service.carSpec(10)).fields.find(f=>f.key==='revLimit').value,8000);
-  const id=await service.saveCarSpec(10,{revLimit:9000,manualOnly:1,upshift3:1200});
-  const mod=service.state.mods.find(m=>m.id===id);assert.equal(mod.enabled,false);
-  assert.deepEqual(mod.files,['raw/asset_010.bin','raw/asset_011.bin']);
-  await service.toggleMod(id,true);const composed=await service.composeMods();
-  const expected=Buffer.from(bytes);expected.writeInt16LE(9000,32+0x100);expected.writeInt16LE(1200,32+0x12a);
-  const expectedModel=Buffer.from(model);expectedModel[8]=0;assert.deepEqual(await fs.readFile(path.join(composed,'raw/asset_010.bin')),expectedModel);
-  assert.deepEqual(await fs.readFile(path.join(composed,'raw/asset_011.bin')),expected);
-  assert.deepEqual(await fs.readFile(source),bytes);
-  for(const edits of [{revLimit:0},{topGear:7},{unknown:1},{revLimit:'9000'},{}])await assert.rejects(service.saveCarSpec(10,edits));
-  await assert.rejects(service.carSpec(11));await assert.rejects(service.saveCarSpec(88,{revLimit:9000}));
-  service.game={};await assert.rejects(service.saveCarSpec(10,{revLimit:9000}),/running/);service.game=null;
-  assert.equal(service.state.mods.length,1);
-  assert.equal((await fs.readdir(service.root)).some(n=>n.startsWith('car-spec-')),false);
+  await service.init();service.state.disc={region:'NTSC-U',data,archive,path:archive};
+  const original=await service.carSpec(10);
+  assert.equal(original.fields.find(f=>f.key==='revLimit').origin,'built-in profile');
+  const p=await service.saveCarSpec(10,{revLimit:9000,manualOnly:1,upshift3:1200,price:0,unlockClass:0},original.revision);
+  assert.equal(service.state.mods.length,0);assert.equal(p.dirty,true);
+  const changed=await service.carSpec(10);
+  assert.equal(changed.fields.find(f=>f.key==='revLimit').value,9000);
+  assert.equal(changed.fields.find(f=>f.key==='revLimit').origin,'project');
+  await service.applyProject(p.revision);
+  const profile=await require('../main/project-build.cjs').activeProfile(service);
+  const compiled=JSON.parse(await run(tool,['--car-profile',profile])).cars[0];
+  assert.equal(compiled.rev_limit,9000);assert.equal(compiled.manual_only,true);assert.equal(compiled.shift_points[5],1200);assert.equal(compiled.price,0);
+  assert.deepEqual(await fs.readFile(source),bytes);assert.deepEqual(await fs.readFile(path.join(data,'raw/asset_010.bin')),model);
+  for(const edits of [{revLimit:0},{topGear:7},{unknown:1},{revLimit:'9000'},{}])await assert.rejects(service.saveCarSpec(10,edits,p.revision));
+  await assert.rejects(service.saveCarSpec(10,{revLimit:9500},original.revision),/changed/);
+  await assert.rejects(service.carSpec(11));await assert.rejects(service.saveCarSpec(88,{revLimit:9000},p.revision));
+  service.game={};await assert.rejects(service.applyProject(p.revision),/Close the game/);service.game=null;
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
 

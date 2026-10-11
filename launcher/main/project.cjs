@@ -10,7 +10,7 @@ function checkSource(source){
 }
 function checkChange(c){
   if(!c||!kinds.has(c.kind)||!safeName(c.id)||!safeName(c.field)||
-     !(c.value===null||typeof c.value==='boolean'||typeof c.value==='string'&&c.value.length<=4096||typeof c.value==='number'&&Number.isFinite(c.value)))throw Error('Invalid project change');
+     !(c.value===null||typeof c.value==='boolean'||typeof c.value==='string'&&c.value.length<=4096||typeof c.value==='number'&&Number.isFinite(c.value)||Array.isArray(c.value)&&c.value.length>0&&c.value.length<=16&&c.value.every(Number.isSafeInteger)))throw Error('Invalid project change');
 }
 const key=c=>`${c.kind}:${c.id}:${c.field}`;
 const content=d=>JSON.stringify(d.changes);
@@ -40,7 +40,7 @@ class Project {
     this.checkRevision(revision);
     if(!Array.isArray(changes)||!changes.length||changes.length>MAX_CHANGES)throw Error('Invalid project edits');
     const merged=new Map(this.document.changes.map(c=>[key(c),c]));
-    for(const c of changes){checkChange(c);if(c.value===null)merged.delete(key(c));else merged.set(key(c),{kind:c.kind,id:c.id,field:c.field,value:c.value});}
+    for(const c of changes){checkChange(c);if(c.value===null)merged.delete(key(c));else merged.set(key(c),{kind:c.kind,id:c.id,field:c.field,value:structuredClone(c.value)});}
     if(merged.size>MAX_CHANGES)throw Error('Too many project changes');
     const next=[...merged.values()].sort((a,b)=>key(a).localeCompare(key(b),'en'));
     if(JSON.stringify(next)===content(this.document))return this.snapshot();

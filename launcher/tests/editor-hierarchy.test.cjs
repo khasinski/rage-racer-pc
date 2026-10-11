@@ -26,4 +26,8 @@ test('basic transmission is visible and advanced engine and shift values remain 
  assert.equal([...dialog.innerHTML.matchAll(/data-spec="/g)].length,keys.length);
  assert.match(dialog.innerHTML,/data-speed="true"/);
  assert.match(dialog.innerHTML,/Values for unused gears are kept/);
+ context.carSpecDialog(10,{revision:7,fields:[...keys,'price','upgradePrice','unlockClass'].map(key=>({key,value:0,min:0,max:10000}))});
+ const basicWithShop=dialog.innerHTML.split('<details')[0];
+ for(const key of ['price','upgradePrice','unlockClass'])assert.ok(basicWithShop.includes(`data-spec="${key}"`));
+ assert.match(dialog.innerHTML,/data-revision="7"/);assert.match(dialog.innerHTML,/Save & apply/);
 });

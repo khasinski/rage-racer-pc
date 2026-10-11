@@ -11,6 +11,7 @@ const char *CarCatalogProfileNameForRegion(const char *region);
 /* Copies the shipped templates into the user's configuration directory when
  * they do not yet exist, then returns the selected editable profile path. */
 int CarCatalogPrepareProfile(const char *argv0, const char *region,
+                             const char *configured,
                              char *path, size_t pathSize);
 
 #endif

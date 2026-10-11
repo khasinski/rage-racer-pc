@@ -238,6 +238,20 @@ int main(void) {
                !CarCatalogMerge(&read,&overlay,error,sizeof(error)))return 1;
             if(read.entries[0].price!=0 || read.entries[0].manualOnly!=1 ||
                memcmp(&read.entries[0].specification,&before.entries[0].specification,sizeof(GameCarSpec)))return 1;
+            if(!CarCatalogWriteFile("car_catalog_roundtrip.toml",&read,error,sizeof(error)) ||
+               !CarCatalogLoadFile("car_catalog_roundtrip.toml",error,sizeof(error)))return 1;
+            CarCatalogApplyMetadata();
+            {
+                CarModelAsset model;
+                GameCarSpec specification=before.entries[0].specification;
+                memset(&model,0,sizeof(model));model.transmissionAvailable=1;
+                CarCatalogSetRetailManualOnly(0);
+                CarCatalogApplyModelAvailability(0,0,&model);
+                CarCatalogApplySpecification(0,0,&specification);
+                if(g_CarPriceTable[0]!=0 || model.transmissionAvailable!=0 ||
+                   memcmp(&specification,&before.entries[0].specification,sizeof(specification)))return 1;
+            }
+            remove("car_catalog_roundtrip.toml");
             before=read;
             overlay.entries[0].price=-1;
             if(CarCatalogMerge(&read,&overlay,error,sizeof(error)) ||

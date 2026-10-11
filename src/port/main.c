@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
     int inputIndex;
     char logPath[PATH_MAX];
     char carCatalogPath[PATH_MAX];
-    char carCatalogError[256];
+    char carCatalogError[256] = {0};
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
     if (!DiagnosticLogOpen(logPath, sizeof(logPath))) {
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     ContentOptionsApply();
     CarCatalogClearOverrides();
     if (!CarCatalogPrepareProfile(argc > 0 ? argv[0] : NULL,
-                                  HostDiscRegion(), carCatalogPath,
+                                  HostDiscRegion(), RuntimeConfigGet("cars.profile"), carCatalogPath,
                                   sizeof(carCatalogPath)) ||
         !CarCatalogLoadFile(carCatalogPath, carCatalogError,
                             sizeof(carCatalogError))) {

@@ -26,6 +26,7 @@ handle('project',()=>service.project());
 handle('edit-project',(changes,revision)=>service.editProject(changes,revision));
 handle('project-history',(direction,revision)=>service.projectHistory(direction,revision));
 handle('save-project',revision=>service.saveProject(revision));
+handle('apply-project',revision=>service.applyProject(revision));
 handle('snapshot',()=>service.snapshot());
 handle('save-mod-details',(id,details)=>service.saveModDetails(id,details));
 handle('logs',()=>service.logs());
@@ -57,7 +58,7 @@ handle('export-car-set',async key=>{const dir=await open({title:'Export complete
 handle('import-car-set',async key=>{const dir=await open({title:'Choose car set folder (car-set.json, models and textures)',properties:['openDirectory']});if(dir)return service.importCarSet(key,dir);return null;});
 handle('preview-whole-car',(bank,body,rival,modId)=>service.previewWholeCar(bank,body,rival,modId));
 handle('car-spec',bank=>service.carSpec(bank));
-handle('save-car-spec',(bank,edits)=>service.saveCarSpec(bank,edits));
+handle('save-car-spec',(bank,edits,revision)=>service.saveCarSpec(bank,edits,revision));
 handle('preview-car',(key,modId)=>service.previewCar(key,modId));
 handle('import-car',async key=>{const file=await open({title:'Import a replacement car part',filters:[{name:'Car models',extensions:['obj','rmesh']}],properties:['openFile']});if(file)return service.importCar(key,file);return null;});
 handle('export-car',async key=>{const dir=await open({title:'Export car model to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCar(key,dir);return null;});

@@ -19,6 +19,12 @@ int main(void) {
     Expect("NTSC-J", "cars.ntscj.toml");
     Expect("unknown", "cars.toml");
     Expect(NULL, "cars.toml");
+    {
+        char path[128];
+        if(!CarCatalogPrepareProfile(NULL,"PAL","/project/build/cars.toml",path,sizeof(path)) ||
+           strcmp(path,"/project/build/cars.toml"))failures++;
+        if(CarCatalogPrepareProfile(NULL,"NTSC-J","/project/build/cars.toml",path,4) || path[0])failures++;
+    }
     if (failures != 0) return 1;
     puts("car catalog profile selection passed");
     return 0;

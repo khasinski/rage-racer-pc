@@ -11,6 +11,17 @@ async function atomic(file, text) {
   try { await fs.writeFile(temp,text);await fs.rename(temp,file); }
   finally { await fs.rm(temp,{force:true}); }
 }
+async function source(disc) {
+  const hash=createHash('sha256'),handle=await fs.open(disc.archive,'r');
+  let before,after;
+  try{
+    before=await handle.stat();
+    for await(const bytes of handle.createReadStream({autoClose:false}))hash.update(bytes);
+    after=await handle.stat();
+  }finally{await handle.close();}
+  if(before.size!==after.size||before.mtimeMs!==after.mtimeMs)throw Error('Source archive changed while reading it');
+  return {region:disc.region,fingerprint:'sha256:'+hash.digest('hex')};
+}
 function run(executable, args, {cwd,signal,onLog,input,maxOutput=2*1024*1024}={}) {
   return new Promise((resolve,reject)=>{
     const child=spawn(executable,args,{cwd,signal,windowsHide:true,shell:false});
@@ -72,18 +83,10 @@ class LauncherService {
     return this.operation('Opening editing project',async()=>{
       const disc=this.state.disc;
       if(this.editor?.disc===disc)return this.editor.project.snapshot();
-      const hash=createHash('sha256'),handle=await fs.open(disc.archive,'r');
-      let before,after;
-      try{
-        before=await handle.stat();
-        for await(const bytes of handle.createReadStream({autoClose:false}))hash.update(bytes);
-        after=await handle.stat();
-      }finally{await handle.close();}
-      if(before.size!==after.size||before.mtimeMs!==after.mtimeMs)throw Error('Source archive changed while opening the project');
-      const digest=hash.digest('hex'),source={region:disc.region,fingerprint:'sha256:'+digest};
+      const identity=await source(disc),digest=identity.fingerprint.slice(7);
       const file=path.join(this.root,'projects',digest,'project.rrproject');
       let project;
-      try{project=await Project.open(file,source);}catch(e){if(e.code!=='ENOENT')throw e;project=new Project(source);}
+      try{project=await Project.open(file,identity);}catch(e){if(e.code!=='ENOENT')throw e;project=new Project(identity);}
       this.editor={disc,file,project};return project.snapshot();
     },false);
   }
@@ -101,6 +104,12 @@ class LauncherService {
     if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
     this.editor.project.checkRevision(revision);
     return this.operation('Saving editing project',()=>this.editor.project.save(this.editor.file),false);
+  }
+  async applyProject(revision) {
+    if(this.game)throw Error('Close the game before applying project changes');
+    if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
+    this.editor.project.checkRevision(revision);
+    return this.operation('Building and applying project',()=>require('./project-build.cjs').apply(this),false);
   }
   async tracks() {
     this.requireReady();
@@ -130,40 +139,8 @@ class LauncherService {
     if(!Number.isInteger(bank)||bank<10||bank>72||bank%2)throw Error('Invalid player car bank');
     return path.join(this.state.disc.data,'raw',`asset_${String(bank+1).padStart(3,'0')}.bin`);
   }
-  async carSpec(bank) {
-    this.requireReady();const file=this.carSpecFile(bank);
-    return this.operation('Reading car parameters',async signal=>{
-      const spec=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-spec','read',file],{signal}));
-      const model=path.join(path.dirname(file),`asset_${String(bank).padStart(3,'0')}.bin`);
-      const transmission=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-transmission','read',model],{signal}));
-      spec.fields.unshift({key:'manualOnly',value:transmission.manualOnly,min:0,max:1});return spec;
-    });
-  }
-  async saveCarSpec(bank,edits) {
-    this.requireReady();const file=this.carSpecFile(bank);
-    const allowed=['manualOnly','revLimit','redline','topGear','automaticAccelerationScale',...Array.from({length:6},(_,i)=>['downshift'+(i+1),'upshift'+(i+1)]).flat()];
-    if(!edits||typeof edits!=='object'||Array.isArray(edits)||!Object.keys(edits).length||
-       Object.entries(edits).some(([key,value])=>!allowed.includes(key)||!Number.isInteger(value)))throw Error('Invalid car parameters');
-    return this.operation('Saving car parameters as a mod',async signal=>{
-      const catalog=JSON.parse(await this.carTool(['--set','tools.car_catalog=true'],signal));
-      const part=catalog.parts.find(p=>p.bank===bank&&!p.rival&&p.part===0);
-      if(!part)throw Error('Unknown player car');
-      const staging=path.join(this.root,'car-spec-'+randomUUID());
-      await fs.mkdir(path.join(staging,'raw'),{recursive:true});
-      try{
-        const specEdits=Object.entries(edits).filter(([k])=>k!=='manualOnly');
-        if(specEdits.length)await run(this.tool('rage-mod-cli'),['--car-spec','write',file,path.join(staging,'raw',path.basename(file)),...specEdits.flatMap(([k,v])=>[k,String(v)])],{signal});
-        if(Object.hasOwn(edits,'manualOnly')){
-          const name=`asset_${String(bank).padStart(3,'0')}.bin`;
-          await run(this.tool('rage-mod-cli'),['--car-transmission','write',path.join(path.dirname(file),name),path.join(staging,'raw',name),String(edits.manualOnly)],{signal});
-        }
-        const names=JSON.parse(await run(this.tool('rage-save-cli'),['car-names'],{signal}));
-        const name=require('./car-names.cjs')(part.name,this.state.disc.region,names);
-        const mod=await this.installModFiles(staging,signal,`${name} · parameters`);
-        return mod.id;
-      }finally{await fs.rm(staging,{recursive:true,force:true});}
-    });
-  }
+  async carSpec(bank) {return require('./car-profile.cjs').read(this,bank);}
+  async saveCarSpec(bank,edits,revision) {return require('./car-profile.cjs').edit(this,bank,edits,revision);}
   async exportCar(key,destination) {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     return this.operation('Exporting car model',signal=>this.exportCarData(key,destination,signal));
@@ -333,7 +310,8 @@ class LauncherService {
     if(!ownedJob)this.requireReady();let text='';
     try{text=await fs.readFile(path.join(this.root,'rage-port.ini'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;text=await fs.readFile(this.baseConfig,'utf8');}
     const style=this.state.disc.region==='NTSC-J'?'japanese':'international';
-    return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'audio.menu_music':path.join(this.state.disc.data,'menu_music.wav'),'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
+    const profile=await require('./project-build.cjs').activeProfile(this);
+    return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'cars.profile':profile,'audio.menu_music':path.join(this.state.disc.data,'menu_music.wav'),'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
   }
   async launch() {
     this.requireReady();
@@ -416,4 +394,4 @@ class LauncherService {
   async exportAsset(index,destination) {this.requireReady();if(!Number.isInteger(index)||index<0||index>=135)throw Error('Invalid asset');await fs.copyFile(path.join(this.state.disc.data,'raw',`asset_${String(index).padStart(3,'0')}.bin`),destination);}
 }
 require('./mods.cjs').installMethods(LauncherService);
-module.exports={LauncherService,run,atomic};
+module.exports={LauncherService,run,atomic,source};

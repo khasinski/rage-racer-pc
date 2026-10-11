@@ -89,3 +89,35 @@ operacji. UI torów i pełny import GLB nadal nie są zaimplementowane.
 - Build gry, smoke i narzędzi oraz testy car_catalog/race_asset_loading przeszły.
   Aktywacja profilu projektu i migracja formularza samochodu nadal pozostają
   niepodłączone: samo złożenie pliku nie jest jeszcze dowodem efektu w grze.
+
+## Parametry auta → projekt → build → runtime
+
+- Formularz parametrów nie instaluje już osobnego surowego moda. Rozstrzyga
+  wartości z płyty, bundlowanego profilu i draftu; dodano ceny oraz unlock level.
+  Origin i baseValue są zwracane przez serwis. Powrót do bazy usuwa deltę.
+- Rewizja formularza chroni przed nadpisaniem równoległego editu. Shift points
+  są jedną tablicą w historii projektu; zachowujemy wszystkie niewybrane biegi.
+- Save & apply w formularzu/Projects kompiluje profil C do niezmiennego builda,
+  ponownie go odczytuje i publikuje active.json po zapisaniu dokumentu. Save-only
+  nie aktywuje draftu. Błędne/niewspierane edity blokują całą aktywację.
+- Konfiguracja następnego uruchomienia z edytora wskazuje zatwierdzony profil
+  przez `cars.profile`; main i smoke respektują tę samą ścieżkę wyboru.
+- Test runtime C sprawdza zastosowanie złożonego profilu do ceny, dostępności
+  skrzyni i specyfikacji, zachowując pozostałe parametry. Test serwisu kompiluje
+  faktyczne pliki przez native CLI i sprawdza konfigurację uruchomienia.
+- Sprawdzono: nieudany commit wskaźnika pozostawia wcześniejszy aktywny build,
+  brak osieroconego wyniku po błędzie, zły profil, uszkodzenie zatwierdzonych
+  bajtów, zmienione źródło i brak modyfikacji oryginalnych pakietów.
+- Suite launchera: 97 pass, 3 skip (100 testów), testy profilu i runtime C
+  przechodzą; gra/smoke/native tools budują się. Bez widocznych okien.
+
+### Ważne granice aktualnego etapu
+
+Buildy projektu są na razie pod profilem edytora (`projects/<hash>/builds`),
+przekazywane grze przez config. To **jeszcze nie** docelowa automatyczna detekcja
+wspólnego `mods/active.json` dla samodzielnie odpalanej binarki gry. Nie wykonano
+jeszcze wizualnego pełnego e2e zakupu/wyścigu z tym formularzem. Resolver edytora
+nie uwzględnia jeszcze parametrów istniejących raw modów. Pierwszy builder
+obsługuje profil auta; edity torów/media blokuje jawnie, zamiast je pomijać.
+Sceny toru, pełny GLB, media, draft recovery, rozszerzanie rosteru/tras i komplet
+platformowych acceptance gates nadal wymagają implementacji z pełnego planu.

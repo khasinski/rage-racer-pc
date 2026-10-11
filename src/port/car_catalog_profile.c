@@ -48,10 +48,16 @@ static int CopyIfMissing(const char *argv0, const char *name) {
 }
 
 int CarCatalogPrepareProfile(const char *argv0, const char *region,
+                             const char *configured,
                              char *path, size_t pathSize) {
     const char *selected = CarCatalogProfileNameForRegion(region);
     if (path == NULL || pathSize == 0) return 0;
     path[0] = '\0';
+    if(configured != NULL && configured[0] != '\0') {
+        int written=snprintf(path,pathSize,"%s",configured);
+        if(written>=0&&(size_t)written<pathSize)return 1;
+        path[0]='\0';return 0;
+    }
     if (!CopyIfMissing(argv0, kDefaultProfile) ||
         !CopyIfMissing(argv0, kJapaneseProfile)) {
         path[0] = '\0';

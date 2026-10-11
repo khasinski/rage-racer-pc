@@ -11,12 +11,8 @@ static const unsigned char kFirstVariant[GAME_CAR_COUNT] = {
     0, 4, 7, 9, 14, 18, 21, 23, 26, 28, 29, 30, 31
 };
 
-typedef enum FieldType { FIELD_TEXT,FIELD_INT,FIELD_BOOL,FIELD_SHORT,FIELD_USHORT } FieldType;
-typedef struct Field {
-    const char *name;uint64_t bit;size_t offset,count;FieldType type;
-} Field;
 #define FIELD(name,member,bit,type,count) {name,bit,offsetof(RageCarCatalogEntry,member),count,type}
-static const Field fields[] = {
+static const CarField fields[] = {
     FIELD("id",id,RAGE_CAR_FIELD_ID,FIELD_TEXT,32),
     FIELD("model",modelIndex,RAGE_CAR_FIELD_MODEL,FIELD_INT,1),
     FIELD("grade",grade,RAGE_CAR_FIELD_GRADE,FIELD_INT,1),
@@ -48,7 +44,12 @@ static const Field fields[] = {
 };
 #undef FIELD
 
-static size_t FieldWidth(const Field *field) {
+const CarField *CarCatalogFields(size_t *count) {
+    if(count)*count=sizeof(fields)/sizeof(fields[0]);
+    return fields;
+}
+
+static size_t FieldWidth(const CarField *field) {
     return field->type==FIELD_TEXT?1:field->type==FIELD_SHORT||field->type==FIELD_USHORT?2:4;
 }
 
@@ -168,7 +169,7 @@ static int SetEntryValue(RageCarCatalogEntry *entry, const char *key,
                          const char *value) {
     size_t f,n;
     for(f=0;f<sizeof(fields)/sizeof(fields[0]);f++) {
-        const Field *field=&fields[f];
+        const CarField *field=&fields[f];
         unsigned char *out=(unsigned char *)entry+field->offset;
         int32_t values[16];
         if(strcmp(key,field->name))continue;
@@ -288,7 +289,7 @@ int CarCatalogWriteFile(const char *path,const RageCarCatalog *catalog,
     /* Reject text the deliberately small retail-profile grammar cannot
      * round-trip before touching the output, including hidden comment markers. */
     for(i=0;i<catalog->count;i++)for(f=0;f<sizeof(fields)/sizeof(fields[0]);f++) {
-        const Field *field=&fields[f];
+        const CarField *field=&fields[f];
         const char *text=(const char *)&catalog->entries[i]+field->offset;
         if(field->type!=FIELD_TEXT||!(catalog->entries[i].fields&field->bit))continue;
         if(!memchr(text,0,field->count))return Fail(error,errorSize,"unterminated profile text");
@@ -300,7 +301,7 @@ int CarCatalogWriteFile(const char *path,const RageCarCatalog *catalog,
         const RageCarCatalogEntry *entry=&catalog->entries[i];
         if(fputs("[[cars]]\n",file)==EOF)ok=0;
         for(f=0;f<sizeof(fields)/sizeof(fields[0])&&ok;f++) {
-            const Field *field=&fields[f];const unsigned char *p=(const unsigned char *)entry+field->offset;
+            const CarField *field=&fields[f];const unsigned char *p=(const unsigned char *)entry+field->offset;
             if(!(entry->fields&field->bit))continue;
             if(fprintf(file,"%s = ",field->name)<0)ok=0;
             if(field->type==FIELD_TEXT){if(fprintf(file,"\"%s\"",(const char *)p)<0)ok=0;}

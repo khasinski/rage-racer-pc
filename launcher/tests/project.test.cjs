@@ -20,6 +20,13 @@ test('invalid batch does not partially modify project or history',()=>{
   assert.throws(()=>p.edit([change('car','__proto__/x','price',0)],0));
   assert.equal(p.snapshot().changes.length,0);assert.equal(p.revision,0);
 });
+test('array parameter edits copy caller data and participate in undo without mutation',()=>{
+  const p=new Project(source),points=Array.from({length:12},(_,i)=>i);
+  p.edit([change('car','istante','shift_points',points)],0);points[0]=999;
+  assert.equal(p.snapshot().changes[0].value[0],0);
+  p.history('undo',1);assert.equal(p.snapshot().changes.length,0);
+  p.history('redo',2);assert.equal(p.snapshot().changes[0].value[0],0);
+});
 test('save and reopen preserve deltas, enforce exact source and retain dirty state on write failure',async()=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-'));
   try{

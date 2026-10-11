@@ -67,15 +67,24 @@ int main(int argc,char **argv) {
         printf("{\"cars\":[");
         for(i=0;i<catalog.count;i++) {
             const RageCarCatalogEntry *e=&catalog.entries[i];
-            printf("%s{\"id\":",i?",":"");String(e->id);
-            printf(",\"model\":%d,\"grade\":%d,\"variant\":%d,\"fields\":%llu",e->modelIndex,e->grade,CarCatalogVariant(e->modelIndex,e->grade),(unsigned long long)e->fields);
-            if(e->fields&RAGE_CAR_FIELD_PRICE)printf(",\"price\":%d",e->price);
-            if(e->fields&RAGE_CAR_FIELD_UPGRADE_PRICE)printf(",\"upgrade_price\":%d",e->upgradePrice);
-            if(e->fields&RAGE_CAR_FIELD_UNLOCK_CLASS)printf(",\"unlock_class\":%d",e->unlockClass);
-            if(e->fields&RAGE_CAR_FIELD_MANUAL_ONLY)printf(",\"manual_only\":%s",e->manualOnly?"true":"false");
-            if(e->fields&RAGE_CAR_FIELD_NAME){printf(",\"name\":");String(e->name);}
-            if(e->fields&RAGE_CAR_FIELD_MANUFACTURER){printf(",\"manufacturer\":");String(e->manufacturer);}
-            if(e->fields&RAGE_CAR_FIELD_CLASS){printf(",\"class\":");String(e->className);}
+            size_t count,k,n;const CarField *fields=CarCatalogFields(&count);
+            printf("%s{\"variant\":%d,\"fields\":%llu",i?",":"",CarCatalogVariant(e->modelIndex,e->grade),(unsigned long long)e->fields);
+            for(k=0;k<count;k++) {
+                const CarField *field=&fields[k];const unsigned char *p=(const unsigned char *)e+field->offset;
+                if(!(e->fields&field->bit))continue;
+                putchar(',');String(field->name);putchar(':');
+                if(field->type==FIELD_TEXT){String((const char *)p);continue;}
+                if(field->count>1)putchar('[');
+                for(n=0;n<field->count;n++) {
+                    int value;
+                    if(field->type==FIELD_SHORT){int16_t v;memcpy(&v,p+n*2,2);value=v;}
+                    else if(field->type==FIELD_USHORT){uint16_t v;memcpy(&v,p+n*2,2);value=v;}
+                    else memcpy(&value,p+n*4,4);
+                    if(n)putchar(',');
+                    if(field->type==FIELD_BOOL)printf("%s",value?"true":"false");else printf("%d",value);
+                }
+                if(field->count>1)putchar(']');
+            }
             printf("}");
         }
         puts("]}");return 0;
