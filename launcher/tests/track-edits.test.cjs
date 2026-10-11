@@ -99,4 +99,22 @@ test('terrain cell model edits preserve region bits and every other byte',async 
  const scene=JSON.parse(await run(tool,['--track-scene',out]));assert.equal(scene.terrain.models,1);assert.equal(scene.terrain.cells.length,1024);assert.equal(scene.terrain.cells[0],65535);assert.equal(result.readUInt16LE(start),0xffff);assert.deepEqual(result.subarray(0,start),bytes.subarray(0,start));assert.deepEqual(result.subarray(start+2),bytes.subarray(start+2));
  await fs.rm(out);for(const edit of [[0,'cell.model',1],[1024,'cell.model',0]]){await assert.rejects(run(tool,['--edit-track-stdin',source,out],{input:Buffer.from(JSON.stringify([edit]))}),/Invalid track object edit/);await assert.rejects(fs.stat(out),{code:'ENOENT'});}
  assert.deepEqual(require('../main/track-edits.cjs').group([{kind:'track',id:'track.big1.cell.0',field:'model',value:1023}]).get(88),[[0,'cell.model',1023]]);
+ const data=path.join(root,'data');await fs.mkdir(path.join(data,'raw'),{recursive:true});
+ const asset=path.join(data,'raw/asset_088.bin');await fs.writeFile(asset,bytes);
+ const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini');await fs.writeFile(archive,'terrain source');await fs.writeFile(config,'[video]\nrenderer=modern\n');
+ const service=new LauncherService({root:path.join(root,'editor'),bin:path.dirname(tool),config,modsRoot:path.join(root,'mods')});await service.init();service.requireReady=()=>{};service.state.disc={archive,region:'PAL',path:archive,data};
+ let project=await service.project();project=await service.saveTerrainCell(88,0,{model:1023},project.revision);
+ project=await service.applyProject(project.revision);
+ const pointerFile=path.join(service.modsRoot,'active.json'),pointer=await fs.readFile(pointerFile,'utf8');
+ const built=path.join(service.modsRoot,'builds',JSON.parse(pointer).build,'raw/asset_088.bin');
+ assert.deepEqual(await fs.readFile(built),result);assert.deepEqual(await fs.readFile(asset),bytes);
+ project=await service.projectHistory('undo',project.revision);project=await service.applyProject(project.revision);
+ const restored=JSON.parse(await fs.readFile(pointerFile,'utf8'));
+ await assert.rejects(fs.stat(path.join(service.modsRoot,'builds',restored.build,'raw/asset_088.bin')),{code:'ENOENT'});
+ project=await service.projectHistory('redo',project.revision);assert.equal((await service.trackScene(88)).terrain.cells[0],65535);
+ const stablePointer=await fs.readFile(pointerFile,'utf8');
+ project=await service.editProject([{kind:'track',id:'track.big1.cell.0',field:'model',value:1}],project.revision);
+ await assert.rejects(service.applyProject(project.revision),/Invalid track object edit/);
+ assert.equal(await fs.readFile(pointerFile,'utf8'),stablePointer);assert.deepEqual(await fs.readFile(asset),bytes);
+
 });

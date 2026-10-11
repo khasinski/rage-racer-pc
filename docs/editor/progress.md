@@ -678,3 +678,15 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   panelu pass, bez błędów JS. Źródło read-only, prywatny temp project.
 - To rzeczywista funkcja edytora, nie makieta. Ten test nie dowodzi jeszcze
   działania Electron IPC, publikacji moda ani wizualnego efektu w grze.
+
+### Weryfikacja publikacji edytowanej komórki terenu
+
+- Stały test obejmuje `saveTerrainCell` → `applyProject` → aktywny build:
+  opublikowany pack jest byte-exact względem native edit, oryginał nietknięty.
+  Undo + apply usuwa override; redo odtwarza zmianę. Nieprawidłowy model
+  odrzuca publikację i zachowuje dotychczasowy active.json.
+- Rzeczywisty PAL, Mythical Coast cell 259: Save & apply opublikował raw pack,
+  native reader potwierdził Empty cell. Cały plik poza dwoma bajtami tej
+  komórki pozostał identyczny. Prywatny temp modsRoot, źródło read-only.
+- Focused track-edits: 4 pass. To dowodzi buildu i odczytu natywnego packa;
+  screenshot działającego wyścigu oraz Electron IPC pozostają do sprawdzenia.
