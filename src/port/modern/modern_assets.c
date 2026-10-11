@@ -34,6 +34,41 @@ static ModernPreparedMaterials s_preparedMaterials;
 static char s_modRoot[1024];
 static const RageModManifest *s_modManifest;
 static int s_modReady;
+/* One immutable override per course/terrain bank for the asset session. */
+static struct {
+    RageRuntimeCachedMesh mesh;
+    int checked;
+} s_trackMeshes[48];
+
+static void ReleaseTrackBytes(void *context,const void *bytes) {
+    (void)context;SDL_free((void *)bytes);
+}
+static const RageRuntimeCachedMesh *TrackMeshOverride(
+    const RageRuntimeCachedMesh *base,const RenderMeshInstance *instance,
+    int residentOnly) {
+    char key[96],file[1600];
+    if(!base||!s_modReady||!AssetTrackMeshId(key,sizeof(key),instance->assetKey,
+        instance->assetSet))return base;
+    unsigned slot=(instance->assetKey-88u)+(instance->assetSet==RAGE_RENDER_ASSET_TERRAIN);
+    if(s_trackMeshes[slot].mesh.ownedBytes)return &s_trackMeshes[slot].mesh;
+    if(residentOnly||s_trackMeshes[slot].checked)return base;
+    s_trackMeshes[slot].checked=1;
+    const char *relative=ModManifestFindMesh(s_modManifest,key);
+    if(!relative)return base;
+    int length=snprintf(file,sizeof(file),"%s/%s",s_modRoot,relative);
+    SDL_PathInfo info;size_t size=0;void *bytes=NULL;RageRuntimeMesh mesh;
+    if(length<0||(size_t)length>=sizeof(file)||!SDL_GetPathInfo(file,&info)||
+       info.type!=SDL_PATHTYPE_FILE||info.size>128u*1024u*1024u)goto failed;
+    bytes=SDL_LoadFile(file,&size);
+    if(!bytes||!RuntimeMeshOpen(&mesh,bytes,size)||mesh.meshCount!=base->mesh.meshCount||
+       !RuntimeCachedMeshAdopt(&s_trackMeshes[slot].mesh,bytes,size,ReleaseTrackBytes,NULL))goto failed;
+    s_trackMeshes[slot].mesh.assetKey=instance->assetKey;
+    s_trackMeshes[slot].mesh.assetSet=instance->assetSet;
+    return &s_trackMeshes[slot].mesh;
+failed:
+    SDL_free(bytes);fprintf(stderr,"rage-port: invalid track mesh override %s\n",key);
+    return base;
+}
 
 static void AuthoredCarKey(const AuthoredCarReplacement *car, char *key, size_t size) {
     snprintf(key, size, "car.%s.%u.part.%u",
@@ -446,6 +481,8 @@ void ModernAssetsShutdown(void) {
     size_t i;
     if (s_source != MODERN_ASSET_SOURCE_NONE) ++s_generation;
     ModernPreparedMaterialsClear(&s_preparedMaterials);
+    for(i=0;i<48;i++)RuntimeCachedMeshRelease(&s_trackMeshes[i].mesh);
+    memset(s_trackMeshes,0,sizeof(s_trackMeshes));
     for (i=0;i<sizeof(s_authoredCarMesh)/sizeof(s_authoredCarMesh[0]);i++)
         RuntimeCachedMeshRelease(&s_authoredCarMesh[i]);
     memset(&s_authoredCarMesh,0,sizeof(s_authoredCarMesh));
@@ -503,7 +540,7 @@ static const RageRuntimeCachedMesh *ResolveBaseMesh(const RenderMeshInstance *in
     MeshProviderRequest request={instance,NULL,residentOnly};
     const RageResourceProvider providers[]={{ResolveImportedMesh,&request},{ResolveCachedMesh,&request}};
     if(ResourceProviderResolve(providers,2,NULL)!=RAGE_RESOURCE_READY)return NULL;
-    return request.mesh;
+    return TrackMeshOverride(request.mesh,instance,residentOnly);
 }
 const RageRuntimeCachedMesh *ModernAssetsFind(
     const RenderMeshInstance *instance) {

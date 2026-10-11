@@ -226,6 +226,38 @@ int main(int argc, char **argv) {
     ModernAssetsShutdown();
     if (!SDL_RemovePath(secondIndex) || !SDL_RemovePath(secondMesh) ||
         !SDL_RemovePath(secondRoot)) return 44;
+    /* Complete track banks stay immutable until the asset session retires. */
+    char mods[4096],meshes[4096],manifest[4096],overridePath[4096],modSetting[4200];
+    snprintf(mods,sizeof(mods),"%s/track-mods",argv[1]);
+    snprintf(meshes,sizeof(meshes),"%s/meshes",mods);
+    snprintf(manifest,sizeof(manifest),"%s/mod.toml",mods);
+    snprintf(overridePath,sizeof(overridePath),"%s/course.rmesh",meshes);
+    if(!SDL_CreateDirectory(mods)||!SDL_CreateDirectory(meshes))return 53;
+    static const char trackIndex[]="# rage-rmesh-index v2\n88 course mesh.rmesh mesh.rmat\n";
+    static const char trackManifest[]="[mod]\nid = \"track-test\"\n[meshes]\n\"track.big1.course\" = \"meshes/course.rmesh\"\n";
+    unsigned char overrideBytes[sizeof(meshBytes)];memcpy(overrideBytes,meshBytes,sizeof(meshBytes));
+    Write32(overrideBytes+32,0x40400000u);
+    if(!SDL_SaveFile(path,trackIndex,sizeof(trackIndex)-1)||!SDL_SaveFile(manifest,trackManifest,sizeof(trackManifest)-1)||!SDL_SaveFile(overridePath,overrideBytes,sizeof(overrideBytes)))return 54;
+    snprintf(modSetting,sizeof(modSetting),"mods.directory=%s",mods);
+    char *trackArgs[]={"test","--set",modSetting};
+    if(!RuntimeConfigInit(3,trackArgs)||!ModernAssetsInitRoot(argv[1]))return 55;
+    instance.assetKey=88;instance.assetSet=RAGE_RENDER_ASSET_COURSE;
+    resident=ModernAssetsFind(&instance);
+    if(!resident||!RuntimeMeshVertex(&resident->mesh,0,&vertex)||vertex.position[0]!=3.f||ModernAssetsResidentMeshLookup(NULL,&instance)!=&resident->mesh)return 56;
+    if(!SDL_SaveFile(overridePath,"invalid",7)||ModernAssetsFind(&instance)!=resident||!RuntimeMeshVertex(&resident->mesh,0,&vertex)||vertex.position[0]!=3.f)return 57;
+    ModernAssetsShutdown();
+    if(!ModernAssetsInitRoot(argv[1]))return 58;
+    resident=ModernAssetsFind(&instance);
+    if(!resident||!RuntimeMeshVertex(&resident->mesh,0,&vertex)||vertex.position[0]!=1.f)return 59;
+    ModernAssetsShutdown();
+    unsigned char wrongBank[36]={0};
+    if(!RuntimeMeshEncodeHeader(wrongBank,sizeof(wrongBank),2,0,0)||
+       !SDL_SaveFile(overridePath,wrongBank,sizeof(wrongBank))||
+       !ModernAssetsInitRoot(argv[1]))return 61;
+    resident=ModernAssetsFind(&instance);
+    if(!resident||!RuntimeMeshVertex(&resident->mesh,0,&vertex)||vertex.position[0]!=1.f)return 62;
+    ModernAssetsShutdown();
+    if(!SDL_RemovePath(overridePath)||!SDL_RemovePath(manifest)||!SDL_RemovePath(meshes)||!SDL_RemovePath(mods))return 60;
     if (!SDL_RemovePath(path)) return 7;
     if (!SDL_RemovePath(meshPath)) return 26;
     return 0;

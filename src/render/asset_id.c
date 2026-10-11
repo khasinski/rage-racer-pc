@@ -60,6 +60,17 @@ int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
     return AssetIdWasWritten(out, capacity, written);
 }
 
+int AssetTrackMeshId(char *out,size_t capacity,uint32_t assetKey,
+                     RenderAssetSet assetSet) {
+    char track[16];
+    if(!out||!capacity)return 0;
+    out[0]='\0';
+    if((assetSet!=RAGE_RENDER_ASSET_COURSE&&assetSet!=RAGE_RENDER_ASSET_TERRAIN)||
+       !TrackName(track,sizeof(track),assetKey))return 0;
+    return AssetIdWasWritten(out,capacity,snprintf(out,capacity,"track.%s.%s",
+        track,AssetSetMaterialName(assetSet)));
+}
+
 int AssetMaterialVariantId(char *out, size_t capacity,
                            uint32_t assetKey,
                            RenderAssetSet assetSet,

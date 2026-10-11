@@ -47,5 +47,14 @@ int main(void) {
     EXPECT(!AssetMaterialVariantId(id, 0, 0x58,
                                    RAGE_RENDER_ASSET_TERRAIN, 0, 1));
 
+    EXPECT(AssetTrackMeshId(id,sizeof(id),88,RAGE_RENDER_ASSET_COURSE));
+    EXPECT_STRING("track.big1.course",id);
+    EXPECT(AssetTrackMeshId(id,sizeof(id),134,RAGE_RENDER_ASSET_TERRAIN));
+    EXPECT_STRING("track.oval6.terrain",id);
+    EXPECT(!AssetTrackMeshId(id,sizeof(id),89,RAGE_RENDER_ASSET_COURSE));
+    EXPECT_STRING("",id);
+    EXPECT(!AssetTrackMeshId(id,sizeof(id),88,RAGE_RENDER_ASSET_MODEL_BANK));
+    EXPECT(!AssetTrackMeshId(id,8,88,RAGE_RENDER_ASSET_COURSE));
+    EXPECT_STRING("",id);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

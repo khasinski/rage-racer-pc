@@ -514,3 +514,21 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   środka i pusta droga. Rzeczywisty PAL Mythical Coast: 428 próbek,
   headless Chromium bez błędów JS. Obejrzany screenshot:
   `build/reports/editor/track-road-curves.png`.
+
+### Runtime dla zastępowania geometrii toru
+
+- Dotychczas `[meshes]` było stosowane do authored car parts; geometria
+  course/terrain nie korzystała z wpisów manifestu. Runtime modern obsługuje
+  teraz pełne banki `track.<course><grade>.course` i `.terrain`.
+- Wczytanie jest ograniczone do 128 MiB i zgodnej liczby submeshów. Jedna
+  immutable kopia przypada na bank w sesji; resident lookup nie robi I/O,
+  teardown zwalnia wszystkie kopie. Uszkodzony albo niezgodny opcjonalny
+  mod zgłasza diagnostykę i pozostawia oryginalny bank.
+- Compiled test przechodzi przez prawdziwy manifest/cache: zmieniony vertex,
+  resident lookup, niemutowalność po uszkodzeniu źródła, teardown/reload,
+  odrzucenie uszkodzonego pliku i poprawnego banku z niewłaściwą liczbą modeli.
+  Asset ID test pokrywa klasy/kursy, niepoprawny bank/set i mały bufor.
+- Gra została przebudowana. Testy `asset_id` i `modern_assets_retry` pass.
+- To prerequisite runtime: import/export banków w projekcie i UI jeszcze
+  wymagają podłączenia. Classic adapter, GLB i przebudowa drogi pozostają
+  otwarte; ten etap nie domyka edycji geometrii toru.
