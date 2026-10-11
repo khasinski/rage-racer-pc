@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   cars:()=>ipcRenderer.invoke('launcher:cars'),
   tracks:()=>ipcRenderer.invoke('launcher:tracks'),
   trackScene:bank=>ipcRenderer.invoke('launcher:track-scene',bank),
+  trackPreview:bank=>ipcRenderer.invoke('launcher:track-preview',bank),
   saveTrackObject:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-track-object',bank,index,values,revision),
   exportCarSet:key=>ipcRenderer.invoke('launcher:export-car-set',key),
   importCarSet:key=>ipcRenderer.invoke('launcher:import-car-set',key),

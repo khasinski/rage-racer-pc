@@ -400,3 +400,24 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Eksporter jest jeszcze fundamentem podglądu: instancjonowanie modeli,
   tekstury, picking, pełny interfejs sceny 3D i odbiór wizualny pozostają do
   zrobienia wraz z pozostałym zakresem edytora.
+
+### Podgląd geometrii toru w 3D
+
+- Tracks udostępnia „View track in 3D”. Serwis kompiluje bieżące zmiany toru
+  na prywatnej kompozycji, eksportuje banki natywnie i składa wyłącznie używane
+  submeshe. Teren korzysta z siatki (odwrócony wiersz Z, pitch 2048), obiekty
+  z pozycji i yaw; geometria GTE jest skalowana 1/4, zgodnie z rendererem gry.
+- Obiekty kursu mają współrzędne modulo 65536. Pierwszy screen ujawnił obiekty
+  wysoko nad torem; poprawiono eksport poprzez istniejący
+  `CourseCoordinateNearReference`, wokół środka domeny toru i Y=0.
+- Mythical Coast class 1 przez rzeczywisty serwis daje 36 416 wierzchołków,
+  18 208 trójkątów i 203 instancje. Headless Chromium renderuje rzeczywistą
+  geometrię bez błędów JS; screen obejrzano po poprawce współrzędnych:
+  `build/reports/editor/track-preview-3d.png`. Browser QA nie testuje Electron IPC.
+- Test składania sprawdza zakresy modeli, skalę, obrót, źródła materiałów,
+  remap indeksów i odrzucenie nieznanego modelu. Suite: 119 pass / 3 skip
+  (122 testy), native save_format pass. Native exporter przebudowano po
+  poprawce modulo; rzeczywisty podgląd PAL uruchomiono ponownie.
+- To podgląd geometrii bez tekstur: UI mówi o tym wprost. Tekstury, picking,
+  manipulacja w 3D, większy viewport sceny i edycja drogi/AI/kamer pozostają
+  do realizacji wraz z pozostałym zakresem planu.
