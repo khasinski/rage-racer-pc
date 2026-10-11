@@ -532,3 +532,24 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - To prerequisite runtime: import/export banków w projekcie i UI jeszcze
   wymagają podłączenia. Classic adapter, GLB i przebudowa drogi pozostają
   otwarte; ten etap nie domyka edycji geometrii toru.
+
+### Modele toru w effective preview i buildzie projektu
+
+- Projekt przyjmuje geometryczne sloty `track.<course><grade>.course/terrain`
+  jako immutable RMESH references. Track pack writer omija te zmiany;
+  project build zapisuje je w `[meshes]` zamiast próbować edytować raw rekordy.
+- Podgląd stosuje wybrane pakiety, potem immutable delta projektu, przed
+  dekodowaniem banku i przypisaniem jego oryginalnych materiałów.
+- Build waliduje liczbę submeshów względem rzeczywistego efektywnego raw
+  packa, również dla wybranych pakietów. Walidacja jest wykonywana w stagingu
+  przed aktywacją. Nie wykrywa samodzielnie przestawienia modeli tej samej
+  liczby — zachowanie kolejności pozostaje kontraktem importu.
+- Native mesh-bank summary udostępnia teraz mesh count. Test sprawdza
+  package/project precedence, undo, pełne immutable bytes i odrzucenie
+  banku z inną liczbą modeli.
+- Rzeczywisty PAL Mythical Coast class 1: zmieniony bank 64 modeli przeszedł
+  publiczny effective preview i apply; plik wynikowego builda byte-exact
+  względem immutable referencji. Test wykonał się w temp root, z oryginalnymi
+  danymi wyłącznie do odczytu. Nie był to test widocznego przejazdu.
+- Suite: 128 pass / 3 skip (131 tests). Import/export modeli toru w UI,
+  GLB i classic adapter nadal wymagają wdrożenia.

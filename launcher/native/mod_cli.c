@@ -266,7 +266,7 @@ int main(int argc,char **argv) {
                 }
                 used[v.material&0xffff]=1;
             }
-            printf("{\"vertices\":%u,\"indices\":%u,\"materials\":[",mesh.vertexCount,mesh.indexCount);
+            printf("{\"meshes\":%u,\"vertices\":%u,\"indices\":%u,\"materials\":[",mesh.meshCount,mesh.vertexCount,mesh.indexCount);
             for(i=0;i<sizeof(used);i++)if(used[i]){printf("%s%u",comma?",":"",(unsigned)i);comma=1;}
             puts("]}");
         }

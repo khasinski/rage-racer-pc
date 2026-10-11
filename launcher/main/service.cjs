@@ -195,6 +195,8 @@ class LauncherService {
         const file=path.join(files.includes(relative)?directory:this.state.disc.data,relative);
         if(preview){
           const metadata=JSON.parse(await run(this.tool('rage-racer'),['--config',this.baseConfig,'--set','tools.track_export='+file,'--set','tools.track_bank='+bank,'--set','tools.track_output='+directory],{cwd:this.root,signal,maxOutput:4*1024*1024}));
+          const track=prefix.slice(0,-1);
+          for(const name of ['course','terrain'])await require('./track-meshes.cjs').model(this,track+'.'+name,path.join(directory,name+'.rmesh'),directory,files,signal,metadata[name].meshes);
           const banks={};
           for(const name of ['course','terrain'])banks[name]={geometry:JSON.parse(await run(this.tool('rage-mod-cli'),['--preview-bank',path.join(directory,name+'.rmesh')],{signal,maxOutput:64*1024*1024})),instances:metadata[name].instances};
           await require('./track-textures.cjs')(this,bank,banks,metadata,directory,files,signal);

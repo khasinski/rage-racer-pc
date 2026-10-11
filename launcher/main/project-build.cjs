@@ -38,20 +38,20 @@ async function apply(service){
     const groups=new Map(),models={},textures={},materials={};
     await require('./track-edits.cjs').apply(service,snapshot.changes,staging,files);
     for(const c of snapshot.changes){
-      if(c.kind==='track')continue;
-      if(c.kind!=='car')throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
+      if(c.kind==='track'&&c.field!=='mesh')continue;
+      if(c.kind!=='car'&&!(c.kind==='track'&&c.field==='mesh'))throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
       if(c.field==='material'){
         materials[c.id]=c.value;continue; // Native profile writer validates both ID and values.
       }
       if(c.field==='mesh'||c.field==='texture'){
         const mesh=c.field==='mesh';
-        if(mesh?!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(c.id):! /^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.model-bank-1)\.material\.\d+$/.test(c.id))throw Error('Invalid car asset slot');
+        if(mesh?!(/^(car\.(player|rival)\.\d+\.part\.\d+|track\.(big|mid|hi|oval)[1-6]\.(course|terrain))$/.test(c.id)):! /^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.model-bank-1)\.material\.\d+$/.test(c.id))throw Error('Invalid car asset slot');
         if(!c.value.endsWith(mesh?'.rmesh':'.png'))throw Error('Invalid project asset type');
         const bytes=await new (require('./project-files.cjs').ProjectFiles)(editor.file).read(c.value);
         const relative=(mesh?'meshes':'textures')+'/project/'+c.value.slice(7);
         await fs.mkdir(path.dirname(path.join(staging,relative)),{recursive:true});
         await fs.writeFile(path.join(staging,relative),bytes);
-        await run(service.tool('rage-mod-cli'),[mesh?'--mesh':'--png',path.join(staging,relative)]);
+        await run(service.tool('rage-mod-cli'),[mesh?(c.kind==='track'?'--mesh-bank':'--mesh'):'--png',path.join(staging,relative)]);
         (mesh?models:textures)[c.id]=relative;if(!files.includes(relative))files.push(relative);
         continue;
       }
@@ -72,8 +72,9 @@ async function apply(service){
     if(!sameSource(snapshot.source,await source(service.state.disc)))throw Error('Source archive changed during the build');
     const profileHash=sha(await fs.readFile(profile)),manifest=path.join(staging,'mod.toml');
     if(!composed)await fs.writeFile(manifest,'[mod]\nid = "editor-project"\n');
+    const previous=JSON.parse(await run(service.tool('rage-mod-cli'),[manifest]));
+    await require('./track-meshes.cjs').validateBuild(service,{...previous.meshes,...models},staging,files);
     if(Object.keys(models).length||Object.keys(textures).length||Object.keys(materials).length){
-      const previous=JSON.parse(await run(service.tool('rage-mod-cli'),[manifest]));
       await fs.rm(manifest);
       await run(service.tool('rage-mod-cli'),['--write-profile-stdin',manifest],{
         input:Buffer.from(JSON.stringify({textures:{...previous.textures,...textures},materials:{...previous.materials,...materials},meshes:{...previous.meshes,...models}}))});
