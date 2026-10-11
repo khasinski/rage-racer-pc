@@ -2,11 +2,11 @@ const fs=require('node:fs/promises'),path=require('node:path');
 function group(changes){
  const groups=new Map();
  for(const c of changes.filter(c=>c.kind==='track')){
-  const match=/^track\.(big|mid|hi|oval)([1-6])\.object\.(\d+)$/.exec(c.id);
-  if(!match||!['x','y','z','yaw','model','flags'].includes(c.field)||!Number.isSafeInteger(c.value))throw Error('This track edit is not connected; no changes were applied');
+  const match=/^track\.(big|mid|hi|oval)([1-6])\.(object|road)\.(\d+)$/.exec(c.id);
+  if(!match||!(match?.[3]==='road'?['x','y','z','angle','pitch','crossSlope','leftWidth','rightWidth','length','arc']:['x','y','z','yaw','model','flags']).includes(c.field)||!Number.isSafeInteger(c.value))throw Error('This track edit is not connected; no changes were applied');
   const bank=88+(Number(match[2])-1)*8+['big','mid','hi','oval'].indexOf(match[1])*2;
   if(!groups.has(bank))groups.set(bank,[]);
-  groups.get(bank).push([Number(match[3]),c.field,c.value]);
+  groups.get(bank).push([Number(match[4]),(match[3]==='road'?'road.':'')+c.field,c.value]);
  }
  return groups;
 }

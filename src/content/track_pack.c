@@ -114,3 +114,22 @@ int RoadOpen(const void *data, size_t size, Road *road) {
     *road=decoded;
     return 1;
 }
+
+int RoadWrite(void *data, size_t size, uint32_t index, const RoadPoint *point) {
+    Road road;
+    RoadPoint prior;
+    if (!point || !RoadOpen(data,size,&road) || !RoadRead(&road,index,&prior)) return 0;
+    RoadPoint value=*point;
+    unsigned mode=value.arc&3;
+    int arcIndex=(int16_t)value.arc>>4;
+    if (!value.length || value.length>INT16_MAX || mode>2 ||
+        road.length-prior.length>((uint32_t)INT16_MAX<<8)-1-value.length ||
+        (mode && (arcIndex<0 || (uint32_t)arcIndex>=road.arcCount))) return 0;
+    unsigned char *p=(unsigned char *)data+4+(size_t)index*24;
+    Store32(p,(uint32_t)value.x);Store32(p+4,(uint32_t)value.z);
+    const uint16_t fields[]={(uint16_t)value.y,(uint16_t)value.angle,
+        (uint16_t)value.pitch,(uint16_t)value.crossSlope,(uint16_t)value.leftWidth,
+        (uint16_t)value.rightWidth,value.arc,value.length};
+    for(unsigned i=0;i<8;i++){p[8+i*2]=(unsigned char)fields[i];p[9+i*2]=(unsigned char)(fields[i]>>8);}
+    return 1;
+}

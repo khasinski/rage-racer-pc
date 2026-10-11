@@ -26,12 +26,35 @@ static int TrackEditCommand(const char *source,const char *output) {
     yyjson_arr_foreach(edits,i,count,edit){
         if(!yyjson_is_arr(edit)||yyjson_arr_size(edit)!=3)goto done;
         yyjson_val *index=yyjson_arr_get(edit,0),*field=yyjson_arr_get(edit,1),*number=yyjson_arr_get(edit,2);
-        if(!yyjson_is_uint(index)||yyjson_get_uint(index)>=placements.count||!yyjson_is_str(field)||!yyjson_is_int(number))goto done;
+        if(!yyjson_is_uint(index)||!yyjson_is_str(field)||!yyjson_is_int(number))goto done;
         if(yyjson_is_uint(number)&&yyjson_get_uint(number)>INT32_MAX)goto done;
         int64_t value=yyjson_get_sint(number);
         if(value<INT32_MIN||value>INT32_MAX)goto done;
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
-        Placement p;uint32_t at=(uint32_t)yyjson_get_uint(index);PlacementRead(&placements,at,&p);
+        if(yyjson_get_uint(index)>UINT32_MAX)goto done;
+        uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strncmp(name,"road.",5)){
+            Road road;RoadPoint point;
+            if(!RoadOpen(blocks[4].data,blocks[4].size,&road)||!RoadRead(&road,at,&point))goto done;
+            name+=5;
+            if(!strcmp(name,"x"))point.x=(int32_t)value;
+            else if(!strcmp(name,"z"))point.z=(int32_t)value;
+            else {
+                if(value<INT16_MIN||value>INT16_MAX)goto done;
+                if(!strcmp(name,"y"))point.y=(int16_t)value;
+                else if(!strcmp(name,"angle"))point.angle=(int16_t)value;
+                else if(!strcmp(name,"pitch"))point.pitch=(int16_t)value;
+                else if(!strcmp(name,"crossSlope"))point.crossSlope=(int16_t)value;
+                else if(!strcmp(name,"leftWidth"))point.leftWidth=(int16_t)value;
+                else if(!strcmp(name,"rightWidth"))point.rightWidth=(int16_t)value;
+                else if(!strcmp(name,"length"))point.length=(uint16_t)value;
+                else if(!strcmp(name,"arc"))point.arc=(uint16_t)value;
+                else goto done;
+            }
+            if(!RoadWrite((unsigned char *)bytes+(blocks[4].data-(unsigned char *)bytes),blocks[4].size,at,&point))goto done;
+            continue;
+        }
+        Placement p;if(!PlacementRead(&placements,at,&p))goto done;
         if(!strcmp(name,"x"))p.x=(int32_t)value;
         else if(!strcmp(name,"y"))p.y=(int32_t)value;
         else if(!strcmp(name,"z"))p.z=(int32_t)value;

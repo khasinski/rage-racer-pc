@@ -37,3 +37,20 @@ test('track edits compile atomically, preserve unrelated bytes and survive proje
  await assert.rejects(s.applyProject(p.revision),/Invalid track object edit/);
  assert.equal(await fs.readFile(path.join(s.modsRoot,'active.json'),'utf8'),pointer);
 });
+test('road edits preserve all other blocks and reject invalid routes before creating output',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-road-edit-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const source=path.join(root,'source.bin'),output=path.join(root,'road.bin'),original=pack();await fs.writeFile(source,original);
+ const tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli');
+ const grouped=require('../main/track-edits.cjs').group([{kind:'track',id:'track.big1.road.0',field:'leftWidth',value:250}]);
+ assert.deepEqual(grouped.get(88),[[0,'road.leftWidth',250]]);
+ await run(tool,['--edit-track-stdin',source,output],{input:Buffer.from(JSON.stringify([[0,'road.leftWidth',250],[0,'road.y',-42]]))});
+ const bytes=await fs.readFile(output),start=original.readUInt32LE(16),end=original.readUInt32LE(20);
+ assert.deepEqual(bytes.subarray(0,start),original.subarray(0,start));assert.deepEqual(bytes.subarray(end),original.subarray(end));
+ const scene=JSON.parse(await run(tool,['--track-scene',output]));assert.equal(scene.road.points[0].leftWidth,250);assert.equal(scene.road.points[0].y,-42);
+ await fs.rm(output);
+ for(const edit of [[0,'road.length',0],[0,'road.arc',17],[0,'road.y',32768],[1,'road.x',10]]){
+  await assert.rejects(run(tool,['--edit-track-stdin',source,output],{input:Buffer.from(JSON.stringify([[0,'road.leftWidth',123],edit]))}),/Invalid track object edit/);
+  await assert.rejects(fs.stat(output),{code:'ENOENT'});
+ }
+ assert.deepEqual(await fs.readFile(source),original);
+});

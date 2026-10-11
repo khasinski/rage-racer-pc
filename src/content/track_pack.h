@@ -28,6 +28,9 @@ typedef struct Road {
 /* Validates every point and arc reference. Retains unknown trailing bytes. */
 int RoadOpen(const void *data, size_t size, Road *road);
 int RoadRead(const Road *road, uint32_t index, RoadPoint *point);
+/* Updates one record without changing arc tables or trailing bytes.
+ * Failure leaves the block intact, including invalid length/arc changes. */
+int RoadWrite(void *data, size_t size, uint32_t index, const RoadPoint *point);
 
 typedef struct Placement {
     int16_t model, yaw;

@@ -451,3 +451,17 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   przy przeciąganiu oraz brak błędów JS. Nie był to test Electron IPC.
 - Ograniczenia: picking jest geometryczny (nie uwzględnia przezroczystych
   pikseli tekstur); nie ma jeszcze gizmo ani przesuwania obiektu w viewport.
+
+### Natywny zapis punktów drogi
+
+- `RoadWrite` aktualizuje jeden 24-bajtowy rekord, zachowując łuki i wszystkie
+  pozostałe bajty. Waliduje długość całej drogi i odwołania do łuków przed
+  zapisem; błędne wejście pozostawia blok bez zmian.
+- Projekt rozpoznaje `track.<course><grade>.road.<index>` i kompiluje jego
+  pola przez ten sam atomowy track writer co obiekty. CLI sprawdza zakresy
+  int16/int32 i tworzy wyjście dopiero po walidacji całej paczki zmian.
+- C test pokrywa niealigned zapis, wartości graniczne i brak modyfikacji po
+  błędzie. Integracja natywnego CLI sprawdza odczyt zapisanych pól, zachowanie
+  innych bloków oraz brak wyjścia po błędzie w drugiej zmianie paczki.
+- Formularz edycji punktów nie jest jeszcze podłączony. To zapis danych drogi,
+  nie automatyczna przebudowa geometrii wizualnej czy aktualizacja AI/kamer.

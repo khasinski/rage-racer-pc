@@ -43,6 +43,26 @@ int main(void) {
         assert(RoadRead(&road,0,&point));
         assert(point.x==-1 && point.z==1234 && point.arc==1 && point.length==100);
         assert(!RoadRead(&road,1,&point));
+        {
+            unsigned char saved[40];
+            point.x=INT32_MIN;point.z=INT32_MAX;point.y=-123;
+            point.pitch=-512;point.crossSlope=100;point.leftWidth=321;
+            point.rightWidth=456;point.length=200;
+            assert(RoadWrite(r,40,0,&point));
+            assert(RoadOpen(r,40,&road)&&road.length==200);
+            RoadPoint read;assert(RoadRead(&road,0,&read));
+            assert(read.x==INT32_MIN&&read.z==INT32_MAX&&read.y==-123);
+            assert(read.pitch==-512&&read.crossSlope==100&&read.leftWidth==321&&read.rightWidth==456);
+            assert(r[28]==200&&r[36]==0x78); /* arc table unchanged */
+            memcpy(saved,r,40);
+            point.arc=17;assert(!RoadWrite(r,40,0,&point));
+            point.arc=1;point.length=0;assert(!RoadWrite(r,40,0,&point));
+            point.length=32768;assert(!RoadWrite(r,40,0,&point));
+            point.length=100;assert(!RoadWrite(r,40,1,&point));
+            assert(!RoadWrite(r,40,0,NULL));assert(!memcmp(saved,r,40));
+            assert(RoadWrite(r,40,0,&point));
+            assert(RoadOpen(r,40,&road));
+        }
         prior=road;
         assert(!RoadOpen(r,27,&road)); /* missing arc */
         r[24]=3;assert(!RoadOpen(r,40,&road)); /* unknown curve */
