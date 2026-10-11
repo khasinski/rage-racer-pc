@@ -109,7 +109,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(b.dataset.page)return navigate(b.dataset.page);
  if(b.dataset.discard){dirty=false;edits={};draft={...state.settings};$('#dialog').close();return enter(b.dataset.discard);}
  if(b.dataset.tab){if(!$('#settings-form').reportValidity())return;tab=b.dataset.tab;render();return;}
- if(b.dataset.trackPreview){await mountModelPreview($('#dialog'),await request('trackPreview',Number(b.dataset.trackPreview)));return;}
+ if(b.dataset.trackPreview){await mountModelPreview($('#dialog'),await request('trackPreview',Number(b.dataset.trackPreview)),{onSelectObject:index=>{trackObject=index;$('#dialog').close();render();document.querySelector('#track-object-form')?.scrollIntoView({block:'nearest'});}});return;}
  if(b.dataset.save!==undefined){save=await request('openSave',b.dataset.save);edits={};render();return;}
  if(b.dataset.card!==undefined){save=await request('cardEntry',Number(b.dataset.card));edits={};render();return;}
  if(b.dataset.carSpec!==undefined){const bank=Number(b.dataset.carSpec);carSpecDialog(bank,await request('carSpec',bank));return;}

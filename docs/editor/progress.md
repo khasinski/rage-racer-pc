@@ -438,3 +438,16 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Pełna suite przed dodatkowym testem remapu: 120 pass / 3 skip (123 testy).
   Picking, manipulacja obiektami w 3D i edycja drogi/AI nadal nie są gotowe;
   niniejszy etap nie domyka całego planu edytora.
+
+### Wybór obiektu w podglądzie 3D
+
+- Kliknięcie trójkąta obiektu kursu wybiera jego rzeczywisty indeks i otwiera
+  istniejący formularz pozycji/obrotu w Tracks. Zapis nadal przechodzi przez
+  walidowany projekt i wspólne undo/redo; przeciąganie obraca podgląd.
+- Picking korzysta z tej samej projekcji ortograficznej co shader i wybiera
+  najbliższy trafiony trójkąt. Teren bierze udział w zasłanianiu. Test sprawdza
+  głębokość, brak trafienia, zasłanianie oraz obrót widoku.
+- Headless WebGL potwierdził rzeczywisty pointer click (object 7), brak wyboru
+  przy przeciąganiu oraz brak błędów JS. Nie był to test Electron IPC.
+- Ograniczenia: picking jest geometryczny (nie uwzględnia przezroczystych
+  pikseli tekstur); nie ma jeszcze gizmo ani przesuwania obiektu w viewport.

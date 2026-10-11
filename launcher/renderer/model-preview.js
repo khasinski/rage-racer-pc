@@ -1,4 +1,5 @@
 // The native helper decodes disc textures; WebGL provides inspection lighting.
+import {pickScene} from './scene-pick.mjs';
 const activePreviews=new WeakMap();
 export async function mountModelPreview(dialog,data,options={}){
  const stale=()=>options.previousPreview&&(!dialog.open||activePreviews.get(dialog)!==options.previousPreview);
@@ -7,7 +8,7 @@ export async function mountModelPreview(dialog,data,options={}){
  if(stale())return;
  activePreviews.get(dialog)?.();
  dialog.innerHTML='<h2>Model preview</h2><p class="muted">Drag to rotate · Scroll to zoom · Arrow keys to rotate</p><div class="row wrap" aria-label="Model views"><button type="button" data-model-view="front">Front</button><button type="button" data-model-view="side">Side</button><button type="button" data-model-view="rear">Rear</button><button type="button" data-model-view="top">Top</button></div><canvas id="model-preview" tabindex="0" aria-label="Interactive textured model preview" style="width:100%;height:420px;touch-action:none;background:#10151e"></canvas><p class="muted">Textures come from your game image and the selected mod. Lighting is simplified for inspection.</p><footer><label>Background <select id="model-background"><option value="dark">Dark</option><option value="light">Light</option></select></label><label><input type="checkbox" id="model-wire"> Wireframe</label><button type="button" id="model-reset">Reset view</button><button type="button" data-action="close">Close</button></footer>';
- if(data.worldScene){dialog.querySelector('h2').textContent='Track geometry preview';const notes=dialog.querySelectorAll('p.muted');notes[notes.length-1].textContent='Terrain and placed objects from the current project. Textures use the original course palette. Object picking and environment changes are not connected yet.';}
+ if(data.worldScene){dialog.querySelector('h2').textContent='Track geometry preview';const notes=dialog.querySelectorAll('p.muted');notes[notes.length-1].textContent='Terrain and placed objects from the current project. Textures use the original course palette. Click an object to edit its placement. Environment changes are not connected yet.';}
  if(data.wholeCar)dialog.querySelector('h2').textContent='Car preview';
  if(data.modName){const note=document.createElement('p');note.className='muted';note.textContent=data.modName+' · Geometry, materials and supported texture overrides from this mod are included. Other assets use the base disc.';dialog.querySelector('h2').after(note);}
  const canvas=dialog.querySelector('canvas'),gl=canvas.getContext('webgl');
@@ -46,9 +47,11 @@ export async function mountModelPreview(dialog,data,options={}){
   }dialog.querySelector('canvas').before(controls);
  }
  function draw(){canvas.width=Math.round(canvas.clientWidth*Math.min(devicePixelRatio,2));canvas.height=Math.round(canvas.clientHeight*Math.min(devicePixelRatio,2));gl.viewport(0,0,canvas.width,canvas.height);gl.clearColor(...background,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.enable(gl.DEPTH_TEST);gl.bindBuffer(gl.ARRAY_BUFFER,buffers[wire?1:0]);attributes.forEach((a,i)=>{gl.enableVertexAttribArray(a);gl.vertexAttribPointer(a,i===3?2:3,gl.FLOAT,false,44,i*12);});gl.uniform4f(view,yaw,pitch,zoom,canvas.width/canvas.height);if(wire){appearance(-1);gl.uniform1i(textured,0);gl.drawArrays(gl.LINES,0,lines.length/11);}else for(const group of groups){const id=group.material&0xffff,source=data.worldScene?id:id%64;appearance(id===65535?-1:source);const texture=!data.worldScene&&(id>>>6)===1?null:textures.get(source);gl.uniform1i(textured,texture?1:0);gl.bindTexture(gl.TEXTURE_2D,texture||null);gl.drawArrays(gl.TRIANGLES,group.start,group.count);}}
- canvas.onpointerdown=e=>{drag=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);canvas.focus();};
+ let press=null;
+ canvas.onpointerdown=e=>{press=[e.clientX,e.clientY];drag=[e.clientX,e.clientY];canvas.setPointerCapture(e.pointerId);canvas.focus();};
  canvas.onpointermove=e=>{if(!drag)return;yaw+=(e.clientX-drag[0])*.01;pitch+=(e.clientY-drag[1])*.01;drag=[e.clientX,e.clientY];draw();};
- canvas.onpointerup=canvas.onpointercancel=()=>{drag=null;};
+ canvas.onpointerup=e=>{drag=null;if(press&&Math.hypot(e.clientX-press[0],e.clientY-press[1])<4&&options.onSelectObject){const rect=canvas.getBoundingClientRect();const object=pickScene(data,frame,{yaw,pitch,zoom,aspect:rect.width/rect.height},(e.clientX-rect.left)/rect.width*2-1,1-(e.clientY-rect.top)/rect.height*2);if(object!==null)options.onSelectObject(object);}press=null;};
+ canvas.onpointercancel=()=>{drag=null;press=null;};
  canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.15,Math.min(5,zoom*Math.exp(-e.deltaY*.001)));draw();},{passive:false});
  canvas.onkeydown=e=>{if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','+','-'].includes(e.key))return;e.preventDefault();yaw+=e.key==='ArrowLeft'?-.1:e.key==='ArrowRight'?.1:0;pitch+=e.key==='ArrowUp'?-.1:e.key==='ArrowDown'?.1:0;zoom=Math.max(.15,Math.min(5,zoom*(e.key==='+'?1.1:e.key==='-'?.9:1)));draw();};
  for(const button of dialog.querySelectorAll('[data-model-view]'))button.onclick=()=>{const preset={front:[Math.PI,0],side:[Math.PI/2,0],rear:[0,0],top:[0,-Math.PI/2]}[button.dataset.modelView];[yaw,pitch]=preset;draw();};
