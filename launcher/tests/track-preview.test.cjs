@@ -6,7 +6,7 @@ test('track preview uses grid placements, GTE scale, rotation and only reference
  assert.deepEqual(out.vertices.slice(0,3),[1025,2,-1021]);
  for(const [actual,expected]of out.vertices.slice(27,30).map((n,i)=>[n,[7,22,31][i]]))assert.ok(Math.abs(actual-expected)<1e-8);
  assert.equal(out.vertices.length,54);assert.deepEqual(out.indices,[0,1,2,3,4,5]);
- assert.notEqual(out.vertices[6],out.vertices[33]);assert.equal(out.entities[1].object,7);
+ assert.notEqual(out.vertices[6],out.vertices[33]);assert.equal(out.entities[1].object,7);assert.equal(out.entities[0].bank,'terrain');assert.equal(out.entities[0].mesh,0);
  assert.throws(()=>assemble({course:{geometry,instances:[{mesh:2,position:[0,0,0],yaw:0}]}}),/Unknown track preview model/);
 });
 test('track materials preserve full source IDs and keep bank textures distinct',()=>{

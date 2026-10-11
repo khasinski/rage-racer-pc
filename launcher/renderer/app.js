@@ -110,10 +110,17 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(b.dataset.discard){dirty=false;edits={};draft={...state.settings};$('#dialog').close();return enter(b.dataset.discard);}
  if(b.dataset.tab){if(!$('#settings-form').reportValidity())return;tab=b.dataset.tab;render();return;}
  if(b.dataset.exportTrackPart){if(await request('exportTrackPart',b.dataset.exportTrackPart,Number(b.dataset.part)))toast('Track model OBJ exported');return;}
- if(b.dataset.importTrackPart){const result=await request('importTrackPart',b.dataset.importTrackPart,Number(b.dataset.part),Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);render();toast('Track model saved to project; Save & apply to use it in game');}return;}
+ if(b.dataset.importTrackPart){const result=await request('importTrackPart',b.dataset.importTrackPart,Number(b.dataset.part),Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);$('#dialog').close();render();toast('Track model saved to project; Save & apply to use it in game');}return;}
  if(b.dataset.exportTrackMesh){if(await request('exportTrackMesh',b.dataset.exportTrackMesh))toast('Current track model bank exported');return;}
  if(b.dataset.importTrackMesh){const result=await request('importTrackMesh',b.dataset.importTrackMesh,Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);render();toast('Track model saved to project; Save & apply to use it in game');}return;}
- if(b.dataset.trackPreview){await mountModelPreview($('#dialog'),await request('trackPreview',Number(b.dataset.trackPreview)),{onSelectObject:index=>{trackObject=index;$('#dialog').close();render();document.querySelector('#track-object-form')?.scrollIntoView({block:'nearest'});}});return;}
+ if(b.dataset.trackPreview){await mountModelPreview($('#dialog'),await request('trackPreview',Number(b.dataset.trackPreview)),{onSelectEntity:entity=>{
+  $('#dialog').close();
+  if(entity.bank==='course'&&Number.isInteger(entity.object)){trackObject=entity.object;render();document.querySelector('#track-object-form')?.scrollIntoView({block:'nearest'});return;}
+  if(entity.bank!=='terrain'||!Number.isInteger(entity.mesh))return;
+  const id='track.'+['big','mid','hi','oval'][((trackBank-88)/2)%4]+(Math.floor((trackBank-88)/8)+1)+'.terrain';
+  $('#dialog').innerHTML=`<h2>Terrain model ${entity.mesh}</h2><p class="muted">This cell uses a shared terrain model. Editing it changes every cell using the same model. OBJ export includes PNG textures; keep track-model.json beside the OBJ for import. Changes are saved to the project and applied to the modern renderer.</p><div class="row wrap"><button data-export-track-part="${id}" data-part="${entity.mesh}">Export model OBJ</button><button data-import-track-part="${id}" data-part="${entity.mesh}" data-revision="${trackScene.revision}">Import model OBJ</button></div><footer><button data-action="close">Close</button></footer>`;
+  $('#dialog').showModal();
+ }});return;}
  if(b.dataset.save!==undefined){save=await request('openSave',b.dataset.save);edits={};render();return;}
  if(b.dataset.card!==undefined){save=await request('cardEntry',Number(b.dataset.card));edits={};render();return;}
  if(b.dataset.carSpec!==undefined){const bank=Number(b.dataset.carSpec);carSpecDialog(bank,await request('carSpec',bank));return;}

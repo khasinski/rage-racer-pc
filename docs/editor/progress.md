@@ -612,3 +612,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   tylko do odczytu, temp root, bez widocznej gry.
 - Texture slot może być współdzielony przez inne modele — opis w UI.
   GLB, pełny track exchange i classic adapter nadal pozostają otwarte.
+
+### Wybór modelu terenu w viewport
+
+- Picker zwraca teraz source entity (bank/mesh/object), zamiast odrzucać
+  trafienia terenu. Assembler zachowuje mesh index obok instancji i ranges.
+  Course objects prowadzą do formy transformacji; teren otwiera panel OBJ/PNG
+  dla wybranego source modelu. Współdzielenie geometrii jest opisane w panelu.
+- Import modelu zamyka dialog, żeby następna operacja nie używała starej
+  rewizji projektu. Nie dodano osobnego backendu ani stanu wyboru modelu.
+- Unit picking/assembly sprawdza type i source mesh oraz terrain occlusion.
+  Headless WebGL: klik wybiera terrain model 12, przeciąganie nie wybiera;
+  bez błędów JS (nie test Electron IPC).
+- Rzeczywisty PAL: klikany bank terrain zawiera model 197; jego OBJ + dwa PNG
+  wyeksportowano i zaimportowano przez publiczne API. Powstały trzy zmiany
+  projektu i effective textured preview pass. Temp root, source read-only.
+- Brak gizmo/przesuwania komórek terenu, edycji topologii całego toru i GLB;
+  wybór wspólnego modelu terenu nie zastępuje tych wymagań.

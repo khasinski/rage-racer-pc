@@ -20,5 +20,5 @@ export function pickScene(data,frame,view,x,y){
   const depth=u*a[2]+v*b[2]+w*d[2];
   if(depth>=-1&&depth<=1&&depth<nearest){nearest=depth;hit=entity;}
  }
- return hit?.bank==='course'&&Number.isInteger(hit.object)?hit.object:null;
+ return hit;
 }
