@@ -55,3 +55,12 @@ test('road overview samples shortest arcs, mirrored modes, wraparound and change
  const missing=structuredClone(road);missing.arcs=[];assert.deepEqual(roadPolyline(missing),[{x:10,z:0},{x:0,z:10},{x:10,z:0}]);
  assert.deepEqual(roadPolyline({points:[]}),[]);
 });
+test('native track bank actions use selected course/class, revision and explicit renderer limits',async()=>{
+ const {trackWorkspace}=await import('../renderer/tracks.mjs');
+ const html=trackWorkspace([{name:'Oval',bank:134}],134,{revision:12});
+ for(const name of ['course','terrain']){
+  assert.ok(html.includes(`data-export-track-mesh="track.oval6.${name}"`));
+  assert.match(html,new RegExp(`data-import-track-mesh="track.oval6.${name}" data-revision="12"`));
+ }
+ assert.match(html,/Advanced · Native model banks/);assert.match(html,/modern renderer/);assert.match(html,/OBJ\/GLB editing is not connected yet/);
+});

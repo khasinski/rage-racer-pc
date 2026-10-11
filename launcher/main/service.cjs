@@ -177,6 +177,8 @@ class LauncherService {
       return {tracks};
     });
   }
+  async importTrackMesh(id,file,revision){return require('./track-meshes.cjs').importMesh(this,id,file,revision);}
+  async exportTrackMesh(id,file){return require('./track-meshes.cjs').exportMesh(this,id,file);}
   async trackScene(bank,preview=false) {
     this.requireReady();
     if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid track');

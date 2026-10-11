@@ -553,3 +553,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   danymi wyłącznie do odczytu. Nie był to test widocznego przejazdu.
 - Suite: 128 pass / 3 skip (131 tests). Import/export modeli toru w UI,
   GLB i classic adapter nadal wymagają wdrożenia.
+
+### Import/export natywnych banków toru w UI
+
+- Advanced → Native model banks udostępnia kurs/teren aktualnie wybranego
+  course/class. Eksport uwzględnia selected packages oraz immutable draft;
+  import tworzy jedną zmianę projektu, bez tworzenia osobnego library mod.
+- Import kopiuje wejście do prywatnego stagingu, waliduje RMESH, liczbę modeli
+  oraz zgodność material IDs z oryginalnym bankiem (untextured 65535 dozwolone).
+  Rewizja projektu chroni przed nadpisaniem nowszego draftu. Export używa
+  atomowego zapisu w wybranym przez użytkownika miejscu.
+- Prawdziwy PAL przez publiczne API: export → zmiana vertex → import →
+  effective export byte-exact, stale revision rejection, undo original,
+  redo replacement, corrupt import bez zmiany rewizji ani effective bytes.
+  Wszystko wykonano w temp root, bez modyfikacji oryginalnych danych.
+- Testy kontrolują native bank contract i slot/revision w UI. Ograniczenia
+  są jawne: to natywny advanced workflow dla modern, bez OBJ/GLB i classic
+  adaptera. Pełny, prosty model exchange nadal wymaga dalszego wdrożenia.

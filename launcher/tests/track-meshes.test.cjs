@@ -14,3 +14,9 @@ test('track preview resolves immutable project geometry over package and rejects
  await assert.rejects(model(service,'track.big1.course',target,root,[],undefined,1),/retain its model count/);
  assert.deepEqual(slot('track.oval6.terrain'),{bank:134,name:'terrain'});assert.throws(()=>slot('track.big7.course'),/Invalid/);
 });
+test('bank import contract accepts original and untextured materials and rejects unknown bindings',()=>{
+ const {checkBank}=require('../main/track-meshes.cjs'),metadata={meshes:64,materials:[{source:0},{source:130}]};
+ assert.doesNotThrow(()=>checkBank({meshes:64,materials:[0,130,65535]},metadata));
+ assert.throws(()=>checkBank({meshes:63,materials:[0]},metadata),/model count/);
+ assert.throws(()=>checkBank({meshes:64,materials:[131]},metadata),/unknown material slots/);
+});

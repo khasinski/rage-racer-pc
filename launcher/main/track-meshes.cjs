@@ -5,6 +5,11 @@ function slot(id){
  const m=pattern.exec(id);if(!m)throw Error('Invalid track mesh slot');
  return {bank:88+(Number(m[2])-1)*8+['big','mid','hi','oval'].indexOf(m[1])*2,name:m[3]};
 }
+function checkBank(info,metadata){
+ if(info.meshes!==metadata.meshes)throw Error('Track model bank must retain its model count and order');
+ const materials=new Set(metadata.materials.map(m=>m.source));materials.add(65535);
+ if(info.materials.some(m=>!materials.has(m)))throw Error('Track model uses unknown material slots');
+}
 async function model(service,id,target,directory,files,signal,expected){
  const {run}=require('./service.cjs');slot(id);
  if(files.includes('mod.toml')){
@@ -29,8 +34,47 @@ async function validateBuild(service,models,directory,files,signal){
   try{
    const raw=`raw/asset_${String(bank).padStart(3,'0')}.bin`,source=path.join(files.includes(raw)?directory:service.state.disc.data,raw);
    const metadata=JSON.parse(await run(service.tool('rage-racer'),['--config',service.baseConfig,'--set','tools.track_export='+source,'--set','tools.track_bank='+bank,'--set','tools.track_output='+folder],{cwd:service.root,signal,maxOutput:4*1024*1024}));
-   for(const {name,relative}of entries){const info=JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh-bank',path.join(directory,relative)],{signal}));if(info.meshes!==metadata[name].meshes)throw Error('Track model bank must retain its model count and order');}
+   for(const {name,relative}of entries){const info=JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh-bank',path.join(directory,relative)],{signal}));checkBank(info,metadata[name]);}
   }finally{await fs.rm(folder,{recursive:true,force:true});}
  }
 }
 module.exports.validateBuild=validateBuild;
+async function withBank(service,id,signal,work){
+ const {run}=require('./service.cjs'),{randomUUID}=require('node:crypto'),{bank,name}=slot(id);
+ return require('./car-view.cjs').withView(service,signal,undefined,async view=>{
+  const directory=path.join(service.root,'track-model-'+randomUUID());await fs.mkdir(directory);
+  try{
+   const relative=`raw/asset_${String(bank).padStart(3,'0')}.bin`,files=[];
+   if(view.files.includes(relative)){await fs.mkdir(path.join(directory,'raw'));await fs.copyFile(path.join(view.root,relative),path.join(directory,relative));files.push(relative);}
+   const prefix=id.slice(0,id.lastIndexOf('.'))+'.';
+   await require('./track-edits.cjs').apply(service,(service.editor?.project.snapshot().changes||[]).filter(c=>c.kind==='track'&&c.id.startsWith(prefix)),directory,files,signal);
+   const source=path.join(files.includes(relative)?directory:service.state.disc.data,relative);
+   const metadata=JSON.parse(await run(service.tool('rage-racer'),['--config',service.baseConfig,'--set','tools.track_export='+source,'--set','tools.track_bank='+bank,'--set','tools.track_output='+directory],{cwd:service.root,signal,maxOutput:4*1024*1024}));
+   return await work({file:path.join(directory,name+'.rmesh'),directory,metadata:metadata[name],view});
+  }finally{await fs.rm(directory,{recursive:true,force:true});}
+ });
+}
+async function importMesh(service,id,input,revision){
+ service.requireReady();slot(id);
+ return service.operation('Importing track model',signal=>withBank(service,id,signal,async({directory,metadata})=>{
+  if(!service.editor)throw Error('Open a source project first');
+  const project=service.editor.project;project.checkRevision(revision);
+  const stat=await fs.stat(input);if(!stat.isFile()||stat.size>128*1024*1024||path.extname(input).toLowerCase()!=='.rmesh')throw Error('Choose a native RMESH bank smaller than 128 MiB');
+  const file=path.join(directory,'import.rmesh');await fs.copyFile(input,file);
+  const {run}=require('./service.cjs'),info=JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh-bank',file],{signal}));
+  checkBank(info,metadata);
+  const reference=await new ProjectFiles(service.editor.file).put(file);
+  if(signal.aborted)throw Error('Operation canceled');
+  return project.edit([{kind:'track',id,field:'mesh',value:reference}],revision);
+ }));
+}
+async function exportMesh(service,id,output){
+ service.requireReady();slot(id);
+ return service.operation('Exporting track model',signal=>withBank(service,id,signal,async({file,metadata,view})=>{
+  await model(service,id,file,view.root,view.files,signal,metadata.meshes);
+  await require('./service.cjs').atomic(output,await fs.readFile(file));return output;
+ }));
+}
+module.exports.importMesh=importMesh;module.exports.exportMesh=exportMesh;
+
+module.exports.checkBank=checkBank;
