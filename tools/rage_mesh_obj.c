@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "render/rmesh.h"
+#include "gltf.h"
 
 typedef struct ObjPosition { float xyz[3], rgb[3]; } ObjPosition;
 typedef struct ObjNormal { float xyz[3]; } ObjNormal;
@@ -242,6 +243,8 @@ done:
 }
 
 int main(int argc, char **argv) {
+    if(argc==4&&!strcmp(argv[1],"import-glb"))return GlbImport(argv[2],argv[3])?0:1;
+    if(argc==5&&!strcmp(argv[1],"export-glb")){char *end;errno=0;unsigned long part=strtoul(argv[3],&end,10);if(errno||!*argv[3]||*end||argv[3][0]=='-'||part>UINT32_MAX)return 1;return GlbExport(argv[2],(unsigned)part,argv[4])?0:1;}
     FILE *in, *out, *mtl = NULL;
     char *materialPath = NULL;
     int ok = 0;

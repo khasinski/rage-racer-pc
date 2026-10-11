@@ -149,7 +149,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
  if(b.dataset.carMaterials){const result=await request('carMaterials',b.dataset.carMaterials);$('#dialog').innerHTML='<h2>Part materials</h2><p class="muted">Choose a texture surface to change its color, finish or transparency. Shared textures can affect other parts of this car.</p><div class="material-list">'+result.materials.map(m=>'<button data-project-material="'+esc(m.id)+'" data-material-value="'+esc(m.properties)+'">'+esc(m.name)+'</button>').join('')+'</div><footer><button data-action="close">Close</button></footer>';$('#dialog').showModal();return;}
  if(b.dataset.projectMaterial){materialDialog('',b.dataset.projectMaterial,{materials:{[b.dataset.projectMaterial]:b.dataset.materialValue}});return;}
  if(b.dataset.importCar){if(await request('importCar',b.dataset.importCar))toast('Model imported into the project. Save & apply to use it in game.');return;}
- if(b.dataset.exportCar){if(await request('exportCar',b.dataset.exportCar))toast('Model folder exported');return;}
+ if(b.dataset.exportCar){if(await request('exportCar',b.dataset.exportCar,b.dataset.format||'obj'))toast('Model folder exported');return;}
  if(b.dataset.exportAsset!==undefined){if(await request('exportAsset',Number(b.dataset.exportAsset)))toast('Asset exported');return;}
  if(b.dataset.replaceAsset!==undefined){if(await request('replaceAsset',Number(b.dataset.replaceAsset)))toast('Replacement imported. Select it in My mods, then Save & apply.');return;}
  if(b.dataset.editMaterial!==undefined){materialDialog(b.dataset.modId,b.dataset.editMaterial||null);return;}

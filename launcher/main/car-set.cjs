@@ -47,7 +47,7 @@ exports.importSet=async(service,key,source)=>{
    const meshes=[],textures=[];
    for(const [role,offset]of [['body',0],['front-wheels',2],['rear-wheels',3]]){
     const file=await boundedFile(source,manifest.parts[role],128*1024*1024),ext=path.extname(file).toLowerCase(),relative='meshes/'+role+'.rmesh',out=path.join(staging,relative);
-    if(ext==='.obj')await run(service.tool('rage-mesh-obj'),['import',file,out],{signal});else if(ext==='.rmesh')await fs.copyFile(file,out);else throw Error('Car set models must be OBJ or RRMESH');
+    if(ext==='.glb')await run(service.tool('rage-mesh-obj'),['import-glb',file,out],{signal});else if(ext==='.obj')await run(service.tool('rage-mesh-obj'),['import',file,out],{signal});else if(ext==='.rmesh')await fs.copyFile(file,out);else throw Error('Car set models must be OBJ, geometry-only GLB or RRMESH');
     const partKey=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
     await require('./car-material-bindings.cjs')(service,partKey,out,staging,role,signal);
     meshes.push(`"${partKey}" = "${relative}"`);

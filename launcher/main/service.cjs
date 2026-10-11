@@ -274,17 +274,19 @@ class LauncherService {
   }
   async carSpec(bank) {return require('./car-profile.cjs').read(this,bank);}
   async saveCarSpec(bank,edits,revision) {return require('./car-profile.cjs').edit(this,bank,edits,revision);}
-  async exportCar(key,destination) {
+  async exportCar(key,destination,modelFormat='obj') {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
-    return this.operation('Exporting car model',signal=>this.exportCarData(key,destination,signal));
+    if(!['obj','glb'].includes(modelFormat))throw Error('Choose OBJ or GLB geometry');
+    return this.operation('Exporting car model',signal=>this.exportCarData(key,destination,signal,'png',undefined,modelFormat));
   }
-  async exportCarData(key,destination,signal,format='png',view){
+  async exportCarData(key,destination,signal,format='png',view,modelFormat='obj'){
     return require('./car-view.cjs').withView(this,signal,view,async mod=>{
       const target=path.join(destination,key);await fs.mkdir(target);
       try{
         const mesh=path.join(target,'model.rmesh');
         const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+mesh],signal));
         await require('./car-view.cjs').model(this,key,mesh,mod);
+        if(modelFormat==='glb'){await run(this.tool('rage-mesh-obj'),['export-glb',mesh,'0',path.join(target,'model.glb')],{signal});await fs.rm(mesh);await fs.writeFile(path.join(target,'README.txt'),'Geometry-only GLB for the modern renderer, in native Y-up units. Edit one car part, then Import replacement on the same part.\nKeep material rr_material custom properties or rage_N names. Normals, UVs and linear vertex RGBA are retained.\nOriginal game textures remain in use; texture/shader changes in GLB are not imported. Use car set OBJ + PNG for texture editing.\nMultiple mesh nodes, skins, animations and extensions are not supported by this part operation.\n');return target;}
         await run(this.tool('rage-mesh-obj'),['export',mesh,'0',path.join(target,'model.obj')],{signal});
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',mesh],{signal,maxOutput:16*1024*1024}));
         const appearance=await require('./preview-materials.cjs')(this,key,metadata,mod,signal);
@@ -319,9 +321,10 @@ class LauncherService {
       try{
         const mesh=path.join(staging,'meshes/model.rmesh');
         const extension=path.extname(file).toLowerCase();
-        if(extension==='.obj')await run(this.tool('rage-mesh-obj'),['import',file,mesh],{signal});
+        if(extension==='.glb')await run(this.tool('rage-mesh-obj'),['import-glb',file,mesh],{signal});
+        else if(extension==='.obj')await run(this.tool('rage-mesh-obj'),['import',file,mesh],{signal});
         else if(extension==='.rmesh')await fs.copyFile(file,mesh);
-        else throw Error('Choose an OBJ or RRMESH file');
+        else throw Error('Choose an OBJ, geometry-only GLB or RRMESH file');
         await require('./car-material-bindings.cjs')(this,key,mesh,staging,path.basename(file),signal);
         await this.loadProject();
         if(this.editor){

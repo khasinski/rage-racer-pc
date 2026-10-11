@@ -1045,3 +1045,46 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Native CLI rebuilt/staged; gameplay loader nie wymagał nowej implementacji.
   Timeline add/delete, new sky images, fog density oraz tunnel/events są nadal
   nieukończonymi wymaganiami, więc pełny T11 pozostaje otwarty.
+
+### Compiled GLB geometry i rzeczywisty car-part flow
+
+- Zintegrowano MIT cgltf pinned 85cd62382dfea638278962690cf515023f33ed00
+  (external/cgltf), bez Python i bez nowego standalone executable. Existing
+  rage-mesh-obj ma import-glb/export-glb; license w resources/licenses jest
+  uwzględniany przez istniejący packaging resources path.
+- Export generuje bounded self-contained GLB dla jednego native mesh part.
+  Consecutive material runs zachowują triangle order. POSITION/UV/linear RGBA
+  i pełny material word (extras + name fallback) są zachowane. NORMAL jest
+  normalized, _RR_NORMAL zachowuje native fixed-point magnitude dla no-op.
+- Import używa bounded cgltf metadata allocator i validate, jednego aktywnego
+  mesh node, world transform/inverse transpose/mirrored winding. Odrzuca
+  external buffers, multiple mesh nodes, sparse/unsupported attributes,
+  extensions/skins/animation i nieobsługiwane material/texture edits. Nie
+  flattenuje całego auta w body ani nie odczytuje URI plików poza kontenerem.
+- Existing Car editor/preload/IPC: Export GLB geometry, Import replacement
+  (GLB/OBJ/RRMESH), validation, immutable project mesh i Save & apply. UI
+  jawnie mówi geometry-only/modern oraz zachowanie istniejących textures.
+  Complete car-set worker przyjmuje też geometry GLB dla osobnego part file;
+  domyślny cały export nadal OBJ/PNG.
+- Native converter regression: triangle order, full word, RGBA/UV, fixed
+  normals, renamed materials with extras, negative nonuniform scale +
+  translation, bad buffers/nodes/mapping/extensions/singular matrix/counts,
+  exclusive output + source intact PASS. Existing compiled mesh_obj PASS.
+- Real PAL body 10/0: export/import + native preview wykazały identyczne dane
+  per-corner positions/normals/material/UV dla 2430 triangle corners; publish
+  PASS. Actual app.js + native service headless Export GLB → Import part →
+  Save & apply PASS, zero pageerrors. Native dialogs/Electron IPC transport
+  oraz Blender są nadal osobnymi bramkami, których ten bridge nie udaje.
+- Normal modern race opt-in glb-game test PASS: loader log potwierdza override
+  car.player.10.part.0 i scene 12 timer 20; authored cars wyłączone, isolated
+  portable storage, read-only PAL source. Nie deklarujemy zmienionej geometrii
+  w classic ani physics/collision z samego GLB.
+- Full npm test przed nowym opt-in gate: 161 JS tests, 155 PASS, 6 optional skips;
+  game gate wykonany osobno PASS. Native worker rebuilt/staged. Nie stwierdzamy
+  C03/C08 completion: full car GLB roles/pivots/images/mapping wizard, standard
+  unit conversion, unknown extras preservation, external .gltf, native image
+  import i manual Blender/all-platform coverage pozostają wymagane.
+- Final npm test po dodaniu opt-in gate i unsupported material/UV/normal
+  cases: 162 JS tests, 155 PASS, 7 optional skips, zero failures; save_format
+  PASS. glb-game uruchomiony osobno PASS. Car-part GLB nie zastępuje istniejącej
+  Python bank-to-glTF ścieżki bez pełnej compiled behavior/coverage parity.

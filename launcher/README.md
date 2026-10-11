@@ -291,3 +291,23 @@ original sky texture rows. Save these settings together with cue times when
 extending or shortening the loop; every cue start must fit within the final
 length. The first cue remains at tick zero. Discard restores both the values
 and the cue-time limits. Sky layout selects existing image rows, not a new PNG.
+
+## Car-part GLB geometry
+
+**Cars → Appearance → Edit an individual part → Export GLB geometry** exports
+that part's geometry. Edit the GLB, then **Import replacement** on the same part.
+Save & apply activates it in the modern renderer. Original game texture bindings
+remain in use. This operation does not import texture/shader changes or a whole
+car scene; use the OBJ/PNG car set for existing texture editing.
+
+The compiled converter retains native Y-up coordinates, UVs, linear vertex RGBA,
+triangle order and full material words. Keep `rr_material` custom properties or
+`rage_N` material names. Standard normals are normalized for interchange; the
+custom `_RR_NORMAL` attribute preserves original native normals when retained.
+Node transforms are baked, including mirrored winding and inverse-transpose
+normals. Input must be a bounded self-contained static GLB with one active mesh
+node and normals. External buffers, sparse attributes, textures, material
+appearance edits, extensions, animation and skins are rejected explicitly.
+
+Whole-car GLB roles/pivots/material mapping, embedded images, `.gltf` external
+resources and a Blender roundtrip remain separate unfinished contracts.
