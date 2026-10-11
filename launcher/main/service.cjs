@@ -319,9 +319,14 @@ class LauncherService {
     if(!ownedJob)this.requireReady();let text='';
     try{text=await fs.readFile(path.join(this.root,'rage-port.ini'),'utf8');}catch(e){if(e.code!=='ENOENT')throw e;text=await fs.readFile(this.baseConfig,'utf8');}
     const style=this.state.disc.region==='NTSC-J'?'japanese':'international';
-    let profile='';this.projectError=null;
-    try{profile=await require('./project-build.cjs').activeProfile(this);}catch(e){this.projectError='Project activation failed: '+e.message;}
-    return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'cars.profile':profile,'audio.menu_music':path.join(this.state.disc.data,'menu_music.wav'),'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
+    this.projectError=null;
+    try{
+      const build=await require('./project-build.cjs').activeBuild(this);
+      // Pass the pointer root, not a direct profile: runtime validates and
+      // selects both providers together against the mounted disc.
+      if(build)modDirectory=await this.gameModRoot();
+    }catch(e){this.projectError='Project activation failed: '+e.message;modDirectory='';}
+    return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'cars.profile':'','audio.menu_music':path.join(this.state.disc.data,'menu_music.wav'),'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
   }
   async launch() {
     this.requireReady();
@@ -334,7 +339,12 @@ class LauncherService {
         await fs.access(menuMusic);
         this.busy.label='Starting game';await this.update();
       }
-      const active=await this.composeMods();
+      // Applied projects use their immutable tree on both launch paths. Only
+      // pre-project installations retain the temporary composition path.
+      let applied=null;this.projectError=null;
+      try{applied=await require('./project-build.cjs').activeBuild(this);}
+      catch(e){this.projectError='Project activation failed: '+e.message;}
+      const active=applied||this.projectError?'':await this.composeMods();
       const config=path.join(this.root,'rage-port.ini');
       let log;
       try {

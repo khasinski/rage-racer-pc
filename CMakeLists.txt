@@ -178,6 +178,7 @@ add_library(rage-rmesh STATIC
     src/render/rmesh_index.c
     src/render/rmesh_cache.c)
 target_include_directories(rage-rmesh PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(rage-content PRIVATE rage-rmesh)
 add_executable(rage-mesh-obj tools/rage_mesh_obj.c)
 target_link_libraries(rage-mesh-obj PRIVATE rage-rmesh)
 set(RAGE_HAS_AUTHORED_CARS 0)

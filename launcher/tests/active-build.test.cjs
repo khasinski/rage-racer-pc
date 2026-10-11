@@ -14,6 +14,15 @@ test('native SHA-256 matches Node across block and streaming boundaries',async()
       await fs.writeFile(file,bytes);
       assert.equal(JSON.parse(await run(cli,['--hash-file',file])).sha256,hash(bytes),`length ${size}`);
     }
+    await fs.mkdir(path.join(root,'textures'));
+    const bytes=await fs.readFile(file);await fs.copyFile(file,path.join(root,'textures/check.png'));
+    const batch=names=>run(cli,['--hash-files-stdin',root],{input:Buffer.from(JSON.stringify(names))});
+    assert.deepEqual(JSON.parse(await batch(['textures/check.png'])),[['textures/check.png',hash(bytes)]]);
+    assert.deepEqual(JSON.parse(await batch([])),[]);
+    for(const names of [null,['../bytes'],['textures/missing.png'],['textures/check.png','textures/check.png'],[42]])
+      await assert.rejects(batch(names),/invalid inventory/);
+    await fs.truncate(path.join(root,'textures/check.png'),128*1024*1024+1);
+    await assert.rejects(batch(['textures/check.png']),/size limit/);
   }finally{await fs.rm(root,{recursive:true,force:true});}
 });
 
@@ -48,5 +57,26 @@ test('native active build rejects ambiguous identity and damaged or invalid prof
     await fs.writeFile(path.join(dir,'cars.toml'),invalid);
     await fs.writeFile(file,JSON.stringify({...pointer,profileHash:hash(invalid)}));
     await assert.rejects(read(),/runtime validation/);
+    await fs.writeFile(path.join(dir,'cars.toml'),profile);
+    await fs.mkdir(path.join(dir,'textures'));
+    const payloadFile=path.join(dir,'textures/light.png');await fs.writeFile(payloadFile,'payload fixture');
+    const digest=hash('payload fixture');
+    const activate=async entries=>{
+      const bytes=JSON.stringify(entries);await fs.writeFile(path.join(dir,'files.json'),bytes);
+      await fs.writeFile(file,JSON.stringify({...pointer,format:2,payloadHash:hash(bytes)}));
+    };
+    await activate([['textures/light.png',digest]]);assert.equal(JSON.parse(await read()).active,true);
+    await fs.appendFile(payloadFile,'changed');await assert.rejects(read(),/payload.*damaged/);
+    await fs.writeFile(payloadFile,'payload fixture');
+    for(const entries of [
+      [['../outside.png',digest]],
+      [['textures/light.png',digest],['textures/light.png',digest]],
+      [['textures/light.png',digest],['raw/asset_000.bin',digest]],
+      [['cars.toml',pointer.profileHash]],
+      [['textures/light.png','invalid']],
+      [['textures/missing.png',digest]],
+    ]){await activate(entries);await assert.rejects(read(),/payload.*damaged/);}
+    await activate([]);assert.equal(JSON.parse(await read()).active,true);
+    await fs.appendFile(path.join(dir,'files.json'),' ');await assert.rejects(read(),/payload.*damaged/);
   }finally{await fs.rm(root,{recursive:true,force:true});}
 });

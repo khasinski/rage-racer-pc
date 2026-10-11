@@ -136,8 +136,36 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   zły region/odcisk, uszkodzone pliki i niepoprawny profil z poprawnym hashem.
 - Sprawdzono 12 testów C oraz suite launchera: 99 pass, 3 skip (102 testy).
   Trzy pominięte testy wymagają regionalnych obrazów płyty. Bez okien gry.
-- Ten build nadal obejmuje wyłącznie profil auta. Kompozycja istniejących
-  paczek jest jawnie blokowana i wymaga połączenia z nowym builderem. Starszy
-  publisher paczek odmawia zastąpienia katalogu należącego do nowego edytora;
-  nie stanowi jeszcze wspólnej ścieżki publikacji. Nie ma jeszcze kompletnego
-  rejestru/hashowania wszystkich przyszłych plików scen i modeli.
+- Na tym etapie build obejmował tylko profil auta; ograniczenie kompozycji
+  istniejących paczek zostało usunięte w etapie poniżej.
+
+## Profil auta i paczki zasobów w jednym buildzie
+
+- Save & apply korzysta ze sprawdzonej kompozycji wybranych paczek: walidacja
+  zależności/konfliktów, prywatne kopie plików, izolowane ścieżki providerów
+  i wspólny manifest. Profil parametrów jest częścią tego samego wyniku.
+- Wskaźnik formatu 2 wiąże `files.json` z odciskami payloadu. Lista jest
+  posortowana, ograniczona i sprawdzana przez wspólną politykę plików runtime.
+  Uszkodzony/usunięty model, tekstura lub raw pack odrzuca cały wynik razem
+  z profilem. Format 1 poprzedniego etapu pozostaje czytelny.
+- Hashe payloadu powstają w jednym wywołaniu kompilowanego CLI, zamiast osobnego
+  procesu na każdy plik. Limity paczek i plików obowiązują również w tej fazie.
+- Gotowy wynik przed commit aktywnego wskaźnika przechodzi ten sam walidator C
+  co gra. Wywołanie ze złym odciskiem blokuje aktywację i usuwa nowy wynik;
+  wcześniej zastosowany build pozostaje dostępny.
+- Starszy przycisk zapisania modów deleguje do wspólnego buildera. Usunięto
+  osobną operację zastępującą cały katalog gry. Wcześniejsze buildy pozostają.
+- Launch z edytora dla zastosowanego projektu nie buduje następnej tymczasowej
+  kompozycji. Wskazuje korzeń ze wskaźnikiem, a runtime wybiera profile i modele
+  razem po walidacji zamontowanej płyty. Zakończenie procesu nie usuwa buildu.
+- Testy serwisu używają rzeczywistego importera OBJ/RMESH i parsera manifestu:
+  wspólny profil/model, niezależność od późniejszych zmian paczki, failed build,
+  damaged payload, wyłączenie paczki, zachowana historia buildów oraz cykl
+  procesu gry bez otwierania okna. Test C sprawdza odrzucenie payloadu podczas
+  inicjalizacji asset session i zachowanie odrzucenia do jawnego reloadu.
+- Nadal brakuje: pełnej wizualnej próby w grze, przeniesienia wyboru paczek
+  i edycji geometrii do historii samego dokumentu, resolvera raw parametrów,
+  pełnego GLB/scen tras, mediów i pozostałych gates pełnego planu.
+- Walidacja etapu: suite launchera 100 pass / 3 skip (103 testy), 12 testów
+  C dla hash/provider/session oraz modern_assets_retry przechodzą. Przebudowano
+  grę, smoke, frame replay i narzędzia; testy nie otwierały okna gry.

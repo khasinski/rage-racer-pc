@@ -9,4 +9,8 @@ typedef struct ActiveBuild {
  * on failure. Source is SHA-256 of original RAGE.BIN, with sha256: prefix. */
 int ActiveBuildOpen(const char *root,const char *region,const char *source,
                     ActiveBuild *build,char *error,size_t errorSize);
+/* Validate an unpublished pointer file against builds under root. The editor
+ * uses this before committing active.json; runtime uses ActiveBuildOpen. */
+int ActiveBuildRead(const char *root,const char *pointerPath,const char *region,
+                    const char *source,ActiveBuild *build,char *error,size_t errorSize);
 #endif

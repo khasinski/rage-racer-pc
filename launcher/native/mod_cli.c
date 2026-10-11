@@ -51,11 +51,50 @@ static void String(const char *s) {
     const unsigned char *p=(const unsigned char *)s;putchar('"');
     for(;*p;p++){if(*p=='"'||*p=='\\')printf("\\%c",*p);else if(*p<32||*p>=127)printf("\\u%04x",*p);else putchar(*p);}putchar('"');
 }
+static int HashFiles(const char *directory){
+    enum { LIMIT=8*1024*1024 };
+    char *bytes=malloc(LIMIT+1u),(*hashes)[65]=NULL;yyjson_doc *doc=NULL;
+    int ok=0;size_t size,i,count;Uint64 total=0;yyjson_val *entry;
+    if(!bytes)return 1;
+#ifdef _WIN32
+    if(_setmode(_fileno(stdin),_O_BINARY)==-1)goto done;
+#endif
+    size=fread(bytes,1,LIMIT+1u,stdin);if(size>LIMIT||ferror(stdin))goto done;
+    doc=yyjson_read(bytes,size,0);if(!doc)goto done;
+    yyjson_val *root=yyjson_doc_get_root(doc);
+    if(!yyjson_is_arr(root)||yyjson_arr_size(root)>10000)goto done;
+    hashes=malloc((yyjson_arr_size(root)+1)*sizeof(*hashes));if(!hashes)goto done;
+    const char *previous=NULL;
+    yyjson_arr_foreach(root,i,count,entry){
+        const char *name=yyjson_get_str(entry);char file[1100];SDL_PathInfo info;
+        if(!name||strlen(name)!=yyjson_get_len(entry)||
+           ModFileClassify(name)==RAGE_MOD_FILE_INVALID||(previous&&strcmp(previous,name)>=0))goto done;
+        int n=snprintf(file,sizeof(file),"%s/%s",directory,name);
+        if(n<0||(size_t)n>=sizeof(file)||!InventoryNotLink(file)||!SDL_GetPathInfo(file,&info)||
+           info.type!=SDL_PATHTYPE_FILE||info.size>128u*1024u*1024u||
+           info.size>1024u*1024u*1024u-total||!Sha256File(file,128u*1024u*1024u,hashes[i]))goto done;
+        total+=info.size;previous=name;
+    }
+    putchar('[');
+    yyjson_arr_foreach(root,i,count,entry){
+        printf("%s[",i?",":"");String(yyjson_get_str(entry));printf(",\"%s\"]",hashes[i]);
+    }
+    puts("]");ok=!ferror(stdout);
+done:
+    yyjson_doc_free(doc);free(hashes);free(bytes);
+    if(!ok)fputs("Cannot hash build payload: invalid inventory, missing file or size limit\n",stderr);
+    return ok?0:1;
+}
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
-    if(argc==5&&strcmp(argv[1],"--active-build")==0){
-        ActiveBuild build;char error[160];int result=ActiveBuildOpen(argv[2],argv[3],argv[4],&build,error,sizeof(error));
+    if(argc==3&&strcmp(argv[1],"--hash-files-stdin")==0)return HashFiles(argv[2]);
+    if((argc==5&&strcmp(argv[1],"--active-build")==0)||
+       (argc==6&&strcmp(argv[1],"--check-build")==0)){
+        ActiveBuild build;char error[160];
+        int result=argc==5?ActiveBuildOpen(argv[2],argv[3],argv[4],&build,error,sizeof(error)):
+            ActiveBuildRead(argv[2],argv[3],argv[4],argv[5],&build,error,sizeof(error));
         if(result<0){fprintf(stderr,"%s\n",error);return 1;}
+        if(argc==6&&result==0){fputs("Missing build pointer\n",stderr);return 1;}
         if(result==0){puts("{\"active\":false}");return 0;}
         printf("{\"active\":true,\"directory\":");String(build.directory);
         printf(",\"profile\":");String(build.profile);puts("}");return 0;

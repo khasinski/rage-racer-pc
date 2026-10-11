@@ -111,7 +111,8 @@ int main(int argc, char **argv) {
     snprintf(manifestPath, sizeof(manifestPath), "%s/mod.toml", root);
     if(argc==2 && strcmp(argv[1],"active")==0){
         char builds[1024],build[1024],profile[1100],pointer[1100],buildManifest[1100];
-        char profileHash[65],manifestHash[65],json[1024];
+        char profileHash[65],manifestHash[65],payloadHash[65],assetHash[65],json[1024];
+        char buildRaw[1100],payload[1100],buildAsset[1200],entries[256];
         const char *id="00000000-0000-4000-8000-000000000001";
         const char *source="sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         const char *text="[[cars]]\nid=\"car_00_g0\"\nmodel=0\ngrade=0\nprice=0\n";
@@ -121,10 +122,18 @@ int main(int argc, char **argv) {
         snprintf(profile,sizeof(profile),"%s/cars.toml",build);
         snprintf(buildManifest,sizeof(buildManifest),"%s/mod.toml",build);
         snprintf(pointer,sizeof(pointer),"%s/active.json",root);
+        snprintf(buildRaw,sizeof(buildRaw),"%s/raw",build);EXPECT(MakeDirectory(buildRaw)==0);
+        snprintf(buildAsset,sizeof(buildAsset),"%s/asset_001.bin",buildRaw);
+        EXPECT(WriteFixtureFile(buildAsset,valid,sizeof(valid)));
+        EXPECT(Sha256File(buildAsset,1024,assetHash));
+        snprintf(entries,sizeof(entries),"[[\"raw/asset_001.bin\",\"%s\"]]",assetHash);
+        snprintf(payload,sizeof(payload),"%s/files.json",build);
+        EXPECT(WriteFixtureFile(payload,(const unsigned char *)entries,strlen(entries)));
+        EXPECT(Sha256File(payload,1024,payloadHash));
         EXPECT(WriteFixtureFile(profile,(const unsigned char *)text,strlen(text)));
         EXPECT(WriteFixtureFile(buildManifest,(const unsigned char *)manifest,strlen(manifest)));
         EXPECT(Sha256File(profile,1024*1024,profileHash));EXPECT(Sha256File(buildManifest,1024*1024,manifestHash));
-        snprintf(json,sizeof(json),"{\"format\":1,\"build\":\"%s\",\"source\":{\"region\":\"PAL\",\"fingerprint\":\"%s\"},\"profileHash\":\"%s\",\"manifestHash\":\"%s\"}",id,source,profileHash,manifestHash);
+        snprintf(json,sizeof(json),"{\"format\":2,\"build\":\"%s\",\"source\":{\"region\":\"PAL\",\"fingerprint\":\"%s\"},\"profileHash\":\"%s\",\"manifestHash\":\"%s\",\"payloadHash\":\"%s\"}",id,source,profileHash,manifestHash,payloadHash);
         EXPECT(WriteFixtureFile(pointer,(const unsigned char *)json,strlen(json)));
         defaultDirectory=root;configuredDirectory=NULL;
         EXPECT(ModAssetsNeedsSource());
@@ -134,6 +143,12 @@ int main(int argc, char **argv) {
         EXPECT(ModAssetsManifest() && !strcmp(ModAssetsManifest()->id,"active-project"));
         s_room=sizeof(destination);EXPECT(ModAssetLoad(0,destination,2)==0); /* old root/raw is not mixed in */
         ModAssetsShutdown();EXPECT(ModAssetsCarProfile()!=NULL); /* reload retains mounted source */
+        ModAssetsShutdown();
+        EXPECT(WriteFixtureFile(buildAsset,oversized,sizeof(oversized)));
+        EXPECT(ModAssetsDirectory()==NULL && ModAssetsCarProfile()==NULL && ModAssetsManifest()==NULL);
+        EXPECT(WriteFixtureFile(buildAsset,valid,sizeof(valid)));
+        EXPECT(ModAssetsDirectory()==NULL); /* no hot reload after rejection */
+        ModAssetsShutdown();EXPECT(ModAssetsCarProfile()!=NULL);
         ModAssetsShutdown();ModAssetsSetSource("NTSC-J",source);
         EXPECT(ModAssetsDirectory()==NULL && ModAssetsCarProfile()==NULL);
         EXPECT(ModAssetLoad(0,destination,2)==0);
@@ -146,7 +161,8 @@ int main(int argc, char **argv) {
         EXPECT(!ModAssetsNeedsSource());EXPECT(ModAssetsCarProfile()==NULL);
         ModAssetsShutdown();configuredDirectory=root;ModAssetsSetSource("PAL",source);
         EXPECT(ModAssetsCarProfile()!=NULL);
-        unlink(pointer);unlink(profile);unlink(buildManifest);rmdir(build);rmdir(builds);
+        unlink(pointer);unlink(profile);unlink(buildManifest);unlink(payload);
+        unlink(buildAsset);rmdir(buildRaw);rmdir(build);rmdir(builds);
         goto cleanup;
     }
     if (argc == 2) {
