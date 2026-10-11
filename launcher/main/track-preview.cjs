@@ -15,7 +15,11 @@ module.exports=function assembleTrack(banks){
     v[3]=c*nx-s*nz;v[5]=s*nx+c*nz;
     const word=v[6]>>>0,id=word&65535,key=name+':'+id;
     if(id!==65535){
-     if(!materials.has(key))materials.set(key,materials.size);
+     if(!materials.has(key)){
+      const target=materials.size;materials.set(key,target);
+      if(geometry.textures?.[id])out.textures[target]=geometry.textures[id];
+      if(geometry.materials?.[id])out.materials[target]=geometry.materials[id];
+     }
      v[6]=((word&0xffff0000)|materials.get(key))>>>0;
     }
     vertices.set(index,out.vertices.length/9);out.vertices.push(...v);

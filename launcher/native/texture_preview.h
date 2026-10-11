@@ -20,11 +20,12 @@ static int PreviewChain(unsigned short *vram,const unsigned char *data,size_t si
         if(n>size-at||!PreviewEntry(vram,data,at+n,at))return 0;at+=n;
     }return 0;
 }
-static int TexturePreview(int argc,char **argv){
+static int TexturePreviewWindow(int argc,char **argv,unsigned windowW,unsigned windowH,unsigned windowX,unsigned windowY){
     static unsigned short vram[1024*512];
     unsigned page,clut,x,y;int arg;FILE *file;
     unsigned char rgba[256*256*4];
-    if(argc<6||(argc-5)%6)return 1;
+    if(argc<5||(argc-5)%6)return 1;
+    if(argc>5)memset(vram,0,sizeof(vram));
     page=(unsigned)strtoul(argv[2],NULL,10);clut=(unsigned)strtoul(argv[3],NULL,10);
     if(page>65535||clut>65535)return 1;
     for(arg=5;arg<argc;arg+=6){
@@ -52,11 +53,12 @@ static int TexturePreview(int argc,char **argv){
         free(data);
     }
     for(y=0;y<256;y++)for(x=0;x<256;x++){
+        unsigned sx=windowW?x%windowW+windowX:x,sy=windowH?y%windowH+windowY:y;
         unsigned mode=(page>>7)&3,px=(page&15)*64,py=((page>>4)&1)*256,word=0,cx=(clut&63)*16,cy=(clut>>6)&511,index=0;
-        if(mode==0){if(px+x/4<1024)index=(vram[(py+y)*1024+px+x/4]>>((x&3)*4))&15;}
-        else if(mode==1){if(px+x/2<1024)index=(vram[(py+y)*1024+px+x/2]>>((x&1)*8))&255;}
+        if(mode==0){if(px+sx/4<1024)index=(vram[(py+sy)*1024+px+sx/4]>>((sx&3)*4))&15;}
+        else if(mode==1){if(px+sx/2<1024)index=(vram[(py+sy)*1024+px+sx/2]>>((sx&1)*8))&255;}
         if(mode<=1){if(cx+index<1024)word=vram[cy*1024+cx+index];}
-        else if(px+x<1024)word=vram[(py+y)*1024+px+x];
+        else if(px+sx<1024)word=vram[(py+sy)*1024+px+sx];
         unsigned char *p=rgba+(y*256+x)*4;p[0]=(unsigned char)((word&31)*255/31);p[1]=(unsigned char)(((word>>5)&31)*255/31);p[2]=(unsigned char)(((word>>10)&31)*255/31);p[3]=word?255:0;
     }
     size_t pathLength=strlen(argv[4]);
@@ -71,3 +73,4 @@ static int TexturePreview(int argc,char **argv){
     if(fwrite(rgba,1,sizeof(rgba),file)!=sizeof(rgba))ok=0;
     if(fclose(file))ok=0;return ok?0:1;
 }
+static int TexturePreview(int argc,char **argv){return argc<6?1:TexturePreviewWindow(argc,argv,0,0,0,0);}

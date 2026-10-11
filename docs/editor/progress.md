@@ -421,3 +421,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - To podgląd geometrii bez tekstur: UI mówi o tym wprost. Tekstury, picking,
   manipulacja w 3D, większy viewport sceny i edycja drogi/AI/kamer pozostają
   do realizacji wraz z pozostałym zakresem planu.
+
+### Tekstury w podglądzie toru
+
+- Podgląd 3D dekoduje używane materiały course/terrain z oryginalnych uploadów
+  tekstur w jednym natywnym wywołaniu. Zachowuje palety i texture windows,
+  pełne identyfikatory materiałów oraz rozdział banków. Wybrany snapshot
+  dostarcza raw overrides i istniejące wpisy materiałów/tekstur.
+- PNG korzysta z kompresowanego writera SDL zamiast ręcznego stored-deflate.
+  Test batch sprawdza piksele i okna, odrzucenie błędnego wejścia przed zapisem
+  oraz ochronę istniejących plików. Test składania chroni ID ponad 64 i banki.
+- Rzeczywisty PAL Mythical Coast: 340 materiałów, 36 416 wierzchołków,
+  11,23 MB JSON, przygotowanie około 2,1 s. Headless Chromium wyrenderował
+  teksturowany tor bez błędów JS; screen obejrzano:
+  `build/reports/editor/track-preview-textured.png`.
+- Pełna suite przed dodatkowym testem remapu: 120 pass / 3 skip (123 testy).
+  Picking, manipulacja obiektami w 3D i edycja drogi/AI nadal nie są gotowe;
+  niniejszy etap nie domyka całego planu edytora.

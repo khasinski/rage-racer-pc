@@ -9,3 +9,11 @@ test('track preview uses grid placements, GTE scale, rotation and only reference
  assert.notEqual(out.vertices[6],out.vertices[33]);assert.equal(out.entities[1].object,7);
  assert.throws(()=>assemble({course:{geometry,instances:[{mesh:2,position:[0,0,0],yaw:0}]}}),/Unknown track preview model/);
 });
+test('track materials preserve full source IDs and keep bank textures distinct',()=>{
+ const make=png=>({ranges:[[0,3]],vertices:[0,0,0,0,1,0,130,0,0,4,0,0,0,1,0,130,1,0,0,0,4,0,1,0,130,0,1],colors:Array(12).fill(128),indices:[0,1,2],textures:{130:{png}},materials:{130:{id:png}}});
+ const instances=[{mesh:0,position:[0,0,0],yaw:0}];
+ const out=assemble({course:{geometry:make('course'),instances},terrain:{geometry:make('terrain'),instances}});
+ assert.deepEqual(out.textures,{0:{png:'course'},1:{png:'terrain'}});
+ assert.deepEqual(out.materials,{0:{id:'course'},1:{id:'terrain'}});
+ assert.equal(out.vertices[6],0);assert.equal(out.vertices[33],1);
+});
