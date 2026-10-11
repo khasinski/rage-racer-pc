@@ -40,7 +40,7 @@ int ExportTrack(const char *source,int bank,const char *directory) {
             for(unsigned z=0;z<32;z++)for(unsigned x=0;x<32;x++){
                 unsigned mesh=g_TerrainCellGrid[(31-z)*32+x]&TERRAIN_CELL_INDEX_MASK;
                 if(mesh==TERRAIN_MISSING_CELL_INDEX)continue;
-                printf("%s{\"mesh\":%u,\"position\":[%u,0,%d],\"yaw\":0}",comma?",":"",mesh,x*2048+1024,-(int)(z*2048+1024));comma=1;
+                printf("%s{\"mesh\":%u,\"cell\":%u,\"position\":[%u,0,%d],\"yaw\":0}",comma?",":"",mesh,(31-z)*32+x,x*2048+1024,-(int)(z*2048+1024));comma=1;
             }
         }else{
             for(int at=0;at<g_CourseObjectCount;at++){

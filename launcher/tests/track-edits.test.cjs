@@ -96,7 +96,7 @@ test('terrain cell model edits preserve region bits and every other byte',async 
  const bytes=Buffer.concat([original.subarray(0,start),terrain,original.subarray(end)]);for(let i=8;i<11;i++)bytes.writeUInt32LE(original.readUInt32LE(i*4)+terrain.length-(end-start),i*4);
  const source=path.join(root,'source.bin'),out=path.join(root,'out.bin'),tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli');await fs.writeFile(source,bytes);
  await run(tool,['--edit-track-stdin',source,out],{input:Buffer.from('[[0,"cell.model",1023]]')});const result=await fs.readFile(out);
- assert.equal(result.readUInt16LE(start),0xffff);assert.deepEqual(result.subarray(0,start),bytes.subarray(0,start));assert.deepEqual(result.subarray(start+2),bytes.subarray(start+2));
+ const scene=JSON.parse(await run(tool,['--track-scene',out]));assert.equal(scene.terrain.models,1);assert.equal(scene.terrain.cells.length,1024);assert.equal(scene.terrain.cells[0],65535);assert.equal(result.readUInt16LE(start),0xffff);assert.deepEqual(result.subarray(0,start),bytes.subarray(0,start));assert.deepEqual(result.subarray(start+2),bytes.subarray(start+2));
  await fs.rm(out);for(const edit of [[0,'cell.model',1],[1024,'cell.model',0]]){await assert.rejects(run(tool,['--edit-track-stdin',source,out],{input:Buffer.from(JSON.stringify([edit]))}),/Invalid track object edit/);await assert.rejects(fs.stat(out),{code:'ENOENT'});}
  assert.deepEqual(require('../main/track-edits.cjs').group([{kind:'track',id:'track.big1.cell.0',field:'model',value:1023}]).get(88),[[0,'cell.model',1023]]);
 });

@@ -205,6 +205,17 @@ replaceDone:
                 printf("%s{\"model\":%d,\"yaw\":%d,\"x\":%d,\"y\":%d,\"z\":%d,\"flags\":%u}",i?",":"",p.model,p.yaw,p.x,p.y,p.z,p.flags);
             }
             putchar(']');
+            if(blocks[7].size>=6144){
+                Terrain terrain;
+                if(!TerrainOpen(blocks[7].data,blocks[7].size,&terrain)){
+                    free(bytes);fputs("Invalid terrain data\n",stderr);return 1;
+                }
+                printf(",\"terrain\":{\"models\":%u,\"cells\":[",terrain.models);
+                for(uint32_t cell=0;cell<TERRAIN_GRID_CELLS;cell++){
+                    uint16_t word;TerrainRead(&terrain,cell,&word);printf("%s%u",cell?",":"",word);
+                }
+                printf("]}");
+            }
         } else printf("]");
         puts("}");free(bytes);return 0;
     }

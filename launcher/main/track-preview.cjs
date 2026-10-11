@@ -27,7 +27,7 @@ module.exports=function assembleTrack(banks){
    }
    out.indices.push(vertices.get(index));
   }
-  out.entities.push({bank:name,mesh:instance.mesh,object:instance.object,firstIndex:start,indexCount:count});
+  out.entities.push({bank:name,mesh:instance.mesh,cell:instance.cell,object:instance.object,firstIndex:start,indexCount:count});
  }
  return out;
 };

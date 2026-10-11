@@ -663,3 +663,18 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Wszystkie 24 rzeczywiste PAL terrain blocks przeszły native no-op edit
   i byte-exact comparison. Mythical Coast cell 259: hide → effective preview
   203→202 instances, undo →203. Temp root, oryginały read-only.
+
+### Przypisywanie modeli terenu w działającym edytorze
+
+- Track workspace udostępnia wszystkie 1024 komórki, również puste. Wybór
+  modelu lub Empty cell zapisuje zmianę przez `saveTerrainCell`, native codec
+  i wspólną historię projektu. Nie zmienia źródłowej płyty.
+- Kliknięcie terenu w podglądzie 3D wybiera source cell, nie tylko współdzielony
+  model. Panel udostępnia istniejące Preview oraz import/export OBJ + PNG.
+  Niezapisane przypisanie blokuje zmianę komórki również przez kliknięcie 3D.
+- Pełny zestaw launcher: 138 testów, 135 pass, 3 optional regional skips.
+  Headless rzeczywisty app.js + LauncherService + native importer na PAL:
+  wybór cell 259, Empty cell, zapis, odczyt zmienionego projektu i odświeżenie
+  panelu pass, bez błędów JS. Źródło read-only, prywatny temp project.
+- To rzeczywista funkcja edytora, nie makieta. Ten test nie dowodzi jeszcze
+  działania Electron IPC, publikacji moda ani wizualnego efektu w grze.

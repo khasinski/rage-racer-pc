@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   trackPreview:bank=>ipcRenderer.invoke('launcher:track-preview',bank),
   saveTrackObject:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-track-object',bank,index,values,revision),
   saveRoadPoint:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-road-point',bank,index,values,revision),
+  saveTerrainCell:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-terrain-cell',bank,index,values,revision),
   saveRoadArc:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-road-arc',bank,index,values,revision),
   exportCarSet:key=>ipcRenderer.invoke('launcher:export-car-set',key),
   importCarSet:key=>ipcRenderer.invoke('launcher:import-car-set',key),
