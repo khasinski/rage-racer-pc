@@ -20,6 +20,7 @@
 #include "modern/modern_renderer.h"
 #include "modern/modern_assets.h"
 #include "native_asset_importer.h"
+#include "track_export.h"
 #include "platform_paths.h"
 #include "menu_music_runtime.h"
 
@@ -77,6 +78,9 @@ int main(int argc, char **argv) {
     char carCatalogError[256] = {0};
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
+    if(RuntimeConfigGet("tools.track_export"))
+        return ExportTrack(RuntimeConfigGet("tools.track_export"),
+            RuntimeConfigInt("tools.track_bank",88,88,134),RuntimeConfigGet("tools.track_output"))?EXIT_SUCCESS:EXIT_FAILURE;
     if (!DiagnosticLogOpen(logPath, sizeof(logPath))) {
         fprintf(stderr, "rage-port: could not open diagnostic log\n");
     }

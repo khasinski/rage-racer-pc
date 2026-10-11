@@ -24,6 +24,9 @@ int NativeAssetImporterMaterialSlot(const RenderMeshInstance *instance,
 const RageRuntimeCachedMesh *NativeAssetImporterFind(
     const RenderMeshInstance *instance);
 uint32_t NativeAssetImporterMeshCount(void);
+struct RageImportedTextureKey;
+int NativeAssetImporterMaterialKey(const RenderMeshInstance *instance,
+    uint32_t index, struct RageImportedTextureKey *key);
 const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet);
 int NativeAssetImporterLoadMaterial(
     const RenderMeshInstance *instance, uint32_t material,

@@ -219,16 +219,26 @@ int main(int argc,char **argv) {
     if(argc>1 && strcmp(argv[1],"--rival-layout")==0)return RivalLayoutCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--car-spec")==0)return CarSpecCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--texture")==0)return TexturePreview(argc,argv);
-    if(argc==3 && (strcmp(argv[1],"--mesh")==0 || strcmp(argv[1],"--preview")==0)) {
+    if(argc==3 && (strcmp(argv[1],"--mesh")==0 || strcmp(argv[1],"--mesh-bank")==0 || strcmp(argv[1],"--preview-bank")==0 || strcmp(argv[1],"--preview")==0)) {
         RageRuntimeMesh mesh;
         f=fopen(argv[2],"rb");if(!f)return 1;
         if(fseek(f,0,SEEK_END)||(size=ftell(f))<=0||size>128*1024*1024||fseek(f,0,SEEK_SET)){fclose(f);return 1;}
         bytes=malloc((size_t)size);if(!bytes){fclose(f);return 1;}
         i=fread(bytes,1,(size_t)size,f);fclose(f);
-        if(i!=(size_t)size||!RuntimeMeshOpen(&mesh,bytes,(size_t)size)||mesh.meshCount!=1){free(bytes);fprintf(stderr,"Invalid single-part RRMESH\n");return 1;}
-        if(strcmp(argv[1],"--preview")==0) {
+        int bankMode=!strcmp(argv[1],"--mesh-bank")||!strcmp(argv[1],"--preview-bank");
+        if(i!=(size_t)size||!RuntimeMeshOpen(&mesh,bytes,(size_t)size)||(!bankMode&&mesh.meshCount!=1)){free(bytes);fprintf(stderr,"Invalid %sRRMESH\n",bankMode?"":"single-part ");return 1;}
+        if(strcmp(argv[1],"--preview")==0||strcmp(argv[1],"--preview-bank")==0) {
             if(mesh.vertexCount>100000 || mesh.indexCount>300000){free(bytes);fprintf(stderr,"Model exceeds preview limit (100,000 vertices / 100,000 triangles)\n");return 1;}
-            printf("{\"vertices\":[");
+            putchar('{');
+            if(bankMode){
+                printf("\"ranges\":[");
+                for(uint32_t part=0;part<mesh.meshCount;part++){
+                    uint32_t first,count;RuntimeMeshRange(&mesh,part,&first,&count);
+                    printf("%s[%u,%u]",part?",":"",first,count);
+                }
+                printf("],");
+            }
+            printf("\"vertices\":[");
             for(i=0;i<mesh.vertexCount;i++) {
                 RageRuntimeVertex v;
                 RuntimeMeshVertex(&mesh,(uint32_t)i,&v);

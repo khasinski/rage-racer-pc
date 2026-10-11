@@ -377,3 +377,26 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Obiekty mają tymczasowe nazwy „Object N”; pełna scena 3D, picking oraz
   rozpoznanie/nazwanie geometrii pozostają konieczne. Mapka nadal jest
   inspekcją drogi, nie podglądem terenu. Formularz nie kończy zakresu torów.
+
+### Geometria toru z importera gry
+
+- `tools.track_export` w istniejącej binarce działa przed inicjalizacją okna,
+  storage i logowania sesji gry. Instaluje zweryfikowaną paczkę toru i używa
+  tego samego NativeAssetImporter co modern renderer do zapisania course/terrain
+  RMESH. Udostępnia oryginalne bindingi materiałów page/CLUT/texture window.
+  Nie dodano osobnego narzędzia ani drugiego parsera geometrii.
+- Wyjścia są tworzone wyłącznie, bez nadpisywania istniejących plików. Błąd
+  usuwa tylko nowo zapisane wyjścia. Importer zwalnia pamięć po operacji.
+- CLI ma osobne `--mesh-bank` / `--preview-bank` z zakresami submeshów;
+  dotychczasowe jednoprzedmiotowe API nadal odrzuca banki.
+- Headless eksport wszystkich 24 rzeczywistych paczek PAL i walidacja obu
+  banków przeszły: 981 780 wierzchołków łącznie. Raport:
+  `build/reports/editor/track-export-pal.json`. Mythical Coast class 1 ma
+  64 modele course oraz 198 terrain cells. Brak okna/fokusu w testach narzędzia.
+- Suite przed dodaniem testu bank-preview: 117 pass / 3 skip (120 testów),
+  native save_format pass. Dwa testy narzędzia po dodaniu bank-preview pass:
+  malformed source nie dotyka wyjść, puste submeshe zachowują zakresy,
+  jednoprzedmiotowe API pozostaje restrykcyjne. Native tools wystage'owano.
+- Eksporter jest jeszcze fundamentem podglądu: instancjonowanie modeli,
+  tekstury, picking, pełny interfejs sceny 3D i odbiór wizualny pozostają do
+  zrobienia wraz z pozostałym zakresem edytora.

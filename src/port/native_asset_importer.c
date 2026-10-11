@@ -607,6 +607,14 @@ const RageRuntimeCachedMesh *NativeAssetImporterFind(
 
 uint32_t NativeAssetImporterMeshCount(void) { return s_entryCount; }
 
+int NativeAssetImporterMaterialKey(const RenderMeshInstance *instance,
+    uint32_t index, RageImportedTextureKey *key) {
+    if(!instance||!key||!s_ready)return 0;
+    RageImportedMeshEntry *entry=ImportFindEntry(instance->assetKey,instance->assetSet);
+    if(!entry||index>=entry->materialCount)return 0;
+    *key=entry->materials[index];return 1;
+}
+
 const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAssetSet assetSet) {
     RageImportedMeshEntry *entry = s_ready ? ImportFindEntry(assetKey, assetSet) : NULL;
     return entry != NULL ? &entry->cached : NULL;
