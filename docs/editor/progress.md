@@ -1088,3 +1088,33 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   cases: 162 JS tests, 155 PASS, 7 optional skips, zero failures; save_format
   PASS. glb-game uruchomiony osobno PASS. Car-part GLB nie zastępuje istniejącej
   Python bank-to-glTF ścieżki bez pełnej compiled behavior/coverage parity.
+
+### GLB części auta: embedded PNG i atomic geometry+image import
+
+- Existing compiled converter opcjonalnie dokłada PNG do GLB BIN, referenced
+  przez ordinary glTF images/textures/baseColorTexture. Deduplication jest po
+  native source ID; geometry material words i native shader semantics pozostają.
+  Export single part ma jeden GLB + README, bez osobnych wymaganych PNG.
+- Import wyciąga bounded PNG buffer views, nie otwiera image URI. Waliduje
+  signature/layout/dimensions/size, źródła i conflicting images przed output.
+  Native PNG decoder w service sprawdza całe obrazy przed project mutation.
+  Glass/untextured surfaces i unsupported texture maps/UV transforms nie są
+  milcząco traktowane jako zwykłe body texture. Filtering pozostaje game-owned.
+- Native source → page/clut → original material slot mapping łączy PNG z
+  odpowiednimi semantic texture IDs. Shared-surface conflicts są jawne.
+  Geometry + immutable PNG refs zapisują się jedną Project.edit operation;
+  undo/redo odtwarza oba. Invalid PNG nie zmienia revision ani previous changes.
+- CLI tests: exact embedded PNG bytes/source mapping, geometry unchanged,
+  existing output preservation, URI rejection, conflicting PNG source, no
+  partial files PASS. Service test: compiled car material table, one geometry
+  + texture history transaction, bad decoded PNG leaves project intact PASS.
+- Actual PAL body 10/0: edited embedded PNG read back przez actual preview,
+  per-corner geometry/normal/material/UV unchanged dla 2430 corners; publish
+  PASS. Actual headless app.js Export GLB → Import → Save & apply PASS, zero
+  pageerrors. Normal modern race test PASS: car mesh override oraz native
+  texture override z edited 1×1 PNG, scene 12 timer 20, isolated source/state.
+- Full npm test: save_format PASS; 164 JS tests, 157 PASS, 7 optional skips.
+  Final focused GLB tests 3 PASS; native worker rebuilt/staged. Blender
+  import/export, complete-car single GLB, roles/pivots, material wizard,
+  shader-property mapping, all-platform coverage i standard units nadal
+  pozostają do wykonania; nie deklarujemy pełnego C03/C08 completion.

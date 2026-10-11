@@ -292,22 +292,29 @@ extending or shortening the loop; every cue start must fit within the final
 length. The first cue remains at tick zero. Discard restores both the values
 and the cue-time limits. Sky layout selects existing image rows, not a new PNG.
 
-## Car-part GLB geometry
+## Car-part GLB
 
-**Cars → Appearance → Edit an individual part → Export GLB geometry** exports
-that part's geometry. Edit the GLB, then **Import replacement** on the same part.
-Save & apply activates it in the modern renderer. Original game texture bindings
-remain in use. This operation does not import texture/shader changes or a whole
-car scene; use the OBJ/PNG car set for existing texture editing.
+**Cars → Appearance → Edit an individual part → Export GLB** creates one file
+with that part's geometry and embedded base-color PNG images. Edit the GLB,
+then **Import replacement** on the same part. Geometry and images save together
+in the shared project and Undo/Redo. **Save & apply** activates them in the
+modern renderer. Shared texture surfaces may also affect other parts of the car.
 
-The compiled converter retains native Y-up coordinates, UVs, linear vertex RGBA,
-triangle order and full material words. Keep `rr_material` custom properties or
-`rage_N` material names. Standard normals are normalized for interchange; the
-custom `_RR_NORMAL` attribute preserves original native normals when retained.
-Node transforms are baked, including mirrored winding and inverse-transpose
-normals. Input must be a bounded self-contained static GLB with one active mesh
-node and normals. External buffers, sparse attributes, textures, material
-appearance edits, extensions, animation and skins are rejected explicitly.
+The converter retains native Y-up coordinates, UVs, linear vertex RGBA,
+triangle order and full material words. Keep `rr_material` custom properties
+or `rage_N` material names. Standard normals are normalized; `_RR_NORMAL`
+preserves original native normals when retained. Node transforms are baked,
+including mirrored winding and inverse-transpose normals.
 
-Whole-car GLB roles/pivots/material mapping, embedded images, `.gltf` external
-resources and a Blender roundtrip remain separate unfinished contracts.
+Input must be a bounded self-contained static GLB with one active mesh node,
+normals and unchanged native material mapping. PNG images must be embedded
+buffer views, up to 4096×4096 and 32 MiB each. The GLB is limited to 128 MiB.
+Different images claiming one native source are rejected. Invalid images
+leave the project unchanged. Texture filtering and native surface shaders
+remain controlled by the game; arbitrary shader graphs, UV transforms,
+external/data URIs, sparse attributes, extensions, animation and skins are
+not supported by this operation. Glass retains the native game shader.
+
+Whole-car roles/pivots, a material mapping wizard, standard unit conversion,
+unknown extras preservation, external `.gltf` and Blender roundtrip remain
+separate unfinished contracts. Existing whole-car export remains OBJ/PNG.

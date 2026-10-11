@@ -286,8 +286,8 @@ class LauncherService {
         const mesh=path.join(target,'model.rmesh');
         const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+mesh],signal));
         await require('./car-view.cjs').model(this,key,mesh,mod);
-        if(modelFormat==='glb'){await run(this.tool('rage-mesh-obj'),['export-glb',mesh,'0',path.join(target,'model.glb')],{signal});await fs.rm(mesh);await fs.writeFile(path.join(target,'README.txt'),'Geometry-only GLB for the modern renderer, in native Y-up units. Edit one car part, then Import replacement on the same part.\nKeep material rr_material custom properties or rage_N names. Normals, UVs and linear vertex RGBA are retained.\nOriginal game textures remain in use; texture/shader changes in GLB are not imported. Use car set OBJ + PNG for texture editing.\nMultiple mesh nodes, skins, animations and extensions are not supported by this part operation.\n');return target;}
-        await run(this.tool('rage-mesh-obj'),['export',mesh,'0',path.join(target,'model.obj')],{signal});
+
+        if(modelFormat!=='glb')await run(this.tool('rage-mesh-obj'),['export',mesh,'0',path.join(target,'model.obj')],{signal});
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',mesh],{signal,maxOutput:16*1024*1024}));
         const appearance=await require('./preview-materials.cjs')(this,key,metadata,mod,signal);
         const baseMetadata={...metadata,materials:metadata.materials.filter(m=>!appearance[m.source]?.texture)};
@@ -295,6 +295,11 @@ class LauncherService {
         for(const [source,material]of Object.entries(appearance))if(material.texture){
           const name='texture-'+source+'.png';
           await fs.writeFile(path.join(target,name),Buffer.from(material.texture.png,'base64'));textures[source]=name;
+        }
+        if(modelFormat==='glb'){
+          await run(this.tool('rage-mesh-obj'),['export-glb',mesh,'0',path.join(target,'model.glb'),target],{signal});
+          for(const name of await fs.readdir(target))if(name!=='model.glb')await fs.rm(path.join(target,name));
+          await fs.writeFile(path.join(target,'README.txt'),'Car-part GLB for the modern renderer, with embedded base-color PNGs. Edit one part and Import replacement on the same slot.\nKeep rr_material custom properties or rage_N material names. Shape, UVs, vertex colors and PNGs save together.\nMultiple mesh nodes, skins, animations, extensions and shader-property edits are not supported by this operation.\n');return target;
         }
         const materials=[...new Set(geometry.vertices.filter((_,i)=>i%9===6))];
         const mtl=materials.map(word=>{
@@ -317,22 +322,30 @@ class LauncherService {
       const catalog=JSON.parse(await this.carTool(['--set','tools.car_catalog=true'],signal));
       const part=catalog.parts.find(p=>p.key===key);if(!part)throw Error('Unknown car part');
       const staging=path.join(this.root,'car-import-'+randomUUID());
-      await fs.mkdir(path.join(staging,'meshes'),{recursive:true});
+      await fs.mkdir(path.join(staging,'meshes'),{recursive:true});await fs.mkdir(path.join(staging,'textures'),{recursive:true});
       try{
-        const mesh=path.join(staging,'meshes/model.rmesh');
+        let glbTextures=[];const mesh=path.join(staging,'meshes/model.rmesh');
         const extension=path.extname(file).toLowerCase();
-        if(extension==='.glb')await run(this.tool('rage-mesh-obj'),['import-glb',file,mesh],{signal});
+        if(extension==='.glb')glbTextures=JSON.parse(await run(this.tool('rage-mesh-obj'),['import-glb',file,mesh,path.join(staging,'textures')],{signal})).textures;
         else if(extension==='.obj')await run(this.tool('rage-mesh-obj'),['import',file,mesh],{signal});
         else if(extension==='.rmesh')await fs.copyFile(file,mesh);
-        else throw Error('Choose an OBJ, geometry-only GLB or RRMESH file');
+        else throw Error('Choose an OBJ, GLB or RRMESH file');
         await require('./car-material-bindings.cjs')(this,key,mesh,staging,path.basename(file),signal);
+        const textureChanges=[];
+        if(glbTextures.length){
+          const meta=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+path.join(staging,'bindings.rmesh')],signal));
+          await fs.rm(path.join(staging,'bindings.rmesh'),{force:true});
+          const table=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-materials',part.rival?'rival':'player',path.join(this.state.disc.data,'raw',`asset_${String(part.bank).padStart(3,'0')}.bin`),String(part.bank)],{signal}));
+          for(const source of glbTextures){const original=meta.materials.find(m=>m.source===source),slot=original&&table.materials.find(m=>m.page===original.page&&m.clut===original.clut);if(!slot)throw Error('GLB image has no matching car texture source');const image=path.join(staging,'textures',`texture-${source}.png`);await run(this.tool('rage-mod-cli'),['--png',image],{signal});const previous=textureChanges.find(t=>t.id===slot.id);if(previous){if(!(await fs.readFile(previous.file)).equals(await fs.readFile(image)))throw Error('Different GLB images map to the same car surface; resolve the material mapping');}else textureChanges.push({id:slot.id,file:image});}
+        }
         await this.loadProject();
         if(this.editor){
           const project=this.editor.project,revision=project.revision;
           const reference=await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).put(mesh);
-          return project.edit([{kind:'car',id:key,field:'mesh',value:reference}],revision);
+          const store=new (require('./project-files.cjs').ProjectFiles)(this.editor.file),changes=[{kind:'car',id:key,field:'mesh',value:reference}];for(const texture of textureChanges)changes.push({kind:'car',id:texture.id,field:'texture',value:await store.put(texture.file,'png')});return project.edit(changes,revision);
         }
         await fs.writeFile(path.join(staging,'mod.toml'),`[mod]\nid = "car-replacement"\n[meshes]\n"${key}" = "meshes/model.rmesh"\n`);
+        if(textureChanges.length)await fs.appendFile(path.join(staging,'mod.toml'),'[textures]\n'+textureChanges.map(t=>`"${t.id}" = "textures/${path.basename(t.file)}"`).join('\n')+'\n');
         const names=JSON.parse(await run(this.tool('rage-save-cli'),['car-names'],{signal}));
         const display=require('./car-names.cjs')(part.name,this.state.disc.region,names);
         const mod=await this.installModFiles(staging,signal,`${display} · part ${part.part} · ${path.basename(file)}`);

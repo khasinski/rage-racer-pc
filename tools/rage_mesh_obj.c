@@ -243,8 +243,9 @@ done:
 }
 
 int main(int argc, char **argv) {
+    if(argc==5&&!strcmp(argv[1],"import-glb"))return GlbImportTextures(argv[2],argv[3],argv[4])?0:1;
     if(argc==4&&!strcmp(argv[1],"import-glb"))return GlbImport(argv[2],argv[3])?0:1;
-    if(argc==5&&!strcmp(argv[1],"export-glb")){char *end;errno=0;unsigned long part=strtoul(argv[3],&end,10);if(errno||!*argv[3]||*end||argv[3][0]=='-'||part>UINT32_MAX)return 1;return GlbExport(argv[2],(unsigned)part,argv[4])?0:1;}
+    if((argc==5||argc==6)&&!strcmp(argv[1],"export-glb")){char *end;errno=0;unsigned long part=strtoul(argv[3],&end,10);if(errno||!*argv[3]||*end||argv[3][0]=='-'||part>UINT32_MAX)return 1;return GlbExportTextures(argv[2],(unsigned)part,argv[4],argc==6?argv[5]:NULL)?0:1;}
     FILE *in, *out, *mtl = NULL;
     char *materialPath = NULL;
     int ok = 0;

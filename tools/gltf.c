@@ -33,7 +33,7 @@ static void Number(yyjson_mut_doc *d,yyjson_mut_val *obj,const char *key,uint32_
 static void Text(yyjson_mut_doc *d,yyjson_mut_val *obj,const char *key,const char *s){yyjson_mut_obj_add_strcpy(d,obj,key,s);}
 static yyjson_mut_val *Element(yyjson_mut_doc *d,yyjson_mut_val *array){yyjson_mut_val *v=yyjson_mut_obj(d);yyjson_mut_arr_add_val(array,v);return v;}
 
-int GlbExport(const char *input,unsigned part,const char *output){
+int GlbExportTextures(const char *input,unsigned part,const char *output,const char *textureDirectory){
  size_t size=0,jsonSize=0;unsigned char *source=Load(input,&size),*binary=NULL,*file=NULL;char *json=NULL;yyjson_mut_doc *doc=NULL;int ok=0;
  RageRuntimeMesh mesh;uint32_t first,count;
  if(!source||!RuntimeMeshOpen(&mesh,source,size)||!RuntimeMeshRange(&mesh,part,&first,&count)||!count||count>MAX_VERTICES||count%3)goto done;
@@ -43,6 +43,9 @@ int GlbExport(const char *input,unsigned part,const char *output){
  yyjson_mut_val *buffers=Array(doc,root,"buffers"),*views=Array(doc,root,"bufferViews"),*accessors=Array(doc,root,"accessors"),*materials=Array(doc,root,"materials"),*meshes=Array(doc,root,"meshes"),*nodes=Array(doc,root,"nodes"),*scenes=Array(doc,root,"scenes");
  Number(doc,Element(doc,buffers),"byteLength",count*48);yyjson_mut_val *view=Element(doc,views);Number(doc,view,"buffer",0);Number(doc,view,"byteLength",count*48);Number(doc,view,"byteStride",48);Number(doc,view,"target",34962);
  yyjson_mut_val *model=Element(doc,meshes),*primitives=Array(doc,model,"primitives");Text(doc,model,"name","part");yyjson_mut_val *node=Element(doc,nodes);Number(doc,node,"mesh",0);Text(doc,node,"name","part");yyjson_mut_arr_add_uint(doc,Array(doc,Element(doc,scenes),"nodes"),0);Number(doc,root,"scene",0);
+ size_t binarySize=(size_t)count*48;uint32_t textureSlots[64];for(unsigned i=0;i<64;i++)textureSlots[i]=UINT32_MAX;
+ yyjson_mut_val *images=Array(doc,root,"images"),*textures=Array(doc,root,"textures"),*samplers=Array(doc,root,"samplers");
+ yyjson_mut_val *sampler=Element(doc,samplers);Number(doc,sampler,"magFilter",9728);Number(doc,sampler,"minFilter",9728);Number(doc,sampler,"wrapS",10497);Number(doc,sampler,"wrapT",10497);
  uint32_t words[MAX_PRIMITIVES],runs=0,wordCount=0;
  for(uint32_t i=0;i<count;){
   uint32_t word=0,runEnd=i;
@@ -70,7 +73,21 @@ int GlbExport(const char *input,unsigned part,const char *output){
   for(uint32_t k=i;k<runEnd;k++){uint32_t index;RageRuntimeVertex v;if(!RuntimeMeshIndex(&mesh,first+k,&index)||!RuntimeMeshVertex(&mesh,index,&v))goto done;for(unsigned c=0;c<3;c++){if(v.position[c]<low[c])low[c]=v.position[c];if(v.position[c]>high[c])high[c]=v.position[c];}}
   if(++runs>MAX_PRIMITIVES)goto done;
   uint32_t material=0;while(material<wordCount&&words[material]!=word)material++;
-  if(material==wordCount){if(wordCount==MAX_PRIMITIVES)goto done;words[wordCount++]=word;yyjson_mut_val *m=Element(doc,materials);char name[48];snprintf(name,sizeof(name),"rage_%u",word);Text(doc,m,"name",name);Number(doc,Object(doc,m,"extras"),"rr_material",word);yyjson_mut_val *pbr=Object(doc,m,"pbrMetallicRoughness");yyjson_mut_obj_add_real(doc,pbr,"metallicFactor",0);yyjson_mut_obj_add_real(doc,pbr,"roughnessFactor",1);}
+  if(material==wordCount){if(wordCount==MAX_PRIMITIVES)goto done;words[wordCount++]=word;yyjson_mut_val *m=Element(doc,materials);char name[48];snprintf(name,sizeof(name),"rage_%u",word);Text(doc,m,"name",name);Number(doc,Object(doc,m,"extras"),"rr_material",word);yyjson_mut_val *pbr=Object(doc,m,"pbrMetallicRoughness");yyjson_mut_obj_add_real(doc,pbr,"metallicFactor",0);yyjson_mut_obj_add_real(doc,pbr,"roughnessFactor",1);
+   unsigned id=word&65535,sourceId=id%64;
+   if(textureDirectory&&id!=65535&&id/64!=1){
+    if(textureSlots[sourceId]==UINT32_MAX){
+     char filename[4096];int length=snprintf(filename,sizeof(filename),"%s/texture-%u.png",textureDirectory,sourceId);size_t imageSize=0;unsigned char *image=NULL;
+     if(length<0||length>=(int)sizeof(filename)||(image=Load(filename,&imageSize))==NULL)goto done;
+     if(imageSize<24||imageSize>32u*1024u*1024u||memcmp(image,"\x89PNG\r\n\x1a\n",8)||memcmp(image+12,"IHDR",4)){free(image);goto done;}
+     uint32_t w=(uint32_t)image[16]<<24|(uint32_t)image[17]<<16|(uint32_t)image[18]<<8|image[19],h=(uint32_t)image[20]<<24|(uint32_t)image[21]<<16|(uint32_t)image[22]<<8|image[23];if(!w||!h||w>4096||h>4096){free(image);goto done;}
+     size_t padded=(imageSize+3)&~(size_t)3;if(padded>LIMIT-binarySize){free(image);goto done;}unsigned char *next=realloc(binary,binarySize+padded);if(!next){free(image);goto done;}binary=next;memcpy(binary+binarySize,image,imageSize);memset(binary+binarySize+imageSize,0,padded-imageSize);free(image);
+     uint32_t viewIndex=(uint32_t)yyjson_mut_arr_size(views),imageIndex=(uint32_t)yyjson_mut_arr_size(images);yyjson_mut_val *v=Element(doc,views);Number(doc,v,"buffer",0);Number(doc,v,"byteOffset",(uint32_t)binarySize);Number(doc,v,"byteLength",(uint32_t)imageSize);
+     yyjson_mut_val *img=Element(doc,images);Number(doc,img,"bufferView",viewIndex);Text(doc,img,"mimeType","image/png");textureSlots[sourceId]=(uint32_t)yyjson_mut_arr_size(textures);yyjson_mut_val *tex=Element(doc,textures);Number(doc,tex,"source",imageIndex);Number(doc,tex,"sampler",0);binarySize+=padded;
+    }
+    Number(doc,Object(doc,pbr,"baseColorTexture"),"index",textureSlots[sourceId]);
+   }
+  }
   yyjson_mut_val *primitive=Element(doc,primitives),*attributes=Object(doc,primitive,"attributes");Number(doc,primitive,"mode",4);Number(doc,primitive,"material",material);
   const char *names[]={"POSITION","NORMAL","COLOR_0","TEXCOORD_0","_RR_NORMAL"},*types[]={"VEC3","VEC3","VEC4","VEC2","VEC3"};unsigned offsets[]={0,12,24,28,36};
   for(unsigned c=0;c<5;c++){
@@ -80,9 +97,11 @@ int GlbExport(const char *input,unsigned part,const char *output){
   }
   i=runEnd;
  }
+ if(!yyjson_mut_arr_size(images)){yyjson_mut_obj_remove_str(root,"images");yyjson_mut_obj_remove_str(root,"textures");yyjson_mut_obj_remove_str(root,"samplers");}
+ yyjson_mut_obj_remove_str(yyjson_mut_arr_get(buffers,0),"byteLength");Number(doc,yyjson_mut_arr_get(buffers,0),"byteLength",(uint32_t)binarySize);
  json=yyjson_mut_write(doc,0,&jsonSize);if(!json||jsonSize>8*1024*1024)goto done;
- size_t padded=(jsonSize+3)&~(size_t)3,total=12+8+padded+8+(size_t)count*48;if(total>LIMIT)goto done;
- file=malloc(total);if(!file)goto done;Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,count*48);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,binary,(size_t)count*48);ok=Write(output,file,total);
+ size_t padded=(jsonSize+3)&~(size_t)3,total=12+8+padded+8+binarySize;if(total>LIMIT)goto done;
+ file=malloc(total);if(!file)goto done;Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)binarySize);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,binary,binarySize);ok=Write(output,file,total);
  done:free(source);free(binary);free(file);free(json);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot export GLB geometry (invalid mesh, excessive primitives or existing output)\n",stderr);return ok;
 }
 
@@ -107,12 +126,13 @@ static int Active(const cgltf_scene *scene,const cgltf_node *node){
  for(unsigned depth=0;node&&depth<64;depth++,node=node->parent)for(size_t i=0;i<scene->nodes_count;i++)if(scene->nodes[i]==node)return 1;
  return 0;
 }
-int GlbImport(const char *input,const char *output){
+int GlbImportTextures(const char *input,const char *output,const char *textureDirectory){
  size_t size=0,budget=LIMIT;unsigned char *source=Load(input,&size),*wire=NULL;cgltf_data *data=NULL;int ok=0;
  cgltf_options options={0};options.memory.alloc_func=Allocate;options.memory.free_func=Release;options.memory.user_data=&budget;
  if(!source||cgltf_parse(&options,source,size,&data)!=cgltf_result_success)goto done;
- if(data->file_type!=cgltf_file_type_glb||data->buffers_count!=1||data->buffers[0].uri||data->buffers[0].size>LIMIT||data->extensions_used_count||data->extensions_required_count||data->textures_count||data->images_count||data->skins_count||data->animations_count||data->nodes_count>10000||data->cameras_count||data->lights_count){fputs("Use a self-contained static GLB without textures, extensions, animation, skin, camera or lights\n",stderr);goto done;}
+ if(data->file_type!=cgltf_file_type_glb||data->buffers_count!=1||data->buffers[0].uri||data->buffers[0].size>LIMIT||data->extensions_used_count||data->extensions_required_count||(!textureDirectory&&(data->textures_count||data->images_count))||data->textures_count>64||data->images_count>64||data->skins_count||data->animations_count||data->nodes_count>10000||data->cameras_count||data->lights_count){fputs("Use a self-contained static GLB without textures, extensions, animation, skin, camera or lights\n",stderr);goto done;}
  if(cgltf_load_buffers(&options,data,NULL)!=cgltf_result_success||cgltf_validate(data)!=cgltf_result_success)goto done;
+ if(textureDirectory)for(size_t i=0;i<data->images_count;i++)if(data->images[i].uri){fputs("GLB images must be embedded PNG buffer views, not external/data URIs\n",stderr);goto done;}
  const cgltf_scene *scene=data->scene?data->scene:data->scenes_count==1?data->scenes:NULL;const cgltf_node *node=NULL;
  if(!scene)goto done;
  for(size_t i=0;i<data->nodes_count;i++){
@@ -161,6 +181,28 @@ int GlbImport(const char *input,const char *output){
    if(!RuntimeVertexEncode(wire+layout.verticesOffset+cursor*40,40,&v))goto done;Put32(wire+layout.indicesOffset+cursor*4,(uint32_t)cursor);cursor++;
   }
  }
- RageRuntimeMesh checked;if(!RuntimeMeshOpen(&checked,wire,layout.totalSize))goto done;ok=Write(output,wire,layout.totalSize);
+ RageRuntimeMesh checked;if(!RuntimeMeshOpen(&checked,wire,layout.totalSize))goto done;
+ const unsigned char *png[64]={0};size_t pngSize[64]={0};
+ if(textureDirectory)for(size_t i=0;i<node->mesh->primitives_count;i++){
+  const cgltf_material *m=node->mesh->primitives[i].material;const cgltf_texture_view *view=&m->pbr_metallic_roughness.base_color_texture;
+  if(m->normal_texture.texture||m->occlusion_texture.texture||m->emissive_texture.texture||m->pbr_metallic_roughness.metallic_roughness_texture.texture){fputs("Only base-color PNG textures are supported by this part import\n",stderr);goto done;}
+  if(!view->texture)continue;
+  uint32_t word;if(!Material(m,&word)||(word&65535)==65535||(word&65535)/64==1||view->texcoord!=0||view->has_transform){fputs("PNG mapping requires a textured native surface with unchanged UV mapping\n",stderr);goto done;}
+  const cgltf_image *image=view->texture->image;if(!image||image->uri||!image->buffer_view||!image->mime_type||strcmp(image->mime_type,"image/png"))goto done;
+  const unsigned char *bytes=cgltf_buffer_view_data(image->buffer_view);size_t n=image->buffer_view->size;
+  if(!bytes||n<24||n>32u*1024u*1024u||memcmp(bytes,"\x89PNG\r\n\x1a\n",8)||memcmp(bytes+12,"IHDR",4))goto done;
+  uint32_t w=(uint32_t)bytes[16]<<24|(uint32_t)bytes[17]<<16|(uint32_t)bytes[18]<<8|bytes[19],h=(uint32_t)bytes[20]<<24|(uint32_t)bytes[21]<<16|(uint32_t)bytes[22]<<8|bytes[23];if(!w||!h||w>4096||h>4096)goto done;
+  unsigned sourceId=(word&65535)%64;if(png[sourceId]&&(pngSize[sourceId]!=n||memcmp(png[sourceId],bytes,n))){fputs("Different PNGs claim the same native texture source; resolve material mapping first\n",stderr);goto done;}
+  png[sourceId]=bytes;pngSize[sourceId]=n;
+ }
+ char filenames[64][4096];unsigned written=0,slots[64];
+ if(textureDirectory)for(unsigned i=0;i<64;i++)if(png[i]){int n=snprintf(filenames[written],sizeof(filenames[written]),"%s/texture-%u.png",textureDirectory,i);if(n<0||n>=(int)sizeof(filenames[written]))goto done;FILE *exists=fopen(filenames[written],"rb");if(exists){fclose(exists);goto done;}slots[written++]=i;}
+ unsigned saved=0;for(;saved<written;saved++)if(!Write(filenames[saved],png[slots[saved]],pngSize[slots[saved]]))break;
+ if(saved!=written){while(saved)remove(filenames[--saved]);goto done;}
+ ok=Write(output,wire,layout.totalSize);if(!ok){while(saved)remove(filenames[--saved]);}
+ if(ok&&textureDirectory){printf("{\"textures\":[");for(unsigned i=0;i<written;i++)printf("%s%u",i?",":"",slots[i]);puts("]}");}
  done:cgltf_free(data);free(source);free(wire);if(!ok)fputs("Cannot import GLB geometry; input must be valid, bounded and mapped to one static part\n",stderr);return ok;
 }
+
+int GlbExport(const char *input,unsigned part,const char *output){return GlbExportTextures(input,part,output,NULL);}
+int GlbImport(const char *input,const char *output){return GlbImportTextures(input,output,NULL);}
