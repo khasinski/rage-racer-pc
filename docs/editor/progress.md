@@ -212,3 +212,16 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   obejmują limity historii/dokumentu, malformed format 2, brakujący wybór,
   rollback zapisu, odtworzenie cache i start po save-only. Native tools
   przebudowano i wystage'owano; brak widocznych okien podczas testowania.
+
+### Magazyn niezmiennych modeli projektu — fundament
+
+- `ProjectFiles` zapisuje modele pod SHA-256 zawartości obok dokumentu.
+  Publikacja przez hard link nie nadpisuje istniejącego obiektu; ponowny
+  import tych samych bajtów nie duplikuje pliku. Każdy odczyt sprawdza hash,
+  rozmiar i odrzuca symlinki oraz nieprawidłowe referencje.
+- Dwa nowe testy sprawdzają przejście dwóch referencji przez wspólną historię,
+  zapis i otwarcie dokumentu, reset, deduplikację, uszkodzone istniejące
+  obiekty i symlinki. Razem z testami dokumentu: 10 pass.
+- To jeszcze fundament, nie gotowa ścieżka użytkownika: import, efektywny
+  podgląd i builder wymagają podłączenia magazynu. Walidacja RMESH pozostaje
+  w istniejącym kompilowanym kodeku przed umieszczeniem pliku w magazynie.
