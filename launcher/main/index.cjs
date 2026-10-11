@@ -22,6 +22,10 @@ async function open(options){const result=await dialog.showOpenDialog(window,opt
 async function output(options){const result=await dialog.showSaveDialog(window,options);return result.canceled?null:result.filePath;}
 function setupIPC(){
 handle('publish-mods',()=>service.publishMods());
+handle('project',()=>service.project());
+handle('edit-project',(changes,revision)=>service.editProject(changes,revision));
+handle('project-history',(direction,revision)=>service.projectHistory(direction,revision));
+handle('save-project',revision=>service.saveProject(revision));
 handle('snapshot',()=>service.snapshot());
 handle('save-mod-details',(id,details)=>service.saveModDetails(id,details));
 handle('logs',()=>service.logs());

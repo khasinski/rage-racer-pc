@@ -1,7 +1,8 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
-const { randomUUID } = require('node:crypto');
+const { randomUUID,createHash } = require('node:crypto');
+const {Project}=require('./project.cjs');
 const { defaults, validate, patchIni } = require('./config.cjs');
 
 async function atomic(file, text) {
@@ -66,6 +67,41 @@ class LauncherService {
     });
   }
   async publishMods() {return require('./publish-mods.cjs')(this);}
+  async project() {
+    this.requireReady();
+    return this.operation('Opening editing project',async()=>{
+      const disc=this.state.disc;
+      if(this.editor?.disc===disc)return this.editor.project.snapshot();
+      const hash=createHash('sha256'),handle=await fs.open(disc.archive,'r');
+      let before,after;
+      try{
+        before=await handle.stat();
+        for await(const bytes of handle.createReadStream({autoClose:false}))hash.update(bytes);
+        after=await handle.stat();
+      }finally{await handle.close();}
+      if(before.size!==after.size||before.mtimeMs!==after.mtimeMs)throw Error('Source archive changed while opening the project');
+      const digest=hash.digest('hex'),source={region:disc.region,fingerprint:'sha256:'+digest};
+      const file=path.join(this.root,'projects',digest,'project.rrproject');
+      let project;
+      try{project=await Project.open(file,source);}catch(e){if(e.code!=='ENOENT')throw e;project=new Project(source);}
+      this.editor={disc,file,project};return project.snapshot();
+    },false);
+  }
+  async editProject(changes,revision) {
+    if(this.busy)throw Error('Wait for the current operation to finish');
+    if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
+    return this.editor.project.edit(changes,revision);
+  }
+  async projectHistory(direction,revision) {
+    if(this.busy)throw Error('Wait for the current operation to finish');
+    if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
+    return this.editor.project.history(direction,revision);
+  }
+  async saveProject(revision) {
+    if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
+    this.editor.project.checkRevision(revision);
+    return this.operation('Saving editing project',()=>this.editor.project.save(this.editor.file),false);
+  }
   async tracks() {
     this.requireReady();
     return this.operation('Reading original tracks',async signal=>{

@@ -45,3 +45,24 @@ operacji. UI torów i pełny import GLB nadal nie są zaimplementowane.
 - Testy `track_pack`, `install_track_points`, `race_asset_loading` przechodzą;
   build gry i CLI przechodzi. Suite launchera: 89 pass, 3 skip (92 testy).
 - Nie ma jeszcze zapisu drogi, sceny 3D terenu, importu GLB ani pełnego Project.
+
+## Wspólny dokument projektu
+
+- `Project` w istniejącym serwisie JS przechowuje delty ze wszystkich ekranów,
+  jedną historię undo/redo, reset do źródła i monotoniczną rewizję. Wysyłanie
+  nieaktualnej rewizji lub błędnego batcha nie zmienia żadnego pola.
+- Zapis `.rrproject` przez plik tymczasowy i rename; nieudany zapis pozostawia
+  poprzedni dokument i stan dirty. Odczyt ogranicza rozmiar i odrzuca duplikaty.
+- Serwis oblicza SHA-256 oryginalnego RAGE.BIN bez uruchamiania gry i przypisuje
+  dokument do dokładnych bajtów źródła oraz regionu, także dla różnych NTSC-J.
+  Kolejna płyta nie dziedziczy projektu. Na etapie Build trzeba ponownie sprawdzić
+  źródło i zgodność ekstrakcji; cache otwartego projektu nie stanowi tej walidacji.
+- Sekcja Projects udostępnia stan dokumentu, undo/redo i Save project only.
+  Nie jest to jeszcze Save & apply; istniejące edycje aut nie są jeszcze
+  przeniesione z osobnych modów do dokumentu. Nie ma jeszcze odzyskiwania draftu.
+- Suite launchera przed dodaniem testu widoku: 93 pass, 3 skip; pięć testów
+  projektu/serwisu/widoku po ostatnich zmianach przechodzi. Żadne widoczne okno
+  gry ani edytora nie zostało otwarte przez testy.
+- TypeSafe zainstalowany żądaną metodą `npx skills add` dla Codexa. Zgodnie ze
+  skillem odczyt i walidacja danych pozostają deterministyczne w kodzie, bez
+  zależności edytora od API AI. Przeczytano lokalny skill i live docs index.
