@@ -845,3 +845,23 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Latest native staging zakończył się sukcesem: przebudowano title_menu_labels,
   zlinkowano pełną grę i odświeżono launcher/resources/bin. Nie uruchomiono
   widocznego okna ani publikacji release.
+
+### PNG sprawdzone w rzeczywistej grze
+
+- Edytor wyeksportował selected CUSTOM PNG, zaimportował go do normal slot i
+  opublikował snapshot z fingerprintem prawdziwego PAL RAGE.BIN. Game runtime
+  rozwiązał active.json i załadował PNG na obu rendererach.
+- Ukryty native smoke zatrzymano dokładnie w głównym menu (scene 4, frontend
+  2, timer 180). Własny portable bu00, config/mods/profile i istniejący PCM
+  izolują test od zapisów i konfiguracji użytkownika. Nie otwarto widocznego okna.
+- Cztery kadry oryginał/override w classic/modern obejrzano. CUSTOM zmienia
+  szary przycisk na czerwony; logo i tło zachowane. Lokalne evidence:
+  build/reports/editor/title-{classic,modern}-{original,edited}.ppm.
+- Powtarzalny opt-in launcher/tests/title-game.test.cjs uruchamia rzeczywistą
+  grę z prywatnym projektem. Wymaga RR_EDITOR_GAME_SOURCE (imported game root
+  z RAGE.BIN i data/), RR_EDITOR_GAME_DISC (PAL CUE) oraz
+  RR_EDITOR_GAME_SMOKE (native smoke executable). Porównuje wszystkie pixels:
+  zmiana musi wystąpić w CUSTOM i nie może dotknąć innego obszaru kadru.
+- Service test dodatkowo potwierdza precedence project > selected package >
+  built-in, reset oraz wyłączenie pakietu. Nie oznacza to gotowości całego
+  Interface workspace: HUD/fonts/layout pozostają poza aktualnym zakresem.

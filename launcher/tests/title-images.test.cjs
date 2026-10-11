@@ -20,5 +20,13 @@ test('title image export/import/reset uses shared project history, selected stat
  await assert.rejects(s.resetTitleImage('../bad',p.revision),/Unknown/);await assert.rejects(s.resetTitleImage(normal.id,original.revision),/changed/);
  p=await s.resetTitleImage(normal.id,p.revision);assert.equal((await s.titleImages()).images.find(i=>i.id===normal.id).png,normal.png);
  p=await s.projectHistory('undo',p.revision);assert.equal((await s.titleImages()).images.find(i=>i.id===normal.id).png,selected.png);
+ const packageRoot=path.join(root,'package');await fs.mkdir(path.join(packageRoot,'textures'),{recursive:true});
+ await fs.writeFile(path.join(packageRoot,'textures/menu.png'),Buffer.from(normal.png,'base64'));
+ await fs.writeFile(path.join(packageRoot,'mod.toml'),'[mod]\nid="menu-skin"\n[textures]\n"ui.title.custom"="textures/menu.png"\n');
+ await s.importMod(packageRoot);await s.toggleMod(s.state.mods[0].id,true);p=await s.project();
+ assert.equal((await s.titleImages()).images.find(i=>i.id===normal.id).origin,'project');
+ p=await s.resetTitleImage(normal.id,p.revision);const packageImage=(await s.titleImages()).images.find(i=>i.id===normal.id);
+ assert.equal(packageImage.origin,'selected packages');assert.equal(packageImage.png,normal.png);
+ await s.toggleMod(s.state.mods[0].id,false);assert.equal((await s.titleImages()).images.find(i=>i.id===normal.id).origin,'built-in');
  const output=path.join(root,'exclusive.png');await run(s.tool('rage-mod-cli'),['--title-image','3','0',output]);const prior=await fs.readFile(output);await assert.rejects(run(s.tool('rage-mod-cli'),['--title-image','3','1',output]));assert.deepEqual(await fs.readFile(output),prior);
 });
