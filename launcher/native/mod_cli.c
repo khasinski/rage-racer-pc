@@ -17,6 +17,7 @@
 #include <SDL3/SDL.h>
 #include "preview_png.h"
 #include "title_image.h"
+#include "wav.h"
 #include "texture_preview.h"
 #include "car_spec.h"
 #include "car_materials.h"
@@ -243,6 +244,7 @@ replaceDone:
     if(argc==2 && strcmp(argv[1],"--resolve-providers-stdin")==0) return ProviderStdinCommand();
     if(argc==6 && strcmp(argv[1],"--set-material")==0)
         return ManifestEditMaterial(argv[2],argv[3],argv[4],argv[5]);
+    if(argc>1 && (!strcmp(argv[1],"--wav-info")||!strcmp(argv[1],"--wav-normalize")))return WavCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--title-image")==0)return ExportTitleImage(argc,argv);
     if(argc==3 && strcmp(argv[1],"--png")==0)return ValidatePng(argv[2]);
     if(argc>1 && strcmp(argv[1],"--car-transmission")==0)return CarTransmissionCommand(argc,argv);
@@ -316,9 +318,11 @@ replaceDone:
     for(i=0;i<manifest.textureCount;i++){if(i)putchar(',');String(manifest.textures[i].key);putchar(':');String(manifest.textures[i].path);}
     printf("},\"materials\":{");for(i=0;i<manifest.materialCount;i++){if(i)putchar(',');String(manifest.materials[i].key);putchar(':');String(manifest.materials[i].properties);}
     printf("},\"meshes\":{");for(i=0;i<manifest.meshCount;i++){if(i)putchar(',');String(manifest.meshes[i].key);putchar(':');String(manifest.meshes[i].path);}
+    printf("},\"audio\":{");for(i=0;i<manifest.audioCount;i++){if(i)putchar(',');String(manifest.audio[i].key);putchar(':');String(manifest.audio[i].path);}
     printf("},\"backingFiles\":[");
     for(i=0;i<manifest.textureCount;i++){if(i)putchar(',');String(manifest.textures[i].path);}
     for(i=0;i<manifest.meshCount;i++){if(i||manifest.textureCount)putchar(',');String(manifest.meshes[i].path);}
+    for(i=0;i<manifest.audioCount;i++){if(i||manifest.textureCount||manifest.meshCount)putchar(',');String(manifest.audio[i].path);}
     printf("],\"resourceClaims\":[");
     char claim[RAGE_MOD_MANIFEST_KEY_CAPACITY + 16];
     int comma=0;
@@ -337,5 +341,6 @@ replaceDone:
         comma=1;
         snprintf(claim,sizeof(claim),"mesh:%s",manifest.meshes[i].key);String(claim);
     }
+    for(i=0;i<manifest.audioCount;i++){if(comma)putchar(',');comma=1;snprintf(claim,sizeof(claim),"audio:%s",manifest.audio[i].key);String(claim);}
     puts("]}");return 0;
 }

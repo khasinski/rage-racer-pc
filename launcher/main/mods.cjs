@@ -122,7 +122,7 @@ function installMethods(Service){
     const {run}=require('./service.cjs');
     metadata=JSON.parse(await run(this.tool('rage-mod-cli'),['--metadata',path.join(source,'rage-mod.json')],{signal}));
    }
-   let manifest={textures:{},materials:{},meshes:{},backingFiles:[],resourceClaims:[]};
+   let manifest={textures:{},materials:{},meshes:{},audio:{},backingFiles:[],resourceClaims:[]};
    if(files.includes('mod.toml')) {
      // The runtime parser is authoritative for material values and semantic IDs.
      const {run}=require('./service.cjs');
@@ -130,6 +130,10 @@ function installMethods(Service){
      for(const relative of Object.values(manifest.textures))if(!relative.startsWith('textures/'))throw Error('Texture must be under textures/');
    }
    for(const relative of Object.values(manifest.textures))if(!files.includes(relative))throw Error('Missing texture: '+relative);
+   for(const [key,relative] of Object.entries(manifest.audio||{})){
+     if(key!=='music.course-select'||!files.includes(relative))throw Error('Unsupported or missing audio: '+key);
+     const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),['--wav-info',path.join(source,relative)],{signal});
+   }
    for(const [key,relative] of Object.entries(manifest.meshes||{})){
      if(!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key))throw Error('Unsupported car mesh target: '+key);
      if(!relative.startsWith('meshes/')||!files.includes(relative))throw Error('Missing or invalid mesh: '+relative);
@@ -190,14 +194,14 @@ function installMethods(Service){
  Service.prototype.overlaps=function(mods=this.state.mods){
   const owners=new Map();
   for(const mod of mods.filter(m=>m.enabled)){
-   const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{})]);
+   const semanticFiles=new Set([...Object.values(mod.manifest.textures),...Object.values(mod.manifest.meshes||{}),...Object.values(mod.manifest.audio||{})]);
    const legacy=legacyFiles(mod);
    const globalFiles=mod.fileDispositions
     ?mod.files.filter((f,i)=>mod.fileDispositions[i]&1)
     :mod.files.filter(f=>f.startsWith('raw/')||(f.startsWith('textures/')&&!semanticFiles.has(f)&&!legacy.has(f)));
    // Cached UI state from older launchers may lack compiled claims. Composition
    // always reparses the private snapshot before reaching this point.
-   const semanticClaims=mod.manifest.resourceClaims??[...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k)];
+   const semanticClaims=mod.manifest.resourceClaims??[...Object.keys(mod.manifest.textures).map(k=>'texture:'+k),...Object.keys(mod.manifest.materials).map(k=>'material:'+k),...Object.keys(mod.manifest.meshes||{}).map(k=>'mesh:'+k),...Object.keys(mod.manifest.audio||{}).map(k=>'audio:'+k)];
    const keys=[...(mod.legacyTextures||[]).map(t=>t.resourceClaim??'legacy-textures:asset-'+t.asset),...globalFiles,...semanticClaims];
    for(const key of new Set(keys)){const list=owners.get(key)||[];list.push({id:mod.id,name:mod.name});owners.set(key,list);}
   }
@@ -261,7 +265,7 @@ function installMethods(Service){
    const target=path.join(staging,'output-'+outputId);
    const published=path.join(this.root,'active-mods-'+outputId);
    await fs.mkdir(target);
-   const tables={textures:{},materials:{},meshes:{}},legacyIndex=[],copies=[];
+   const tables={textures:{},materials:{},meshes:{},audio:{}},legacyIndex=[],copies=[];
    try {for(const mod of active){
      const source=path.join(staging,mod.id),files=mod.files;
      const roles=mod.fileDispositions;
@@ -288,6 +292,7 @@ function installMethods(Service){
      }
      for(const[key,value]of Object.entries(mod.manifest.textures))if(selected('texture:'+key,mod.id))tables.textures[key]='textures/provider-'+mod.id+'/'+value.slice('textures/'.length);
      for(const[key,value]of Object.entries(mod.manifest.meshes||{}))if(selected('mesh:'+key,mod.id))tables.meshes[key]='meshes/provider-'+mod.id+'/'+value.slice('meshes/'.length);
+     for(const[key,value]of Object.entries(mod.manifest.audio||{}))if(selected('audio:'+key,mod.id))tables.audio[key]='audio/provider-'+mod.id+'/'+value.slice('audio/'.length);
      for(const[key,value]of Object.entries(mod.manifest.materials))if(selected('material:'+key,mod.id))tables.materials[key]=value;
    }
    if(legacyIndex.length)await run(this.tool('rage-mod-cli'),['--write-legacy-index-stdin',path.join(target,'textures/index.txt')],{

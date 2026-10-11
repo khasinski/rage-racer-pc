@@ -24,13 +24,15 @@ static int ProfileWriteJSON(const char *input, size_t size, const char *output) 
     doc=yyjson_read(input,size,0);
     if(!doc)goto done;
     yyjson_val *root=yyjson_doc_get_root(doc);
-    if(!yyjson_is_obj(root)||yyjson_obj_size(root)!=3)goto done;
-    const char *groups[]={"textures","materials","meshes"};
+    if(!yyjson_is_obj(root)||(yyjson_obj_size(root)!=3&&yyjson_obj_size(root)!=4))goto done;
+    if(yyjson_obj_size(root)==4&&!yyjson_obj_get(root,"audio"))goto done;
+    const char *groups[]={"textures","materials","meshes","audio"};
     const size_t limits[]={RAGE_MOD_MANIFEST_MAX_TEXTURES,
-        RAGE_MOD_MANIFEST_MAX_MATERIALS,RAGE_MOD_MANIFEST_MAX_MESHES};
+        RAGE_MOD_MANIFEST_MAX_MATERIALS,RAGE_MOD_MANIFEST_MAX_MESHES,RAGE_MOD_MANIFEST_MAX_AUDIO};
     size_t used=(size_t)snprintf(text,LIMIT+1u,"[mod]\nid = \"launcher-profile\"\n");
-    for(size_t group=0;group<3;group++){
+    for(size_t group=0;group<4;group++){
         yyjson_val *table=yyjson_obj_get(root,groups[group]);
+        if(group==3&&!table)continue;
         if(!yyjson_is_obj(table)||yyjson_obj_size(table)>limits[group])goto done;
         int n=snprintf(text+used,LIMIT+1u-used,"\n[%s]\n",groups[group]);
         if(n<0||(size_t)n>LIMIT-used)goto done;

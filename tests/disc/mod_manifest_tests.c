@@ -354,5 +354,18 @@ int main(void) {
             EXPECT(manifest.meshCount == 0 && manifest.errorLine == 2);
         }
     }
+    {
+        const char *audio="[audio]\n\"music.course-select\"=\"audio/first.wav\"\n\"music.course-select\"=\"audio/last.wav\"\n";
+        EXPECT(ModManifestParse(audio,strlen(audio),&manifest));
+        EXPECT(manifest.audioCount==2);
+        EXPECT(!strcmp(ModManifestFindAudio(&manifest,"music.course-select"),"audio/last.wav"));
+        EXPECT(ModManifestFindAudio(&manifest,"missing")==NULL);
+        const char *bad[]={"audio/../x.wav","textures/music.wav","audio/music.mp3","/audio/music.wav"};
+        for(size_t i=0;i<sizeof(bad)/sizeof(bad[0]);i++){
+            char input[256];snprintf(input,sizeof(input),"[audio]\n\"music.course-select\"=\"%s\"",bad[i]);
+            EXPECT(!ModManifestParse(input,strlen(input),&manifest));
+            EXPECT(manifest.audioCount==0);EXPECT(ModManifestFindAudio(&manifest,"music.course-select")==NULL);
+        }
+    }
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

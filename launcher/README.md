@@ -227,3 +227,18 @@ Import saves a draft in the shared project. **Save & apply project** activates
 it for the next game session. **Reset** removes that project's image override;
 a selected package can still supply the image. Project Undo/Redo includes PNG
 imports and resets. Normal and selected states are independent images.
+
+## Replacing menu music
+
+Open **Audio** to listen to the effective course/car selection music. **Export
+WAV** includes project changes and the selected package. **Import WAV** accepts
+PCM or float WAV (8–192 kHz, 1–8 channels) and converts it to the game's
+44.1 kHz stereo 16-bit PCM format. Input and output each have a 128 MiB limit.
+The original file and extracted regional music are preserved.
+
+**Save & apply project** activates the replacement for the next game session.
+**Reset** removes the project override; selected packages still apply. Import
+and reset participate in project Undo/Redo. The same PCM player and existing
+menu event timing play the replacement in both renderers, repeating the entire
+track. The volume slider in **Format & preview settings** affects only editor
+playback. Other cues, trimming and custom loop points are not editable yet.

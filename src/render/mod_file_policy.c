@@ -11,7 +11,8 @@ int ModDirectoryAllowed(const char *path) {
     size_t root=strcspn(path,"/");
     if (!((root==3 && !memcmp(path,"raw",3)) ||
           (root==8 && !memcmp(path,"textures",8)) ||
-          (root==6 && !memcmp(path,"meshes",6)))) return 0;
+          (root==6 && !memcmp(path,"meshes",6)) ||
+          (root==5 && !memcmp(path,"audio",5)))) return 0;
     unsigned depth=1;
     for (const unsigned char *p=(const unsigned char *)path;*p;++p) {
         if (*p=='/') { if (++depth>8) return 0; }
@@ -28,7 +29,7 @@ int ModFileDisposition(const char *path, unsigned references) {
         if (kind != RAGE_MOD_FILE_TEXTURE) return -1;
     }
     if (references & RAGE_MOD_FILE_SEMANTIC) {
-        if (kind != RAGE_MOD_FILE_TEXTURE && kind != RAGE_MOD_FILE_MESH) return -1;
+        if (kind != RAGE_MOD_FILE_TEXTURE && kind != RAGE_MOD_FILE_MESH && kind != RAGE_MOD_FILE_AUDIO) return -1;
     }
     if (references) return (int)references;
     if (kind == RAGE_MOD_FILE_RAW || kind == RAGE_MOD_FILE_TEXTURE) return RAGE_MOD_FILE_GLOBAL;
@@ -52,6 +53,7 @@ RageModFileKind ModFileClassify(const char *path) {
     RageModFileKind kind;
     if (!strncmp(path,"textures/",9)) { prefix=9; kind=RAGE_MOD_FILE_TEXTURE; }
     else if (!strncmp(path,"meshes/",7)) { prefix=7; kind=RAGE_MOD_FILE_MESH; }
+    else if (!strncmp(path,"audio/",6)) { prefix=6; kind=RAGE_MOD_FILE_AUDIO; }
     else return RAGE_MOD_FILE_INVALID;
     for (size_t i=prefix;i<size;++i) {
         unsigned char c=(unsigned char)path[i];
@@ -59,6 +61,7 @@ RageModFileKind ModFileClassify(const char *path) {
             c=='_'||c=='.'||c=='/'||c=='-')) return RAGE_MOD_FILE_INVALID;
     }
     const char *relative=path+prefix; size_t n=size-prefix;
+    if (kind == RAGE_MOD_FILE_AUDIO) return Ends(relative,n,".wav") ? kind : RAGE_MOD_FILE_INVALID;
     if (kind == RAGE_MOD_FILE_MESH) return Ends(relative,n,".rmesh") ? kind : RAGE_MOD_FILE_INVALID;
     return Ends(relative,n,".png") || Ends(relative,n,".json") || Ends(relative,n,".txt")
         ? kind : RAGE_MOD_FILE_INVALID;

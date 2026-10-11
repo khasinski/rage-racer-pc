@@ -1,4 +1,7 @@
 #include "render/mod_file_policy.h"
+#ifdef NDEBUG
+#undef NDEBUG
+#endif
 #include <assert.h>
 #include <stdio.h>
 #include "render/legacy_texture_index.h"
@@ -55,6 +58,12 @@ int main(void) {
     assert(ModFileDisposition("raw/asset_000.bin",RAGE_MOD_FILE_SEMANTIC)==-1);
     assert(ModFileDisposition("meshes/a.rmesh",RAGE_MOD_FILE_LEGACY)==-1);
     assert(ModFileDisposition("textures/a.png",RAGE_MOD_FILE_GLOBAL)==-1);
+    assert(ModDirectoryAllowed("audio/provider-test"));
+    assert(ModFileClassify("audio/course.wav")==RAGE_MOD_FILE_AUDIO);
+    assert(ModFileClassify("audio/course.mp3")==RAGE_MOD_FILE_INVALID);
+    assert(ModFileDisposition("audio/course.wav",RAGE_MOD_FILE_SEMANTIC)==RAGE_MOD_FILE_SEMANTIC);
+    assert(ModFileDisposition("audio/course.wav",RAGE_MOD_FILE_LEGACY)==-1);
+    assert(ModFileDisposition("audio/course.wav",0)==0);
     puts("compiled mod path classes, all raw indices and invalid paths passed");
     return 0;
 }

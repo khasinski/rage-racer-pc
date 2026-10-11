@@ -865,3 +865,44 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Service test dodatkowo potwierdza precedence project > selected package >
   built-in, reset oraz wyłączenie pakietu. Nie oznacza to gotowości całego
   Interface workspace: HUD/fonts/layout pozostają poza aktualnym zakresem.
+
+### Audio: prawdziwy WAV → projekt → PCM runtime
+
+- Nowy panel Audio ma nazwany course/car select cue, rzeczywisty odsłuch
+  effective WAV, długość/origin, import/export/reset i Save & apply. Format
+  i preview volume są pod details. Nie dodano kolejnego playera gry ani
+  osobnego narzędzia: konwersja używa istniejącego rage-mod-cli i SDL.
+- Native import sprawdza RIFF/chunk bounds, PCM/float format, channels/rate
+  oraz input/output 128 MiB przed dekodowaniem. Normalizuje do canonical
+  44.1 kHz stereo S16LE. Exclusive output nie nadpisuje istniejącego pliku;
+  błędny WAV nie zmienia projektu. Immutable WAV blobs korzystają ze wspólnej
+  historii i build snapshotu.
+- [audio] w shared C manifest, audio file policy i provider composition mają
+  semantic conflict key audio:music.course-select. Precedence project > chosen
+  package > original PCM, reset/undo/redo i package conflict choice sprawdzono
+  przez native service. Build corruption pozostawia poprzedni active.json.
+- Runtime MenuMusicPrepare odczytuje tę samą binding przed original PCM;
+  istniejące event timing, volume i whole-track loop pozostają w tym playerze.
+- Actual app.js + native service, headless PAL: audio decoded przez browser,
+  duration 50.94 s, export/import/publish/reset PASS, bez pageerrors. Dodano
+  potrzebny media-src data: do CSP, bez rozszerzania uprawnień skryptów.
+- Test zwykłego executable ujawnił wcześniejszą kolejność inicjalizacji:
+  ModAssetsSetSource wywoływano przed HostInitDisc, więc fingerprint nie istniał
+  i poprawny aktywny projekt był odrzucany. Przeniesiono source registration
+  po udanym HostInitDisc. Smoke miał już poprawną kolejność i nie ujawniał błędu.
+- Nie stwierdzamy pełnego U04/U05/U06: inne cues, waveform/trim, saved gain,
+  custom loop points, CD replacement i odsłuch manualny wszystkich regionów
+  pozostają do wykonania. Nowy panel jawnie opisuje bieżący zakres.
+- Końcowy native build/staging PASS. Normalny release executable, nie smoke,
+  załadował opublikowany WAV przez Psyz_PcmMusicLoad w classic i modern:
+  launcher/tests/audio-game.test.cjs PASS. Test zatrzymuje prawidłowo
+  zainicjalizowaną grę na początku FMV (scene 5), bez wielominutowego przejścia
+  ekranów lub mockowania stanu. Sprawdza runtime diagnostic z real game.log;
+  nie jest to odsłuch całego menu ani test miksu podczas wyboru auta.
+- Reprodukcja wymaga RR_EDITOR_GAME_SOURCE (PAL imported root),
+  RR_EDITOR_GAME_DISC (PAL CUE) i RR_EDITOR_GAME_RELEASE (normal executable).
+  Wszystkie zapisy/config/mods są izolowane; original source jest read-only.
+- Full npm test: save_format PASS i 151 JS tests: 146 pass, 5 explicit skips
+  (optional regional fixtures i dwa opt-in game tests). Audio focused 4 PASS;
+  opt-in normal-game test wykonany osobno PASS na obu rendererach. Standalone
+  Release mod contracts 11/11 PASS, z aktywnymi assertions w file policy.

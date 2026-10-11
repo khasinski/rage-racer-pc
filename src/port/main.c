@@ -90,10 +90,6 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to initialize user save storage\n");
         return EXIT_FAILURE;
     }
-    if(ModAssetsNeedsSource()) {
-        char fingerprint[72];
-        if(HostDiscFingerprint(fingerprint))ModAssetsSetSource(HostDiscRegion(),fingerprint);
-    }
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     PortConfigDefaults(&portConfig);
     PortConfigApplyRuntime(&portConfig);
@@ -122,6 +118,10 @@ int main(int argc, char **argv) {
     if (!HostInitDisc()) {
         fprintf(stderr, "failed to initialize disc image\n");
         return EXIT_FAILURE;
+    }
+    if(ModAssetsNeedsSource()) {
+        char fingerprint[72];
+        if(HostDiscFingerprint(fingerprint))ModAssetsSetSource(HostDiscRegion(),fingerprint);
     }
     if (RuntimeConfigEnabled("tools.car_catalog"))
         return ModernAssetsCarCatalog() ? EXIT_SUCCESS : EXIT_FAILURE;

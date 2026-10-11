@@ -23,16 +23,16 @@ test('immutable model references survive shared undo, redo and reopening',async 
  assert.equal((await files.read(second)).toString(),'second validated model');
 });
 
-test('project model store rejects corrupt objects, traversal and symlinks',async t=>{
+test('project asset store rejects corrupt objects, traversal and symlinks',async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-project-files-'));
  t.after(()=>fs.rm(root,{recursive:true,force:true}));
  const files=new ProjectFiles(path.join(root,'project.rrproject')),input=path.join(root,'input');
  await fs.writeFile(input,'model');const ref=await files.put(input),stored=path.join(files.root,ref.slice(7));
- await assert.rejects(files.read('../input'),/Invalid project model reference/);
+ await assert.rejects(files.read('../input'),/Invalid project asset reference/);
  await fs.chmod(stored,0o644);await fs.writeFile(stored,'corrupt');
  await assert.rejects(files.read(ref),/changed or is damaged/);
  await assert.rejects(files.put(input),/changed or is damaged/);
  await fs.rm(stored);await fs.symlink(input,stored);
- await assert.rejects(files.read(ref),/Invalid project model file/);
+ await assert.rejects(files.read(ref),/Invalid project asset file/);
  assert.deepEqual(await fs.readdir(files.root),[ref.slice(7)]);
 });

@@ -6,6 +6,7 @@
 enum {
     RAGE_MOD_MANIFEST_SCHEMA_VERSION = 1,
     RAGE_MOD_MANIFEST_MAX_TEXTURES = 512,
+    RAGE_MOD_MANIFEST_MAX_AUDIO = 256,
     RAGE_MOD_MANIFEST_MAX_MATERIALS = 512,
     RAGE_MOD_MANIFEST_MAX_MESHES = 2048,
     RAGE_MOD_MANIFEST_ID_CAPACITY = 96,
@@ -42,11 +43,13 @@ typedef struct RageModManifest {
     size_t materialCount;
     RageModTextureOverride meshes[RAGE_MOD_MANIFEST_MAX_MESHES];
     size_t meshCount;
+    RageModTextureOverride audio[RAGE_MOD_MANIFEST_MAX_AUDIO];
+    size_t audioCount;
     size_t errorLine;
     RageModManifestError error;
 } RageModManifest;
 
-/* Small TOML subset: [mod] id/schema_version/requires, [textures], [materials], [meshes].
+/* Small TOML subset: [mod] id/schema_version/requires, [textures], [materials], [meshes], [audio].
  * id and requires use nonempty ASCII [a-z0-9.-] identities; an omitted id
  * preserves legacy unnamed manifests. requires is a single-line array of
  * unique semantic mod IDs. The parser
@@ -63,6 +66,8 @@ const char *ModManifestFindMaterialProperties(
     const RageModManifest *manifest, const char *semanticId);
 const char *ModManifestFindMesh(const RageModManifest *manifest,
                                const char *semanticId);
+
+const char *ModManifestFindAudio(const RageModManifest *manifest, const char *semanticId);
 
 typedef struct RageModResolution {
     const RageModTextureOverride *texture;

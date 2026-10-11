@@ -238,3 +238,29 @@ partial order. Multiple selected manifests need nonempty IDs; a sole unnamed
 legacy manifest remains valid. The loader uses this validator for its current
 single selection. Multi-directory discovery/activation and asset-conflict
 handling are not implemented yet.
+
+## Menu music WAV
+
+`[audio]` maps named cues to relative `audio/*.wav` files. The current runtime
+and editor support one binding:
+
+```toml
+[audio]
+"music.course-select" = "audio/menu.wav"
+```
+
+This replaces course/car selection music in both renderers. Race tracks and
+the music-player CD tracks are separate bindings and are not replaced by this cue.
+The existing PCM player repeats the full track; event timing and game volume
+remain unchanged. Runtime WAVs must have the canonical 44-byte header followed
+by 44.1 kHz stereo signed 16-bit PCM. The editor converts ordinary PCM/float
+WAV imports automatically through SDL; input and converted output are bounded
+to 128 MiB. Original regional extraction is retained. An invalid override logs
+an error and uses original PCM, without reintroducing sequence playback.
+
+The audio table permits 256 entries; duplicate keys use the last assignment.
+Package composition resolves `audio:<cue>` conflicts and isolates provider
+files. Unreferenced WAVs are not global filename overrides. Project imports
+store immutable WAV blobs and override selected packages. Reset reveals the
+selected package or original music. Other audio bindings are not implemented
+yet and the editor rejects them rather than reporting a successful application.

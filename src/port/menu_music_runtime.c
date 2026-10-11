@@ -6,6 +6,9 @@
 #include "menu_music_render.h"
 #include "platform_paths.h"
 #include "runtime_config.h"
+#include "mod_assets.h"
+#include "render/mod_manifest.h"
+#include "content/wav.h"
 
 #include <psyz/audio.h>
 
@@ -50,6 +53,16 @@ int MenuMusicPrepare(void) {
     char directory[PATH_MAX];
     char filename[64];
     const char *path = configured;
+    char override[PATH_MAX];
+    const RageModManifest *manifest=ModAssetsManifest();
+    const char *relative=ModManifestFindAudio(manifest,"music.course-select");
+    if(relative){
+        const char *root=ModAssetsDirectory();
+        if(root&&snprintf(override,sizeof(override),"%s/%s",root,relative)<(int)sizeof(override)&&WavInfo(override,NULL)&&Psyz_PcmMusicLoad(override)==0){
+            fprintf(stderr,"rage-port: loaded music.course-select override: %s\n",override);return 1;
+        }
+        fprintf(stderr,"rage-port: invalid music.course-select override; using original PCM\n");
+    }
 
     if (path == NULL || path[0] == '\0') {
         int written = snprintf(filename, sizeof(filename),

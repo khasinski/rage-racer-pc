@@ -14,6 +14,7 @@ typedef enum RageModSection {
     RAGE_MOD_SECTION_TEXTURES,
     RAGE_MOD_SECTION_MATERIALS,
     RAGE_MOD_SECTION_MESHES,
+    RAGE_MOD_SECTION_AUDIO,
 } RageModSection;
 
 static char *ManifestTrim(char *text) {
@@ -126,6 +127,7 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
                 section = RAGE_MOD_SECTION_MOD;
                 goto next;
             }
+            if (strcmp(line, "[audio]") == 0) { section = RAGE_MOD_SECTION_AUDIO; goto next; }
             if (strcmp(line, "[textures]") == 0) {
                 section = RAGE_MOD_SECTION_TEXTURES;
                 goto next;
@@ -187,19 +189,24 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
                     !ManifestSemanticId(out->id) ||
                     !ManifestLineEnd(cursor)) goto invalid;
             } else if (section == RAGE_MOD_SECTION_TEXTURES ||
-                       section == RAGE_MOD_SECTION_MESHES) {
+                       section == RAGE_MOD_SECTION_MESHES || section == RAGE_MOD_SECTION_AUDIO) {
                 RageModTextureOverride *entry;
                 int mesh = section == RAGE_MOD_SECTION_MESHES;
-                size_t *count = mesh ? &out->meshCount : &out->textureCount;
-                if (*count == (size_t)(mesh ? RAGE_MOD_MANIFEST_MAX_MESHES :
+                int audio = section == RAGE_MOD_SECTION_AUDIO;
+                size_t *count = audio ? &out->audioCount : mesh ? &out->meshCount : &out->textureCount;
+                if (*count == (size_t)(audio ? RAGE_MOD_MANIFEST_MAX_AUDIO : mesh ? RAGE_MOD_MANIFEST_MAX_MESHES :
                                             RAGE_MOD_MANIFEST_MAX_TEXTURES))
                     goto invalid;
-                entry = mesh ? &out->meshes[*count] : &out->textures[*count];
+                entry = audio ? &out->audio[*count] : mesh ? &out->meshes[*count] : &out->textures[*count];
                 if (!ManifestAssignment(line, entry->key,
                                             sizeof(entry->key), entry->path,
                                             sizeof(entry->path)) ||
                     !ManifestSemanticId(entry->key) ||
                     !ManifestRelativePath(entry->path)) goto invalid;
+                if (audio) {
+                    size_t n = strlen(entry->path);
+                    if (strncmp(entry->path,"audio/",6) || n < 11 || strcmp(entry->path+n-4,".wav")) goto invalid;
+                }
                 if (mesh) {
                     size_t length = strlen(entry->path);
                     if (strncmp(entry->path, "meshes/", 7) != 0 || length < 14 ||
@@ -274,7 +281,8 @@ RageModResolution ModManifestResolve(const RageModManifest *manifest,
                       RAGE_MOD_RESOLVE_MESH)) != 0 ||
         manifest->textureCount > RAGE_MOD_MANIFEST_MAX_TEXTURES ||
         manifest->materialCount > RAGE_MOD_MANIFEST_MAX_MATERIALS ||
-        manifest->meshCount > RAGE_MOD_MANIFEST_MAX_MESHES) return result;
+        manifest->meshCount > RAGE_MOD_MANIFEST_MAX_MESHES ||
+        manifest->audioCount > RAGE_MOD_MANIFEST_MAX_AUDIO) return result;
     for (size_t i = (channels & RAGE_MOD_RESOLVE_TEXTURE) ? manifest->textureCount : 0; i > 0; --i) {
         const RageModTextureOverride *entry = &manifest->textures[i - 1];
         if (!memchr(entry->key, '\0', sizeof(entry->key)) ||
@@ -332,6 +340,7 @@ int ModManifestBuildOrder(const RageModManifest *const *manifests,
             m->textureCount > RAGE_MOD_MANIFEST_MAX_TEXTURES ||
             m->materialCount > RAGE_MOD_MANIFEST_MAX_MATERIALS ||
             m->meshCount > RAGE_MOD_MANIFEST_MAX_MESHES ||
+            m->audioCount > RAGE_MOD_MANIFEST_MAX_AUDIO ||
             m->requirementCount > RAGE_MOD_MANIFEST_MAX_REQUIREMENTS ||
             (count > 1 && m->id[0] == 0)) return 0;
         if (!memchr(m->id, '\0', sizeof(m->id)) ||
@@ -382,4 +391,10 @@ const char *ModManifestOrderErrorString(RageModOrderError error) {
     case RAGE_MOD_ORDER_CYCLE: return "mod dependency cycle";
     default: return "invalid mod selection";
     }
+}
+
+const char *ModManifestFindAudio(const RageModManifest *m,const char *id){
+    if(!m||!id||m->error!=RAGE_MOD_MANIFEST_OK||m->schemaVersion!=RAGE_MOD_MANIFEST_SCHEMA_VERSION||m->audioCount>RAGE_MOD_MANIFEST_MAX_AUDIO)return NULL;
+    for(size_t i=m->audioCount;i>0;i--)if(!strcmp(m->audio[i-1].key,id))return m->audio[i-1].path;
+    return NULL;
 }
