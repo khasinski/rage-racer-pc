@@ -181,8 +181,20 @@ class LauncherService {
     this.requireReady();
     if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid track');
     return this.operation('Reading track scene',async signal=>{
-      const file=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
-      return JSON.parse(await run(this.tool('rage-mod-cli'),['--track-scene',file],{signal,maxOutput:8*1024*1024}));
+      await this.loadProject();
+      const snapshot=this.editor?.project.snapshot(),selection=snapshot?.selection;
+      let directory='';
+      try{
+        if(selection?.packages.length)directory=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
+        const files=directory?await require('./mods.cjs').inventory(directory,this.tool('rage-mod-cli')):[];
+        if(!directory){directory=path.join(this.root,'track-preview-'+randomUUID());await fs.mkdir(directory);}
+        const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+        const changes=(snapshot?.changes||[]).filter(c=>c.kind==='track'&&c.id.startsWith(prefix));
+        await require('./track-edits.cjs').apply(this,changes,directory,files,signal);
+        const relative=`raw/asset_${String(bank).padStart(3,'0')}.bin`;
+        const file=path.join(files.includes(relative)?directory:this.state.disc.data,relative);
+        return {...JSON.parse(await run(this.tool('rage-mod-cli'),['--track-scene',file],{signal,maxOutput:8*1024*1024})),revision:snapshot?.revision};
+      }finally{if(directory)await fs.rm(directory,{recursive:true,force:true});}
     });
   }
   carSpecFile(bank) {

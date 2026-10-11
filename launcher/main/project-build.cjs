@@ -36,7 +36,9 @@ async function apply(service){
     await fs.copyFile(base,frozenBase);
     const {cars}=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-profile',frozenBase]));
     const groups=new Map(),models={},textures={},materials={};
+    await require('./track-edits.cjs').apply(service,snapshot.changes,staging,files);
     for(const c of snapshot.changes){
+      if(c.kind==='track')continue;
       if(c.kind!=='car')throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
       if(c.field==='material'){
         materials[c.id]=c.value;continue; // Native profile writer validates both ID and values.

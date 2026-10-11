@@ -345,3 +345,19 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Kodek zapisu nie jest jeszcze podłączony do operacji projektu i UI. Następny
   krok: atomowa kompilacja zmian tych obiektów do paczki toru, wspólna historia
   i scena 3D z osobnym dekodowaniem geometrii terenu/modeli.
+
+### Kompilacja zmian obiektów toru
+
+- Natywne `--edit-track-stdin` waliduje cały zestaw zmian, zakres liczb, model
+  i flagi przed stworzeniem prywatnego wyjścia. Zachowuje offsets, pozostałe
+  bloki i nieznane bajty. Brak poprawnego wyjścia przy błędzie w środku batcha.
+- Zmiany `track.big1.object.0` (i pozostałych torów/klas) w projekcie trafiają
+  przez builder do raw override nowego buildu. Wybrana paczka raw jest bazą;
+  w przeciwnym razie bazą jest oryginał z importu. Cały plik obejmuje istniejący
+  manifest hashy buildu. `trackScene` podgląda te same skompilowane zmiany.
+- Test integracyjny obejmuje batch rollback, przepełnienie liczby, undo/redo,
+  podgląd, apply, niezmienione pozostałe bajty/original i zachowanie aktywnego
+  buildu po niepoprawnym modelu. Suite: 115 pass / 3 skip (118 testów),
+  native save_format pass; nowy test po poprawce zakresu liczb również pass.
+- Brakuje formularza/3D manipulacji obiektami w UI i dekodowania pełnej sceny
+  geometrii. Nie oznacza to zakończenia edytora torów ani pozostałego planu.

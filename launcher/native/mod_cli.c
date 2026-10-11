@@ -28,6 +28,7 @@ static RageModManifest manifest;
 #include "mod_inventory.h"
 #include "legacy_index_cli.h"
 #include "mod_package_cli.h"
+#include "track_edit_cli.h"
 static int ValidatePng(const char *path) {
     unsigned char header[24];
     FILE *file=fopen(path,"rb");
@@ -193,6 +194,7 @@ int main(int argc,char **argv) {
         if(!PlatformUserConfigPath("mods",directory,sizeof(directory))) return 1;
         printf("{\"directory\":");String(directory);puts("}");return 0;
     }
+    if(argc==4 && strcmp(argv[1],"--edit-track-stdin")==0) return TrackEditCommand(argv[2],argv[3]);
     if(argc==3 && strcmp(argv[1],"--write-profile-stdin")==0) return ProfileCommand(argv[2]);
     if(argc==3 && strcmp(argv[1],"--write-legacy-index-stdin")==0) return LegacyIndexWriteCommand(argv[2]);
     if(argc==3 && strcmp(argv[1],"--legacy-index")==0) return LegacyIndexCommand(argv[2]);
