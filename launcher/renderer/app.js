@@ -158,7 +158,7 @@ document.addEventListener('paste',e=>{
  e.target.dispatchEvent(new Event('input',{bubbles:true}));
 });
 document.addEventListener('input',e=>{
- if(e.target.closest('#material-form, #car-spec-form, #mod-details-form, #track-object-form'))modalDirty=true;
+ if(e.target.closest('#material-form, #car-spec-form, #mod-details-form, #track-object-form, #road-point-form'))modalDirty=true;
  if(e.target.dataset.setting){draft[e.target.dataset.setting]=e.target.type==='checkbox'?e.target.checked:e.target.value;dirty=true;}
  if(e.target.hasAttribute('data-team')){edits.team=e.target.value;dirty=true;}
  if(e.target.dataset.field){edits[e.target.dataset.field]=e.target.value;dirty=true;}
@@ -168,6 +168,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{if(e.target.dataset.conflict)perform(async()=>{await request('resolveConflict',e.target.dataset.conflict,e.target.value);});if(e.target.dataset.mod)perform(async()=>{await request('toggleMod',e.target.dataset.mod,e.target.checked);});});
 document.addEventListener('submit',e=>{e.preventDefault();e.target.querySelector('[data-form-error]')?.remove();perform(async()=>{
+ if(e.target.id==='road-point-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-road-field]')].filter(i=>i.value!==i.dataset.original).map(i=>[i.dataset.roadField,Number(i.value)]));if(Object.keys(values).length)project=await request('saveRoadPoint',Number(e.target.dataset.bank),Number(e.target.dataset.index),values,Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);modalDirty=false;render();toast('Road point saved to project; game unchanged until Save & apply');return;}
  if(e.target.id==='track-object-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-object-field]')].filter(i=>i.value!==i.dataset.original).map(i=>[i.dataset.objectField,i.dataset.objectField==='yaw'?Math.round(Number(i.value)*4096/360):Number(i.value)]));if(Object.keys(values).length)project=await request('saveTrackObject',Number(e.target.dataset.bank),Number(e.target.dataset.index),values,Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);modalDirty=false;render();toast('Object saved to project; game unchanged until Save & apply');return;}
  if(e.target.id==='mod-details-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-detail]')].map(i=>[i.dataset.detail,i.value]));await request('saveModDetails',e.target.dataset.mod,values);$('#dialog').close();toast('Mod details saved');return;}
  if(e.target.id==='car-spec-form'){const edits=Object.fromEntries([...e.target.querySelectorAll('[data-spec]')].filter(i=>i.value!==(i.dataset.original??i.defaultValue)).map(i=>[i.dataset.spec,i.dataset.speed?storedShiftSpeed(Number(i.value)):Number(i.value)]));if(Object.keys(edits).length){project=await request('saveCarSpec',Number(e.target.dataset.bank),edits,Number(e.target.dataset.revision));e.target.dataset.revision=String(project.revision);}project=await request(e.submitter?.hasAttribute('data-project-only')?'saveProject':'applyProject',Number(e.target.dataset.revision));modalDirty=false;$('#dialog').close();toast(e.submitter?.hasAttribute('data-project-only')?'Project saved; game unchanged':'Car parameters applied for the next launch from this editor');return;}

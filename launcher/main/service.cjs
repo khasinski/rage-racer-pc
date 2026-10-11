@@ -204,13 +204,15 @@ class LauncherService {
       }finally{if(directory)await fs.rm(directory,{recursive:true,force:true});}
     });
   }
-  async saveTrackObject(bank,index,values,revision){
+  async saveTrackObject(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'object');}
+  async saveRoadPoint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'road');}
+  async saveTrackEntry(bank,index,values,revision,type){
     this.requireReady();
-    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>6)throw Error('Invalid track object edit');
+    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='road'?10:6))throw Error('Invalid track object edit');
     return this.operation('Editing track object',async signal=>{
       await this.loadProject();if(!this.editor)throw Error('Open a source project first');
       const project=this.editor.project;project.checkRevision(revision);
-      const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.object.${index}`;
+      const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.${type}.${index}`;
       const changes=Object.entries(values).map(([field,value])=>({kind:'track',id,field,value}));
       require('./track-edits.cjs').group(changes);
       let directory='';

@@ -465,3 +465,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   innych bloków oraz brak wyjścia po błędzie w drugiej zmianie paczki.
 - Formularz edycji punktów nie jest jeszcze podłączony. To zapis danych drogi,
   nie automatyczna przebudowa geometrii wizualnej czy aktualizacja AI/kamer.
+
+### Formularz punktów drogi i pełny przepływ projektu
+
+- Tracks pozwala zapisać pozycję/height i half-widths wybranego punktu;
+  kierunek, nachylenie, długość i packed arc reference są po rozwinięciu,
+  z opisem jednostek i braku automatycznej przebudowy wizualnego asfaltu.
+- IPC używa `saveRoadPoint`; walidacja i staging są wspólne z obiektami,
+  zamiast drugiej implementacji. Pola projektu używają snake_case, zgodnie
+  z kontraktem nazewnictwa projektu; adapter mapuje do istniejącego C codec.
+- Integracja publicznego serwisu sprawdza zapis, odrzucenie błędnej długości
+  bez nowej rewizji, undo/redo, effective preview oraz apply i odczyt
+  wynikowego banku. Oryginalny asset pozostaje nienaruszony.
+- Test UI sprawdza obecność wszystkich dziesięciu pól, basic/advanced,
+  rewizję i wartości original (w tym szerokości i cross-slope).
+- Nadal brakuje przebudowy geometrii, arc centers, AI i kamer; formularz
+  jawnie opisuje te granice i nie przedstawia surowych zmian jako gotowego
+  nowego toru.

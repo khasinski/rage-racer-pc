@@ -1,5 +1,5 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
-test('track workspace identifies source, supports point selection and makes read-only limits explicit',async()=>{
+test('track workspace identifies source, supports point selection and distinguishes driveable route edits from visual geometry',async()=>{
   const {trackWorkspace}=await import('../renderer/tracks.mjs');
   const track={name:'Coast <test>',bank:88,grade:1,available:true,blocks:[]};
   const point={x:100,y:-20,z:-100,angle:123,pitch:10,crossSlope:-2,leftWidth:50,rightWidth:80,length:200,arc:0};
@@ -7,7 +7,7 @@ test('track workspace identifies source, supports point selection and makes read
   assert.match(html,/Coast &lt;test&gt;/);
   assert.match(html,/data-track-point="0"/);assert.match(html,/data-track-point="1"/);
   assert.match(html,/Road point 2/);assert.match(html,/not a terrain/);
-  assert.match(html,/not connected yet/);assert.ok(!html.includes('NaN'));
+  assert.match(html,/not the visible asphalt mesh/);assert.match(html,/Save point to project/);assert.ok(!html.includes('NaN'));
   const degenerate=trackWorkspace([track],88,{road:{points:[point],arcs:[]}},0);
   assert.ok(!degenerate.includes('NaN'));assert.ok(!degenerate.includes('Infinity'));
 });
@@ -22,4 +22,14 @@ test('track object form separates transforms from advanced flags and displays de
  for(const field of ['x','y','z','yaw'])assert.ok(basic.includes(`data-object-field="${field}"`));
  for(const field of ['model','flags'])assert.ok(!basic.includes(`data-object-field="${field}"`)&&advanced.includes(`data-object-field="${field}"`));
  assert.match(html,/Save object to project/);assert.match(html,/Save & apply project/);
+});
+test('road form exposes every point field with matching original values and advanced units',async()=>{
+ const {trackWorkspace}=await import('../renderer/tracks.mjs');
+ const html=trackWorkspace([{name:'Coast',bank:88}],88,{revision:4,road:{points:[{x:100,z:200,y:-20,angle:123,pitch:10,crossSlope:-2,leftWidth:50,rightWidth:80,length:200,arc:0}],arcs:[]}});
+ const form=html.slice(html.indexOf('<form id="road-point-form"'),html.indexOf('</form>')+7),[basic,advanced]=form.split('<details');
+ for(const f of ['x','y','z','left_width','right_width'])assert.ok(basic.includes(`data-road-field="${f}"`));
+ for(const f of ['angle','pitch','cross_slope','length','arc'])assert.ok(advanced.includes(`data-road-field="${f}"`));
+ assert.match(form,/id="road-left_width"[^>]*value="50" data-original="50"/);
+ assert.match(form,/id="road-cross_slope"[^>]*value="-2" data-original="-2"/);
+ assert.match(form,/data-revision="4"/);assert.ok(!form.includes('undefined'));
 });

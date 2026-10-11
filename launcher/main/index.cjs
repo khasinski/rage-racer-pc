@@ -57,6 +57,7 @@ handle('tracks',()=>service.tracks());
 handle('track-scene',bank=>service.trackScene(bank));
 handle('track-preview',bank=>service.trackScene(bank,true));
 handle('save-track-object',(bank,index,values,revision)=>service.saveTrackObject(bank,index,values,revision));
+handle('save-road-point',(bank,index,values,revision)=>service.saveRoadPoint(bank,index,values,revision));
 handle('export-car-set',async key=>{const dir=await open({title:'Export complete car to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCarSet(key,dir);return null;});
 handle('import-car-set',async key=>{const dir=await open({title:'Choose car set folder (car-set.json, models and textures)',properties:['openDirectory']});if(dir)return service.importCarSet(key,dir);return null;});
 handle('preview-whole-car',(bank,body,rival,modId)=>service.previewWholeCar(bank,body,rival,modId));
