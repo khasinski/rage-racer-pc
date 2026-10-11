@@ -55,3 +55,9 @@ test('engine arrays expose every original index without duplicate controls',()=>
  for(const [key,count]of Object.entries(arrays))for(let i=0;i<count;i++)assert.equal(dialog.innerHTML.split('data-spec="'+key+i+'"').length-1,1);
  assert.match(dialog.innerHTML,/Advanced engine curves & gearing/);assert.match(dialog.innerHTML,/not a conventional ratio display/);
 });
+test('car identity is visible in the basic form and preserves text values',()=>{
+ const {context,dialog}=dialogs();const keys=['manualOnly',...Array.from({length:6},(_,i)=>['downshift'+(i+1),'upshift'+(i+1)]).flat()];
+ context.carSpecDialog(10,{fields:[...keys.map(key=>({key,value:100,min:0,max:10000})),...['name','manufacturer','className'].map(key=>({key,type:'text',value:'Coast Special',maxLength:31}))]});
+ const basic=dialog.innerHTML.split('<details')[0];for(const key of ['name','manufacturer','className'])assert.match(basic,new RegExp('data-spec="'+key+'" data-text'));
+ assert.equal([...dialog.innerHTML.matchAll(/data-text/g)].length,3);assert.match(basic,/type="text" maxlength="31" value="Coast Special"/);
+});

@@ -781,3 +781,21 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   Screenshot formularza obejrzano: build/reports/editor/car-engine-arrays.png.
 - GUI weryfikacja używa bridge do service, nie Electron IPC; test nie dowodzi
   jeszcze zmiany osiągów podczas wyścigu ani kompletnej walidacji fizyki.
+
+### Nazwa, producent i oznaczenie klasy
+
+- Basic formularz samochodu edytuje name/manufacturer/class label, niezależnie
+  od unlock level. Shared profile read/edit stosuje builtin/project origins,
+  limit 31 UTF-8 bytes oraz zakaz znaków nieobsługiwanych przez obecny codec:
+  #, quote, backslash, control. Nie powstał nowy serializer.
+- Car catalog scala projektowe nazwy body slots. Po zapisie formularza UI
+  odświeża katalog, więc lista pokazuje nową nazwę bez restartu programu.
+- Service test obejmuje published profile wszystkich trzech tekstów,
+  widoczną nazwę katalogu i błędne/za długie UTF-8 dane. UI test zapewnia
+  trzy tekstowe pola w podstawowej sekcji i brak duplikatów.
+- Full suite przed ostatnią dodatkową # fixture/refresh: 142 tests, 139 pass,
+  3 optional skips. Końcowe focused car-spec/hierarchy: 11 pass.
+- Actual app.js + PAL native catalog/spec: edytowano name i torque sample,
+  Save project only, potwierdzono pełny array oraz nową nazwę na liście.
+  Test czeka na koniec odświeżenia, nie jedynie zamknięcie dialogu. Source
+  read-only, temp project, headless, zero pageerrors; nie Electron IPC.

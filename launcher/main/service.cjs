@@ -72,11 +72,13 @@ class LauncherService {
     return run(this.tool('rage-racer'),['--config',this.baseConfig,'--set','disc.image='+this.state.disc.path,'--set','disc.choose=false',...args],{cwd:this.root,signal});
   }
   async cars() {
-    this.requireReady();return this.operation('Reading car models',async signal=>{
+    this.requireReady();const project=await this.project();return this.operation('Reading car models',async signal=>{
       const catalog=JSON.parse(await this.carTool(['--set','tools.car_catalog=true'],signal));
       const names=JSON.parse(await run(this.tool('rage-save-cli'),['car-names'],{signal}));
       const display=require('./car-names.cjs');
-      return {...catalog,parts:catalog.parts.map(part=>({...part,name:display(part.name,this.state.disc.region,names)}))};
+      const profile=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-profile',path.join(this.bin,this.state.disc.region==='NTSC-J'?'cars.ntscj.toml':'cars.toml')],{signal}));
+      const authoredNames=new Map(project.changes.filter(c=>c.kind==='car'&&c.field==='name').map(c=>[c.id,c.value]));
+      return {...catalog,parts:catalog.parts.map(part=>{const car=!part.rival&&part.part===0?profile.cars.find(c=>c.variant===(part.bank-10)/2):null;return {...part,name:car&&authoredNames.has(car.id)?authoredNames.get(car.id):display(part.name,this.state.disc.region,names)};})};
     });
   }
   async publishMods() {return require('./publish-mods.cjs')(this);}

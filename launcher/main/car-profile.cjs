@@ -1,5 +1,5 @@
 const path=require('node:path');
-const names={steeringGripResponse:'steering_grip_response',steerResponse:'steer_response',referenceTurnRadius:'reference_turn_radius',negconSteeringAssistScale:'negcon_steering_assist_scale',speedDragDivisor:'speed_drag_divisor',baseSteeringGrip:'base_steering_grip',manualOnly:'manual_only',revLimit:'rev_limit',redline:'redline',topGear:'top_gear',automaticAccelerationScale:'automatic_acceleration_scale',price:'price',upgradePrice:'upgrade_price',unlockClass:'unlock_class'};
+const names={name:'name',manufacturer:'manufacturer',className:'class',steeringGripResponse:'steering_grip_response',steerResponse:'steer_response',referenceTurnRadius:'reference_turn_radius',negconSteeringAssistScale:'negcon_steering_assist_scale',speedDragDivisor:'speed_drag_divisor',baseSteeringGrip:'base_steering_grip',manualOnly:'manual_only',revLimit:'rev_limit',redline:'redline',topGear:'top_gear',automaticAccelerationScale:'automatic_acceleration_scale',price:'price',upgradePrice:'upgrade_price',unlockClass:'unlock_class'};
 const arrays={torqueCurve:'torque_curve',torqueBand:'torque_band',torqueLossValue:'torque_loss_value',torqueLossRpm:'torque_loss_rpm',gearLoad:'gear_load',gearRatio:'gear_ratio',torqueScale:'torque_scale'};
 function binding(key){
  const shift=/^(downshift|upshift)([1-6])$/.exec(key);if(shift)return {stored:'shift_points',index:(Number(shift[2])-1)*2+(shift[1]==='upshift'?1:0)};
@@ -17,6 +17,7 @@ async function read(service,bank){
     const car=cars.find(c=>c.variant===(bank-10)/2);if(!car)throw Error('Car is absent from this regional profile');
     spec.fields.unshift({key:'manualOnly',value:transmission.manualOnly,min:0,max:1});
     for(const [key,max]of [['price',2147483647],['upgradePrice',2147483647],['unlockClass',5]])if(Object.hasOwn(car,names[key]))spec.fields.push({key,value:car[names[key]],min:0,max});
+    for(const key of ['name','manufacturer','className'])spec.fields.unshift({key,type:'text',value:car[names[key]],maxLength:31});
     const overrides=Object.fromEntries(project.changes.filter(c=>c.kind==='car'&&c.id===car.id).map(c=>[c.field,c.value]));
     for(const field of spec.fields){
       const {stored,index}=binding(field.key);
@@ -37,7 +38,10 @@ async function edit(service,bank,edits,revision){
   const modified=new Map();
   for(const [key,value]of Object.entries(edits)){
     const f=fields.get(key);
-    if(!f||!Number.isInteger(value)||value<f.min||value>f.max)throw Error('Invalid car parameter: '+key);
+    if(!f)throw Error('Invalid car parameter: '+key);
+    if(f.type==='text'){
+      if(typeof value!=='string'||!value.trim()||Buffer.byteLength(value,'utf8')>f.maxLength||/[#"\\\x00-\x1f\x7f]/.test(value))throw Error('Invalid car text: '+key+' (1–31 UTF-8 bytes, no #, quotes, backslashes or control characters)');
+    }else if(!Number.isInteger(value)||value<f.min||value>f.max)throw Error('Invalid car parameter: '+key);
     const {stored,index}=binding(key);
     if(index!==null){
       if(!modified.has(stored)){
