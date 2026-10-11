@@ -242,3 +242,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Pozostają m.in. import całego zestawu do wspólnej historii, wersjonowanie
   tekstur, efektywny eksport oraz wspólne rozwiązywanie wyglądu paczek i zmian
   projektu w podglądzie. Nie zweryfikowano jeszcze wizualnie nowego modelu w grze.
+
+### Zestaw auta i tekstury w jednej historii
+
+- Import zestawu do projektu zapisuje trzy modele i zweryfikowane natywnie
+  tekstury PNG jako jedną operację historii, bez dodawania paczki do biblioteki.
+  Magazyn identyfikuje obiekty hashem i typem (`rmesh` / `png`).
+- Builder nakłada tekstury projektu na wybrane paczki, kopiuje je do nowego
+  buildu i obejmuje kontrolą integralności razem z modelami. Podgląd materiałów
+  pobiera tekstury projektu przez te same referencje, mapując oryginalne
+  page/CLUT na semantyczny slot materiału.
+- Rozszerzony test zestawu sprawdza cztery zmiany w jednym kroku historii,
+  undo/redo, zgodność pikseli podglądu, manifest zastosowanego buildu i brak
+  zmiany dokumentu/rewizji przy odrzuconym PNG. Suite: 110 pass / 3 skip;
+  native save_format pass. Wszystkie testy bez widocznej gry.
+- Nadal niezamknięte: efektywny eksport, rozwiązywanie wyglądu wybranych paczek
+  w domyślnym podglądzie, edycja właściwości materiałów w historii, GLB/glTF,
+  edytor sceny toru i media oraz pełne platformowe/wizualne acceptance gates.

@@ -1,11 +1,13 @@
 const path=require('node:path');
 const fs=require('node:fs/promises');
 module.exports=async function(service,key,metadata,mod,signal){
- const properties=mod?.manifest.materials||{},textures=mod?.manifest.textures||{};if(!Object.keys(properties).length&&!Object.keys(textures).length)return {};
+ const properties=mod?.manifest.materials||{},textures=mod?.manifest.textures||{};
+ const projectTextures=mod?{}:Object.fromEntries((service.editor?.project.snapshot().changes||[]).filter(c=>c.kind==='car'&&c.field==='texture').map(c=>[c.id,c.value]));
+ if(!Object.keys(properties).length&&!Object.keys(textures).length&&!Object.keys(projectTextures).length)return {};
  const [,kind,bankText]=/^car\.(player|rival)\.(\d+)\.part\.\d+$/.exec(key),bank=Number(bankText);
  const index=(bank-88)/2;
  const prefix=kind==='player'?`car.${(bank-10)/2}.material.`:`track.${['big','mid','hi','oval'][index%4]}${Math.floor(index/4)+1}.model-bank-1.material.`;
- if(![...Object.keys(properties),...Object.keys(textures)].some(id=>id.startsWith(prefix)))return {};
+ if(![...Object.keys(properties),...Object.keys(textures),...Object.keys(projectTextures)].some(id=>id.startsWith(prefix)))return {};
  const {run}=require('./service.cjs');
  const file=path.join(service.state.disc.data,'raw',`asset_${bankText.padStart(3,'0')}.bin`);
  const table=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-materials',kind,file,bankText],{signal}));
@@ -21,6 +23,12 @@ module.exports=async function(service,key,metadata,mod,signal){
    const bytes=await fs.readFile(file);if(bytes.length<24||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw Error('Invalid preview PNG');
    const width=bytes.readUInt32BE(16),height=bytes.readUInt32BE(20);if(!width||!height||width>4096||height>4096)throw Error('Preview textures support dimensions up to 4096 × 4096');
    result[material.source].texture={png:bytes.toString('base64')};
+  }
+  const reference=projectTextures[slot.id];
+  if(reference!==undefined){
+   if(!reference.endsWith('.png'))throw Error('Invalid project texture type');
+   const bytes=await new (require('./project-files.cjs').ProjectFiles)(service.editor.file).read(reference);
+   result[material.source]={...result[material.source],id:slot.id,texture:{png:bytes.toString('base64')}};
   }
  }
  return result;

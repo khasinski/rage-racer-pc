@@ -5,7 +5,7 @@ const {createHash,randomUUID}=require('node:crypto');
 const LIMIT=128*1024*1024;
 const digest=data=>createHash('sha256').update(data).digest('hex');
 const parse=ref=>{
-  if(typeof ref!=='string'||!/^sha256:[a-f0-9]{64}\.rmesh$/.test(ref))throw Error('Invalid project model reference');
+  if(typeof ref!=='string'||!/^sha256:[a-f0-9]{64}\.(rmesh|png)$/.test(ref))throw Error('Invalid project model reference');
   return ref.slice(7);
 };
 
@@ -27,7 +27,8 @@ class ProjectFiles {
     if(data.length>LIMIT||digest(data)!==name.slice(0,64))throw Error('Project model has changed or is damaged');
     return data;
   }
-  async put(file){
+  async put(file,type='rmesh'){
+    if(!['rmesh','png'].includes(type))throw Error('Invalid project file type');
     const handle=await fs.open(file,'r');let data;
     try{
       const stat=await handle.stat();
@@ -35,7 +36,7 @@ class ProjectFiles {
       data=await handle.readFile();
     }finally{await handle.close();}
     if(data.length>LIMIT)throw Error('Project model exceeds size limit');
-    const ref=`sha256:${digest(data)}.rmesh`,name=parse(ref);
+    const ref=`sha256:${digest(data)}.${type}`,name=parse(ref);
     await this.directory();
     const temp=path.join(this.root,randomUUID()+'.tmp');
     try{

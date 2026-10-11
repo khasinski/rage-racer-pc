@@ -35,5 +35,29 @@ test('complete car import installs all models and textures atomically and reject
   await fs.writeFile(path.join(source,'model.obj'),obj.replace('rage_0','rage_65535'));
   const plainId=await service.importCar(key,path.join(source,'model.obj'));
   assert.ok(service.state.mods.some(m=>m.id===plainId));
+  // An imported source owns edits directly, with one history action for
+  // body, both wheel models and their shared texture.
+  service.modsRoot=path.join(root,'game-mods');
+  const archive=path.join(root,'RAGE.BIN');await fs.writeFile(archive,'car set source');service.state.disc.archive=archive;
+  await fs.writeFile(path.join(source,'model.obj'),obj);await write();
+  const before=await service.project(),count=service.state.mods.length;
+  let project=await service.importCarSet(key,source);
+  assert.equal(service.state.mods.length,count);assert.equal(project.revision,before.revision+1);
+  assert.equal(project.changes.length,4);assert.equal(project.changes.filter(c=>c.field==='mesh').length,3);
+  assert.equal(project.changes.find(c=>c.field==='texture').id,'car.0.material.0');
+  const changes=project.changes;
+  const appearance=await require('../main/preview-materials.cjs')(service,key,{materials:[{source:0,page:11,clut:22}]},null,new AbortController().signal);
+  assert.equal(appearance[0].texture.png,png.toString('base64'));
+  project=await service.projectHistory('undo',project.revision);assert.equal(project.changes.length,0);
+  project=await service.projectHistory('redo',project.revision);assert.deepEqual(project.changes,changes);
+  project=await service.applyProject(project.revision);
+  const pointer=JSON.parse(await fs.readFile(path.join(service.modsRoot,'active.json')));
+  const {run}=require('../main/service.cjs');
+  const applied=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(service.modsRoot,'builds',pointer.build,'mod.toml')]));
+  assert.equal(Object.keys(applied.meshes).length,3);assert.ok(applied.textures['car.0.material.0'].startsWith('textures/project/'));
+  await fs.writeFile(path.join(source,'image.png'),png.subarray(0,33));
+  await assert.rejects(service.importCarSet(key,source),/Cannot import texture/);
+  assert.deepEqual((await service.project()).changes,changes);
+  assert.equal((await service.project()).revision,project.revision);
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });

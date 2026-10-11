@@ -61,6 +61,16 @@ exports.importSet=async(service,key,source)=>{
     textures.push(`"${material.id}" = "${output}"`);
    }
    await fs.writeFile(path.join(staging,'mod.toml'),'[meshes]\n'+meshes.join('\n')+'\n[textures]\n'+textures.join('\n')+'\n');
+   await service.loadProject();
+   if(service.editor){
+    const project=service.editor.project,revision=project.revision;
+    const parsed=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(staging,'mod.toml')],{signal}));
+    const store=new (require('./project-files.cjs').ProjectFiles)(service.editor.file),changes=[];
+    for(const [field,entries,type]of [['mesh',parsed.meshes,'rmesh'],['texture',parsed.textures,'png']]){
+     for(const [id,relative]of Object.entries(entries))changes.push({kind:'car',id,field,value:await store.put(path.join(staging,relative),type)});
+    }
+    return project.edit(changes,revision);
+   }
    const names=JSON.parse(await run(service.tool('rage-save-cli'),['car-names'],{signal})),name=require('./car-names.cjs')(c.name,service.state.disc.region,names);
    return (await service.installModFiles(staging,signal,name+' · complete car')).id;
   }finally{await fs.rm(staging,{recursive:true,force:true});}

@@ -105,7 +105,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(b.dataset.carSection){carSection=b.dataset.carSection;selectedCar='';render();return;}
  if(b.dataset.selectCar){selectedCar=b.dataset.selectCar;render();return;}
  if(b.dataset.exportSet){if(await request('exportCarSet',b.dataset.exportSet))toast('Complete car set exported');return;}
- if(b.dataset.importSet){if(await request('importCarSet',b.dataset.importSet))toast('Car set imported as one package. Select it in My mods, then Save & apply.');return;}
+ if(b.dataset.importSet){if(await request('importCarSet',b.dataset.importSet))toast('Car set imported into the project. Save & apply to use it in game.');return;}
  if(b.dataset.page)return navigate(b.dataset.page);
  if(b.dataset.discard){dirty=false;edits={};draft={...state.settings};$('#dialog').close();return enter(b.dataset.discard);}
  if(b.dataset.tab){if(!$('#settings-form').reportValidity())return;tab=b.dataset.tab;render();return;}
