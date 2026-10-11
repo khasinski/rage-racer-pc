@@ -842,3 +842,6 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   i final game screenshot nie są objęte tym browser bridge testem.
 - Latest full game build/staging uruchomiono osobno. Nie stwierdzamy jeszcze
   kompletnego U02/U03: logo/background/fonts/HUD/layout nadal brakuje edytorów.
+- Latest native staging zakończył się sukcesem: przebudowano title_menu_labels,
+  zlinkowano pełną grę i odświeżono launcher/resources/bin. Nie uruchomiono
+  widocznego okna ani publikacji release.
