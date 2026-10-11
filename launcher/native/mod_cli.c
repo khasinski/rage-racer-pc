@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <SDL3/SDL.h>
 #include "preview_png.h"
+#include "title_image.h"
 #include "texture_preview.h"
 #include "car_spec.h"
 #include "car_materials.h"
@@ -242,6 +243,7 @@ replaceDone:
     if(argc==2 && strcmp(argv[1],"--resolve-providers-stdin")==0) return ProviderStdinCommand();
     if(argc==6 && strcmp(argv[1],"--set-material")==0)
         return ManifestEditMaterial(argv[2],argv[3],argv[4],argv[5]);
+    if(argc>1 && strcmp(argv[1],"--title-image")==0)return ExportTitleImage(argc,argv);
     if(argc==3 && strcmp(argv[1],"--png")==0)return ValidatePng(argv[2]);
     if(argc>1 && strcmp(argv[1],"--car-transmission")==0)return CarTransmissionCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--car-materials")==0)return CarMaterialsCommand(argc,argv);

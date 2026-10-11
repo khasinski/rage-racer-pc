@@ -2035,6 +2035,6 @@ add_executable(menu_images_tests menu_images_tests.c
 target_include_directories(menu_images_tests PRIVATE ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/port ${PROJECT_SOURCE_DIR}/src/port/include
     ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/external/psyz/psyz/include)
-target_link_libraries(menu_images_tests PRIVATE SDL3::SDL3 rage-render-world)
+target_link_libraries(menu_images_tests PRIVATE SDL3::SDL3 rage-render-world rage-content)
 add_test(NAME menu_images COMMAND menu_images_tests ${CMAKE_CURRENT_BINARY_DIR}/menu-images-fixture)
 set_tests_properties(menu_images PROPERTIES LABELS unit TIMEOUT 30)

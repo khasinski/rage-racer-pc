@@ -131,7 +131,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-sim PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
-add_library(rage-content STATIC src/content/region_profile.c src/content/track_pack.c src/content/sha256.c)
+add_library(rage-content STATIC src/content/title_image.c src/content/region_profile.c src/content/track_pack.c src/content/sha256.c)
 target_include_directories(rage-content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 if(MSVC)
     target_compile_options(rage-content PRIVATE /W4 /WX)

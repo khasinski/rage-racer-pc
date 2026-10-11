@@ -1,5 +1,6 @@
 import {carWorkspace,workshopTabs} from './car-workshop.mjs';
 import {trackWorkspace,terrainCellEditor} from './tracks.mjs';
+import {interfaceWorkspace} from './interface.mjs';
 import {projectWorkspace} from './project.mjs';
 import {displayedShiftSpeed,storedShiftSpeed} from './car-speed.mjs';
 import {parseTimeClipboard} from './time-input.mjs';
@@ -14,7 +15,8 @@ const schema=await (await fetch('./settings.json')).json();
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state, page='home',tab='video',draft={},dirty=false,modalDirty=false,save=null,saveList=[],edits={},assets=[],carParts=[],filter='',toastTimer;
 let trackList=[],trackBank=88,trackScene=null,trackPoint=0,trackObject=0;
-let project=null;
+let project=null,titleImagesData=null;
+function interfacePage(){return interfaceWorkspace(titleImagesData);}
 function projects(){return projectWorkspace(project,state.mods);}
 function showTerrainCell(cell){const panel=document.querySelector('#terrain-cell-editor');if(!panel)return;const model=panel.querySelector('[data-terrain-model]');if(model.value!==model.dataset.original){toast('Save this cell before selecting another');return;}panel.outerHTML=terrainCellEditor(trackScene,trackBank,cell);}
 function tracks(){return trackWorkspace(trackList,trackBank,trackScene,trackPoint,trackObject);}
@@ -84,11 +86,11 @@ function render(){
  if(!state)return;const unlocked=state.ready&&!state.busy;
  $('#status').textContent=state.running?'Game running':state.busy||(!state.ready?'No game loaded':state.disc.region);
  $('#nav').querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b.dataset.page===page);b.disabled=b.dataset.page==='saves'?Boolean(state.busy)||!state.toolsReady:(!unlocked&&!['home','source'].includes(b.dataset.page));});
- $('#main').innerHTML=(state.busy?`<div class="busy"><span><i class="spinner"></i>${esc(state.busy)}</span><button data-action="cancel" ${state.canCancel?'':'disabled'}>Cancel</button></div>`:'')+(state.error?`<div class="banner error">${esc(state.error)} <button data-action="logs">View logs</button></div>`:'')+((!state.ready&&page!=='saves')||page==='source'?source():({home,settings,saves,mods,assets:library,cars,tracks,projects}[page])());
+ $('#main').innerHTML=(state.busy?`<div class="busy"><span><i class="spinner"></i>${esc(state.busy)}</span><button data-action="cancel" ${state.canCancel?'':'disabled'}>Cancel</button></div>`:'')+(state.error?`<div class="banner error">${esc(state.error)} <button data-action="logs">View logs</button></div>`:'')+((!state.ready&&page!=='saves')||page==='source'?source():({home,settings,saves,mods,assets:library,cars,tracks,projects,interface:interfacePage}[page])());
 }
 document.addEventListener('change',e=>{if(e.target.dataset.rivalFilter){if(e.target.dataset.rivalFilter==='class')rivalClass=Number(e.target.value);else rivalCourse=Number(e.target.value);selectedCar='';render();}});
 async function navigate(next){if(next===page)return;if(dirty){$('#dialog').innerHTML=`<h2>Discard unsaved changes?</h2><p>Your edits have not been saved.</p><footer><button data-action="close">Keep editing</button><button data-discard="${next}">Discard and continue</button></footer>`;$('#dialog').showModal();return;}await enter(next);}
-async function enter(next){if(!state.ready&&!['home','source','saves'].includes(next))return;page=next;if(page==='settings')draft={...state.settings};if(page==='saves'&&!save)saveList=await request('saves');if(page==='cars')carParts=(await request('cars')).parts;if(page==='assets')assets=(await request('assets')).entries;if(page==='projects')project=await request('project');if(page==='tracks'){trackList=(await request('tracks')).tracks;trackScene=await request('trackScene',trackBank);}render();}
+async function enter(next){if(!state.ready&&!['home','source','saves'].includes(next))return;page=next;if(page==='settings')draft={...state.settings};if(page==='saves'&&!save)saveList=await request('saves');if(page==='cars')carParts=(await request('cars')).parts;if(page==='assets')assets=(await request('assets')).entries;if(page==='projects')project=await request('project');if(page==='interface')titleImagesData=await request('titleImages');if(page==='tracks'){trackList=(await request('tracks')).tracks;trackScene=await request('trackScene',trackBank);}render();}
 document.addEventListener('change',e=>{
  if(e.target.matches('[data-terrain-row],[data-terrain-column]')){const panel=e.target.closest('#terrain-cell-editor'),model=panel.querySelector('[data-terrain-model]');if(model.value!==model.dataset.original){const cell=Number(panel.dataset.cell);panel.querySelector('[data-terrain-row]').value=String(cell>>5);panel.querySelector('[data-terrain-column]').value=String(cell&31);toast('Save this cell before selecting another');return;}showTerrainCell(Number(panel.querySelector('[data-terrain-row]').value)*32+Number(panel.querySelector('[data-terrain-column]').value));return;}
  if(e.target.matches('[data-terrain-model]')){const model=Number(e.target.value);for(const button of e.target.closest('form').querySelectorAll('[data-terrain-model-action]')){button.dataset.part=String(model);button.hidden=model===1023;}return;}
@@ -114,6 +116,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(b.dataset.discard){dirty=false;edits={};draft={...state.settings};$('#dialog').close();return enter(b.dataset.discard);}
  if(b.dataset.tab){if(!$('#settings-form').reportValidity())return;tab=b.dataset.tab;render();return;}
  if(b.dataset.previewTrackPart){$('#dialog').close();await mountModelPreview($('#dialog'),await request('previewTrackPart',b.dataset.previewTrackPart,Number(b.dataset.part)));return;}
+ if(b.dataset.exportTitleImage){if(await request('exportTitleImage',b.dataset.exportTitleImage))toast('Title menu PNG exported');return;}
+ if(b.dataset.importTitleImage){const result=await request('importTitleImage',b.dataset.importTitleImage,Number(b.dataset.revision));if(result){project=result;titleImagesData=await request('titleImages');render();toast('Menu image saved to project; Save & apply to use it in game');}return;}
+ if(b.dataset.resetTitleImage){project=await request('resetTitleImage',b.dataset.resetTitleImage,Number(b.dataset.revision));titleImagesData=await request('titleImages');render();toast('Project menu image reset');return;}
  if(b.dataset.exportTrackPart){if(await request('exportTrackPart',b.dataset.exportTrackPart,Number(b.dataset.part)))toast('Track model OBJ exported');return;}
  if(b.dataset.importTrackPart){const result=await request('importTrackPart',b.dataset.importTrackPart,Number(b.dataset.part),Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);$('#dialog').close();render();toast('Track model saved to project; Save & apply to use it in game');}return;}
  if(b.dataset.exportTrackMesh){if(await request('exportTrackMesh',b.dataset.exportTrackMesh))toast('Current track model bank exported');return;}

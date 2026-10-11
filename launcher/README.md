@@ -212,3 +212,18 @@ project geometry appears after release. Height and the shared model stay
 unchanged. Click an object normally to edit its numeric transform. Use project
 Undo to revert, then **Save & apply project** to make changes available to the
 game. Terrain cells use model assignment rather than free movement.
+
+## Editing menu buttons
+
+Open **Interface** to see the six title menu buttons, each in its normal and
+selected state. **Export PNG** saves the current image, including selected
+packages and project edits. Edit the 112×16 PNG in your image editor and use
+**Import PNG**. This keeps full RGB colors; it does not quantize to a PS1 palette
+or upload to the game's texture atlas. Alpha below 128 is transparent. The
+current label renderer uses logical pixels, so larger images and partial alpha
+are not supported yet. The logo, background and layout are separate resources.
+
+Import saves a draft in the shared project. **Save & apply project** activates
+it for the next game session. **Reset** removes that project's image override;
+a selected package can still supply the image. Project Undo/Redo includes PNG
+imports and resets. Normal and selected states are independent images.

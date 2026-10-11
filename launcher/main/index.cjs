@@ -53,6 +53,10 @@ handle('card-entry',async index=>{if(!currentSave||!Number.isInteger(index)||ind
 handle('save-copy',async edits=>{if(!currentSave)throw Error('Open a save first');const file=await output({title:'Save a separate copy',defaultPath:path.basename(currentSave.file)});if(!file)return null;const data=await service.writeSave(currentSave.file,file,currentSave.cardIndex,edits);return{name:path.basename(file),...data};});
 handle('assets',()=>service.assets());
 handle('cars',()=>service.cars());
+handle('title-images',()=>service.titleImages());
+handle('import-title-image',async(id,revision)=>{require('./title-images.cjs').slot(id);const file=await open({title:'Import title menu PNG (112×16)',filters:[{name:'PNG images',extensions:['png']}],properties:['openFile']});return file?service.importTitleImage(id,file,revision):null;});
+handle('export-title-image',async id=>{require('./title-images.cjs').slot(id);const file=await output({title:'Export title menu PNG',defaultPath:id+'.png',filters:[{name:'PNG images',extensions:['png']}]});return file?service.exportTitleImage(id,file):null;});
+handle('reset-title-image',(id,revision)=>service.resetTitleImage(id,revision));
 handle('tracks',()=>service.tracks());
 handle('track-scene',bank=>service.trackScene(bank));
 handle('preview-track-part',(id,part)=>service.previewTrackPart(id,part));

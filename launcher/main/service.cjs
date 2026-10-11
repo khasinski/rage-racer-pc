@@ -81,6 +81,10 @@ class LauncherService {
       return {...catalog,parts:catalog.parts.map(part=>{const car=!part.rival&&part.part===0?profile.cars.find(c=>c.variant===(part.bank-10)/2):null;return {...part,name:car&&authoredNames.has(car.id)?authoredNames.get(car.id):display(part.name,this.state.disc.region,names)};})};
     });
   }
+  async titleImages(){return require('./title-images.cjs').read(this);}
+  async importTitleImage(id,input,revision){return require('./title-images.cjs').importImage(this,id,input,revision);}
+  async exportTitleImage(id,output){return require('./title-images.cjs').exportImage(this,id,output);}
+  async resetTitleImage(id,revision){return require('./title-images.cjs').reset(this,id,revision);}
   async publishMods() {return require('./publish-mods.cjs')(this);}
   async gameModRoot() {
     const directory=this.modsRoot??JSON.parse(await run(this.tool('rage-mod-cli'),['--mod-directory'])).directory;

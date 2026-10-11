@@ -16,3 +16,4 @@
 .track-map [data-track-point] {cursor:pointer;stroke:transparent;stroke-width:8px;paint-order:stroke}
 .track-map [data-track-point]:hover,.track-map [data-track-point]:focus {fill:#ffcf70;outline:none}
 .car-parameters-dialog #car-spec-form{scroll-padding-block:24px 90px}.car-parameters-dialog #car-spec-form input{scroll-margin-block:24px 90px}
+.title-image-card{margin-top:20px}.title-image-pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}.title-image-preview{image-rendering:pixelated;max-width:100%;object-fit:contain;background:repeating-conic-gradient(#303846 0% 25%,#202630 0% 50%) 0/8px 8px}@media(max-width:1050px){.title-image-pair{grid-template-columns:1fr}}

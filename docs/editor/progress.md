@@ -821,3 +821,24 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   focused tests: 6 pass, w tym interface build i previous-build preservation.
 - Pełny game build jest osobną weryfikacją; screenshot title screen i GUI
   flow import/apply pozostają wymagane przed stwierdzeniem gotowości.
+
+### Panel Interface podłączony do prawdziwego projektu
+
+- Nazwane normal/selected slots wszystkich sześciu title buttons udostępniają
+  effective preview, export PNG, import PNG i reset. Nowa zakładka Interface
+  używa bounded preload/IPC; file dialogs pozostają w procesie głównym.
+- Shared title_image C codec zastępuje duplicate bitmap/palette właściciela
+  w menu i eksportuje te same pixels przez existing rage-mod-cli. Nie dodano
+  kolejnego standalone tool. PNG export odpowiada kolorom runtime (5-bit <<3).
+- Service uwzględnia selected package composition oraz immutable project PNG,
+  sprawdza 112×16/native decode/revision, nie mutuje oryginałów. Reset usuwa
+  override i wraca do package/built-in; undo odtwarza project PNG.
+- Full launcher: 145 tests, 142 pass, 3 optional regional skips. Native
+  menu_images CTest pass po przeniesieniu shared bitmap codec.
+- Actual app.js + native service: Interface → export selected CUSTOM PNG →
+  import jako normal → publish → reset, bez pageerrors. Temp modsRoot,
+  headless, read-only PAL source; screenshot panelu obejrzano:
+  build/reports/editor/title-menu-images.png. File dialogs/Electron transport
+  i final game screenshot nie są objęte tym browser bridge testem.
+- Latest full game build/staging uruchomiono osobno. Nie stwierdzamy jeszcze
+  kompletnego U02/U03: logo/background/fonts/HUD/layout nadal brakuje edytorów.
