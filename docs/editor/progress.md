@@ -994,3 +994,27 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   build/reports/editor/atmosphere-original.ppm. Obejrzano oba kadry: zmienił
   się gradient nieba, a ciemny startup frame występuje także w oryginale.
   Ta obserwacja nie jest oceną pełnego wyścigu ani wszystkich palette variants.
+
+### Atmosfera: kolory pięciu palet nieba
+
+- Native scene metadata odczytuje pięć 16-color RGB palettes z block 1. Edycje
+  palette.<index>.color_<slot> zmieniają dokładnie trzy bajty, bez zmian innych
+  kolorów, scriptu lub trailing bytes. RGB/index bounds waliduje C patcher.
+- Palety są pod Sky image palettes we wspólnym Atmosphere form. Dyskretny
+  pasek pokazuje ich kolory; wszystkie 80 pól ma label i native color control.
+  Palette i cue changes mają oddzielne typed IDs, ale zapisują się jako jedna
+  operacja Undo. Nie dodano kolejnego runtime ani innej ścieżki publikacji.
+- Native service tests: 3 PASS, w tym pierwszy/ostatni palette slot, concurrent
+  cue/palette edits, exact preserved bytes, bad indices/colors/types, build,
+  original source preservation i Undo/Redo. Full npm test: save_format PASS;
+  159 JS tests, 153 PASS, 6 optional skips, zero failures.
+- Actual headless PAL UI: cue color + Palette 1/Color 2, native readback obu,
+  unsaved form guard i publish PASS, zero pageerrors. Normal race load PASS
+  na classic/modern; capture atmosphere-palettes-modern.ppm obejrzano:
+  oryginalne cloud pixels przyjmują green palette przy odrębnym magenta
+  gradient z cue colors. Jest to rzeczywisty frame z gry.
+- Opt-in scenery-game gate sprawdza też green pixels w górnej części modern
+  native capture. To test zastosowania palette, nie ocena jakości pełnego skyboxu.
+- Native CLI rebuilt/staged. Original indexed sky nadal ma 16-color palettes;
+  PNG/hi-res sky image replacement, header/timeline add/delete, fog density
+  i tunnel/event editing nadal pozostają osobnymi nieukończonymi wymaganiami.

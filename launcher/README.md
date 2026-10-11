@@ -278,3 +278,10 @@ set a custom fog density.
 the entire edit. **Save & apply project** activates it for the next game session.
 **Discard unsaved colors** restores the form. Save or discard your current track
 form before changing its context. Reserved bytes and other track blocks are kept.
+
+In **Atmosphere → Sky image palettes**, expand a palette to change its 16 RGB
+colors. The color strip shows the palette entries; the numbered colors map to
+the existing sky image's pixel indices. These edits recolor that image, without
+changing its shapes. Timeline cues using the palette share the change. Palette
+and cue edits save together and participate in the same Undo/Redo operation.
+This is the original indexed sky path, not a replacement PNG skybox importer.

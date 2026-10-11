@@ -2,8 +2,8 @@ const fs=require('node:fs/promises'),path=require('node:path');
 function group(changes){
  const groups=new Map();
  for(const c of changes.filter(c=>c.kind==='track'&&!['mesh','texture','material'].includes(c.field))){
-  const match=/^track\.(big|mid|hi|oval)([1-6])\.(object|road|arc|cell|env)\.(\d+)$/.exec(c.id);
-  if(!match||!(match?.[3]==='env'?['time','duration','mode',...Array.from({length:9},(_,i)=>'color_'+i)]:match?.[3]==='cell'?['model']:match?.[3]==='arc'?['x','z']:match?.[3]==='road'?['x','y','z','angle','pitch','cross_slope','left_width','right_width','length','arc']:['x','y','z','yaw','model','flags']).includes(c.field)||!Number.isSafeInteger(c.value))throw Error('This track edit is not connected; no changes were applied');
+  const match=/^track\.(big|mid|hi|oval)([1-6])\.(object|road|arc|cell|env|palette)\.(\d+)$/.exec(c.id);
+  if(!match||!(match?.[3]==='palette'?Array.from({length:16},(_,i)=>'color_'+i):match?.[3]==='env'?['time','duration','mode',...Array.from({length:9},(_,i)=>'color_'+i)]:match?.[3]==='cell'?['model']:match?.[3]==='arc'?['x','z']:match?.[3]==='road'?['x','y','z','angle','pitch','cross_slope','left_width','right_width','length','arc']:['x','y','z','yaw','model','flags']).includes(c.field)||!Number.isSafeInteger(c.value))throw Error('This track edit is not connected; no changes were applied');
   const bank=88+(Number(match[2])-1)*8+['big','mid','hi','oval'].indexOf(match[1])*2;
   if(!groups.has(bank))groups.set(bank,[]);
   groups.get(bank).push([Number(match[4]),(match[3]==='object'?'':match[3]+'.')+({left_width:'leftWidth',right_width:'rightWidth',cross_slope:'crossSlope'}[c.field]||c.field),c.value]);

@@ -245,8 +245,8 @@ class LauncherService {
   }
   async saveEnvironment(bank,entries,revision){
     this.requireReady();if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Array.isArray(entries)||!entries.length||entries.length>10000)throw Error('Invalid environment edits');
-    const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.env.`;
-    const changes=[];for(const entry of entries){if(!Number.isInteger(entry.index)||entry.index<0||!entry.values||Array.isArray(entry.values)||typeof entry.values!=='object'||Object.keys(entry.values).length>12)throw Error('Invalid environment cue');for(const [field,value]of Object.entries(entry.values))changes.push({kind:'track',id:prefix+entry.index,field,value});}
+    const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+    const changes=[];for(const entry of entries){if(!['env','palette'].includes(entry.type??'env')||!Number.isInteger(entry.index)||entry.index<0||!entry.values||Array.isArray(entry.values)||typeof entry.values!=='object'||Object.keys(entry.values).length>((entry.type??'env')==='palette'?16:12))throw Error('Invalid environment cue');for(const [field,value]of Object.entries(entry.values))changes.push({kind:'track',id:prefix+(entry.type??'env')+'.'+entry.index,field,value});}
     if(!changes.length||changes.length>10000)throw Error('Invalid environment edits');return this.saveTrackChanges(bank,changes,revision);
   }
   async saveTrackChanges(bank,changes,revision){

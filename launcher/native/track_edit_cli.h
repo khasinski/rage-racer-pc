@@ -48,6 +48,7 @@ static int TrackEditCommand(const char *source,const char *output) {
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
         if(yyjson_get_uint(index)>UINT32_MAX)goto done;
         uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strncmp(name,"palette.",8)){if(!PaletteEdit(&blocks[1],at,name+8,value))goto done;continue;}
         if(!strncmp(name,"env.",4)){if(!envValid||!EnvEdit(&blocks[2],envCount,at,name+4,value))goto done;envChanged=1;continue;}
         if(!strcmp(name,"cell.model")){
             if(value<0||value>1023||!TerrainWriteModel((unsigned char *)bytes+
