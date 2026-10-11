@@ -29,4 +29,21 @@ typedef struct Road {
 int RoadOpen(const void *data, size_t size, Road *road);
 int RoadRead(const Road *road, uint32_t index, RoadPoint *point);
 
+typedef struct Placement {
+    int16_t model, yaw;
+    int32_t x, y, z;
+    uint32_t flags;
+} Placement;
+typedef struct Placements {
+    const unsigned char *entries;
+    uint32_t count;
+} Placements;
+/* Model -1 disables an entry. Known flags occupy the low four bits.
+ * Inputs may be unaligned; failure leaves outputs and writable bytes intact. */
+int PlacementsOpen(const void *data, size_t size, uint32_t models,
+                   Placements *placements);
+int PlacementRead(const Placements *placements, uint32_t index, Placement *out);
+int PlacementWrite(void *data, size_t size, uint32_t models, uint32_t index,
+                   const Placement *value);
+
 #endif

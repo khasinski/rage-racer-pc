@@ -40,6 +40,42 @@ static uint16_t Read16(const unsigned char *p) {
     return (uint16_t)((uint16_t)p[0] | (uint16_t)p[1] << 8);
 }
 
+int PlacementRead(const Placements *placements, uint32_t index, Placement *out) {
+    if (!placements || !out || !placements->entries || index >= placements->count) return 0;
+    const unsigned char *p=placements->entries+(size_t)index*20;
+    Placement value={(int16_t)Read16(p),(int16_t)Read16(p+2),
+        (int32_t)Read32(p+4),(int32_t)Read32(p+8),(int32_t)Read32(p+12),Read32(p+16)};
+    *out=value;return 1;
+}
+static int PlacementValid(const Placement *p,uint32_t models) {
+    return (p->model==-1 || (p->model>=0 && (uint32_t)p->model<models)) && !(p->flags & ~15u);
+}
+int PlacementsOpen(const void *data,size_t size,uint32_t models,Placements *out) {
+    if(!data||!out||size<4||size>INT32_MAX)return 0;
+    const unsigned char *bytes=data;
+    Placements value={bytes+4,Read32(bytes)};
+    if(value.count>(size-4)/20)return 0;
+    for(uint32_t i=0;i<value.count;i++){
+        Placement p;PlacementRead(&value,i,&p);
+        if(!PlacementValid(&p,models))return 0;
+    }
+    *out=value;return 1;
+}
+static void Store32(unsigned char *p,uint32_t value) {
+    for(unsigned i=0;i<4;i++)p[i]=(unsigned char)(value>>(i*8));
+}
+int PlacementWrite(void *data,size_t size,uint32_t models,uint32_t index,const Placement *value) {
+    Placements placements;
+    if(!value||!PlacementsOpen(data,size,models,&placements)||index>=placements.count||!PlacementValid(value,models))return 0;
+    Placement copy=*value;
+    unsigned char *p=(unsigned char *)data+4+(size_t)index*20;
+    uint16_t model=(uint16_t)copy.model,yaw=(uint16_t)copy.yaw;
+    p[0]=(unsigned char)model;p[1]=(unsigned char)(model>>8);
+    p[2]=(unsigned char)yaw;p[3]=(unsigned char)(yaw>>8);
+    Store32(p+4,(uint32_t)copy.x);Store32(p+8,(uint32_t)copy.y);Store32(p+12,(uint32_t)copy.z);Store32(p+16,copy.flags);
+    return 1;
+}
+
 int RoadRead(const Road *road, uint32_t index, RoadPoint *point) {
     const unsigned char *p;
     if (!road || !point || !road->points || index >= road->count) return 0;

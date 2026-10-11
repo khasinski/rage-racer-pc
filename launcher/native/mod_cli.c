@@ -174,6 +174,17 @@ int main(int argc,char **argv) {
                 printf("%s{\"x\":%d,\"z\":%d,\"reserved\":%d}",i?",":"",(int32_t)SpecU32(p),(int32_t)SpecU32(p+4),(int32_t)SpecU32(p+8));
             }
             printf("]}");
+            Placements placements;
+            uint32_t models=blocks[5].size>=4?SpecU32(blocks[5].data):0;
+            if(!PlacementsOpen(blocks[8].data,blocks[8].size,models,&placements)){
+                free(bytes);fprintf(stderr,"Invalid object placements\n");return 1;
+            }
+            printf(",\"objects\":[");
+            for(i=0;i<placements.count;i++){
+                Placement p;PlacementRead(&placements,(uint32_t)i,&p);
+                printf("%s{\"model\":%d,\"yaw\":%d,\"x\":%d,\"y\":%d,\"z\":%d,\"flags\":%u}",i?",":"",p.model,p.yaw,p.x,p.y,p.z,p.flags);
+            }
+            putchar(']');
         } else printf("]");
         puts("}");free(bytes);return 0;
     }

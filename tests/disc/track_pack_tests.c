@@ -54,5 +54,30 @@ int main(void) {
         Write32(r,UINT32_MAX);assert(!RoadOpen(r,40,&road));
         assert(!RoadOpen(NULL,40,&road));assert(!RoadOpen(r,40,NULL));
     }
+    {
+        unsigned char storage[47]={0},before[46];unsigned char *p=storage+1;
+        Write32(p,2);p[4]=1;p[24]=0xff;p[25]=0xff;
+        p[44]=0xab;p[45]=0xcd;
+        Placements objects,prior;Placement value;
+        assert(PlacementsOpen(p,46,2,&objects));prior=objects;
+        assert(PlacementRead(&objects,1,&value)&&value.model==-1);
+        value=(Placement){0,-2048,INT32_MIN,INT32_MAX,-7,15};
+        assert(PlacementWrite(p,46,2,0,&value));
+        assert(PlacementRead(&objects,0,&value));
+        assert(value.x==INT32_MIN&&value.y==INT32_MAX&&value.z==-7&&value.yaw==-2048&&value.flags==15);
+        assert(p[44]==0xab&&p[45]==0xcd&&p[24]==0xff&&p[25]==0xff);
+        memcpy(before,p,46);value.flags=16;assert(!PlacementWrite(p,46,2,0,&value));
+        value.flags=0;value.model=2;assert(!PlacementWrite(p,46,2,0,&value));
+        value.model=-2;assert(!PlacementWrite(p,46,2,0,&value));
+        value.model=1;assert(!PlacementWrite(p,46,2,2,&value));
+        assert(!memcmp(before,p,46));
+        assert(!PlacementRead(&objects,2,&value));assert(!PlacementRead(NULL,0,&value));
+        p[20]=16;assert(!PlacementsOpen(p,46,2,&objects));
+        memcpy(p,before,46);p[4]=2;assert(!PlacementsOpen(p,46,2,&objects));
+        memcpy(p,before,46);
+        assert(!PlacementsOpen(p,43,2,&objects));assert(!memcmp(&objects,&prior,sizeof(prior)));
+        Write32(p,UINT32_MAX);assert(!PlacementsOpen(p,46,2,&objects));
+        assert(!PlacementsOpen(NULL,46,2,&objects));
+    }
     return 0;
 }

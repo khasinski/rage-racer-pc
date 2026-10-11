@@ -328,3 +328,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   nazwaną część; źródło nie nadaje im nazw typu „lakier”/„reflektor”. Wybieranie
   powierzchni bezpośrednio w 3D i wizualna weryfikacja UI pozostają do zrobienia,
   podobnie jak pozostały zakres torów, mediów i popularnych formatów z planu.
+
+### Kodek położeń obiektów toru
+
+- Ustalono rzeczywisty format tabeli CourseObject: licznik i rekordy 20 bajtów
+  (model, yaw, pozycja XYZ, cztery flagi). Kodek `PlacementsOpen/Read/Write`
+  czyta niezależnie od wyrównania i endianness hosta. Zapis modyfikuje jeden
+  zweryfikowany rekord, zachowując inne wpisy i nieznane końcowe bajty.
+- `--track-scene` udostępnia obiekty obok drogi. Odczyt wszystkich 24 oryginalnych
+  paczek PAL przeszedł; zawierają od 1 do 10 wpisów. To tabela oddzielnych
+  obiektów, nie cała geometria budynków/terenu.
+- Rozszerzony test C obejmuje signed coordinates/yaw, wyłączony model -1,
+  zakres modeli/flag, truncation, overflow licznika, zachowanie wyjścia i
+  brak częściowego zapisu przy błędzie. `track_pack` pass; dwa testy torów
+  launchera pass. Native tools przebudowano i wystage'owano.
+- Kodek zapisu nie jest jeszcze podłączony do operacji projektu i UI. Następny
+  krok: atomowa kompilacja zmian tych obiektów do paczki toru, wspólna historia
+  i scena 3D z osobnym dekodowaniem geometrii terenu/modeli.
