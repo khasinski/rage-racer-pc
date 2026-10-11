@@ -9,6 +9,7 @@
 #include "render/mod_manifest.h"
 #include "texture_patch.h"
 #include "runtime_config.h"
+#include "platform_paths.h"
 
 /*
  * Asset overrides read from a directory, laid out the way rage-extract writes
@@ -104,14 +105,25 @@ static void ModAssetsInit(void) {
     if (s_initialized) return;
     s_initialized = 1;
     s_directory = RuntimeConfigGet("mods.directory");
-    if (s_directory != NULL && s_directory[0] == '\0') s_directory = NULL;
-    if (s_directory == NULL) return;
+    /* An explicit empty path disables mods. Otherwise a normal game launch
+     * discovers the editor's published user mod without an INI change. */
+    if (s_directory != NULL && s_directory[0] == '\0') return;
+    if (s_directory == NULL) {
+        if (!PlatformUserConfigPath("mods", s_directoryStorage,
+                                    sizeof(s_directoryStorage))) return;
+        written = snprintf(probe, sizeof(probe), "%s/mod.toml", s_directoryStorage);
+        if (written < 0 || (size_t)written >= sizeof(probe)) return;
+        test = fopen(probe, "rb");
+        if (test == NULL && errno == ENOENT) return;
+        if (test != NULL) fclose(test);
+        s_directory = s_directoryStorage;
+    }
     if (strlen(s_directory) >= sizeof(s_directoryStorage)) {
         fprintf(stderr, "rage-port: mods.directory path is too long\n");
         s_directory = NULL;
         return;
     }
-    strcpy(s_directoryStorage, s_directory);
+    if (s_directory != s_directoryStorage) strcpy(s_directoryStorage, s_directory);
     s_directory = s_directoryStorage;
     if (!ModAssetsReadManifest()) {
         s_directory = NULL;

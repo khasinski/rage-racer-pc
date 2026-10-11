@@ -20,6 +20,14 @@ static size_t s_room;
 static int s_patchCalls;
 static int failures;
 static const char *configuredDirectory;
+static const char *defaultDirectory;
+int PlatformUserConfigPath(const char *name, char *output, size_t size) {
+    (void)name;
+    if (!defaultDirectory) return 0;
+    int n = snprintf(output, size, "%s", defaultDirectory);
+    return n >= 0 && (size_t)n < size;
+}
+
 
 #define EXPECT(value) do { if (!(value)) { failures++;                         \
     fprintf(stderr, "%s:%d: expectation failed: %s\n", __FILE__, __LINE__,  \
@@ -101,6 +109,11 @@ int main(int argc, char **argv) {
     configuredDirectory = root;
     snprintf(manifestPath, sizeof(manifestPath), "%s/mod.toml", root);
     if (argc == 2) {
+        if (strcmp(argv[1], "auto") == 0) {
+            defaultDirectory = root;
+            configuredDirectory = NULL;
+        }
+
         const char *manifest = "[mod]\nschema_version=1\nid=\"shared\"\n"
                                "[textures]\n\"track.big1\"=\"a.png\"";
         int disabled = strcmp(argv[1], "invalid") == 0 ||
@@ -166,6 +179,7 @@ int main(int argc, char **argv) {
         EXPECT(shared != NULL && shared->textureCount == 0);
         shared = NULL;
         ModAssetsShutdown();
+        defaultDirectory = NULL;
         configuredDirectory = NULL;
         EXPECT(ModAssetsDirectory() == NULL && ModAssetsManifest() == NULL);
         configuredDirectory = root;

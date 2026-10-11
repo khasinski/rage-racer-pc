@@ -2,9 +2,11 @@
 #define _POSIX_C_SOURCE 200809L
 #endif
 
+#include "port/platform_paths.h"
 #include "render/mod_manifest.h"
 #include "render/mod_package.h"
 #include "render/rmesh.h"
+#include "content/track_pack.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,6 +50,27 @@ static void String(const char *s) {
 }
 int main(int argc,char **argv) {
     FILE *f;long size;char *bytes;size_t i;
+    if(argc==3 && strcmp(argv[1],"--track-pack")==0) {
+        TrackBlock blocks[TRACK_PACK_BLOCK_COUNT];
+        f=fopen(argv[2],"rb");if(!f)return 1;
+        if(fseek(f,0,SEEK_END)||(size=ftell(f))<44||size>128*1024*1024||fseek(f,0,SEEK_SET)){fclose(f);return 1;}
+        bytes=malloc((size_t)size);if(!bytes){fclose(f);return 1;}
+        i=fread(bytes,1,(size_t)size,f);fclose(f);
+        if(i!=(size_t)size||!TrackPackOpen(bytes,(size_t)size,blocks)){
+            free(bytes);fprintf(stderr,"Invalid track pack container\n");return 1;
+        }
+        printf("{\"blocks\":[");
+        for(i=0;i<TRACK_PACK_BLOCK_COUNT;i++) {
+            printf("%s{\"role\":",i?",":"");String(TrackBlockName((unsigned)i));
+            printf(",\"offset\":%zu,\"size\":%zu}",(size_t)(blocks[i].data-(unsigned char *)bytes),blocks[i].size);
+        }
+        puts("]}");free(bytes);return 0;
+    }
+    if(argc==2 && strcmp(argv[1],"--mod-directory")==0) {
+        char directory[4096];
+        if(!PlatformUserConfigPath("mods",directory,sizeof(directory))) return 1;
+        printf("{\"directory\":");String(directory);puts("}");return 0;
+    }
     if(argc==3 && strcmp(argv[1],"--write-profile-stdin")==0) return ProfileCommand(argv[2]);
     if(argc==3 && strcmp(argv[1],"--write-legacy-index-stdin")==0) return LegacyIndexWriteCommand(argv[2]);
     if(argc==3 && strcmp(argv[1],"--legacy-index")==0) return LegacyIndexCommand(argv[2]);

@@ -131,7 +131,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(rage-sim PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
-add_library(rage-content STATIC src/content/region_profile.c)
+add_library(rage-content STATIC src/content/region_profile.c src/content/track_pack.c)
 target_include_directories(rage-content PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_library(rage-json STATIC external/yyjson/yyjson.c)
@@ -502,11 +502,11 @@ if(RAGE_BUILD_PORT)
     add_executable(rage-save-cli launcher/native/save_cli.c)
     target_link_libraries(rage-save-cli PRIVATE rage-save-format)
     target_link_libraries(rage-save-cli PRIVATE SDL3::SDL3)
-    add_executable(rage-mod-cli launcher/native/mod_cli.c)
+    add_executable(rage-mod-cli launcher/native/mod_cli.c src/port/platform_paths.c)
     target_compile_definitions(rage-mod-cli PRIVATE __psyz=1)
     target_include_directories(rage-mod-cli PRIVATE
         src src/port/include include external/psyz/psyz/include)
-    target_link_libraries(rage-mod-cli PRIVATE rage-render-world rage-mod-package rage-json SDL3::SDL3)
+    target_link_libraries(rage-mod-cli PRIVATE rage-render-world rage-mod-package rage-json rage-content SDL3::SDL3)
     add_executable(rage-frame-replay
         tools/rage_frame_replay.c
         src/port/platform_paths.c
@@ -579,7 +579,7 @@ if(RAGE_BUILD_PORT)
         src/port/include
         include
     )
-    target_link_libraries(rage-game-full PUBLIC psyz)
+    target_link_libraries(rage-game-full PUBLIC psyz rage-content)
     # The recovered game sources retain PS1-era tentative globals.  Host
     # initialized state deliberately provides their concrete definitions; GCC
     # otherwise treats the tentative copies as duplicate ELF definitions.

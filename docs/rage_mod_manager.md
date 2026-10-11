@@ -1,5 +1,10 @@
 # Rage Mod Manager
 
+> Aktualny kierunek konsolidacji: [jeden Rage Racer Editor](editor/plan.md),
+> z [audytem](editor/audit.md) i [nową makietą](ux/rage-editor/index.html).
+> Poniższa specyfikacja zachowuje poprzedni zakres Mod Managera jako kontekst;
+> nie jest drugim równoległym planem produktu.
+
 Status: product and UX specification. The Electron implementation is in
 [`launcher/`](../launcher/README.md); verified behavior and unfinished work are
 recorded in [`launcher/IMPLEMENTATION.md`](../launcher/IMPLEMENTATION.md).

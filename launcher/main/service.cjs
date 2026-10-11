@@ -65,6 +65,23 @@ class LauncherService {
       return {...catalog,parts:catalog.parts.map(part=>({...part,name:display(part.name,this.state.disc.region,names)}))};
     });
   }
+  async publishMods() {return require('./publish-mods.cjs')(this);}
+  async tracks() {
+    this.requireReady();
+    return this.operation('Reading original tracks',async signal=>{
+      const names=['Mythical Coast','Over Pass City','Lakeside Gate','The Extreme Oval'];
+      const tracks=[];
+      for(let grade=1;grade<=6;grade++)for(let course=0;course<4;course++) {
+        const bank=88+(grade-1)*8+course*2;
+        const file=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
+        const pack=JSON.parse(await run(this.tool('rage-mod-cli'),['--track-pack',file],{signal}));
+        tracks.push({id:`track/${['mythical-coast','over-pass-city','lakeside-gate','extreme-oval'][course]}/class/${grade}`,
+          name:names[course],grade,bank,origin:'disc',available:course!==3||grade>=3,
+          directions:['forward','reverse'],blocks:pack.blocks});
+      }
+      return {tracks};
+    });
+  }
   carSpecFile(bank) {
     if(!Number.isInteger(bank)||bank<10||bank>72||bank%2)throw Error('Invalid player car bank');
     return path.join(this.state.disc.data,'raw',`asset_${String(bank+1).padStart(3,'0')}.bin`);

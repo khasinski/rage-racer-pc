@@ -6,6 +6,7 @@
 #include "game/track_internal.h"
 #include "game/track_camera_internal.h"
 #include "rage/track_asset_identity.h"
+#include "content/track_pack.h"
 
 #include <stdio.h>
 
@@ -79,7 +80,7 @@ static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
 
 s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
                                  s32 useSeriesCamera) {
-    const GameSceneAssetHeader *header;
+    TrackBlock decoded[TRACK_PACK_BLOCK_COUNT];
     const CourseModelAssetHeader *courseModels;
     const CourseObjectTable *courseObjects;
     const void *blocks[TRACK_RUNTIME_BLOCK_COUNT];
@@ -92,19 +93,12 @@ s32 InstallTrackRuntimeAssetPack(const void *data, size_t size, s32 assetIndex,
         return RejectTrackRuntimePack(assetIndex, "index or header size");
     }
 
-    header = (const GameSceneAssetHeader *)data;
+    if (!TrackPackOpen(data, size, decoded)) {
+        return RejectTrackRuntimePack(assetIndex, "block offsets");
+    }
     for (i = 0; i < TRACK_RUNTIME_BLOCK_COUNT; i++) {
-        s32 start = header->offsets[i];
-        s32 end = i + 1 < TRACK_RUNTIME_BLOCK_COUNT
-                      ? header->offsets[i + 1]
-                      : (s32)size;
-
-        if (start < (s32)sizeof(*header) || end <= start ||
-            (size_t)end > size) {
-            return RejectTrackRuntimePack(assetIndex, "block offsets");
-        }
-        blocks[i] = (const u8 *)data + start;
-        blockSizes[i] = (size_t)(end - start);
+        blocks[i] = decoded[i].data;
+        blockSizes[i] = decoded[i].size;
     }
     courseObjects = blocks[TRACK_RUNTIME_COURSE_OBJECTS];
     courseModels =

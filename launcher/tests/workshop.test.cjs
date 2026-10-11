@@ -1,0 +1,22 @@
+const {test}=require('node:test'),assert=require('node:assert/strict');
+test('car sections separate everyday actions from technical details and retain every part action',async()=>{
+ const {carWorkspace}=await import('../renderer/car-workshop.mjs');
+ const car={key:'car.player.10.part.0',bank:10,part:0,rival:false,name:'A <custom> car'};
+ const parts=Array.from({length:5},(_,part)=>({...car,part,key:`car.player.10.part.${part}`}));
+ const appearance=carWorkspace(car,parts,{});
+ assert.ok(appearance.includes('A &lt;custom&gt; car'));
+ assert.ok(!appearance.includes('PLAYER SLOT'));
+ assert.match(appearance,/data-export-set="car.player.10.part.0"/);
+ assert.match(appearance,/data-import-set="car.player.10.part.0"/);
+ assert.match(appearance,/<details[^>]*><summary>Edit an individual part/);
+ for(const part of parts)for(const action of ['preview','export','import'])assert.ok(appearance.includes(`data-${action}-car="${part.key}"`));
+ assert.ok(!appearance.includes('data-car-spec='));
+ const driving=carWorkspace(car,parts,{tab:'driving'});
+ assert.match(driving,/data-car-spec="10"/);assert.ok(!driving.includes('data-export-set='));
+ const files=carWorkspace(car,parts,{tab:'files',changes:'<p>Current mod</p>'});
+ assert.match(files,/Current mod/);assert.match(files,/data-action="publish-mods"/);
+ assert.match(files,/<details[^>]*><summary>Technical details/);
+ assert.ok(!files.includes('data-car-spec='));
+ const rival=carWorkspace({...car,rival:true},parts,{tab:'driving'});
+ assert.ok(!rival.includes('data-car-spec='));assert.match(rival,/not a separate player specification/);
+});

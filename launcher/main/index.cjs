@@ -21,6 +21,7 @@ function handle(name,fn){ipcMain.handle('launcher:'+name,async(event,...args)=>{
 async function open(options){const result=await dialog.showOpenDialog(window,options);return result.canceled?null:result.filePaths[0];}
 async function output(options){const result=await dialog.showSaveDialog(window,options);return result.canceled?null:result.filePath;}
 function setupIPC(){
+handle('publish-mods',()=>service.publishMods());
 handle('snapshot',()=>service.snapshot());
 handle('save-mod-details',(id,details)=>service.saveModDetails(id,details));
 handle('logs',()=>service.logs());
@@ -46,6 +47,7 @@ handle('card-entry',async index=>{if(!currentSave||!Number.isInteger(index)||ind
 handle('save-copy',async edits=>{if(!currentSave)throw Error('Open a save first');const file=await output({title:'Save a separate copy',defaultPath:path.basename(currentSave.file)});if(!file)return null;const data=await service.writeSave(currentSave.file,file,currentSave.cardIndex,edits);return{name:path.basename(file),...data};});
 handle('assets',()=>service.assets());
 handle('cars',()=>service.cars());
+handle('tracks',()=>service.tracks());
 handle('export-car-set',async key=>{const dir=await open({title:'Export complete car to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCarSet(key,dir);return null;});
 handle('import-car-set',async key=>{const dir=await open({title:'Choose car set folder (car-set.json, models and textures)',properties:['openDirectory']});if(dir)return service.importCarSet(key,dir);return null;});
 handle('preview-whole-car',(bank,body,rival,modId)=>service.previewWholeCar(bank,body,rival,modId));

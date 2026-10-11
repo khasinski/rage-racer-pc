@@ -1,0 +1,20 @@
+const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+export const workshopTabs = {appearance:'Appearance', driving:'Driving & availability', files:'Mod files'};
+export function carPartName(car, part) {
+ const offset=part-car.part;
+ return ['Body','Body at a distance','Front wheels','Rear wheels','Wheels at a distance'][offset] || 'Extra part';
+}
+export function carWorkspace(car, parts, {tab='appearance', changes='' }={}) {
+ if(!Object.hasOwn(workshopTabs,tab))tab='appearance';
+ const preview='<button class="primary" data-whole-car="'+car.bank+'" data-whole-body="'+car.part+'" data-whole-rival="'+car.rival+'">View car in 3D</button>';
+ const exchange='<div class="row wrap"><button data-export-set="'+car.key+'">Export for editing</button><button data-import-set="'+car.key+'">Import edited car</button></div>';
+ let content;
+ if(tab==='appearance')content='<h3>Model & textures</h3><p class="muted">Work on the complete car: body, front wheels, rear wheels and shared textures.</p>'+exchange+
+  '<p class="muted">Export a car set, edit its OBJ models and PNG textures in your preferred application, then import the set here. The import is validated before it becomes a mod.</p>'+
+  '<details class="car-advanced"><summary>Edit an individual part</summary><p class="muted">Replace one part while keeping the others. Body and wheel geometry use different positions; select the part you actually edited.</p>'+parts.map(p=>'<div class="setting"><span>'+carPartName(car,p.part)+'</span><div class="row wrap"><button data-preview-car="'+escape(p.key)+'">View</button><button data-export-car="'+escape(p.key)+'">Export</button><button data-import-car="'+escape(p.key)+'">Import replacement</button></div></div>').join('')+'</details>';
+ if(tab==='driving')content=car.rival?
+  '<h3>Rival driving parameters</h3><p class="muted">This entry identifies a rival model, not a separate player specification. Editing its geometry does not change AI difficulty. Choose a player car to edit a player transmission.</p>':
+  '<h3>Engine & transmission</h3><p class="muted">Choose automatic/manual availability and the number of gears. RPM limits and automatic shift thresholds are available under Advanced in the parameter editor.</p><button data-car-spec="'+car.bank+'">Edit driving parameters</button><p class="muted">Current starting values come from your disc. Saving creates a separate parameter mod; the disc image stays unchanged.</p>';
+ if(tab==='files')content='<h3>Changes for this car</h3>'+changes+'<div class="sticky-actions"><p class="muted">Enable the changes you want above, then save the enabled mod selection to the directory automatically detected by the game.</p><button class="primary" data-action="publish-mods">Save enabled mods for game</button></div>'+'<details class="car-advanced"><summary>Technical details</summary><dl><dt>Game asset</dt><dd>'+escape(car.key)+'</dd><dt>Model bank</dt><dd>'+car.bank+'</dd><dt>Body part</dt><dd>'+car.part+'</dd></dl><p class="muted">These identifiers choose the original model being replaced. They are useful for inspecting mod files; you do not need to enter them to export or import a car.</p></details>';
+ return '<section class="card car-project"><div class="row between wrap"><div><small>'+ (car.rival?'RIVAL CAR':'PLAYER CAR')+'</small><h2>'+escape(car.name)+'</h2></div>'+preview+'</div><nav class="tabs workshop-tabs" aria-label="Car editor sections">'+Object.entries(workshopTabs).map(([id,label])=>'<button data-workshop-tab="'+id+'" aria-current="'+(id===tab?'page':'false')+'" class="'+(id===tab?'active':'')+'">'+label+'</button>').join('')+'</nav><section aria-label="'+workshopTabs[tab]+'">'+content+'</section></section>';
+}
