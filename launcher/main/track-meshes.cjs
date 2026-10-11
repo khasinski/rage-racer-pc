@@ -89,15 +89,42 @@ async function importPart(service,id,part,input,revision){
   await run(service.tool('rage-mod-cli'),['--replace-mesh',file,String(part),replacement,output],{signal});
   checkBank(JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh-bank',output],{signal})),metadata);
   const reference=await new ProjectFiles(service.editor.file).put(output);
-  if(signal.aborted)throw Error('Operation canceled');return project.edit([{kind:'track',id,field:'mesh',value:reference}],revision);
+  const textures=await importTextures(service,id,part,input,metadata,signal,directory);
+  if(signal.aborted)throw Error('Operation canceled');return project.edit([{kind:'track',id,field:'mesh',value:reference},...textures],revision);
  }));
 }
 async function exportPart(service,id,part,destination){
  service.requireReady();slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
- return service.operation('Exporting track model OBJ',signal=>withBank(service,id,signal,async({file,metadata,view})=>{
+ return service.operation('Exporting track model OBJ',signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
   await model(service,id,file,view.root,view.files,signal,metadata.meshes);
   const {randomUUID}=require('node:crypto'),{run}=require('./service.cjs'),folder=path.join(destination,'track-model-'+randomUUID());await fs.mkdir(folder);
-  try{await run(service.tool('rage-mesh-obj'),['export',file,String(part),path.join(folder,'model.obj')],{signal});await fs.writeFile(path.join(folder,'README.txt'),'Edit model.obj in Blender. Preserve rage_N material names and export triangulated OBJ with normals, UVs and vertex colors. Import it back on the same track model. Coordinates are local Y-up renderer units (4 per game world unit). PNG texture exchange is not included in this export yet.\n');return folder;}catch(e){await fs.rm(folder,{recursive:true,force:true});throw e;}
+  try{await run(service.tool('rage-mesh-obj'),['export',file,String(part),path.join(folder,'model.obj')],{signal});
+   const {bank,name}=slot(id),geometry=JSON.parse(await run(service.tool('rage-mod-cli'),['--preview-bank',file],{signal,maxOutput:64*1024*1024}));
+   await require('./track-textures.cjs')(service,bank,{[name]:{geometry,instances:[{mesh:part}]}},{[name]:metadata},directory,[],signal,view);
+   const textures={};for(const [source,texture]of Object.entries(geometry.textures)){const relative='texture-'+source+'.png';await fs.writeFile(path.join(folder,relative),Buffer.from(texture.png,'base64'));textures[source]=relative;}
+   const mtlFile=path.join(folder,'model.obj.mtl');let mtl=await fs.readFile(mtlFile,'utf8');
+   mtl=mtl.replace(/newmtl rage_(\d+)\n/g,(line,word)=>{const texture=textures[Number(word)&65535];return line+(texture?'map_Kd '+texture+'\n':'');});await fs.writeFile(mtlFile,mtl);
+   await fs.writeFile(path.join(folder,'track-model.json'),JSON.stringify({format:1,id,part,source:service.editor?.project.snapshot().source,textures},null,2));
+await fs.writeFile(path.join(folder,'README.txt'),'Edit model.obj in Blender. Preserve rage_N material names and export triangulated OBJ with normals, UVs and vertex colors. Import it back on the same track model. Coordinates are local Y-up renderer units (4 per game world unit). Edit the included PNG textures too; keep track-model.json beside model.obj to import geometry and textures together. Texture slots are shared by other models using the same material.\n');return folder;}catch(e){await fs.rm(folder,{recursive:true,force:true});throw e;}
  }));
 }
 module.exports.importPart=importPart;module.exports.exportPart=exportPart;
+async function importTextures(service,id,part,input,metadata,signal,staging){
+ const {run}=require('./service.cjs'),directory=path.dirname(input),sidecar=path.join(directory,'track-model.json');
+ const stat=await fs.lstat(sidecar).catch(e=>{if(e.code==='ENOENT')return null;throw e;});if(!stat)return [];
+ if(!stat.isFile()||stat.isSymbolicLink()||stat.size>1024*1024)throw Error('Invalid track model manifest');
+ const manifest=JSON.parse(await fs.readFile(sidecar,'utf8')),source=service.editor.project.snapshot().source;
+ if(manifest.format!==1||manifest.id!==id||manifest.part!==part||manifest.source?.region!==source.region||manifest.source?.fingerprint!==source.fingerprint||!manifest.textures||typeof manifest.textures!=='object'||Array.isArray(manifest.textures)||Object.keys(manifest.textures).length>4096)throw Error('Track model manifest does not match this source and model');
+ const allowed=new Set(metadata.materials.map(m=>String(m.source))),changes=[],store=new ProjectFiles(service.editor.file);
+ for(const [slot,relative]of Object.entries(manifest.textures)){
+  if(!allowed.has(slot)||relative!=='texture-'+slot+'.png')throw Error('Invalid track texture binding');
+  const file=path.join(directory,relative),info=await fs.lstat(file);
+  if(!info.isFile()||info.isSymbolicLink()||info.size>128*1024*1024)throw Error('Invalid track texture file');
+  const frozen=staging?path.join(staging,'import-texture-'+slot+'.png'):file;
+  if(staging)await fs.copyFile(file,frozen);
+  await run(service.tool('rage-mod-cli'),['--png',frozen],{signal});
+  changes.push({kind:'track',id:id+'.material.'+slot,field:'texture',value:await store.put(frozen,'png')});
+ }
+ return changes;
+}
+module.exports.importTextures=importTextures;

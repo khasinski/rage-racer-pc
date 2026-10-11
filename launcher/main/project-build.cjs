@@ -38,14 +38,14 @@ async function apply(service){
     const groups=new Map(),models={},textures={},materials={};
     await require('./track-edits.cjs').apply(service,snapshot.changes,staging,files);
     for(const c of snapshot.changes){
-      if(c.kind==='track'&&c.field!=='mesh')continue;
-      if(c.kind!=='car'&&!(c.kind==='track'&&c.field==='mesh'))throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
+      if(c.kind==='track'&&!['mesh','texture','material'].includes(c.field))continue;
+      if(c.kind!=='car'&&!(c.kind==='track'&&['mesh','texture','material'].includes(c.field)))throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
       if(c.field==='material'){
         materials[c.id]=c.value;continue; // Native profile writer validates both ID and values.
       }
       if(c.field==='mesh'||c.field==='texture'){
         const mesh=c.field==='mesh';
-        if(mesh?!(/^(car\.(player|rival)\.\d+\.part\.\d+|track\.(big|mid|hi|oval)[1-6]\.(course|terrain))$/.test(c.id)):! /^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.model-bank-1)\.material\.\d+$/.test(c.id))throw Error('Invalid car asset slot');
+        if(mesh?!(/^(car\.(player|rival)\.\d+\.part\.\d+|track\.(big|mid|hi|oval)[1-6]\.(course|terrain))$/.test(c.id)):! /^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.(model-bank-1|course|terrain))\.material\.\d+$/.test(c.id))throw Error('Invalid car asset slot');
         if(!c.value.endsWith(mesh?'.rmesh':'.png'))throw Error('Invalid project asset type');
         const bytes=await new (require('./project-files.cjs').ProjectFiles)(editor.file).read(c.value);
         const relative=(mesh?'meshes':'textures')+'/project/'+c.value.slice(7);

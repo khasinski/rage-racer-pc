@@ -590,3 +590,25 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - PNG tekstury nie są jeszcze dołączane do tego OBJ exportu (opisane w UI
   i README). Pełny track interchange, GLB, wygodny wybór modeli terenu i
   classic adapter nadal wymagają pracy.
+
+### OBJ/PNG exchange dla modeli kursu
+
+- Export OBJ dołącza tylko materiały używane przez wskazany model, dekodując
+  PNG przez istniejący batch/window decoder. MTL odwołuje się do tych PNG.
+  Rozwiązanie uwzględnia selected raw/texture overrides i draft texture edits;
+  preview korzysta z tej samej ścieżki dekodowania.
+- `track-model.json` zapisuje source identity, model slot/index i mapę PNG.
+  Import z tym manifestem tworzy jeden batch history dla banku i tekstur.
+  Bez manifestu nadal można importować samą geometrię OBJ.
+- Manifest musi pasować do źródła i modelu; tylko oryginalne material IDs
+  oraz stałe lokalne PNG filenames są akceptowane. Symbolic links, uszkodzony
+  PNG i niezgodne źródło są odrzucane. Produkcyjny import zamraża PNG
+  w prywatnym stagingu przed native validation i immutable store.
+- Project build obsługuje track course/terrain texture edits i materials;
+  track pack writer omija geometry/image/material references.
+- Testy: source/index binding, traversal, PNG decode failure i immutable
+  references. Prawdziwy PAL model 55: dwa PNG w MTL, trzy project changes
+  (bank + PNG), effective preview i applied manifest pass. Dane źródłowe
+  tylko do odczytu, temp root, bez widocznej gry.
+- Texture slot może być współdzielony przez inne modele — opis w UI.
+  GLB, pełny track exchange i classic adapter nadal pozostają otwarte.

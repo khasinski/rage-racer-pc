@@ -30,3 +30,15 @@ test('compiled replacement preserves other bank models and never overwrites an e
  await fs.rm(out);await assert.rejects(run(tool,['--replace-mesh',base,'2',part,out]),/Invalid mesh replacement/);await assert.rejects(fs.stat(out),{code:'ENOENT'});
  assert.deepEqual(await fs.readFile(base),mesh(2,1));
 });
+test('track model textures validate source, fixed paths, decoding and immutable references',async t=>{
+ const {importTextures}=require('../main/track-meshes.cjs'),root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-track-png-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const source={region:'PAL',fingerprint:'sha256:'+'a'.repeat(64)},project=new Project(source),file=path.join(root,'project.rrproject'),service={editor:{file,project},tool:n=>path.resolve(__dirname,'../resources/bin',n)},input=path.join(root,'model.obj'),metadata={materials:[{source:2}]};
+ const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==','base64'),image=path.join(root,'texture-2.png');await fs.writeFile(image,png);
+ const manifest={format:1,id:'track.big1.course',part:55,source,textures:{2:'texture-2.png'}},sidecar=path.join(root,'track-model.json');
+ await fs.writeFile(sidecar,JSON.stringify(manifest));const changes=await importTextures(service,manifest.id,55,input,metadata,undefined,root);assert.deepEqual(await fs.readFile(path.join(root,'import-texture-2.png')),png);
+ assert.equal(changes[0].id,'track.big1.course.material.2');assert.equal(changes[0].kind,'track');assert.deepEqual(await new ProjectFiles(file).read(changes[0].value),png);
+ await assert.rejects(importTextures(service,manifest.id,54,input,metadata),/does not match/);
+ await fs.writeFile(sidecar,JSON.stringify({...manifest,textures:{2:'../image.png'}}));await assert.rejects(importTextures(service,manifest.id,55,input,metadata),/Invalid track texture binding/);
+ await fs.writeFile(sidecar,JSON.stringify(manifest));await fs.writeFile(image,png.subarray(0,33));await assert.rejects(importTextures(service,manifest.id,55,input,metadata));
+ assert.equal(project.revision,0);
+});
