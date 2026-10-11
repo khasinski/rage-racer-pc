@@ -197,6 +197,27 @@ class LauncherService {
       }finally{if(directory)await fs.rm(directory,{recursive:true,force:true});}
     });
   }
+  async saveTrackObject(bank,index,values,revision){
+    this.requireReady();
+    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>6)throw Error('Invalid track object edit');
+    return this.operation('Editing track object',async signal=>{
+      await this.loadProject();if(!this.editor)throw Error('Open a source project first');
+      const project=this.editor.project;project.checkRevision(revision);
+      const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.object.${index}`;
+      const changes=Object.entries(values).map(([field,value])=>({kind:'track',id,field,value}));
+      require('./track-edits.cjs').group(changes);
+      let directory='';
+      try{
+        const selection=project.snapshot().selection;
+        if(selection.packages.length)directory=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
+        const files=directory?await require('./mods.cjs').inventory(directory,this.tool('rage-mod-cli')):[];
+        if(!directory){directory=path.join(this.root,'track-edit-'+randomUUID());await fs.mkdir(directory);}
+        await require('./track-edits.cjs').apply(this,changes,directory,files,signal);
+        if(signal.aborted)throw Error('Operation canceled');
+        return project.edit(changes,revision);
+      }finally{if(directory)await fs.rm(directory,{recursive:true,force:true});}
+    });
+  }
   carSpecFile(bank) {
     if(!Number.isInteger(bank)||bank<10||bank>72||bank%2)throw Error('Invalid player car bank');
     return path.join(this.state.disc.data,'raw',`asset_${String(bank+1).padStart(3,'0')}.bin`);

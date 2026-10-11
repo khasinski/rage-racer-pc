@@ -18,7 +18,11 @@ test('track edits compile atomically, preserve unrelated bytes and survive proje
  await assert.rejects(fs.stat(output),{code:'ENOENT'});assert.deepEqual(await fs.readFile(source),original);
  await assert.rejects(run(s.tool('rage-mod-cli'),['--edit-track-stdin',source,output],{input:Buffer.from('[[0,"x",18446744073709551615]]')}),/Invalid track object edit/);
  await assert.rejects(fs.stat(output),{code:'ENOENT'});
- let p=await s.project();p=await s.editProject([{kind:'track',id:'track.big1.object.0',field:'x',value:-200},{kind:'track',id:'track.big1.object.0',field:'yaw',value:1024}],p.revision);
+ let p=await s.project();
+ await assert.rejects(s.saveTrackObject(88,0,{model:9},p.revision),/Invalid track object edit/);
+ assert.equal((await s.project()).revision,p.revision);
+ p=await s.saveTrackObject(88,0,{x:-200,yaw:1024},p.revision);
+ await assert.rejects(s.saveTrackObject(88,0,{x:0},p.revision-1),/Project changed/);
  p=await s.projectHistory('undo',p.revision);assert.equal(p.changes.length,0);p=await s.projectHistory('redo',p.revision);
  const preview=await s.trackScene(88);assert.equal(preview.objects[0].x,-200);assert.equal(preview.revision,p.revision);
  p=await s.applyProject(p.revision);const pointer=await fs.readFile(path.join(s.modsRoot,'active.json'),'utf8'),identity=JSON.parse(pointer);

@@ -361,3 +361,19 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   native save_format pass; nowy test po poprawce zakresu liczb również pass.
 - Brakuje formularza/3D manipulacji obiektami w UI i dekodowania pełnej sceny
   geometrii. Nie oznacza to zakończenia edytora torów ani pozostałego planu.
+
+### Formularz obiektu toru
+
+- Tracks pozwala wybrać oddzielny obiekt sceny i zmieniać XYZ oraz obrót
+  w stopniach. Model/flagę umieszczono pod rozwijanym Advanced wraz z opisem
+  każdego bitu. Zapis do projektu i zastosowanie w grze są odrębnymi akcjami.
+- `saveTrackObject` waliduje nową zmianę natywnie na kopii oryginału lub
+  wybranego raw override przed modyfikacją historii. Niepoprawne wartości
+  i stale revision nie zmieniają dokumentu. Podgląd odczytuje nowy stan.
+- Test formularza sprawdza degrees, wybór wyłączonego obiektu, rewizję i
+  rozdzielenie basic/advanced. Integracja toru przechodzi teraz przez publiczne
+  API edycji, sprawdzając również odrzucenie błędu przed wpisem do historii.
+  Suite: 116 pass / 3 skip (119 testów), native save_format pass.
+- Obiekty mają tymczasowe nazwy „Object N”; pełna scena 3D, picking oraz
+  rozpoznanie/nazwanie geometrii pozostają konieczne. Mapka nadal jest
+  inspekcją drogi, nie podglądem terenu. Formularz nie kończy zakresu torów.

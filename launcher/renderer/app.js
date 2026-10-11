@@ -13,10 +13,10 @@ const api=window.launcher;
 const schema=await (await fetch('./settings.json')).json();
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let state, page='home',tab='video',draft={},dirty=false,modalDirty=false,save=null,saveList=[],edits={},assets=[],carParts=[],filter='',toastTimer;
-let trackList=[],trackBank=88,trackScene=null,trackPoint=0;
+let trackList=[],trackBank=88,trackScene=null,trackPoint=0,trackObject=0;
 let project=null;
 function projects(){return projectWorkspace(project,state.mods);}
-function tracks(){return trackWorkspace(trackList,trackBank,trackScene,trackPoint);}
+function tracks(){return trackWorkspace(trackList,trackBank,trackScene,trackPoint,trackObject);}
 async function request(name,...args){const response=await api[name](...args);if(!response.ok)throw Error(response.error);return response.value;}
 function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,5000);}
 function error(e){const dialog=$('#dialog');if(dialog.open&&dialog.querySelector('form')){let alert=dialog.querySelector('[data-form-error]');if(!alert){alert=document.createElement('p');alert.dataset.formError='';alert.className='banner error';alert.setAttribute('role','alert');alert.tabIndex=-1;dialog.querySelector('form').prepend(alert);}alert.textContent=e.message||String(e);alert.focus();return;}$('#dialog').innerHTML=`<h2>Could not complete the operation</h2><p>${esc(e.message||e)}</p><footer><button data-action="close">Close</button></footer>`;if(!$('#dialog').open)$('#dialog').showModal();}
@@ -88,7 +88,7 @@ function render(){
 document.addEventListener('change',e=>{if(e.target.dataset.rivalFilter){if(e.target.dataset.rivalFilter==='class')rivalClass=Number(e.target.value);else rivalCourse=Number(e.target.value);selectedCar='';render();}});
 async function navigate(next){if(next===page)return;if(dirty){$('#dialog').innerHTML=`<h2>Discard unsaved changes?</h2><p>Your edits have not been saved.</p><footer><button data-action="close">Keep editing</button><button data-discard="${next}">Discard and continue</button></footer>`;$('#dialog').showModal();return;}await enter(next);}
 async function enter(next){if(!state.ready&&!['home','source','saves'].includes(next))return;page=next;if(page==='settings')draft={...state.settings};if(page==='saves'&&!save)saveList=await request('saves');if(page==='cars')carParts=(await request('cars')).parts;if(page==='assets')assets=(await request('assets')).entries;if(page==='projects')project=await request('project');if(page==='tracks'){trackList=(await request('tracks')).tracks;trackScene=await request('trackScene',trackBank);}render();}
-document.addEventListener('change',e=>{if(e.target.matches('[data-track-select]'))perform(async()=>{trackBank=Number(e.target.value);trackPoint=0;trackScene=null;trackScene=await request('trackScene',trackBank);render();});});
+document.addEventListener('change',e=>{if(e.target.matches('[data-track-object]')){trackObject=Number(e.target.value);render();return;}if(e.target.matches('[data-track-select]'))perform(async()=>{trackBank=Number(e.target.value);trackPoint=0;trackObject=0;trackScene=null;trackScene=await request('trackScene',trackBank);render();});});
 document.addEventListener('click',e=>{const point=e.target.closest('[data-track-point]');if(point){trackPoint=Number(point.dataset.trackPoint);render();}});
 document.addEventListener('keydown',e=>{if(e.target.matches('[data-track-point]')&&['Enter',' '].includes(e.key)){e.preventDefault();trackPoint=Number(e.target.dataset.trackPoint);render();}});
 async function perform(task){try{await task();}catch(e){if(e.message==='Operation canceled')toast('Operation canceled. Your previous game data is unchanged.');else error(e);}}
@@ -157,7 +157,7 @@ document.addEventListener('paste',e=>{
  e.target.dispatchEvent(new Event('input',{bubbles:true}));
 });
 document.addEventListener('input',e=>{
- if(e.target.closest('#material-form, #car-spec-form, #mod-details-form'))modalDirty=true;
+ if(e.target.closest('#material-form, #car-spec-form, #mod-details-form, #track-object-form'))modalDirty=true;
  if(e.target.dataset.setting){draft[e.target.dataset.setting]=e.target.type==='checkbox'?e.target.checked:e.target.value;dirty=true;}
  if(e.target.hasAttribute('data-team')){edits.team=e.target.value;dirty=true;}
  if(e.target.dataset.field){edits[e.target.dataset.field]=e.target.value;dirty=true;}
@@ -167,6 +167,7 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('change',e=>{if(e.target.dataset.conflict)perform(async()=>{await request('resolveConflict',e.target.dataset.conflict,e.target.value);});if(e.target.dataset.mod)perform(async()=>{await request('toggleMod',e.target.dataset.mod,e.target.checked);});});
 document.addEventListener('submit',e=>{e.preventDefault();e.target.querySelector('[data-form-error]')?.remove();perform(async()=>{
+ if(e.target.id==='track-object-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-object-field]')].filter(i=>i.value!==i.dataset.original).map(i=>[i.dataset.objectField,i.dataset.objectField==='yaw'?Math.round(Number(i.value)*4096/360):Number(i.value)]));if(Object.keys(values).length)project=await request('saveTrackObject',Number(e.target.dataset.bank),Number(e.target.dataset.index),values,Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);modalDirty=false;render();toast('Object saved to project; game unchanged until Save & apply');return;}
  if(e.target.id==='mod-details-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-detail]')].map(i=>[i.dataset.detail,i.value]));await request('saveModDetails',e.target.dataset.mod,values);$('#dialog').close();toast('Mod details saved');return;}
  if(e.target.id==='car-spec-form'){const edits=Object.fromEntries([...e.target.querySelectorAll('[data-spec]')].filter(i=>i.value!==(i.dataset.original??i.defaultValue)).map(i=>[i.dataset.spec,i.dataset.speed?storedShiftSpeed(Number(i.value)):Number(i.value)]));if(Object.keys(edits).length){project=await request('saveCarSpec',Number(e.target.dataset.bank),edits,Number(e.target.dataset.revision));e.target.dataset.revision=String(project.revision);}project=await request(e.submitter?.hasAttribute('data-project-only')?'saveProject':'applyProject',Number(e.target.dataset.revision));modalDirty=false;$('#dialog').close();toast(e.submitter?.hasAttribute('data-project-only')?'Project saved; game unchanged':'Car parameters applied for the next launch from this editor');return;}
  if(e.target.id==='material-form'){const target=$('#material-key');if(!target.readOnly&&Object.hasOwn(state.mods.find(m=>m.id===e.target.dataset.mod).manifest.materials,target.value))throw Error('This material already exists. Close this form and choose it from the material list.');const values=[...e.target.querySelectorAll('[data-property]')].sort((a,b)=>Number(a.dataset.property)-Number(b.dataset.property)).map(i=>i.value);await request('saveMaterial',e.target.dataset.mod,$('#material-key').value,values.join(' '),Number(e.target.dataset.revision));$('#dialog').close();toast(project?'Material saved to the project; Save & apply to use it in game':'Material saved to the mod');return;}
