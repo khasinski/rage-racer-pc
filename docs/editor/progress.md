@@ -906,3 +906,24 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   (optional regional fixtures i dwa opt-in game tests). Audio focused 4 PASS;
   opt-in normal-game test wykonany osobno PASS na obu rendererach. Standalone
   Release mod contracts 11/11 PASS, z aktywnymi assertions w file policy.
+
+### Audio: trim, saved gain i rzeczywisty waveform
+
+- Zapisane start/end frames oraz gain 0–200% są nondestructive properties
+  wspólnego projektu. Source WAV pozostaje kompletny. Native --wav-edit
+  generuje preview/export/build PCM, więc runtime player nie dostaje kolejnego
+  zestawu audio-state/processing branches. Default 100% jest sample-identical.
+- Panel pokazuje native stereo min/max envelope, odsłuch po przetworzeniu,
+  source-relative seconds i saved volume pod details. Clipping jest raportowany;
+  gain 0 tworzy ciszę. Discard przywraca formularz, publish blokuje niezapisane
+  wartości. Import nowego WAV resetuje parametry w tej samej undo operation.
+- Native + service tests sprawdzają dokładny wybór samples i gain, saturację,
+  zero gain, malformed ranges, waveform, undo/redo/reset, source preservation
+  oraz equality preview/build PCM. Audio focused: 6 PASS. Full npm test:
+  save_format PASS; 153 JS tests: 148 PASS, 5 optional skips, zero failures.
+- Actual app.js + native PAL service headless: trim 1–3 s / 50%, waveform i
+  browser preview 2 s, export/import/publish/reset PASS, zero pageerrors.
+  Normal release executable załadował przetworzony WAV w classic i modern:
+  opt-in audio-game test PASS. Test sprawdza player load przy boot, nie
+  deklaruje odsłuchu pełnych menu transitions. Native CLI rebuilt/staged.
+- Custom loop points, pozostałe cues i CD music nadal pozostają do wykonania.

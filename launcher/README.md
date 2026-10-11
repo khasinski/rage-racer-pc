@@ -241,4 +241,14 @@ The original file and extracted regional music are preserved.
 and reset participate in project Undo/Redo. The same PCM player and existing
 menu event timing play the replacement in both renderers, repeating the entire
 track. The volume slider in **Format & preview settings** affects only editor
-playback. Other cues, trimming and custom loop points are not editable yet.
+playback. Other cues and custom loop points are not editable yet.
+
+Expand **Trim & saved volume** to keep a section of the complete source WAV.
+Start/end are in seconds (end excluded); **Saved volume** is 0–200%, with 100%
+keeping the source level. **Save audio edits to project** refreshes the actual
+waveform and preview. Export includes these changes; **Save & apply project**
+bakes them into the same runtime PCM WAV. The source remains intact, and one
+Undo restores the complete edit. A clipping warning means the requested volume
+saturates samples; lower saved volume to avoid distortion. **Discard unsaved
+edits** restores the form. Importing a new WAV resets trim and saved volume.
+Custom loop points and the other cues still need implementation.

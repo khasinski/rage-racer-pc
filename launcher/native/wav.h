@@ -2,7 +2,38 @@
 #define RAGE_EDITOR_WAV_H
 #include "content/wav.h"
 static uint32_t WavUint(const unsigned char *p){return p[0]|(uint32_t)p[1]<<8|(uint32_t)p[2]<<16|(uint32_t)p[3]<<24;}
+static int WavNumber(const char *text,uint32_t max,uint32_t *out){
+ uint32_t n=0;if(!text||!*text)return 0;
+ for(const char *p=text;*p;p++){if(*p<'0'||*p>'9'||n>max/10||(n==max/10&&(unsigned)(*p-'0')>max%10))return 0;n=n*10+(unsigned)(*p-'0');}
+ *out=n;return 1;
+}
+static int WavEdit(int argc,char **argv){
+ uint32_t frames,start,end,gain;SDL_AudioSpec spec;Uint8 *samples=NULL;Uint32 bytes=0;int ok=0;unsigned clipped=0;
+ if(argc!=7||!WavInfo(argv[2],&frames)||!WavNumber(argv[4],frames,&start)||!WavNumber(argv[5],frames,&end)||!WavNumber(argv[6],200,&gain)||start>=end)return 1;
+ if(!SDL_LoadWAV(argv[2],&spec,&samples,&bytes)||bytes!=frames*4)goto done;
+ for(uint32_t i=start*4;i<end*4;i+=2){
+  int n=samples[i]|(unsigned)samples[i+1]<<8;if(n>=32768)n-=65536;n=n*(int)gain/100;
+  if(n>32767){n=32767;clipped++;}if(n<-32768){n=-32768;clipped++;}
+  samples[i]=(Uint8)n;samples[i+1]=(Uint8)((unsigned)n>>8);
+ }
+ ok=WavWrite(argv[3],samples+start*4,(end-start)*4);
+ if(ok)printf("{\"frames\":%u,\"duration\":%.9f,\"clippedSamples\":%u}\n",end-start,(end-start)/44100.0,clipped);
+ done:SDL_free(samples);if(!ok)fputs("Cannot edit WAV; use a valid frame range, gain 0–200%, and a new output\n",stderr);return ok?0:1;
+}
+static int WavWaveform(int argc,char **argv){
+ uint32_t frames;if(argc!=3||!WavInfo(argv[2],&frames))return 1;
+ SDL_AudioSpec spec;Uint8 *samples=NULL;Uint32 bytes=0;if(!SDL_LoadWAV(argv[2],&spec,&samples,&bytes)||bytes!=frames*4){SDL_free(samples);return 1;}
+ printf("[");unsigned bins=frames<256?frames:256;
+ for(unsigned bin=0;bin<bins;bin++){
+  int low=32767,high=-32768;uint32_t first=(uint32_t)((uint64_t)frames*bin/bins),end=(uint32_t)((uint64_t)frames*(bin+1)/bins);
+  for(uint32_t i=first*4;i<end*4;i+=2){int n=samples[i]|(unsigned)samples[i+1]<<8;if(n>=32768)n-=65536;if(n<low)low=n;if(n>high)high=n;}
+  printf("%s[%d,%d]",bin?",":"",low,high);
+ }
+ puts("]");SDL_free(samples);return 0;
+}
 static int WavCommand(int argc,char **argv){
+ if(argc>1&&!strcmp(argv[1],"--wav-edit"))return WavEdit(argc,argv);
+ if(argc>1&&!strcmp(argv[1],"--wav-waveform"))return WavWaveform(argc,argv);
  if(argc==3&&!strcmp(argv[1],"--wav-info")){
   uint32_t frames;if(!WavInfo(argv[2],&frames)){fputs("Expected 44.1 kHz stereo PCM WAV\n",stderr);return 1;}
   printf("{\"frames\":%u,\"sampleRate\":44100,\"channels\":2,\"duration\":%.9f}\n",frames,frames/44100.0);return 0;

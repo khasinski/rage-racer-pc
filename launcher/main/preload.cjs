@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   audio:()=>ipcRenderer.invoke('launcher:audio'),
   importAudio:(id,revision)=>ipcRenderer.invoke('launcher:import-audio',id,revision),
   exportAudio:id=>ipcRenderer.invoke('launcher:export-audio',id),
+  editAudio:(id,values,revision)=>ipcRenderer.invoke('launcher:edit-audio',id,values,revision),
   resetAudio:(id,revision)=>ipcRenderer.invoke('launcher:reset-audio',id,revision),
   titleImages:()=>ipcRenderer.invoke('launcher:title-images'),
   importTitleImage:(id,revision)=>ipcRenderer.invoke('launcher:import-title-image',id,revision),

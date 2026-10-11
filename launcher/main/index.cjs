@@ -56,6 +56,7 @@ handle('cars',()=>service.cars());
 handle('audio',()=>service.audio());
 handle('import-audio',async(id,revision)=>{require('./audio.cjs').slot(id);const file=await open({title:'Import menu music WAV',filters:[{name:'WAV audio',extensions:['wav']}],properties:['openFile']});return file?service.importAudio(id,file,revision):null;});
 handle('export-audio',async id=>{require('./audio.cjs').slot(id);const file=await output({title:'Export effective music WAV',defaultPath:id+'.wav',filters:[{name:'WAV audio',extensions:['wav']}]});return file?service.exportAudio(id,file):null;});
+handle('edit-audio',(id,values,revision)=>service.editAudio(id,values,revision));
 handle('reset-audio',(id,revision)=>service.resetAudio(id,revision));
 handle('title-images',()=>service.titleImages());
 handle('import-title-image',async(id,revision)=>{require('./title-images.cjs').slot(id);const file=await open({title:'Import title menu PNG (112×16)',filters:[{name:'PNG images',extensions:['png']}],properties:['openFile']});return file?service.importTitleImage(id,file,revision):null;});

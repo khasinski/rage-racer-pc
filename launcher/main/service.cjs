@@ -84,6 +84,7 @@ class LauncherService {
   async audio(){return require('./audio.cjs').read(this);}
   async importAudio(id,input,revision){return require('./audio.cjs').importAudio(this,id,input,revision);}
   async exportAudio(id,output){return require('./audio.cjs').exportAudio(this,id,output);}
+  async editAudio(id,values,revision){return require('./audio.cjs').edit(this,id,values,revision);}
   async resetAudio(id,revision){return require('./audio.cjs').reset(this,id,revision);}
   async titleImages(){return require('./title-images.cjs').read(this);}
   async importTitleImage(id,input,revision){return require('./title-images.cjs').importImage(this,id,input,revision);}

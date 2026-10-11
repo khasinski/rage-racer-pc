@@ -12,8 +12,9 @@ test('normal game launch loads the published menu WAV through its PCM player',{
  for(const name of await fs.readdir(path.dirname(game)))if(/\.(dll|dylib)$/i.test(name))await fs.copyFile(path.join(path.dirname(game),name),path.join(root,name));
  const s=new LauncherService({root:path.join(root,'editor'),bin:path.join(base,'launcher/resources/bin'),config:path.join(base,'rage-port.ini'),modsRoot:path.join(root,'mods')});await s.init();s.requireReady=()=>{};
  s.state.disc={archive:path.join(source,'RAGE.BIN'),path:disc,region:'PAL',data:path.join(source,'data')};const p=await s.project();
- // No-op replacement proves real extracted regional bytes reach the runtime.
- await s.importAudio('music.course-select',path.join(source,'data/menu_music.wav'),p.revision);await s.publishMods();
+ // A trimmed, quieter replacement must reach the same normal-game player.
+ let edited=await s.importAudio('music.course-select',path.join(source,'data/menu_music.wav'),p.revision);
+ await s.editAudio('music.course-select',{start:44100,end:132300,gain:50},edited.revision);await s.publishMods();
  for(const renderer of ['classic','modern']){
  const args=['--config',path.join(base,'rage-port.ini')];
  for(const [key,value]of Object.entries({'disc.image':disc,'disc.choose':'false','modern.assets':'disc','mods.directory':s.modsRoot,'cars.profile':path.join(base,'cars.toml'),'audio.menu_music':path.join(source,'data/menu_music.wav'),'video.renderer':renderer,'video.modern':'false','input.disable_host':'true','race.enabled':'false','stop.scene':'5','stop.timer':'0','diagnostics.log':path.join(root,'game.log')}))args.push('--set',`${key}=${value}`);

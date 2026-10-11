@@ -37,15 +37,10 @@ async function apply(service){
     const {cars}=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-profile',frozenBase]));
     const groups=new Map(),models={},textures={},materials={},audio={};
     await require('./track-edits.cjs').apply(service,snapshot.changes,staging,files);
+    Object.assign(audio,await require('./audio.cjs').apply(service,snapshot.changes,staging,files));
     for(const c of snapshot.changes){
       if(c.kind==='track'&&!['mesh','texture','material'].includes(c.field))continue;
-      if(c.kind==='audio'){
-        if(c.id!=='music.course-select'||c.field!=='file'||typeof c.value!=='string'||!c.value.endsWith('.wav'))throw Error('Unsupported audio edit');
-        const bytes=await new (require('./project-files.cjs').ProjectFiles)(editor.file).read(c.value);
-        const relative='audio/project/'+c.value.slice(7),file=path.join(staging,relative);
-        await fs.mkdir(path.dirname(file),{recursive:true});await fs.writeFile(file,bytes);
-        await run(service.tool('rage-mod-cli'),['--wav-info',file]);audio[c.id]=relative;if(!files.includes(relative))files.push(relative);continue;
-      }
+      if(c.kind==='audio')continue;
       if(c.kind!=='car'&&!(c.kind==='track'&&['mesh','texture','material'].includes(c.field))&&!(c.kind==='interface'&&c.field==='texture'))throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
       if(c.field==='material'){
         materials[c.id]=c.value;continue; // Native profile writer validates both ID and values.

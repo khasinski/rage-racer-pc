@@ -44,3 +44,19 @@ test('audio packages resolve semantic conflicts and project reset restores the s
  p=await s.projectHistory('redo',p.revision);await s.publishMods();
  const active=JSON.parse(await run(tool,['--active-build',s.modsRoot,p.source.region,p.source.fingerprint]));const manifest=JSON.parse(await run(tool,[path.join(active.directory,'mod.toml')]));assert.match(manifest.audio[id],/^audio\/provider-/);assert.equal(JSON.parse(await run(tool,['--wav-info',path.join(active.directory,manifest.audio[id])])).duration,.2);
 });
+test('non-destructive trim and saved gain reach export and game build, preserve source and undo together',async t=>{
+ const {root,s}=await fixture(t),id='music.course-select',original=await fs.readFile(path.join(root,'data/menu_music.wav')),p=await s.project();
+ const edited=await s.editAudio(id,{start:441,end:2205,gain:50},p.revision);let audio=(await s.audio()).cues[0];assert.equal(audio.sourceFrames,4410);assert.equal(audio.frames,1764);assert.equal(audio.gain,50);assert.equal(audio.waveform.length,256);assert.ok(audio.waveform.some(([lo,hi])=>lo<0&&hi>0));
+ const bytes=Buffer.from(audio.wav,'base64');for(let i=44;i<bytes.length;i+=2)assert.equal(bytes.readInt16LE(i),Math.trunc(original.readInt16LE(44+441*4+i-44)/2));
+ await assert.rejects(s.editAudio(id,{start:2205,end:441,gain:50},edited.revision),/valid audio/);await assert.rejects(s.editAudio(id,{start:0,end:4410,gain:201},edited.revision),/valid audio/);assert.equal((await s.project()).revision,edited.revision);
+ await s.publishMods();const active=JSON.parse(await run(tool,['--active-build',s.modsRoot,edited.source.region,edited.source.fingerprint])),manifest=JSON.parse(await run(tool,[path.join(active.directory,'mod.toml')]));assert.deepEqual(await fs.readFile(path.join(active.directory,manifest.audio[id])),bytes);assert.deepEqual(await fs.readFile(path.join(root,'data/menu_music.wav')),original);
+ let next=await s.projectHistory('undo',edited.revision);audio=(await s.audio()).cues[0];assert.equal(audio.frames,4410);assert.equal(audio.gain,100);
+ next=await s.projectHistory('redo',next.revision);assert.equal((await s.audio()).cues[0].frames,1764);
+ next=await s.resetAudio(id,next.revision);assert.equal((await s.audio()).cues[0].origin,'disc');next=await s.projectHistory('undo',next.revision);assert.equal((await s.audio()).cues[0].frames,1764);
+ const file=path.join(root,'new.wav');await fs.writeFile(file,wav({frames:8820}));await s.importAudio(id,file,next.revision);audio=(await s.audio()).cues[0];assert.equal(audio.start,0);assert.equal(audio.end,8820);assert.equal(audio.gain,100);
+});
+test('native saved gain clips safely, silence is editable, and invalid ranges never create outputs',async t=>{
+ const {root}=await fixture(t),file=path.join(root,'loud.wav'),data=wav({frames:2});data.writeInt16LE(30000,44);data.writeInt16LE(-30000,46);await fs.writeFile(file,data);const output=path.join(root,'gain.wav');const info=JSON.parse(await run(tool,['--wav-edit',file,output,'0','1','200']));assert.equal(info.clippedSamples,2);const b=await fs.readFile(output);assert.equal(b.readInt16LE(44),32767);assert.equal(b.readInt16LE(46),-32768);
+ const silence=path.join(root,'silent.wav');await run(tool,['--wav-edit',file,silence,'0','2','0']);assert.ok((await fs.readFile(silence)).subarray(44).every(n=>n===0));
+ for(const args of [['0','0','100'],['0','3','100'],['-1','2','100'],['0','2','NaN'],['0','2','201']])await assert.rejects(run(tool,['--wav-edit',file,path.join(root,'bad.wav'),...args]));await assert.rejects(fs.stat(path.join(root,'bad.wav')),/ENOENT/);
+});
