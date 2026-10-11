@@ -42,3 +42,16 @@ test('curved point exposes its shared arc center with editable coordinates',asyn
  assert.match(html,/id="arc-z"[^>]*value="-600" data-original="-600"/);
  assert.match(html,/Shared by every segment/);assert.ok(!html.includes('data-arc-field="reserved"'));
 });
+test('road overview samples shortest arcs, mirrored modes, wraparound and changed centers',async()=>{
+ const {roadPolyline}=await import('../renderer/tracks.mjs');
+ const road={points:[{x:10,z:0,arc:1},{x:0,z:10,arc:0}],arcs:[{x:0,z:0}]};
+ const line=roadPolyline(road);assert.equal(line.length,18);assert.deepEqual(line[0],{x:10,z:0});assert.deepEqual(line.at(-1),line[0]);
+ for(const p of line.slice(0,16))assert.ok(Math.abs(Math.hypot(p.x,p.z)-10)<1e-8);
+ assert.ok(line[8].x>7&&line[8].z>7);assert.deepEqual(line[16],{x:0,z:10});
+ const mirrored=structuredClone(road);mirrored.points[0].arc=2;assert.deepEqual(roadPolyline(mirrored),line);
+ const reversed={...road,points:[{x:0,z:10,arc:1},{x:10,z:0,arc:0}]};assert.ok(roadPolyline(reversed)[8].x>7&&roadPolyline(reversed)[8].z>7);
+ const wrap={points:[{x:-10,z:1,arc:1},{x:-10,z:-1,arc:0}],arcs:[{x:0,z:0}]};assert.ok(roadPolyline(wrap).every(p=>p.x<0));
+ const changed=structuredClone(road);changed.arcs[0].x=1;assert.notDeepEqual(roadPolyline(changed),line);
+ const missing=structuredClone(road);missing.arcs=[];assert.deepEqual(roadPolyline(missing),[{x:10,z:0},{x:0,z:10},{x:10,z:0}]);
+ assert.deepEqual(roadPolyline({points:[]}),[]);
+});

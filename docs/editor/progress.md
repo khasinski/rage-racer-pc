@@ -500,3 +500,17 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   wspólnego użycia i brak edycji reserved word.
 - Mapa nadal przedstawia połączenia control points, nie próbkowany łuk.
   Geometria asfaltu, przebudowa drogi oraz AI/kamery pozostają otwarte.
+
+### Zakręty na mapie przebiegu drogi
+
+- Mapa próbuje łuki według zapisanych X/Z środka, wybierając najkrótszy span
+  kąta, zgodnie z `GetAngleDelta/GetAngleDistance`. Mirrored curve zmienia
+  lateral sign w fizyce, nie wybór kierunku centerline.
+- Promień interpolowany między punktami daje geometryczny overview;
+  nie udaje bit-exact fixed-point fizyki. Opis UI zaznacza tę różnicę.
+- Bounds obejmują próbkowane zakręty, punkty wyboru nadal odpowiadają
+  rekordom źródłowym, a zmiany środka wpływają na następną effective mapę.
+- Testy: ćwiartka koła, reversed/mirrored, przejście przez +/-pi, brak
+  środka i pusta droga. Rzeczywisty PAL Mythical Coast: 428 próbek,
+  headless Chromium bez błędów JS. Obejrzany screenshot:
+  `build/reports/editor/track-road-curves.png`.
