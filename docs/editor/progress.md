@@ -702,3 +702,14 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Skorygowano opis banków: OBJ + PNG działa dla poszczególnych modeli;
   brakującym formatem pozostaje GLB. Track workspace tests: 8 pass.
 - Sam sukces pakowania nie dowodzi poprawności działania packaged IPC.
+
+### Publikacja projektu bez zewnętrznych pakietów
+
+- Naprawiono realny przycisk Save & apply: legacy publishMods wymagał co
+  najmniej jednego enabled package, choć własne edycje projektu nie wymagają
+  żadnego zewnętrznego moda. Publikacja korzysta teraz zawsze z project builder.
+- Test komórki terenu wywołuje tę samą publiczną ścieżkę co przycisk i sprawdza
+  opublikowany raw pack przy pustej bibliotece pakietów. Pięć focused tests pass.
+- UI odrzuca Apply przy zmienionych, niezapisanych polach data-original,
+  zamiast po cichu publikować poprzednie wartości. Headless actual app.js + PAL
+  service potwierdza komunikat i brak zapisu projektu przed submit formularza.

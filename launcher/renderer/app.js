@@ -154,7 +154,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(a==='new-save'){const data=await request('newSave',$('#new-save-region').value);if(data){save=data;edits={};dirty=false;render();}}
  if(a==='open-save'){const data=await request('openSave');if(data){save=data;edits={};dirty=false;render();}}
  if(a==='other-save'){if(dirty){toast('Save your copy or leave this page to discard edits first.');return;}save=null;saveList=await request('saves');render();}
- if(a==='publish-mods'){const directory=await request('publishMods');toast('Saved for the game: '+directory);}
+ if(a==='publish-mods'){if([...document.querySelectorAll('[data-original]')].some(input=>input.value!==input.dataset.original)){toast('Save the edited form to your project before applying it');return;}const directory=await request('publishMods');toast('Saved for the game: '+directory);}
  if(a==='import-mod')await request('importMod');
  });});
 $('#dialog').addEventListener('close',()=>{modalDirty=false;});

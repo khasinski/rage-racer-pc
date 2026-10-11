@@ -104,9 +104,11 @@ test('terrain cell model edits preserve region bits and every other byte',async 
  const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini');await fs.writeFile(archive,'terrain source');await fs.writeFile(config,'[video]\nrenderer=modern\n');
  const service=new LauncherService({root:path.join(root,'editor'),bin:path.dirname(tool),config,modsRoot:path.join(root,'mods')});await service.init();service.requireReady=()=>{};service.state.disc={archive,region:'PAL',path:archive,data};
  let project=await service.project();project=await service.saveTerrainCell(88,0,{model:1023},project.revision);
- project=await service.applyProject(project.revision);
+ assert.equal(service.state.mods.length,0);
+ const published=await service.publishMods();project=await service.project();
  const pointerFile=path.join(service.modsRoot,'active.json'),pointer=await fs.readFile(pointerFile,'utf8');
  const built=path.join(service.modsRoot,'builds',JSON.parse(pointer).build,'raw/asset_088.bin');
+ assert.equal(path.dirname(built),path.join(published,'raw'));
  assert.deepEqual(await fs.readFile(built),result);assert.deepEqual(await fs.readFile(asset),bytes);
  project=await service.projectHistory('undo',project.revision);project=await service.applyProject(project.revision);
  const restored=JSON.parse(await fs.readFile(pointerFile,'utf8'));
