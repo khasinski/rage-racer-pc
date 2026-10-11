@@ -33,3 +33,12 @@ test('road form exposes every point field with matching original values and adva
  assert.match(form,/id="road-cross_slope"[^>]*value="-2" data-original="-2"/);
  assert.match(form,/data-revision="4"/);assert.ok(!form.includes('undefined'));
 });
+test('curved point exposes its shared arc center with editable coordinates',async()=>{
+ const {trackWorkspace}=await import('../renderer/tracks.mjs');
+ const point={x:100,z:200,y:0,angle:0,pitch:0,crossSlope:0,leftWidth:50,rightWidth:50,length:200,arc:1};
+ const html=trackWorkspace([{name:'Coast',bank:88}],88,{revision:7,road:{points:[point],arcs:[{x:500,z:-600,reserved:123}]}});
+ assert.match(html,/id="road-arc-form"[^>]*data-index="0"[^>]*data-revision="7"/);
+ assert.match(html,/id="arc-x"[^>]*value="500" data-original="500"/);
+ assert.match(html,/id="arc-z"[^>]*value="-600" data-original="-600"/);
+ assert.match(html,/Shared by every segment/);assert.ok(!html.includes('data-arc-field="reserved"'));
+});

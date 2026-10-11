@@ -66,3 +66,26 @@ test('road edits preserve all other blocks and reject invalid routes before crea
  }
  assert.deepEqual(await fs.readFile(source),original);
 });
+test('curve center edits preserve reserved bytes and reject out-of-table indices',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-arc-edit-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const original=pack(),start=original.readUInt32LE(16),end=original.readUInt32LE(20),extra=Buffer.alloc(12);extra.writeInt32LE(123,8);
+ const bytes=Buffer.concat([original.subarray(0,end),extra,original.subarray(end)]);for(let i=5;i<11;i++)bytes.writeUInt32LE(original.readUInt32LE(i*4)+12,i*4);
+ bytes.writeUInt16LE(1,start+24);
+ const source=path.join(root,'source.bin'),out=path.join(root,'out.bin');await fs.writeFile(source,bytes);
+ const tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli');
+ await run(tool,['--edit-track-stdin',source,out],{input:Buffer.from('[[0,"arc.x",-999],[0,"arc.z",456]]')});
+ const result=await fs.readFile(out);assert.deepEqual(result.subarray(0,end),bytes.subarray(0,end));assert.deepEqual(result.subarray(end+8),bytes.subarray(end+8));
+ const scene=JSON.parse(await run(tool,['--track-scene',out]));assert.deepEqual(scene.road.arcs[0],{x:-999,z:456,reserved:123});
+ await fs.rm(out);await assert.rejects(run(tool,['--edit-track-stdin',source,out],{input:Buffer.from('[[0,"arc.x",8],[1,"arc.x",10]]')}),/Invalid track object edit/);await assert.rejects(fs.stat(out),{code:'ENOENT'});
+ assert.deepEqual(require('../main/track-edits.cjs').group([{kind:'track',id:'track.big1.arc.0',field:'x',value:99}]).get(88),[[0,'arc.x',99]]);
+ const data=path.join(root,'data');await fs.mkdir(path.join(data,'raw'),{recursive:true});await fs.writeFile(path.join(data,'raw/asset_088.bin'),bytes);
+ const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini');await fs.writeFile(archive,'arc source');await fs.writeFile(config,'[video]\nrenderer=modern\n');
+ const service=new LauncherService({root:path.join(root,'editor'),bin:path.resolve(__dirname,'../resources/bin'),config,modsRoot:path.join(root,'mods')});await service.init();service.requireReady=()=>{};service.state.disc={archive,region:'PAL',path:archive,data};
+ let project=await service.project();project=await service.saveRoadArc(88,0,{x:-555},project.revision);
+ assert.equal((await service.trackScene(88)).road.arcs[0].x,-555);
+ await assert.rejects(service.saveRoadArc(88,1,{z:0},project.revision),/Invalid track object edit/);
+ assert.equal((await service.project()).revision,project.revision);
+ project=await service.projectHistory('undo',project.revision);assert.equal((await service.trackScene(88)).road.arcs[0].x,0);
+ project=await service.projectHistory('redo',project.revision);assert.equal((await service.trackScene(88)).road.arcs[0].x,-555);
+
+});

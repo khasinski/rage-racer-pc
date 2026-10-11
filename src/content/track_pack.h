@@ -31,6 +31,10 @@ int RoadRead(const Road *road, uint32_t index, RoadPoint *point);
 /* Updates one record without changing arc tables or trailing bytes.
  * Failure leaves the block intact, including invalid length/arc changes. */
 int RoadWrite(void *data, size_t size, uint32_t index, const RoadPoint *point);
+typedef struct RoadArc { int32_t x, z; } RoadArc;
+int RoadArcRead(const Road *road, uint32_t index, RoadArc *arc);
+/* Reserved bytes in the original arc record are preserved. */
+int RoadArcWrite(void *data, size_t size, uint32_t index, const RoadArc *arc);
 
 typedef struct Placement {
     int16_t model, yaw;

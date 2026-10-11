@@ -44,6 +44,18 @@ int main(void) {
         assert(point.x==-1 && point.z==1234 && point.arc==1 && point.length==100);
         assert(!RoadRead(&road,1,&point));
         {
+            RoadArc arc;unsigned char saved[40];
+            assert(RoadArcRead(&road,0,&arc)&&arc.x==200&&arc.z==300);
+            arc=(RoadArc){INT32_MIN,INT32_MAX};
+            assert(RoadArcWrite(r,40,0,&arc));
+            assert(RoadArcRead(&road,0,&arc)&&arc.x==INT32_MIN&&arc.z==INT32_MAX);
+            assert(r[36]==0x78&&r[39]==0x12);
+            memcpy(saved,r,40);assert(!RoadArcWrite(r,40,1,&arc));
+            assert(!RoadArcWrite(r,40,0,NULL));assert(!RoadArcRead(&road,1,&arc));
+            assert(!memcmp(saved,r,40));
+            arc=(RoadArc){200,300};assert(RoadArcWrite(r,40,0,&arc));
+        }
+        {
             unsigned char saved[40];
             point.x=INT32_MIN;point.z=INT32_MAX;point.y=-123;
             point.pitch=-512;point.crossSlope=100;point.leftWidth=321;

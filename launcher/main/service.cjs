@@ -206,10 +206,11 @@ class LauncherService {
   }
   async saveTrackObject(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'object');}
   async saveRoadPoint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'road');}
+  async saveRoadArc(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'arc');}
   async saveTrackEntry(bank,index,values,revision,type){
     this.requireReady();
     if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='road'?10:6))throw Error('Invalid track object edit');
-    return this.operation('Editing track object',async signal=>{
+    return this.operation(type==='object'?'Editing track object':'Editing road',async signal=>{
       await this.loadProject();if(!this.editor)throw Error('Open a source project first');
       const project=this.editor.project;project.checkRevision(revision);
       const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.${type}.${index}`;
@@ -217,11 +218,13 @@ class LauncherService {
       require('./track-edits.cjs').group(changes);
       let directory='';
       try{
-        const selection=project.snapshot().selection;
+        const snapshot=project.snapshot(),selection=snapshot.selection;
+        const prefix=id.slice(0,id.indexOf('.'+type+'.'))+'.';
+        const effective=new Map([...snapshot.changes.filter(c=>c.kind==='track'&&c.id.startsWith(prefix)),...changes].map(c=>[c.id+':'+c.field,c]));
         if(selection.packages.length)directory=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
         const files=directory?await require('./mods.cjs').inventory(directory,this.tool('rage-mod-cli')):[];
         if(!directory){directory=path.join(this.root,'track-edit-'+randomUUID());await fs.mkdir(directory);}
-        await require('./track-edits.cjs').apply(this,changes,directory,files,signal);
+        await require('./track-edits.cjs').apply(this,[...effective.values()],directory,files,signal);
         if(signal.aborted)throw Error('Operation canceled');
         return project.edit(changes,revision);
       }finally{if(directory)await fs.rm(directory,{recursive:true,force:true});}

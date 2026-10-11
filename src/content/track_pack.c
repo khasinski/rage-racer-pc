@@ -133,3 +133,17 @@ int RoadWrite(void *data, size_t size, uint32_t index, const RoadPoint *point) {
     for(unsigned i=0;i<8;i++){p[8+i*2]=(unsigned char)fields[i];p[9+i*2]=(unsigned char)(fields[i]>>8);}
     return 1;
 }
+
+int RoadArcRead(const Road *road,uint32_t index,RoadArc *arc) {
+    if(!road||!arc||!road->arcs||index>=road->arcCount)return 0;
+    const unsigned char *p=road->arcs+(size_t)index*12;
+    RoadArc value={(int32_t)Read32(p),(int32_t)Read32(p+4)};
+    *arc=value;return 1;
+}
+int RoadArcWrite(void *data,size_t size,uint32_t index,const RoadArc *arc) {
+    Road road;
+    if(!arc||!RoadOpen(data,size,&road)||index>=road.arcCount)return 0;
+    RoadArc value=*arc;
+    unsigned char *p=(unsigned char *)data+(road.arcs-(const unsigned char *)data)+(size_t)index*12;
+    Store32(p,(uint32_t)value.x);Store32(p+4,(uint32_t)value.z);return 1;
+}

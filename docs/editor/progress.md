@@ -482,3 +482,21 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Nadal brakuje przebudowy geometrii, arc centers, AI i kamer; formularz
   jawnie opisuje te granice i nie przedstawia surowych zmian jako gotowego
   nowego toru.
+
+### Środki łuków drogi
+
+- `RoadArcRead/Write` czyta/zapisuje X/Z środka łuku, zachowując reserved
+  word rekordu. Runtime `CarTrackMeasureArc` rzeczywiście używa tych X/Z,
+  a `GameTrackArcCenter.reserved08` jest opisany jako nieczytany.
+- Wybrany curved point pokazuje formularz jego wspólnego środka. Zapis używa
+  `track.<course><grade>.arc.<index>`, tej samej walidacji/stagingu/historii,
+  co punkty drogi i obiekty. Nie udostępnia reserved word.
+- Walidacja zapisu track entry obejmuje teraz cały efektywny draft wybranego
+  toru, łącząc wcześniejsze zmiany z nowymi przed kompilacją.
+- C test: unaligned read/write, skrajne int32, zachowanie reserved word,
+  nieistniejący indeks i brak mutacji po błędzie. CLI test: byte preservation,
+  nieudana druga zmiana bez wyjścia. Service: effective preview, błędny indeks
+  bez rewizji, undo/redo. UI: poprawny indeks środka, original values, opis
+  wspólnego użycia i brak edycji reserved word.
+- Mapa nadal przedstawia połączenia control points, nie próbkowany łuk.
+  Geometria asfaltu, przebudowa drogi oraz AI/kamery pozostają otwarte.
