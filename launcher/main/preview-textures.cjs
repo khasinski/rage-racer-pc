@@ -2,6 +2,7 @@ const fs=require('node:fs/promises'),path=require('node:path');
 module.exports=async function textures(service,key,geometry,metadata,staging,signal,format='rgba'){
  const {run}=require('./service.cjs');const [,kind,bankText]=key.split('.'),bank=Number(bankText),data=service.state.disc.data;
  const folder=path.join(data,'textures'),uploads=[];
+ if(!metadata.materials.length)return {};
  const entries=(await fs.readdir(folder)).filter(n=>n.endsWith('.json')).sort();
  // Shared images are loaded first. The selected car's atlas then overrides them.
  for(const own of [false,true]){

@@ -50,6 +50,22 @@ test('complete car import installs all models and textures atomically and reject
   assert.equal(appearance[0].texture.png,png.toString('base64'));
   project=await service.projectHistory('undo',project.revision);assert.equal(project.changes.length,0);
   project=await service.projectHistory('redo',project.revision);assert.deepEqual(project.changes,changes);
+  const originalTool=service.carTool;
+  service.carTool=async args=>{
+   const output=args.find(a=>a.startsWith('tools.car_output='));
+   if(output){
+    const model=changes.find(c=>c.field==='mesh');
+    const bytes=await new (require('../main/project-files.cjs').ProjectFiles)(service.editor.file).read(model.value);
+    await fs.writeFile(output.slice('tools.car_output='.length),bytes);
+   }
+   return originalTool(args);
+  };
+  const exported=await service.exportCarSet(key,root);
+  const exportedManifest=JSON.parse(await fs.readFile(path.join(exported,'car-set.json')));
+  assert.deepEqual(await fs.readFile(path.join(exported,exportedManifest.textures[0])),png);
+  for(const role of ['body','front-wheels','rear-wheels'])assert.match(await fs.readFile(path.join(exported,exportedManifest.parts[role]),'utf8'),/usemtl rage_0/);
+  const exportedProject=await service.importCarSet(key,exported);
+  assert.deepEqual(exportedProject.changes,changes); // Native OBJ/PNG round trip.
   project=await service.applyProject(project.revision);
   const pointer=JSON.parse(await fs.readFile(path.join(service.modsRoot,'active.json')));
   const {run}=require('../main/service.cjs');

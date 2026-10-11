@@ -195,14 +195,33 @@ class LauncherService {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     return this.operation('Exporting car model',signal=>this.exportCarData(key,destination,signal));
   }
-  async exportCarData(key,destination,signal,format='tga'){
+  async exportCarData(key,destination,signal,format='png'){
       const target=path.join(destination,key);await fs.mkdir(target);
+      let composed='';
       try{
         const mesh=path.join(target,'model.rmesh');
         const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+mesh],signal));
+        await this.loadProject();
+        const selection=this.editor?.project.snapshot().selection;
+        let mod=null;
+        if(selection?.packages.length){
+          composed=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
+          if(composed){
+            mod={root:composed,project:true,files:await require('./mods.cjs').inventory(composed,this.tool('rage-mod-cli')),manifest:JSON.parse(await run(this.tool('rage-mod-cli'),[path.join(composed,'mod.toml')],{signal}))};
+            if(mod.manifest.meshes[key])await fs.copyFile(path.join(composed,mod.manifest.meshes[key]),mesh);
+          }
+        }
+        const change=this.editor?.project.snapshot().changes.find(c=>c.kind==='car'&&c.id===key&&c.field==='mesh');
+        if(change)await fs.writeFile(mesh,await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).read(change.value));
         await run(this.tool('rage-mesh-obj'),['export',mesh,'0',path.join(target,'model.obj')],{signal});
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',mesh],{signal,maxOutput:16*1024*1024}));
-        const textures=await require('./preview-textures.cjs')(this,key,geometry,metadata,target,signal,format);
+        const appearance=await require('./preview-materials.cjs')(this,key,metadata,mod,signal);
+        const baseMetadata={...metadata,materials:metadata.materials.filter(m=>!appearance[m.source]?.texture)};
+        const textures=await require('./preview-textures.cjs')(this,key,geometry,baseMetadata,target,signal,format);
+        for(const [source,material]of Object.entries(appearance))if(material.texture){
+          const name='texture-'+source+'.png';
+          await fs.writeFile(path.join(target,name),Buffer.from(material.texture.png,'base64'));textures[source]=name;
+        }
         const materials=[...new Set(geometry.vertices.filter((_,i)=>i%9===6))];
         const mtl=materials.map(word=>{
           const id=word&0xffff,surface=id>>>6,texture=textures[id%64];
@@ -211,9 +230,10 @@ class LauncherService {
         }).join('\n');
         await fs.writeFile(path.join(target,'model.obj.mtl'),mtl);
         if(format==='png')await fs.writeFile(path.join(target,'materials.json'),JSON.stringify(metadata.materials));
-        await fs.writeFile(path.join(target,'README.txt'),'Authored base model, before enabled mod overrides.\nKeep the OBJ, MTL and TGA textures together. Textures are decoded from your selected game image; lighting and glass are simplified.\nEdit model.obj in a 3D editor. Preserve rage_* material names and export triangulated OBJ with UVs and normals. Texture edits are not imported by the mesh replacement action.\n');
+        await fs.writeFile(path.join(target,'README.txt'),'Current model and textures: original disc, selected packages, then project edits.\nKeep the OBJ, MTL and PNG textures together. Lighting and glass are simplified.\nEdit model.obj in a 3D editor. Preserve rage_* material names and export triangulated OBJ with UVs and normals. Use Import car set to import shared texture edits; Import model only changes geometry.\n');
         return target;
       }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
+      finally{if(composed)await fs.rm(composed,{recursive:true,force:true});}
   }
   async exportCarSet(key,destination){return require('./car-set.cjs').exportSet(this,key,destination);}
   async importCarSet(key,source){return require('./car-set.cjs').importSet(this,key,source);}

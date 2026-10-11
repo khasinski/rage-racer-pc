@@ -259,3 +259,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Nadal niezamknięte: efektywny eksport, rozwiązywanie wyglądu wybranych paczek
   w domyślnym podglądzie, edycja właściwości materiałów w historii, GLB/glTF,
   edytor sceny toru i media oraz pełne platformowe/wizualne acceptance gates.
+
+### Eksport edytowanego wyglądu auta
+
+- Eksport części i pełnego zestawu zapisuje model oraz tekstury po nałożeniu
+  wybranych paczek i zmian projektu. Geometria projektu wygrywa w swoim slocie;
+  tekstury projektu wygrywają nad dostawcą paczki. Domyślnym formatem obrazu
+  jest PNG. Materiały gry zachowują oryginalne identyfikatory i UV.
+- Kompozycja paczek jest prywatnym snapshotem usuwanym po eksporcie. Operacja
+  nie aktywuje buildu ani nie modyfikuje źródła. Pomija dekodowanie oryginalnej
+  tekstury, gdy używa jej edytowanego odpowiednika.
+- Test istniejącego zestawu teraz przechodzi również eksport wszystkich trzech
+  części, zgodność bajtów PNG i ponowny import przez natywny parser OBJ:
+  referencje zmian pozostają identyczne. Suite: 110 pass / 3 skip; natywny
+  save_format pass.
+- Oświetlenie i szkło w OBJ/MTL nadal są uproszczone; GLB oraz pełne parametry
+  materiałów wymagają dalszej pracy. Domyślny podgląd wymaga jeszcze wspólnej
+  kompozycji paczek zgodnej z eksportem i builderem.
