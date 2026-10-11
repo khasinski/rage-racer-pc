@@ -3,7 +3,7 @@ const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 function dialogs(){
  const source=fs.readFileSync(path.join(__dirname,'../renderer/app.js'),'utf8');
  const dialog={innerHTML:'',classList:{add(){}},addEventListener(){},showModal(){}};
- const context={state:{mods:[{id:'sample',manifest:{materials:{'car.0.material.0':'lit blend 0.35 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'}}}]},carParts:[{bank:10,part:0,rival:false,name:'Example'}],$:()=>dialog,esc:String,displayedShiftSpeed:x=>x/10};
+ const context={project:null,state:{mods:[{id:'sample',manifest:{materials:{'car.0.material.0':'lit blend 0.35 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9'}}}]},carParts:[{bank:10,part:0,rival:false,name:'Example'}],$:()=>dialog,esc:String,displayedShiftSpeed:x=>x/10};
  vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function materialDialog(')),context);return {context,dialog};
 }
 test('material hierarchy preserves every control and its storage index',()=>{

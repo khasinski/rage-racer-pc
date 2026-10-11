@@ -65,7 +65,7 @@ handle('import-car',async key=>{const file=await open({title:'Import a replaceme
 handle('export-car',async key=>{const dir=await open({title:'Export car model to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCar(key,dir);return null;});
 handle('export-asset',async index=>{const file=await output({title:'Export raw asset',defaultPath:`asset_${String(index).padStart(3,'0')}.bin`});if(file)await service.exportAsset(index,file);return !!file;});
 handle('replace-asset',async index=>{const file=await open({title:'Choose a replacement raw asset',filters:[{name:'Raw asset',extensions:['bin']}],properties:['openFile']});if(file)return service.replaceAsset(index,file);return null;});
-handle('save-material',(id,key,properties)=>service.saveMaterial(id,key,properties));
+handle('save-material',(id,key,properties,revision)=>service.saveMaterial(id,key,properties,revision));
 handle('import-mod',async()=>{const dir=await open({title:'Import a mod folder',properties:['openDirectory']});if(dir)await service.importMod(dir);});
 handle('toggle-mod',(id,enabled)=>service.toggleMod(id,enabled));
 handle('resolve-conflict',(key,winner)=>service.resolveConflict(key,winner));

@@ -1,7 +1,9 @@
 const path=require('node:path');
 const fs=require('node:fs/promises');
 module.exports=async function(service,key,metadata,mod,signal){
- const properties=mod?.manifest.materials||{},textures=mod?.manifest.textures||{};
+ const changes=mod&&!mod.project?[]:(service.editor?.project.snapshot().changes||[]);
+ const projectProperties=Object.fromEntries(changes.filter(c=>c.kind==='car'&&c.field==='material').map(c=>[c.id,c.value]));
+ const properties={...mod?.manifest.materials,...projectProperties},textures=mod?.manifest.textures||{};
  const projectTextures=mod&&!mod.project?{}:Object.fromEntries((service.editor?.project.snapshot().changes||[]).filter(c=>c.kind==='car'&&c.field==='texture').map(c=>[c.id,c.value]));
  if(!Object.keys(properties).length&&!Object.keys(textures).length&&!Object.keys(projectTextures).length)return {};
  const [,kind,bankText]=/^car\.(player|rival)\.(\d+)\.part\.\d+$/.exec(key),bank=Number(bankText);

@@ -22,7 +22,7 @@ test('saved selection is discoverable by the game and failed replacement preserv
   assert.ok(decoded.meshes['car.player.10.part.0']);
   await run(service.tool('rage-mod-cli'),['--mesh',path.join(target,decoded.meshes['car.player.10.part.0'])]);
   assert.equal(await fs.readFile(path.join(source,'mod.toml'),'utf8'),original);
-  await service.saveMaterial(mod.id,'car.0.material.0','lit opaque 0.5 0 1 1 1 1 0 0 0');
+  await service.saveMaterial(mod.id,'car.0.material.0','lit opaque 0.5 0 1 1 1 1 0 0 0',(await service.project()).revision);
   fs.rename=async(from,to)=>{if(to===pointer)throw Object.assign(Error('Disk full'),{code:'ENOSPC'});return rename(from,to);};
   await assert.rejects(service.publishMods(),/Disk full/);
   assert.deepEqual(await fs.readFile(path.join(target,'mod.toml')),before);

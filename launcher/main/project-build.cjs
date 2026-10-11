@@ -35,9 +35,12 @@ async function apply(service){
     if((await fs.stat(base)).size>1024*1024)throw Error('Base car profile exceeds size limit');
     await fs.copyFile(base,frozenBase);
     const {cars}=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-profile',frozenBase]));
-    const groups=new Map(),models={},textures={};
+    const groups=new Map(),models={},textures={},materials={};
     for(const c of snapshot.changes){
       if(c.kind!=='car')throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
+      if(c.field==='material'){
+        materials[c.id]=c.value;continue; // Native profile writer validates both ID and values.
+      }
       if(c.field==='mesh'||c.field==='texture'){
         const mesh=c.field==='mesh';
         if(mesh?!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(c.id):! /^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.model-bank-1)\.material\.\d+$/.test(c.id))throw Error('Invalid car asset slot');
@@ -67,11 +70,11 @@ async function apply(service){
     if(!sameSource(snapshot.source,await source(service.state.disc)))throw Error('Source archive changed during the build');
     const profileHash=sha(await fs.readFile(profile)),manifest=path.join(staging,'mod.toml');
     if(!composed)await fs.writeFile(manifest,'[mod]\nid = "editor-project"\n');
-    if(Object.keys(models).length||Object.keys(textures).length){
+    if(Object.keys(models).length||Object.keys(textures).length||Object.keys(materials).length){
       const previous=JSON.parse(await run(service.tool('rage-mod-cli'),[manifest]));
       await fs.rm(manifest);
       await run(service.tool('rage-mod-cli'),['--write-profile-stdin',manifest],{
-        input:Buffer.from(JSON.stringify({textures:{...previous.textures,...textures},materials:previous.materials||{},meshes:{...previous.meshes,...models}}))});
+        input:Buffer.from(JSON.stringify({textures:{...previous.textures,...textures},materials:{...previous.materials,...materials},meshes:{...previous.meshes,...models}}))});
     }
     await run(service.tool('rage-mod-cli'),[manifest]);
     const manifestHash=sha(await fs.readFile(manifest));

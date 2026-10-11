@@ -293,3 +293,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   (114 testów), native save_format pass. Oba testy car-view: pass.
 - Nadal brak wizualnego odbioru zmodyfikowanego auta w grze i pełnego zakresu
   torów/media/GLB z planu. Właściwości materiałów wymagają edycji w projekcie.
+
+### Właściwości materiałów w projekcie
+
+- Zapis materiału dla źródła z archiwum waliduje ID i komplet wartości przez
+  natywny parser, a następnie zapisuje zmianę z kontrolą rewizji do wspólnej
+  historii. Paczka biblioteki pozostaje niezmieniona. Starszy profil bez archive
+  zachowuje dotychczasową ścieżkę zapisu paczki.
+- Builder scala właściwości projektu z materiałami wybranych paczek; podgląd
+  korzysta z tych samych wartości. Formularz czyta wartości projektu i opisuje
+  zapis do projektu oraz oddzielne zastosowanie w grze.
+- Test integracyjny obejmuje stale revision, niedozwoloną wartość, undo/redo,
+  natywny manifest zastosowanego buildu i niezmienioną paczkę. Test publikacji
+  przekazuje teraz wymaganą rewizję, zachowując kontrolę atomowego rollbacku.
+  Suite: 113 pass / 3 skip (116 testów), native save_format pass.
+- Formularz nadal otwierany jest z biblioteki materiałów; wybór nazwanej części
+  w głównym warsztacie powinien prowadzić do tych samych ustawień. Eksport OBJ
+  nie zachowuje pełnej semantyki materiałów, a pozostały zakres planu trwa.

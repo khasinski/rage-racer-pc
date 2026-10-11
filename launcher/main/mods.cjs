@@ -47,7 +47,7 @@ function installMethods(Service){
    finally{await fs.rm(source,{recursive:true,force:true});}
   });
  };
- Service.prototype.saveMaterial=async function(id,key,properties){
+ Service.prototype.saveMaterial=async function(id,key,properties,revision){
   this.requireReady();if(this.game)throw Error('Close the game before editing mods');
   const mod=this.state.mods.find(m=>m.id===id);if(!mod)throw Error('Unknown mod');
   if(typeof key!=='string'||!/^[a-z0-9.-]+$/.test(key)||key.length>150||typeof properties!=='string'||properties.length>255||/["\\\r\n]/.test(properties))throw Error('Invalid material');
@@ -55,6 +55,15 @@ function installMethods(Service){
   const {run}=require('./service.cjs');
   const temp=path.join(this.root,'material-'+randomUUID()+'.toml');
   try{
+   await this.loadProject();
+   if(this.editor){
+    const project=this.editor.project;
+    project.checkRevision(revision);
+    await run(this.tool('rage-mod-cli'),['--set-material','',temp,key,properties],{signal});
+    const checked=JSON.parse(await run(this.tool('rage-mod-cli'),[temp],{signal}));
+    if(signal.aborted)throw Error('Operation canceled');
+    return project.edit([{kind:'car',id:key,field:'material',value:checked.materials[key]}],revision);
+   }
    const source=mod.files.includes('mod.toml')?path.join(this.root,'mods',id,'mod.toml'):'';
    await run(this.tool('rage-mod-cli'),['--set-material',source,temp,key,properties],{signal});
    const manifest=JSON.parse(await run(this.tool('rage-mod-cli'),[temp],{signal,maxOutput:8*1024*1024}));

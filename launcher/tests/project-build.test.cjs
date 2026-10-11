@@ -3,6 +3,24 @@ const fs=require('node:fs/promises'),os=require('node:os'),path=require('node:pa
 const {LauncherService,run}=require('../main/service.cjs');
 const {activeProfile}=require('../main/project-build.cjs');
 const repo=path.resolve(__dirname,'../..');
+test('material edits use project history and native validation without changing the library package',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-material-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini');await fs.writeFile(archive,'material source');await fs.writeFile(config,'[video]\nrenderer = modern\n');
+ const s=new LauncherService({root,bin:path.resolve(__dirname,'../resources/bin'),config,modsRoot:path.join(root,'game-mods')});await s.init();s.requireReady=()=>{};s.state.disc={archive,region:'PAL',path:archive,data:root};
+ const original={id:'library',enabled:false,files:[],manifest:{materials:{'car.0.material.0':'lit opaque 0.35 0 1 1 1 1 0 0 0'}}};s.state.mods=[original];
+ const before=JSON.stringify(original),key='car.0.material.0',properties='lit opaque 0.7 0.2 0.8 0.6 0.4 1 0 0 0';
+ let p=await s.project();p=await s.saveMaterial('library',key,properties,p.revision);
+ assert.equal(JSON.stringify(original),before);assert.equal(p.changes[0].field,'material');
+ await assert.rejects(s.saveMaterial('library',key,properties,p.revision-1),/Project changed/);
+ await assert.rejects(s.saveMaterial('library',key,'lit opaque 9 0 1 1 1 1 0 0 0',p.revision));
+ assert.equal((await s.project()).revision,p.revision);
+ p=await s.projectHistory('undo',p.revision);assert.equal(p.changes.length,0);
+ p=await s.projectHistory('redo',p.revision);assert.equal(p.changes.length,1);
+ await s.applyProject(p.revision);
+ const pointer=JSON.parse(await fs.readFile(path.join(s.modsRoot,'active.json')));
+ const manifest=JSON.parse(await run(s.tool('rage-mod-cli'),[path.join(s.modsRoot,'builds',pointer.build,'mod.toml')]));
+ assert.equal(manifest.materials[key],p.changes[0].value);assert.equal(JSON.stringify(original),before);
+});
 test('imported project model participates in history and is frozen in the applied build',async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-model-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
  const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini'),input=path.join(root,'model.obj');
