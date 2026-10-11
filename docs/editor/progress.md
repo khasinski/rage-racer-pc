@@ -730,3 +730,16 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - To przesunięcie stosowane po puszczeniu przycisku, jeszcze bez live gizmo,
   uchwytów wysokości/obrotu i snapping. Test gestu używa synthetic geometry,
   nie dowodzi jeszcze kompletnego PAL scene → ruch → wyścig.
+
+### Rzeczywisty PAL: przeciągnięcie obiektu
+
+- Headless actual app.js + LauncherService + compiled decoder: otwarto
+  Mythical Coast class 1, znaleziono widoczny course object przez ten sam
+  picking, wybrano Top i wykonano Shift-drag myszką. Odczyt effective source
+  potwierdził zmianę X/Z przy identycznym Y/yaw/model/flags; undo przywróciło
+  pełny original object. Temp project, PAL dane read-only, zero pageerrors.
+- Sprawdzenie ujawniło zbyt wczesny komunikat sukcesu: pojawiał się podczas
+  kolejnego odczytu native preview. Teraz callback czeka na wynik tego odczytu
+  przed komunikatem, zamiast zachęcać do operacji przy zajętym backendzie.
+- Powtórzono test po poprawce. Nadal nie jest to weryfikacja Electron IPC ani
+  wizualnego efektu w rendererze gry; browser bridge wywołuje prawdziwy service.
