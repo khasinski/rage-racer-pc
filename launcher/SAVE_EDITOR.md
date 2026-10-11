@@ -1,6 +1,6 @@
 # Integrated save editor
 
-The save editor lives in Rage Mod Manager (`launcher/`). There is one desktop
+The save editor lives in Rage Racer Editor (`launcher/`). There is one desktop
 application, one root CMake build and one C save-format library. The former
 standalone SDL/ImGui editor has been retired.
 

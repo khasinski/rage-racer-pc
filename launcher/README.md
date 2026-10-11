@@ -1,4 +1,4 @@
-# Rage Mod Manager
+# Rage Racer Editor
 
 Electron desktop application in English for Windows, macOS and Linux. The web
 renderer has no Node access; a sandboxed preload exposes specific operations to
@@ -156,7 +156,7 @@ export/import/preview, MT-only/AT readback, and a packaged UI check covering slo
 selection, rival filters and combined parameter edits. Linux x64 also passed a
 fresh CUE import with all 135 entries. Both packaged UIs ran as a non-root user
 under Xvfb with Electron sandboxing enabled in containers permitting Chromium
-namespaces. The x64 package is available in `out/Rage Mod Manager-linux-x64/`;
+namespaces. The x64 package is available in `out/Rage Racer Editor-linux-x64/`;
 its tests used Debian 12 under x86-64 emulation. These checks do not establish
 Windows compatibility, support for older Linux distributions, or complete Linux
 gameplay/rendering coverage.

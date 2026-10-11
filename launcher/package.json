@@ -1,9 +1,9 @@
 {
   "name": "rage-racer-launcher",
-  "productName": "Rage Mod Manager",
+  "productName": "Rage Racer Editor",
   "version": "0.1.0",
   "private": true,
-  "description": "Desktop launcher, save editor and mod workshop for Rage Racer PC",
+  "description": "Unified game manager and asset editor for Rage Racer PC",
   "main": "main/index.cjs",
   "scripts": {
     "start": "node scripts/start.cjs",

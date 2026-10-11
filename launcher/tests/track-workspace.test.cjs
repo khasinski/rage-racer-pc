@@ -62,7 +62,7 @@ test('native track bank actions use selected course/class, revision and explicit
   assert.ok(html.includes(`data-export-track-mesh="track.oval6.${name}"`));
   assert.match(html,new RegExp(`data-import-track-mesh="track.oval6.${name}" data-revision="12"`));
  }
- assert.match(html,/Advanced · Native model banks/);assert.match(html,/modern renderer/);assert.match(html,/OBJ\/GLB editing is not connected yet/);
+ assert.match(html,/Advanced · Native model banks/);assert.match(html,/modern renderer/);assert.match(html,/GLB editing is not connected yet/);
 });
 test('placed object OBJ actions address shared source model and remain separate from native banks',async()=>{
  const {trackWorkspace}=await import('../renderer/tracks.mjs');

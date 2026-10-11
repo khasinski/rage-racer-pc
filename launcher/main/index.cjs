@@ -84,7 +84,7 @@ handle('remove-mod',async id=>{const answer=await dialog.showMessageBox(window,{
 handle('export-mod',async id=>{const dir=await open({title:'Choose export destination',properties:['openDirectory','createDirectory']});if(dir)return service.exportMod(id,dir);});
 }
 async function createWindow(){
-  window=new BrowserWindow({width:1280,height:900,minWidth:960,minHeight:680,backgroundColor:'#101319',title:'Rage Mod Manager',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false}});
+  window=new BrowserWindow({width:1280,height:900,minWidth:960,minHeight:680,backgroundColor:'#101319',title:'Rage Racer Editor',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false}});
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   window.webContents.on('will-navigate',event=>event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_w,_p,callback)=>callback(false));
@@ -103,7 +103,7 @@ async function createWindow(){
 app.whenReady().then(async()=>{
   service=new LauncherService({root:app.getPath('userData'),bin:path.join(resources,'bin'),config:path.join(resources,'rage-port.ini'),onChange:state=>{if(window&&!window.isDestroyed())window.webContents.send('launcher:state',state);}});
   await service.init();setupIPC();
-  Menu.setApplicationMenu(Menu.buildFromTemplate([{label:'Rage Mod Manager',submenu:[{role:'about'},{type:'separator'},{role:'quit'}]},{label:'Edit',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},{label:'View',submenu:[{role:'resetZoom'},{role:'zoomIn'},{role:'zoomOut'},{role:'togglefullscreen'}]}]));
+  Menu.setApplicationMenu(Menu.buildFromTemplate([{label:'Rage Racer Editor',submenu:[{role:'about'},{type:'separator'},{role:'quit'}]},{label:'Edit',submenu:[{role:'undo'},{role:'redo'},{type:'separator'},{role:'cut'},{role:'copy'},{role:'paste'},{role:'selectAll'}]},{label:'View',submenu:[{role:'resetZoom'},{role:'zoomIn'},{role:'zoomOut'},{role:'togglefullscreen'}]}]));
   await createWindow();app.on('activate',()=>{if(BrowserWindow.getAllWindows().length===0)createWindow();});
 }).catch(e=>{dialog.showErrorBox('Launcher could not start',e.message);app.quit();});
 app.on('window-all-closed',()=>{if(process.platform!=='darwin')app.quit();});

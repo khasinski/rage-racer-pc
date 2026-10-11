@@ -5,15 +5,15 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {spawn,execFileSync}=require('node:child_process');
 (async()=>{
  const platform=process.platform,root=path.resolve(__dirname,'..');
- const directory=path.join(root,'out',`Rage Mod Manager-${platform}-${process.arch}`);
- const executable=platform==='darwin'?path.join(directory,'Rage Mod Manager.app','Contents','MacOS','rage-launcher'):path.join(directory,'rage-launcher'+(platform==='win32'?'.exe':''));
+ const directory=path.join(root,'out',`Rage Racer Editor-${platform}-${process.arch}`);
+ const executable=platform==='darwin'?path.join(directory,'Rage Racer Editor.app','Contents','MacOS','rage-launcher'):path.join(directory,'rage-launcher'+(platform==='win32'?'.exe':''));
  const profile=await fs.mkdtemp(path.join(os.tmpdir(),'rage-packaged-probe-'));
  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
  const disc=process.env.RAGE_LAUNCHER_PROBE_CUE;let preparedRegion;
  let child,ws,timer;const pending=new Map();let next=0,diagnostics='';
  try{
   if(disc){
-   const resources=platform==='darwin'?path.join(directory,'Rage Mod Manager.app','Contents','Resources','resources'):path.join(directory,'resources','resources');
+   const resources=platform==='darwin'?path.join(directory,'Rage Racer Editor.app','Contents','Resources','resources'):path.join(directory,'resources','resources');
    const {LauncherService}=require('../main/service.cjs');
    const service=new LauncherService({root:profile,bin:path.join(resources,'bin'),config:path.join(resources,'rage-port.ini')});
    await service.init();await service.prepare(path.resolve(disc));

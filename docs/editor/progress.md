@@ -690,3 +690,15 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   komórki pozostał identyczny. Prywatny temp modsRoot, źródło read-only.
 - Focused track-edits: 4 pass. To dowodzi buildu i odczytu natywnego packa;
   screenshot działającego wyścigu oraz Electron IPC pozostają do sprawdzenia.
+
+### Pakiet rzeczywistego edytora
+
+- Nazwa desktop window, menu aplikacji, pakietu i package probe to Rage Racer
+  Editor, zgodnie z istniejącym UI. Zachowano userData i bundle ID, aby nie
+  zgubić istniejących profili. Historyczne IMPLEMENTATION wpisy nietknięte.
+- Zbudowano aktualny lokalny macOS arm64 pakiet wraz z compiled tools:
+  `launcher/out/Rage Racer Editor-darwin-arm64/Rage Racer Editor.app`.
+  Nie opublikowano ani nie uruchamiano okna zabierającego fokus.
+- Skorygowano opis banków: OBJ + PNG działa dla poszczególnych modeli;
+  brakującym formatem pozostaje GLB. Track workspace tests: 8 pass.
+- Sam sukces pakowania nie dowodzi poprawności działania packaged IPC.
