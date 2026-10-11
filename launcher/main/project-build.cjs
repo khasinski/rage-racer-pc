@@ -35,9 +35,19 @@ async function apply(service){
     if((await fs.stat(base)).size>1024*1024)throw Error('Base car profile exceeds size limit');
     await fs.copyFile(base,frozenBase);
     const {cars}=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-profile',frozenBase]));
-    const groups=new Map();
+    const groups=new Map(),models={};
     for(const c of snapshot.changes){
       if(c.kind!=='car')throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
+      if(c.field==='mesh'){
+        if(!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(c.id))throw Error('Invalid car model slot');
+        const bytes=await new (require('./project-files.cjs').ProjectFiles)(editor.file).read(c.value);
+        const relative='meshes/project/'+c.value.slice(7);
+        await fs.mkdir(path.dirname(path.join(staging,relative)),{recursive:true});
+        await fs.writeFile(path.join(staging,relative),bytes);
+        await run(service.tool('rage-mod-cli'),['--mesh',path.join(staging,relative)]);
+        models[c.id]=relative;if(!files.includes(relative))files.push(relative);
+        continue;
+      }
       const car=cars.find(car=>car.id===c.id);
       if(!car||['id','model','grade','variant','fields'].includes(c.field)||!/^[a-z_]+$/.test(c.field))throw Error('Unknown editable car field: '+c.id+' / '+c.field);
       if(!groups.has(c.id))groups.set(c.id,{car,fields:[]});
@@ -55,6 +65,12 @@ async function apply(service){
     if(!sameSource(snapshot.source,await source(service.state.disc)))throw Error('Source archive changed during the build');
     const profileHash=sha(await fs.readFile(profile)),manifest=path.join(staging,'mod.toml');
     if(!composed)await fs.writeFile(manifest,'[mod]\nid = "editor-project"\n');
+    if(Object.keys(models).length){
+      const previous=JSON.parse(await run(service.tool('rage-mod-cli'),[manifest]));
+      await fs.rm(manifest);
+      await run(service.tool('rage-mod-cli'),['--write-profile-stdin',manifest],{
+        input:Buffer.from(JSON.stringify({textures:previous.textures||{},materials:previous.materials||{},meshes:{...previous.meshes,...models}}))});
+    }
     await run(service.tool('rage-mod-cli'),[manifest]);
     const manifestHash=sha(await fs.readFile(manifest));
     const payload=JSON.parse(await run(service.tool('rage-mod-cli'),['--hash-files-stdin',staging],{

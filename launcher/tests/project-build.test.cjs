@@ -3,6 +3,30 @@ const fs=require('node:fs/promises'),os=require('node:os'),path=require('node:pa
 const {LauncherService,run}=require('../main/service.cjs');
 const {activeProfile}=require('../main/project-build.cjs');
 const repo=path.resolve(__dirname,'../..');
+test('imported project model participates in history and is frozen in the applied build',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-model-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini'),input=path.join(root,'model.obj');
+ await fs.writeFile(archive,'model source');await fs.writeFile(config,'[video]\nrenderer = modern\n');
+ await fs.writeFile(input,'v 0 0 0\nv 1 0 0\nv 0 1 0\n vt 0 0\nvn 0 0 1\nusemtl rage_65535\nf 1/1/1 2/1/1 3/1/1\n');
+ const s=new LauncherService({root:path.join(root,'editor'),bin:path.resolve(__dirname,'../resources/bin'),config,modsRoot:path.join(root,'mods')});
+ await s.init();s.requireReady=()=>{};s.state.disc={archive,region:'PAL',path:archive,data:root};
+ const key='car.player.10.part.0';
+ s.carTool=async args=>JSON.stringify(args.some(a=>a.startsWith('tools.car_export='))?{materials:[]}:{parts:[{key,name:'Esperanza',part:0}]});
+ let p=await s.importCar(key,input);assert.equal(s.state.mods.length,0);assert.equal(p.changes[0].id,key);
+ const reference=p.changes[0].value;
+ p=await s.projectHistory('undo',p.revision);assert.equal(p.changes.length,0);
+ p=await s.projectHistory('redo',p.revision);assert.equal(p.changes[0].value,reference);
+ p=await s.applyProject(p.revision);
+ const pointer=await fs.readFile(path.join(s.modsRoot,'active.json'),'utf8'),active=JSON.parse(pointer);
+ const directory=path.join(s.modsRoot,'builds',active.build);
+ const manifest=JSON.parse(await run(s.tool('rage-mod-cli'),[path.join(directory,'mod.toml')]));
+ assert.equal(manifest.meshes[key],'meshes/project/'+reference.slice(7));
+ const stored=path.join(path.dirname(s.editor.file),'files',reference.slice(7));
+ await fs.chmod(stored,0o644);await fs.writeFile(stored,'damaged');
+ await assert.rejects(s.applyProject(p.revision),/damaged/);
+ assert.equal(await fs.readFile(path.join(s.modsRoot,'active.json'),'utf8'),pointer);
+ assert.ok(await activeProfile(s));
+});
 test('apply compiles car deltas, atomically activates for launch, and retains the old build on failure',async()=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-project-build-'));
   const rename=fs.rename,writeFile=fs.writeFile;

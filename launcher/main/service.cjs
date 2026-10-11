@@ -231,6 +231,12 @@ class LauncherService {
         else if(extension==='.rmesh')await fs.copyFile(file,mesh);
         else throw Error('Choose an OBJ or RRMESH file');
         await require('./car-material-bindings.cjs')(this,key,mesh,staging,path.basename(file),signal);
+        await this.loadProject();
+        if(this.editor){
+          const project=this.editor.project,revision=project.revision;
+          const reference=await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).put(mesh);
+          return project.edit([{kind:'car',id:key,field:'mesh',value:reference}],revision);
+        }
         await fs.writeFile(path.join(staging,'mod.toml'),`[mod]\nid = "car-replacement"\n[meshes]\n"${key}" = "meshes/model.rmesh"\n`);
         const names=JSON.parse(await run(this.tool('rage-save-cli'),['car-names'],{signal}));
         const display=require('./car-names.cjs')(part.name,this.state.disc.region,names);
@@ -252,6 +258,10 @@ class LauncherService {
           const mod=this.state.mods.find(m=>m.id===modId),relative=mod?.manifest.meshes?.[key];
           if(!relative||!mod.files.includes(relative)||!/^meshes\/[A-Za-z0-9_./-]+\.rmesh$/.test(relative)||relative.split('/').includes('..'))throw Error('Unknown mod model');
           file=path.join(this.root,'mods',mod.id,relative);
+        }else{
+          await this.loadProject();
+          const change=this.editor?.project.snapshot().changes.find(c=>c.kind==='car'&&c.id===key&&c.field==='mesh');
+          if(change)await fs.writeFile(file,await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).read(change.value));
         }
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',file],{signal,maxOutput:16*1024*1024}));
         geometry.textures=await require('./preview-textures.cjs')(this,key,geometry,metadata,staging,signal);

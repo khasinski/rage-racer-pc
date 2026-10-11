@@ -225,3 +225,20 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - To jeszcze fundament, nie gotowa ścieżka użytkownika: import, efektywny
   podgląd i builder wymagają podłączenia magazynu. Walidacja RMESH pozostaje
   w istniejącym kompilowanym kodeku przed umieszczeniem pliku w magazynie.
+
+### Podłączenie pojedynczego modelu do projektu
+
+- Import OBJ/RMESH po natywnej walidacji slotu i materiałów zapisuje referencję
+  modelu w historii projektu. Nie tworzy wpisu modów dla źródła z archiwum.
+  Starsze profile bez archiwum zachowują dotychczasowy import paczki.
+- Domyślny podgląd części i złożonego auta odczytuje zmianę modelu projektu;
+  jawny podgląd paczki zachowuje swoje znaczenie.
+- Apply zamraża zweryfikowane bajty w nowym buildzie i scala tabelę modeli
+  z teksturami/materialami wybranych paczek. Model projektu ma pierwszeństwo
+  dla swojego slotu. Pliki objęte są dotychczasowym manifestem hashy buildu.
+- Test integracyjny przechodzi import, undo/redo i apply przez natywne kodeki;
+  uszkodzenie obiektu blokuje kolejny apply bez zmiany aktywnego buildu.
+  Pełny suite: 110 pass / 3 skip (113 testów), native save_format pass.
+- Pozostają m.in. import całego zestawu do wspólnej historii, wersjonowanie
+  tekstur, efektywny eksport oraz wspólne rozwiązywanie wyglądu paczek i zmian
+  projektu w podglądzie. Nie zweryfikowano jeszcze wizualnie nowego modelu w grze.
