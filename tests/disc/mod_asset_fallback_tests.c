@@ -141,7 +141,9 @@ int main(int argc, char **argv) {
         EXPECT(ModAssetsDirectory() && !strcmp(ModAssetsDirectory(),build));
         EXPECT(ModAssetsCarProfile() && !strcmp(ModAssetsCarProfile(),profile));
         EXPECT(ModAssetsManifest() && !strcmp(ModAssetsManifest()->id,"active-project"));
-        s_room=sizeof(destination);EXPECT(ModAssetLoad(0,destination,2)==0); /* old root/raw is not mixed in */
+        s_room=sizeof(destination);EXPECT(ModAssetLoad(1,destination,2)==sizeof(valid));
+        EXPECT(memcmp(destination,valid,sizeof(valid))==0);
+        EXPECT(ModAssetLoad(0,destination,2)==0); /* old root/raw is not mixed in */
         ModAssetsShutdown();EXPECT(ModAssetsCarProfile()!=NULL); /* reload retains mounted source */
         ModAssetsShutdown();
         EXPECT(WriteFixtureFile(buildAsset,oversized,sizeof(oversized)));

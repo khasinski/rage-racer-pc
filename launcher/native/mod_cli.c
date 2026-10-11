@@ -201,7 +201,7 @@ replaceDone:
             if(!PlacementsOpen(blocks[8].data,blocks[8].size,models,&placements)){
                 free(bytes);fprintf(stderr,"Invalid object placements\n");return 1;
             }
-            printf(",\"objects\":[");
+            printf(",\"courseModels\":%u,\"objects\":[",models);
             for(i=0;i<placements.count;i++){
                 Placement p;PlacementRead(&placements,(uint32_t)i,&p);
                 printf("%s{\"model\":%d,\"yaw\":%d,\"x\":%d,\"y\":%d,\"z\":%d,\"flags\":%u}",i?",":"",p.model,p.yaw,p.x,p.y,p.z,p.flags);

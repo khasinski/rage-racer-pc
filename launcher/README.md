@@ -252,3 +252,13 @@ Undo restores the complete edit. A clipping warning means the requested volume
 saturates samples; lower saved volume to avoid distortion. **Discard unsaved
 edits** restores the form. Importing a new WAV resets trim and saved volume.
 Custom loop points and the other cues still need implementation.
+
+## Adding and removing scenery
+
+In **Tracks → Placed objects**, choose a course model, use **Preview chosen
+model**, then **Add at road point**. The selected road point supplies the initial
+position. **Duplicate** keeps the selected object's model, position, rotation
+and flags; move the copy with Shift-drag in 3D or the position fields.
+**Remove** hides that instance and preserves all other object IDs. Project
+Undo/Redo includes each operation. **Save & apply project** activates the changed
+track for the next game session. Model geometry remains shared by its instances.

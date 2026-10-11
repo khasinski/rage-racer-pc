@@ -1,7 +1,20 @@
 #ifndef TRACK_EDIT_CLI_H
 #define TRACK_EDIT_CLI_H
 /* Edits are [object index, field, integer]. Private output is created only
- * after every edit validates; original offsets and all other bytes survive. */
+ * after every edit validates. Appending shifts subsequent block offsets;
+ * field edits preserve all other bytes, including block tails. */
+static void TrackStore32(unsigned char *p,uint32_t n){for(unsigned i=0;i<4;i++)p[i]=(unsigned char)(n>>(i*8));}
+static int TrackAppend(void **bytes,size_t *size,TrackBlock *blocks,uint32_t models,Placements *placements){
+ if(placements->count>=10000||*size>128u*1024u*1024u-20)return 0;
+ size_t at=(size_t)(blocks[8].data-(unsigned char *)*bytes)+4+(size_t)placements->count*20;
+ unsigned char *next=SDL_malloc(*size+20);if(!next)return 0;
+ memcpy(next,*bytes,at);memset(next+at,0,20);next[at]=255;next[at+1]=255;
+ memcpy(next+at+20,(unsigned char *)*bytes+at,*size-at);
+ TrackStore32(next+(blocks[8].data-(unsigned char *)*bytes),placements->count+1);
+ for(unsigned i=9;i<TRACK_PACK_BLOCK_COUNT;i++)TrackStore32(next+i*4,SpecU32(next+i*4)+20);
+ SDL_free(*bytes);*bytes=next;*size+=20;
+ return TrackPackOpen(*bytes,*size,blocks)&&PlacementsOpen(blocks[8].data,blocks[8].size,models,placements);
+}
 static int TrackEditCommand(const char *source,const char *output) {
     enum { LIMIT=1024*1024 };
     char *input=malloc(LIMIT+1u);void *bytes=NULL;yyjson_doc *doc=NULL;
@@ -68,6 +81,7 @@ static int TrackEditCommand(const char *source,const char *output) {
             if(!RoadWrite((unsigned char *)bytes+(blocks[4].data-(unsigned char *)bytes),blocks[4].size,at,&point))goto done;
             continue;
         }
+        if(at==placements.count&&!TrackAppend(&bytes,&size,blocks,models,&placements))goto done;
         Placement p;if(!PlacementRead(&placements,at,&p))goto done;
         if(!strcmp(name,"x"))p.x=(int32_t)value;
         else if(!strcmp(name,"y"))p.y=(int32_t)value;

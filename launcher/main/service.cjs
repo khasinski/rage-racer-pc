@@ -222,6 +222,17 @@ class LauncherService {
       }finally{if(directory)await fs.rm(directory,{recursive:true,force:true});}
     });
   }
+  async addTrackObject(bank,model,point,revision){
+    const scene=await this.trackScene(bank);if(scene.revision!==revision)throw Error('Project changed; reload before adding scenery');
+    if(!Number.isInteger(model)||model<0||model>=scene.courseModels||!Number.isInteger(point)||!scene.road.points[point])throw Error('Choose a course model and road point');
+    const p=scene.road.points[point];return this.saveTrackObject(bank,scene.objects.length,{model,x:p.x,y:p.y,z:p.z,yaw:0,flags:0},revision);
+  }
+  async duplicateTrackObject(bank,index,revision){
+    const scene=await this.trackScene(bank);if(scene.revision!==revision)throw Error('Project changed; reload before duplicating scenery');
+    if(!Number.isInteger(index)||!scene.objects[index]||scene.objects[index].model<0)throw Error('Choose a visible scenery object');
+    return this.saveTrackObject(bank,scene.objects.length,{...scene.objects[index]},revision);
+  }
+  async removeTrackObject(bank,index,revision){const scene=await this.trackScene(bank);if(scene.revision!==revision)throw Error('Project changed; reload before removing scenery');if(!Number.isInteger(index)||!scene.objects[index])throw Error('Choose a scenery object');return this.saveTrackObject(bank,index,{model:-1},revision);}
   async saveTrackObject(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'object');}
   async saveRoadPoint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'road');}
   async saveRoadArc(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'arc');}

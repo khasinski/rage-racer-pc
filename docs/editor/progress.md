@@ -927,3 +927,38 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   opt-in audio-game test PASS. Test sprawdza player load przy boot, nie
   deklaruje odsłuchu pełnych menu transitions. Native CLI rebuilt/staged.
 - Custom loop points, pozostałe cues i CD music nadal pozostają do wykonania.
+
+### Tory: dodawanie, duplikowanie i usuwanie dekoracji
+
+- Real Tracks workspace ma wybór course model + native model preview, Add at
+  selected road point, Duplicate i Remove. Wszystkie działania używają wspólnego
+  projektu, revision checks, compiled validation i Undo/Redo. Niezapisany
+  object form nie jest tracony przez duplicate/remove/add.
+- Native editor dopisuje 20-byte placement record, zwiększa count oraz offsety
+  późniejszych bloków. Nie reserializuje road/camera/event/model payloads ani
+  nie gubi nieznanych końcowych bajtów. Edits sortowane po numeric object ID
+  przed append zapobiegają błędom po przekroczeniu index 9.
+- Remove ustawia istniejący disabled model -1, wspierany już przez oba
+  renderery. Nie przesuwa IDs pozostałych instancji. Duplicate zachowuje pełny
+  transform/flags; Add bierze pozycję wybranego road point. Nowe instancje
+  używają istniejących course models; dodawanie nowych modeli to osobny etap.
+- Ujawniono i poprawiono runtime gate: poprawny manifest/active snapshot może
+  dostarczać raw bank bez raw/asset_000.bin. Legacy packs bez manifestu zachowują
+  marker detection; legacy texture patch path nadal wymaga starego layoutu.
+- Native runtime regressions: 9/9 PASS, w tym verified active raw payload bez
+  asset_000. Track service tests 5/5 PASS: twelve new rows, source/non-placement
+  blocks/trailing bytes preserved, invalid/stale actions rejected, build/history.
+- Actual PAL app.js + native service, headless: 5 → 7 slots po duplicate,
+  removal i add; native game InstallTrackRuntimeAssetPack + 3D importer
+  uwzględnia nową instancję, pomija wyłączoną; publish PASS, zero pageerrors.
+- Opt-in scenery-game.test.cjs: normal race loaded larger bank 88 and reached
+  scene 12 timer 20 w classic i modern bez marker file; PASS. Wymaga tych samych
+  RR_EDITOR_GAME_SOURCE/DISC/RELEASE co audio game gate, używa isolated portable
+  state i normal direct race initialization. Nie jest to ocena wyglądu nowych
+  obiektów w całym okrążeniu ani visibility bounds T13.
+- Full npm test: save_format PASS; 156 JS tests, 150 PASS, 6 optional skips.
+  Native CLI i normal game zostały przebudowane i staged. T04 nadal wymaga
+  szerokiej weryfikacji ray queries/visibility/performance i manual authoring.
+- Chosen-model dropdown + actual native preview modal open/close sprawdzono
+  w tym samym headless PAL UI przebiegu. Dodatkowy workspace test obejmuje
+  empty object list oraz add/duplicate/remove IDs i model choices.

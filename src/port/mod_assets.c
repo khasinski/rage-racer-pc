@@ -157,9 +157,8 @@ static void ModAssetsInit(void) {
         s_carProfile[0]='\0';
         return;
     }
-    /* Say plainly when the directory is not the shape rage-extract writes,
-     * rather than silently playing the disc and leaving a modder to wonder
-     * why nothing changed. */
+    /* Legacy texture patches need an extracted atlas layout. A validated
+     * manifest independently enables raw providers in ModOpen below. */
     written = snprintf(probe, sizeof(probe), "%s/raw/asset_000.bin",
                        s_directory);
     if (written < 0 || (size_t)written >= sizeof(probe)) {
@@ -170,7 +169,7 @@ static void ModAssetsInit(void) {
     test = fopen(probe, "rb");
     if (test == NULL) {
         fprintf(stderr,
-                "rage-port: mods.directory %s has no raw/asset_000.bin; legacy archive overrides are disabled\n",
+                "rage-port: mods.directory %s has no raw/asset_000.bin; legacy texture patches are disabled\n",
                 s_directory);
         return;
     }
@@ -197,7 +196,7 @@ static FILE *ModOpen(int index, long *size) {
     FILE *file;
     int written;
 
-    if (s_directory == NULL || !s_legacyLayout ||
+    if (s_directory == NULL || (!s_legacyLayout && !s_manifestReady) ||
         (unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT || size == NULL) {
         return NULL;
     }

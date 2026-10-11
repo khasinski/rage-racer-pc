@@ -70,6 +70,9 @@ handle('export-track-part',async(id,part)=>{const dir=await open({title:'Export 
 handle('import-track-mesh',async(id,revision)=>{const file=await open({title:'Import native track model bank',filters:[{name:'Native model bank',extensions:['rmesh']}],properties:['openFile']});return file?service.importTrackMesh(id,file,revision):null;});
 handle('export-track-mesh',async id=>{const file=await output({title:'Export native track model bank',defaultPath:id+'.rmesh',filters:[{name:'Native model bank',extensions:['rmesh']}]});return file?service.exportTrackMesh(id,file):null;});
 handle('track-preview',bank=>service.trackScene(bank,true));
+handle('add-track-object',(bank,model,point,revision)=>service.addTrackObject(bank,model,point,revision));
+handle('duplicate-track-object',(bank,index,revision)=>service.duplicateTrackObject(bank,index,revision));
+handle('remove-track-object',(bank,index,revision)=>service.removeTrackObject(bank,index,revision));
 handle('save-track-object',(bank,index,values,revision)=>service.saveTrackObject(bank,index,values,revision));
 handle('save-road-point',(bank,index,values,revision)=>service.saveRoadPoint(bank,index,values,revision));
 handle('save-terrain-cell',(bank,index,values,revision)=>service.saveTerrainCell(bank,index,values,revision));

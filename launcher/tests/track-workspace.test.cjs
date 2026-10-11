@@ -81,3 +81,9 @@ test('terrain cell editor addresses empty cells and separates assignments from s
  const empty=terrainCellEditor(scene,88,0);assert.match(empty,/value="1023" selected>Empty cell/);assert.match(empty,/data-terrain-model-action[^>]*hidden/);
  assert.equal(terrainCellEditor({},88),'');assert.match(terrainCellEditor(scene,88,2000),/data-cell="0"/);
 });
+test('scenery controls choose course models, address stable object IDs and also allow an empty list',async()=>{
+ const {trackWorkspace}=await import('../renderer/tracks.mjs'),track={name:'Coast',bank:88},point={x:0,y:0,z:0,angle:0,pitch:0,crossSlope:0,leftWidth:100,rightWidth:100,length:100,arc:0};
+ const scene={revision:9,courseModels:2,road:{points:[point],arcs:[]},objects:[{model:1,x:0,y:0,z:0,yaw:0,flags:0}]};
+ const html=trackWorkspace([track],88,scene);assert.match(html,/value="1" selected>Course model 2/);assert.match(html,/data-preview-add-model="track.big1.course"/);assert.match(html,/data-duplicate-track-object="0"/);assert.match(html,/data-remove-track-object="0"/);assert.match(html,/Add at road point 1/);assert.match(html,/Remove keeps object IDs stable/);
+ const empty=trackWorkspace([track],88,{...scene,objects:[]});assert.match(empty,/id="track-add-object"/);assert.ok(!empty.includes('data-remove-track-object'));
+});

@@ -120,3 +120,17 @@ test('terrain cell model edits preserve region bits and every other byte',async 
  assert.equal(await fs.readFile(pointerFile,'utf8'),stablePointer);assert.deepEqual(await fs.readFile(asset),bytes);
 
 });
+test('scenery append, duplicate and remove preserve block tails, stable IDs and shared undo',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-scenery-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const data=path.join(root,'data'),raw=path.join(data,'raw');await fs.mkdir(raw,{recursive:true});const source=path.join(raw,'asset_088.bin'),original=pack();await fs.writeFile(source,original);const archive=path.join(root,'RAGE.BIN');await fs.writeFile(archive,'scenery source');
+ const s=new LauncherService({root:path.join(root,'editor'),bin:path.resolve(__dirname,'../resources/bin'),config:path.resolve(__dirname,'../../rage-port.ini'),modsRoot:path.join(root,'mods')});await s.init();s.requireReady=()=>{};s.state.disc={archive,path:archive,region:'PAL',data};let p=await s.project();
+ for(let i=0;i<11;i++)p=await s.duplicateTrackObject(88,0,p.revision);
+ let scene=await s.trackScene(88);assert.equal(scene.objects.length,12);for(const object of scene.objects)assert.deepEqual(object,scene.objects[0]);
+ p=await s.addTrackObject(88,0,0,p.revision);scene=await s.trackScene(88);assert.equal(scene.objects.length,13);assert.equal(scene.objects[12].x,scene.road.points[0].x);
+ await assert.rejects(s.addTrackObject(88,1,0,p.revision),/Choose/);await assert.rejects(s.removeTrackObject(88,13,p.revision),/Choose/);await assert.rejects(s.duplicateTrackObject(88,0,p.revision-1),/changed/);assert.equal((await s.project()).revision,p.revision);
+ p=await s.removeTrackObject(88,0,p.revision);scene=await s.trackScene(88);assert.equal(scene.objects[0].model,-1);assert.equal(scene.objects[1].x,123);assert.equal(scene.objects.length,13);
+ p=await s.projectHistory('undo',p.revision);assert.equal((await s.trackScene(88)).objects[0].model,0);p=await s.projectHistory('redo',p.revision);await s.applyProject(p.revision);
+ const pointer=JSON.parse(await fs.readFile(path.join(s.modsRoot,'active.json'))),bytes=await fs.readFile(path.join(s.modsRoot,'builds',pointer.build,'raw/asset_088.bin'));
+ const block=(b,i)=>b.subarray(b.readUInt32LE(i*4),i===10?b.length:b.readUInt32LE((i+1)*4));
+ for(let i=0;i<11;i++)if(i!==8)assert.deepEqual(block(bytes,i),block(original,i),`unrelated block ${i}`);
+ assert.deepEqual(block(bytes,8).subarray(4+13*20),block(original,8).subarray(24));assert.equal(bytes.length,original.length+12*20);assert.deepEqual(await fs.readFile(source),original);
+});

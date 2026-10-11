@@ -8,6 +8,7 @@ function group(changes){
   if(!groups.has(bank))groups.set(bank,[]);
   groups.get(bank).push([Number(match[4]),(match[3]==='object'?'':match[3]+'.')+({left_width:'leftWidth',right_width:'rightWidth',cross_slope:'crossSlope'}[c.field]||c.field),c.value]);
  }
+ for(const edits of groups.values())edits.sort((a,b)=>a[0]-b[0]);
  return groups;
 }
 async function apply(service,changes,directory,files,signal){
