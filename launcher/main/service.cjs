@@ -371,23 +371,10 @@ class LauncherService {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     return this.operation('Loading model preview',signal=>this.previewCarData(key,modId,signal));
   }
-  async carMaterials(key){
-    this.requireReady();
-    if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
-    return this.operation('Reading car materials',signal=>require('./car-view.cjs').withView(this,signal,undefined,async view=>{
-      const staging=path.join(this.root,'car-materials-'+randomUUID());await fs.mkdir(staging);
-      try{
-        const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+path.join(staging,'model.rmesh')],signal));
-        const [,kind,bank]=key.split('.');
-        const table=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-materials',kind,path.join(this.state.disc.data,'raw',`asset_${bank.padStart(3,'0')}.bin`),bank],{signal}));
-        const appearance=await require('./preview-materials.cjs')(this,key,metadata,view,signal);
-        return {revision:this.editor?.project.revision,materials:metadata.materials.flatMap(m=>{
-          const slot=table.materials.find(s=>s.page===m.page&&s.clut===m.clut);
-          return slot?[{id:slot.id,name:'Texture '+(slot.slot+1),properties:appearance[m.source]?.properties||'lit opaque 0.35 0 1 1 1 1 0 0 0'}]:[];
-        })};
-      }finally{await fs.rm(staging,{recursive:true,force:true});}
-    }));
-  }
+  async carMaterials(key){return require('./car-surfaces.cjs').read(this,key);}
+  async importCarTexture(key,id,file,revision){return require('./car-surfaces.cjs').importTexture(this,key,id,file,revision);}
+  async exportCarTexture(key,id,file){return require('./car-surfaces.cjs').exportTexture(this,key,id,file);}
+  async resetCarTexture(key,id,revision){return require('./car-surfaces.cjs').resetTexture(this,key,id,revision);}
   async previewCarData(key,modId,signal,appearanceModId=modId,view) {
     const selected=view??(appearanceModId===undefined?undefined:this.state.mods.find(m=>m.id===appearanceModId));
     if(appearanceModId!==undefined&&!selected)throw Error('Unknown mod model');

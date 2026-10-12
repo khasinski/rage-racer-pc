@@ -1717,3 +1717,50 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   Rage-Racer-Editor-Windows-x64.zip (~161MiB),
   Rage-Racer-Editor-0.1.0-amd64.deb (~96MiB). ZIP integrity PASS. Neither published
   nor tagged. Logs/screenshots: build/reports/editor/platforms/ and /tmp/rr-editor-*.
+
+### Direct car texture editing / shared surface panel
+
+- Car Appearance → Textures & materials now uses the same surface panel as
+  tracks: effective PNG, dimensions/origin, named original-part usage, replace/
+  export PNG, material properties, independent project reset and undo. Individual
+  parts expose the same workflow. Shared shader controls were reused, not copied.
+  No replaceable image shows material controls without a bogus PNG action.
+- Added bounded compiled --car-material-usage inventory: original model-bank
+  streams, first page/CLUT occurrence IDs and shared model membership (including
+  LODs). Optional heap bitset, no runtime globals/new developer executable.
+  Existing --car-materials output remains unchanged. Fixtures verify aliases and
+  model255, malformed/count overflow rejection for player and rival banks.
+- Car surface operations freeze/decode a regular non-symlink PNG ≤32MiB and
+  ≤4096×4096 before one project edit; bind only to a currently used texture.
+  Effective model/PNG export and existing immutable project storage are reused.
+  Reset restores selected package/disc data and undo restores the replacement;
+  source mutation after import does not change stored bytes. Inferred native
+  material finishes are not falsely presented as measured values: new overrides
+  show starting values and explain reset restores the original appearance.
+- Fixed rival texture overlays ignored by the car preview because their IDs
+  belong to track model-bank-1 and their deltas now correctly have track kind.
+  Project base properties/textures beat package variants for car and rival banks
+  too; explicit default project variants take precedence. Editing an existing
+  default-variant texture updates it; reset clears base/default project texture
+  entries. Other variant controls/full appearance timelines remain open.
+- Native/service/UI regressions cover exact PNG export, unknown binding/corrupt
+  PNG rejected without revision change, original extraction after reset, frozen
+  source bytes, undo/redo, explicit variant precedence, both semantic kinds and
+  shared escaped car/track dialog. Existing car import fixture now contains a
+  minimal valid compiled texture-upload chain/atlas, enabling original reset
+  verification rather than relying exclusively on a mocked imported texture.
+- Actual PAL hidden app.js/live service: player PNG replace/export/publish/reset/
+  undo PASS. Actual rival88/body15 replace/effective 3D texture/publish/reset PASS.
+  Lists explicitly say Original usage; current imported geometry may differ, so
+  this does not claim complete effective cross-model dependency reporting.
+- Isolated modern race gate (~31sec PASS) asserts the exact direct-import PNG
+  content reference, semantic ID and published relative filename in the game's
+  native texture-override log, not merely any preexisting1×1 texture. No visible
+  window/source changes. Rival in-race visual quality remains a separate gate.
+- Full npm187 tests:177 PASS,10 optional skips,0 failures; native save-format PASS.
+  Focused native/surface/build suite15 PASS on macOS, Linux GCC and Windows ClangCL.
+  Windows VM was off before transfer; authoritative state confirmed shutdown,
+  then it was restarted and the tests ran. Existing distributed test archives
+  from the preceding packaging milestone are not claimed to contain this commit.
+  Classic PNG adapter, effective shared-geometry dependencies, untextured vertex
+  color authoring, all regions/Blender/platform workflows and wider scope stay open.

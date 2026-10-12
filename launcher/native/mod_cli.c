@@ -252,7 +252,7 @@ replaceDone:
     if(argc>1 && strcmp(argv[1],"--title-image")==0)return ExportTitleImage(argc,argv);
     if(argc==3 && strcmp(argv[1],"--png")==0)return ValidatePng(argv[2]);
     if(argc>1 && strcmp(argv[1],"--car-transmission")==0)return CarTransmissionCommand(argc,argv);
-    if(argc>1 && strcmp(argv[1],"--car-materials")==0)return CarMaterialsCommand(argc,argv);
+    if(argc>1 && (strcmp(argv[1],"--car-materials")==0||strcmp(argv[1],"--car-material-usage")==0))return CarMaterialsCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--car-layout")==0)return CarLayoutCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--rival-layout")==0)return RivalLayoutCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--car-spec")==0)return CarSpecCommand(argc,argv);

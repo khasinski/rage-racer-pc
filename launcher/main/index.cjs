@@ -104,6 +104,9 @@ handle('preview-whole-car',(bank,body,rival,modId)=>service.previewWholeCar(bank
 handle('car-spec',bank=>service.carSpec(bank));
 handle('save-car-spec',(bank,edits,revision)=>service.saveCarSpec(bank,edits,revision));
 handle('preview-car',(key,modId)=>service.previewCar(key,modId));
+handle('import-car-texture',async(key,id,revision)=>{const file=await open({title:'Replace car surface PNG',filters:[{name:'PNG image',extensions:['png']}],properties:['openFile']});return file?service.importCarTexture(key,id,file,revision):null;});
+handle('export-car-texture',async(key,id)=>{const file=await output({title:'Export effective car surface PNG',defaultPath:id+'.png',filters:[{name:'PNG image',extensions:['png']}]});return file?service.exportCarTexture(key,id,file):null;});
+handle('reset-car-texture',(key,id,revision)=>service.resetCarTexture(key,id,revision));
 handle('car-materials',key=>service.carMaterials(key));
 handle('import-car',async key=>{const file=await open({title:'Import a replacement car part',filters:[{name:'Car models',extensions:['obj','glb','gltf','rmesh']}],properties:['openFile']});if(file)return service.importCar(key,file);return null;});
 handle('export-car',async(key,format='obj')=>{if(!['obj','glb'].includes(format))throw Error('Choose OBJ or GLB geometry');const dir=await open({title:'Export car model to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCar(key,dir,format);return null;});

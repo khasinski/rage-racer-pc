@@ -2,9 +2,9 @@ const path=require('node:path');
 const fs=require('node:fs/promises');
 module.exports=async function(service,key,metadata,mod,signal){
  const changes=mod&&!mod.project?[]:(service.editor?.project.snapshot().changes||[]);
- const projectProperties=Object.fromEntries(changes.filter(c=>c.kind==='car'&&c.field==='material').map(c=>[c.id,c.value]));
+ const projectProperties=Object.fromEntries(changes.filter(c=>['car','track'].includes(c.kind)&&c.field==='material').map(c=>[c.id,c.value]));
  const properties={...mod?.manifest.materials,...projectProperties},textures=mod?.manifest.textures||{};
- const projectTextures=mod&&!mod.project?{}:Object.fromEntries((service.editor?.project.snapshot().changes||[]).filter(c=>c.kind==='car'&&c.field==='texture').map(c=>[c.id,c.value]));
+ const projectTextures=mod&&!mod.project?{}:Object.fromEntries((service.editor?.project.snapshot().changes||[]).filter(c=>['car','track'].includes(c.kind)&&c.field==='texture').map(c=>[c.id,c.value]));
  if(!Object.keys(properties).length&&!Object.keys(textures).length&&!Object.keys(projectTextures).length)return {};
  const [,kind,bankText]=/^car\.(player|rival)\.(\d+)\.part\.\d+$/.exec(key),bank=Number(bankText);
  const index=(bank-88)/2;
@@ -16,7 +16,7 @@ module.exports=async function(service,key,metadata,mod,signal){
  const result={};
  for(const material of metadata.materials){
   const slot=table.materials.find(m=>m.page===material.page&&m.clut===material.clut);if(!slot)continue;
-  const value=properties[slot.id+'.variant.0']??properties[slot.id];
+  const value=projectProperties[slot.id+'.variant.0']??projectProperties[slot.id]??mod?.manifest.materials?.[slot.id+'.variant.0']??mod?.manifest.materials?.[slot.id];
   const relative=textures[slot.id+'.variant.0']??textures[slot.id];
   if(value!==undefined||relative!==undefined)result[material.source]={id:slot.id,...(value===undefined?{}:{properties:value})};
   if(relative!==undefined){
@@ -26,7 +26,7 @@ module.exports=async function(service,key,metadata,mod,signal){
    const width=bytes.readUInt32BE(16),height=bytes.readUInt32BE(20);if(!width||!height||width>4096||height>4096)throw Error('Preview textures support dimensions up to 4096 × 4096');
    result[material.source].texture={png:bytes.toString('base64')};
   }
-  const reference=projectTextures[slot.id];
+  const reference=projectTextures[slot.id+'.variant.0']??projectTextures[slot.id];
   if(reference!==undefined){
    if(!reference.endsWith('.png'))throw Error('Invalid project texture type');
    const bytes=await new (require('./project-files.cjs').ProjectFiles)(service.editor.file).read(reference);

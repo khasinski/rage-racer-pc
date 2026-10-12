@@ -10,7 +10,8 @@ static int CarMaterialsCommand(int argc,char **argv) {
     long length;
     uint32_t offset,size,count,payload,slots=0;
     uint16_t pages[4096],cluts[4096];
-    int result=1;
+    int result=1,usage=!strcmp(argv[1],"--car-material-usage");
+    unsigned char *models=NULL;
     unsigned long assetKey=0;
     RenderAssetSet assetSet;
     if((argc!=4 && argc!=5) || (strcmp(argv[2],"player") && strcmp(argv[2],"rival")))return 1;
@@ -31,6 +32,7 @@ static int CarMaterialsCommand(int argc,char **argv) {
         if(offset<44 || end<=offset || end>(uint32_t)length)goto done;
         size=end-offset;
     }
+    if(usage){models=calloc(4096,32);if(!models)goto done;}
     if(size<12)goto done;
     bank=bytes+offset;count=SpecU32(bank);
     if(!count||count>256||count>(size-12)/4)goto done;
@@ -54,6 +56,7 @@ static int CarMaterialsCommand(int argc,char **argv) {
                 uint32_t slot;
                 for(slot=0;slot<slots;slot++)if(pages[slot]==page&&cluts[slot]==clut)break;
                 if(slot==slots){if(slots==4096)goto done;pages[slots]=page;cluts[slots++]=clut;}
+                if(models)models[slot*32+model/8]|=(unsigned char)(1u<<(model%8));
             }
         }
     }
@@ -61,9 +64,10 @@ static int CarMaterialsCommand(int argc,char **argv) {
     for(uint32_t slot=0;slot<slots;slot++){
         printf("%s{\"slot\":%u,\"page\":%u,\"clut\":%u",slot?",":"",slot,pages[slot],cluts[slot]);
         if(argc==5){char id[160];AssetMaterialId(id,sizeof(id),(uint32_t)assetKey,assetSet,slot);printf(",\"id\":\"%s\"",id);}
+        if(models){printf(",\"models\":[");unsigned used=0;for(unsigned model=0;model<count;model++)if(models[slot*32+model/8]&(1u<<(model%8)))printf("%s%u",used++?",":"",model);putchar(']');}
         putchar('}');
     }
     puts("]}");result=0;
- done:free(bytes);if(result)fprintf(stderr,"Invalid car model material table\n");return result;
+ done:free(models);free(bytes);if(result)fprintf(stderr,"Invalid car model material table\n");return result;
 }
 #endif

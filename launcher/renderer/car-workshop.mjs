@@ -11,7 +11,7 @@ export function carPartName(car, part) {
 export function carWorkspace(car, parts, {tab='appearance', changes='' }={}) {
  if(!Object.hasOwn(workshopTabs,tab))tab='appearance';
  const preview='<button class="primary" data-whole-car="'+car.bank+'" data-whole-body="'+car.part+'" data-whole-rival="'+car.rival+'">View car in 3D</button>';
- const exchange='<div class="row wrap"><button data-car-materials="'+escape(car.key)+'">Edit body materials</button><button data-export-set="'+car.key+'">Export for editing</button><button data-import-set="'+car.key+'" data-format="glb">Import edited GLB/glTF</button></div>';
+ const exchange='<div class="row wrap"><button data-car-materials="'+escape(car.key)+'">Textures & materials</button><button data-export-set="'+car.key+'">Export for editing</button><button data-import-set="'+car.key+'" data-format="glb">Import edited GLB/glTF</button></div>';
  let content;
  if(tab==='appearance')content='<h3>Model & textures</h3><p class="muted">Work on the complete car: body, front wheels, rear wheels and shared textures.</p>'+exchange+
   '<p class="muted">Export the car, edit car.glb in your preferred 3D application, then import GLB or glTF here. Keep custom properties to preserve part and material mappings. Validated changes join your project history.</p>'+

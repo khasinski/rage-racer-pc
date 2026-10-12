@@ -6,7 +6,8 @@ test('complete car import installs all models and textures atomically and reject
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-car-set-Łódź-日本-🚗 '));
  try{
   const source=path.join(root,'source'),data=path.join(root,'data');await fs.mkdir(source);await fs.mkdir(path.join(data,'raw'),{recursive:true});
-  const raw=Buffer.alloc(220),bank=raw.subarray(40,168);raw.writeUInt32LE(128,24);raw.writeUInt32LE(40,32);raw.writeUInt32LE(168,36);bank.writeUInt32LE(1,0);bank.writeUInt32LE(100,4);bank.writeUInt32LE(108,8);bank.writeUInt32LE(16,12);bank.writeUInt16LE(1,16);bank.writeUInt16LE(1,18);bank.writeUInt16LE(11,34);bank.writeUInt16LE(22,30);await fs.writeFile(path.join(data,'raw/asset_010.bin'),raw);
+  await fs.mkdir(path.join(data,'textures'));await fs.writeFile(path.join(data,'raw/asset_005.bin'),Buffer.alloc(8));
+  const raw=Buffer.alloc(168+64*256*2),bank=raw.subarray(40,168);raw.writeUInt32LE(128,24);raw.writeUInt32LE(40,32);raw.writeUInt32LE(168,36);bank.writeUInt32LE(1,0);bank.writeUInt32LE(100,4);bank.writeUInt32LE(108,8);bank.writeUInt32LE(16,12);bank.writeUInt16LE(1,16);bank.writeUInt16LE(1,18);bank.writeUInt16LE(11,34);bank.writeUInt16LE(22,30);await fs.writeFile(path.join(data,'raw/asset_010.bin'),raw);
   await fs.writeFile(path.join(source,'model.obj'),'v 0 0 0\nv 1 0 0\nv 0 1 0\nvt 0 0\nvn 0 0 1\nusemtl rage_0\nf 1/1/1 2/1/1 3/1/1\n');
   await fs.writeFile(path.join(source,'image.png'),Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==','base64'));
   const key='car.player.10.part.0',manifest={format:1,region:'NTSC-U',key,parts:{body:'model.obj','front-wheels':'model.obj','rear-wheels':'model.obj'},textures:{0:'image.png'}};
@@ -49,11 +50,11 @@ test('complete car import installs all models and textures atomically and reject
   const appearance=await require('../main/preview-materials.cjs')(service,key,{materials:[{source:0,page:11,clut:22}]},null,new AbortController().signal);
   assert.equal(appearance[0].texture.png,png.toString('base64'));
   const materialList=await service.carMaterials(key);
-  assert.equal(materialList.revision,project.revision);assert.equal(materialList.materials[0].id,'car.0.material.0');
-  assert.equal(materialList.materials[0].name,'Texture 1');
+  assert.equal(materialList.revision,project.revision);assert.equal(materialList.surfaces[0].id,'car.0.material.0');
+  assert.equal(materialList.surfaces[0].label,'Surface 1');
   const properties='lit opaque 0.7 0.2 1 0.5 0.5 1 0 0 0';
-  project=await service.saveMaterial('',materialList.materials[0].id,properties,project.revision);
-  assert.match((await service.carMaterials(key)).materials[0].properties,/0.7/);
+  project=await service.saveMaterial('',materialList.surfaces[0].id,properties,project.revision);
+  assert.match((await service.carMaterials(key)).surfaces[0].properties,/0.7/);
   project=await service.projectHistory('undo',project.revision);assert.deepEqual(project.changes,changes);
   project=await service.projectHistory('undo',project.revision);assert.equal(project.changes.length,0);
   project=await service.projectHistory('redo',project.revision);assert.deepEqual(project.changes,changes);
@@ -129,7 +130,7 @@ test('complete car import installs all models and textures atomically and reject
   assert.equal((await service.project()).revision,project.revision);
   assert.deepEqual((await service.completeCarImport(pending.token,mapping)).changes,changes);assert.equal(service.carImport,null);assert.deepEqual(await fs.readFile(lost),lostBytes);
   const cancelled=await service.prepareCarImport(key,lost);await service.cancelCarImport(cancelled.token);await assert.rejects(service.completeCarImport(cancelled.token,mapping),/expired/);
-  const stale=await service.prepareCarImport(key,lost);project=await service.saveMaterial('',materialList.materials[0].id,properties,project.revision);project=await service.projectHistory('undo',project.revision);
+  const stale=await service.prepareCarImport(key,lost);project=await service.saveMaterial('',materialList.surfaces[0].id,properties,project.revision);project=await service.projectHistory('undo',project.revision);
   await assert.rejects(service.completeCarImport(stale.token,mapping),/Project changed/);assert.deepEqual((await service.project()).changes,changes);await service.cancelCarImport(stale.token);
   for(const label of ['Mapping car parts','Importing complete car','Previewing target material']){
    const active=await service.prepareCarImport(key,lost);let closing;
@@ -160,5 +161,9 @@ test('complete car import installs all models and textures atomically and reject
   await assert.rejects(service.importCarSet(key,source),/Cannot import texture/);
   assert.deepEqual((await service.project()).changes,changes);
   assert.equal((await service.project()).revision,project.revision);
+  const surface=(await service.carMaterials(key)).surfaces[0],direct=path.join(root,'direct.png'),exportedPng=path.join(root,'exported.png');await fs.writeFile(direct,png);await service.exportCarTexture(key,surface.id,exportedPng);assert.deepEqual(await fs.readFile(exportedPng),png);
+  await assert.rejects(service.importCarTexture(key,'car.999.material.0',direct,project.revision),/used by/);await fs.writeFile(direct,'broken PNG');await assert.rejects(service.importCarTexture(key,surface.id,direct,project.revision));assert.equal((await service.project()).revision,project.revision);
+  project=await service.resetCarTexture(key,surface.id,project.revision);const originalSurface=(await service.carMaterials(key)).surfaces[0];assert.equal(originalSurface.origin,'disc');assert.equal(originalSurface.width,256);await fs.writeFile(direct,png);project=await service.importCarTexture(key,surface.id,direct,project.revision);await fs.writeFile(direct,'changed source');assert.equal((await service.carMaterials(key)).surfaces[0].png,png.toString('base64'));project=await service.projectHistory('undo',project.revision);assert.equal((await service.carMaterials(key)).surfaces[0].origin,'disc');project=await service.projectHistory('redo',project.revision);assert.equal((await service.carMaterials(key)).surfaces[0].width,1);
+  const baselineFile=path.join(root,'original.png');await fs.writeFile(baselineFile,Buffer.from(originalSurface.png,'base64'));const originalRef=await new (require('../main/project-files.cjs').ProjectFiles)(service.editor.file).put(baselineFile,'png');project=await service.editProject([{kind:'car',id:surface.id+'.variant.0',field:'texture',value:originalRef}],project.revision);assert.equal((await service.carMaterials(key)).surfaces[0].width,256);await fs.writeFile(direct,png);project=await service.importCarTexture(key,surface.id,direct,project.revision);assert.equal((await service.carMaterials(key)).surfaces[0].width,1);assert.ok(project.changes.some(c=>c.id===surface.id+'.variant.0'&&c.field==='texture'));project=await service.resetCarTexture(key,surface.id,project.revision);assert.equal((await service.carMaterials(key)).surfaces[0].origin,'disc');
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });

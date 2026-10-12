@@ -7,9 +7,11 @@ test('surface usage follows effective indexed geometry and keeps bank material i
  assert.deepEqual(surfaces(geometry,1),[{source:3,models:[0,1]}]);assert.throws(()=>surfaces(geometry,3),/non-empty/);assert.throws(()=>surfaces(geometry,9),/non-empty/);
 });
 test('track texture controls expose thumbnails, explicit scope, reset and identity safely',async()=>{
- const {trackTextureDialog,terrainCellEditor,trackWorkspace}=await import('../renderer/tracks.mjs');
- const html=trackTextureDialog({id:'track.big1.course',part:7,revision:5,surfaces:[{source:67,id:'track.big1.course.material.67',label:'Surface <script>',png:'aGVsbG8=',width:256,height:128,origin:'disc',models:[0,3],overridden:false}]});
+ const {surfaceDialog,terrainCellEditor,trackWorkspace}=await import('../renderer/tracks.mjs');
+ const html=surfaceDialog({id:'track.big1.course',part:7,revision:5,surfaces:[{source:67,id:'track.big1.course.material.67',label:'Surface <script>',png:'aGVsbG8=',width:256,height:128,origin:'disc',models:[0,3],overridden:false}]});
  assert.match(html,/Surface &lt;script&gt;/);assert.match(html,/256 × 128 · disc/);assert.match(html,/Used by: Model 1, Model 4/);assert.match(html,/data-import-track-texture="67"/);assert.match(html,/data-export-track-texture="67"/);assert.match(html,/data-reset-track-texture="67" disabled/);assert.match(html,/data-project-material="track.big1.course.material.67"/);assert.match(html,/data-reset-track-material="track.big1.course.material.67" disabled/);assert.match(html,/modern renderer/);assert.match(html,/data-revision="5"/);
  const scene={revision:8,terrain:{models:2,cells:Array(1024).fill(0)}};assert.match(terrainCellEditor(scene,88),/data-track-textures="track.big1.terrain" data-terrain-model-action data-part="0"/);
  assert.match(trackWorkspace([{name:'Coast',bank:88}],88,{revision:5,objects:[{model:7,x:0,y:0,z:0,yaw:0,flags:0}]}),/data-track-textures="track.big1.course" data-part="7"/);
 });
+
+test('shared surface panel describes car usage and targets explicit material variants',async()=>{const {surfaceDialog}=await import('../renderer/tracks.mjs');const html=surfaceDialog({kind:'car',id:'car.player.10.part.0',part:0,revision:3,surfaces:[{id:'car.0.material.0',source:'car.0.material.0',materialId:'car.0.material.0.variant.0',label:'Surface 1',models:['Body <paint>','Front wheels'],png:null,overridden:false,materialOverridden:true}]});assert.match(html,/Car surfaces/);assert.match(html,/Original usage: Body &lt;paint&gt;, Front wheels/);assert.match(html,/data-project-material="car.0.material.0.variant.0"/);assert.doesNotMatch(html,/data-import-track-texture=/);});
