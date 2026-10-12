@@ -41,6 +41,11 @@ int ExportRawCar(const char *source,int bank,int rival,int part,const char *outp
         if(!RuntimeMeshIndex(&cached->mesh,first+i,&index)||
            !RuntimeMeshVertex(&cached->mesh,index,&vertex)||
            !RuntimeVertexEncode(wire+layout.verticesOffset+i*40,40,&vertex))goto done;
+        if ((vertex.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK) != 65535u) {
+            if ((vertex.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK) >= 64u) goto done;
+            vertex.material |= RAGE_RUNTIME_MATERIAL_CAR_BANK;
+            if (!RuntimeVertexEncode(wire+layout.verticesOffset+i*40,40,&vertex)) goto done;
+        }
         Store32(wire+layout.indicesOffset+i*4,i);
     }
     RageRuntimeMesh check;if(!RuntimeMeshOpen(&check,wire,layout.totalSize)||

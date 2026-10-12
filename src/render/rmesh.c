@@ -290,3 +290,20 @@ int RuntimeMeshPrepareBounds(RageRuntimeMesh *mesh,
     mesh->bounds = storage;
     return 1;
 }
+
+int RuntimeMeshCarBindings(const RageRuntimeMesh *mesh) {
+    int scheme = -1;
+    if (!mesh) return -1;
+    for (uint32_t i = 0; i < mesh->indexCount; i++) {
+        uint32_t index;
+        RageRuntimeVertex vertex;
+        if (!RuntimeMeshIndex(mesh, i, &index) ||
+            !RuntimeMeshVertex(mesh, index, &vertex)) return -1;
+        if ((vertex.material & RAGE_RUNTIME_MATERIAL_INDEX_MASK) == 0xFFFFu)
+            continue;
+        int bank = (vertex.material & RAGE_RUNTIME_MATERIAL_CAR_BANK) != 0;
+        if (scheme != -1 && scheme != bank) return -1;
+        scheme = bank;
+    }
+    return scheme == -1 ? 0 : scheme;
+}

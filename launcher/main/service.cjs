@@ -347,7 +347,8 @@ class LauncherService {
         await require('./car-material-bindings.cjs')(this,key,mesh,staging,label,signal);
         const textureChanges=[];
         if(glbTextures.length){
-          const meta=await require('./car-view.cjs').exportPart(this,key,path.join(staging,'bindings.rmesh'),undefined,signal);
+          const bindings=JSON.parse(await run(this.tool('rage-mod-cli'),['--mesh',mesh],{signal})).bankBindings;
+          const meta=await require('./car-view.cjs').exportPart(this,key,path.join(staging,'bindings.rmesh'),undefined,signal,bindings);
           await fs.rm(path.join(staging,'bindings.rmesh'),{force:true});
           const table=await require('./car-view.cjs').withView(this,signal,undefined,async view=>JSON.parse(await run(this.tool('rage-mod-cli'),['--car-materials',part.rival?'rival':'player',require('./car-view.cjs').rawSource(this,part.bank,view),String(part.bank)],{signal})));
           for(const source of glbTextures){const original=meta.materials.find(m=>m.source===source),slot=original&&table.materials.find(m=>m.page===original.page&&m.clut===original.clut);if(!slot)throw Error('GLB image has no matching car texture source');const image=path.join(staging,'textures',`texture-${source}.png`);await run(this.tool('rage-mod-cli'),['--png',image],{signal});const previous=textureChanges.find(t=>t.id===slot.id);if(previous){if(!(await fs.readFile(previous.file)).equals(await fs.readFile(image)))throw Error('Different GLB images map to the same car surface; resolve the material mapping');}else textureChanges.push({id:slot.id,file:image});}
@@ -401,7 +402,7 @@ class LauncherService {
     const mod=modId===undefined?null:this.state.mods.find(m=>m.id===modId);
     if(modId!==undefined&&!mod)throw Error('Unknown mod');
     return this.operation('Loading car preview',signal=>require('./car-view.cjs').withView(this,signal,modId===undefined?undefined:mod,async view=>{
-      const file=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
+      const file=require('./car-view.cjs').rawSource(this,bank,view);
       const layout=JSON.parse(await run(this.tool('rage-mod-cli'),rival?['--rival-layout',file,String(body)]:['--car-layout',file],{signal}));
       const parts=new Map();
       for(const {part}of layout.instances)if(!parts.has(part)){

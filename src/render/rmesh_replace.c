@@ -45,7 +45,8 @@ void *RuntimeMeshReplace(const RageRuntimeMesh *base, uint32_t part,
         slot=v.material&RAGE_RUNTIME_MATERIAL_INDEX_MASK;
         if (slot!=0xFFFFu && materials) {
             if (slot>=materialCount || materials[slot]>=0xFFFFu) goto fail;
-            v.material=(v.material&~(uint32_t)RAGE_RUNTIME_MATERIAL_INDEX_MASK)|materials[slot];
+            v.material=(v.material&~(uint32_t)(RAGE_RUNTIME_MATERIAL_INDEX_MASK |
+                RAGE_RUNTIME_MATERIAL_CAR_BANK))|materials[slot];
         }
         Write32(bytes+vertexOffset+((size_t)base->vertexCount+i)*40+36,v.material);
     }

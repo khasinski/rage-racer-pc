@@ -70,9 +70,16 @@ enum {
     /* The original terrain dispatcher selects depth cueing per face. */
     RAGE_RUNTIME_MATERIAL_FOGGED = 1u << 27,
     RAGE_RUNTIME_MATERIAL_FOGGED_NORMAL_ENV = 1u << 26,
+    /* Interchange car mesh uses original bank slots, rather than built-in
+     * per-part sources. Consumed when resolving a replacement's materials. */
+    RAGE_RUNTIME_MATERIAL_CAR_BANK = 1u << 25,
     RAGE_RUNTIME_MATERIAL_DEPTH_BIAS_SHIFT = 16,
     RAGE_RUNTIME_MATERIAL_INDEX_MASK = 0xFFFFu,
 };
+
+/* Referenced textured vertices: 0 built-in bindings, 1 bank bindings,
+ * -1 invalid or mixed bindings. Untextured vertices do not select a scheme. */
+int RuntimeMeshCarBindings(const RageRuntimeMesh *mesh);
 
 int RuntimeMeshOpen(RageRuntimeMesh *mesh, const void *bytes, size_t size);
 int RuntimeMeshRange(const RageRuntimeMesh *mesh, uint32_t meshIndex,

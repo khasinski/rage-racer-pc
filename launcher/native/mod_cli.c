@@ -314,7 +314,7 @@ replaceDone:
             }
             printf("{\"meshes\":%u,\"vertices\":%u,\"indices\":%u,\"materials\":[",mesh.meshCount,mesh.vertexCount,mesh.indexCount);
             for(i=0;i<sizeof(used);i++)if(used[i]){printf("%s%u",comma?",":"",(unsigned)i);comma=1;}
-            puts("]}");
+            printf("],\"bankBindings\":%d}\n",RuntimeMeshCarBindings(&mesh));
         }
         free(bytes);return 0;
     }

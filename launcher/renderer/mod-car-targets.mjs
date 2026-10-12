@@ -6,6 +6,11 @@ export function modCarBanks(mod){
   match=/^track\.(big|mid|hi|oval)([1-6])\.model-bank-1\.material\./.exec(key);
   if(match)banks.add('rival:'+String(88+((Number(match[2])-1)*4+['big','mid','hi','oval'].indexOf(match[1]))*2));
  }
+ for(const file of mod.files||[]){
+  const match=/^raw\/asset_(\d{3})\.bin$/.exec(file);if(!match)continue;const bank=Number(match[1]);
+  if(bank>=10&&bank<=73)banks.add('player:'+String(bank-bank%2));
+  if(bank>=87&&bank<=134)banks.add('rival:'+String(bank+bank%2));
+ }
  return banks;
 }
 export function modCarTargets(mod,parts){
@@ -22,6 +27,6 @@ export function carModChanges(mod,car){
   return car.rival?part>=car.part&&part<car.part+5:true;
  });
  const appearance=modCarBanks(mod).has(family+':'+car.bank);
- const raw=(mod.files||[]).some(file=>file==='raw/asset_'+String(car.bank).padStart(3,'0')+'.bin'||(!car.rival&&file==='raw/asset_'+String(car.bank+1).padStart(3,'0')+'.bin'));
- return {affected:mesh||appearance||raw,preview:mesh||appearance,raw};
+ const raw=(mod.files||[]).some(file=>file==='raw/asset_'+String(car.bank).padStart(3,'0')+'.bin'||file==='raw/asset_'+String(car.bank+(car.rival?-1:1)).padStart(3,'0')+'.bin');
+ return {affected:mesh||appearance||raw,preview:mesh||appearance||raw,raw};
 }

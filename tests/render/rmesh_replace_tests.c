@@ -26,6 +26,16 @@ int main(void) {
     for(i=0;i<6;i++) {W(baseBytes+156+i*4,i%3);W(replacementBytes+152+i*4,2-i%3);}
     CHECK(RuntimeMeshOpen(&base,baseBytes,sizeof(baseBytes)));
     CHECK(RuntimeMeshOpen(&replacement,replacementBytes,sizeof(replacementBytes)));
+    CHECK(RuntimeMeshCarBindings(&replacement)==0);
+    for(i=0;i<3;i++)
+        W(replacementBytes+32+i*40+36,0x20ef0000u | RAGE_RUNTIME_MATERIAL_CAR_BANK);
+    CHECK(RuntimeMeshCarBindings(&replacement)==1);
+    W(replacementBytes+32+36,0x20ef0000u);
+    CHECK(RuntimeMeshCarBindings(&replacement)==-1);
+    W(replacementBytes+32+36,UINT32_MAX);
+    CHECK(RuntimeMeshCarBindings(&replacement)==1);
+    CHECK(RuntimeMeshCarBindings(NULL)==-1);
+    W(replacementBytes+32+36,0x20ef0000u | RAGE_RUNTIME_MATERIAL_CAR_BANK);
     bytes=RuntimeMeshReplace(&base,0,&replacement,map,1,&size);
     CHECK(bytes && RuntimeMeshOpen(&result,bytes,size));
     CHECK(result.meshCount==2 && result.vertexCount==6 && result.indexCount==9);

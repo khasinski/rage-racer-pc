@@ -1835,3 +1835,38 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Full launcher suite194:181 PASS,13 optional skips,0 failures. Failure/cancel,
   changed fingerprint, non-file cache, project-only playback/undo and existing
   launch repair fixtures covered. Broader audio cue/media and editor gates open.
+
+### Original car geometry and durable material bindings
+
+- Display settings now offer Improved built-in models / Original disc models.
+  Modern game configuration and car preview/export use the same setting;
+  selected raw geometry and explicit project/package meshes retain precedence.
+  Both shipped INI defaults remain improved models. Classic uses disc geometry.
+- Original exports mark native bank material bindings in the preserved RRMESH
+  material word (bit25). OBJ material names and GLB rr_material carry the marker.
+  Runtime resolves bank slots independently of the global model preference,
+  consumes the marker on replacement, and preserves other vertex metadata.
+  Existing built-in binding meshes retain their old interpretation. Mixed
+  binding schemes are rejected before a project edit; untextured faces are
+  allowed. Referenced native slots beyond the supported64 are rejected.
+- Import validation, embedded PNG mapping, part/whole-car preview and Used by
+  choose the correct binding metadata for explicit meshes, even after changing
+  model preference. Individual raw package comparison now resolves its owned
+  directory and current layout; raw-only packages have working preview links.
+  Removed obsolete UI claims that raw geometry is invisible in preview.
+- Actual PAL: original player10/body0 and rival88/body15 GLB roundtrip preserve
+  geometry/index/texture values across the setting switch; a built-in imported
+  model also survives switching to originals. All32 player Grade banks export
+  nonempty original bodies with validated native slot bindings. A mixed-marker
+  import is rejected with project revision intact. No full regional matrix claim.
+- Four isolated hidden modern race runs: original imported GLB with built-ins
+  off/on, changed raw bank without/with explicit override. Runtime accepts the
+  bank bindings and reaches the race; no missing-material/replacement failures.
+  Pixel/manual appearance comparison remains separate acceptance work.
+- Native rmesh and replacement2 PASS (marker detection/mixed/untextured,
+  remapping/marker consumption and existing metadata preservation).
+  Full launcher197 tests:181 PASS,16 optional skips,0 failures. Real service4 PASS
+  after correcting the legacy comparison to its imported baseline: GLB normal
+  normalization is separate from model-preference stability.
+- Still open: new IDs/catalogue growth, break-link authoring, all-region/Blender
+  and platform verification, road bake and wider asset/audio/interface coverage.

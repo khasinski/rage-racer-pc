@@ -83,7 +83,8 @@ exports.importSet=async(service,key,source,revision,owner)=>{
     await require('./car-material-bindings.cjs')(service,partKey,out,staging,role,signal);
     meshes.push(`"${partKey}" = "${relative}"`);
     if(images.length){
-     const binding=path.join(staging,'bindings-'+role+'.rmesh'),meta=await require('./car-view.cjs').exportPart(service,partKey,binding,undefined,signal);await fs.rm(binding,{force:true});
+     const scheme=JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh',out],{signal})).bankBindings;
+     const binding=path.join(staging,'bindings-'+role+'.rmesh'),meta=await require('./car-view.cjs').exportPart(service,partKey,binding,undefined,signal,scheme);await fs.rm(binding,{force:true});
      for(const image of images){
       const original=meta.materials.find(m=>m.source===image),material=original&&materials.find(m=>m.page===original.page&&m.clut===original.clut);if(!material)throw Error('GLB image has no matching car texture source');
       const png=path.join(imageDir,`texture-${image}.png`),previous=embedded[material.slot]||manifest.textures[material.slot];

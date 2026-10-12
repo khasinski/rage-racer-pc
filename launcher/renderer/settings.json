@@ -12,6 +12,24 @@
   },
   {
     "group": "video",
+    "key": "modern.authored_cars",
+    "label": "Car model source",
+    "help": "Choose built-in improved geometry or original disc geometry for modern rendering and editor previews/exports. Selected raw geometry changes and explicit mod models take priority in either mode. Classic rendering uses disc models.",
+    "type": "select",
+    "default": "1",
+    "options": [
+      [
+        "1",
+        "Improved built-in models"
+      ],
+      [
+        "0",
+        "Original disc models"
+      ]
+    ]
+  },
+  {
+    "group": "video",
     "key": "video.aspect",
     "label": "Aspect ratio",
     "help": "Menus retain their original layout.",

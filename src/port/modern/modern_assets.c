@@ -176,25 +176,6 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         AuthoredCarKey(car, key, sizeof(key));
         override = s_modReady ? ModManifestFindMesh(s_modManifest, key) : NULL;
         if (!authored && !override) continue;
-        for (j = 0; j < sizeof(map)/sizeof(map[0]); j++) map[j] = UINT32_MAX;
-        if(raw){
-            RageImportedTextureKey texture;
-            for(j=0;j<RAGE_CAR_SURFACE_SOURCE_STRIDE&&NativeAssetImporterMaterialKey(instance,(uint32_t)j,&texture);j++)for(unsigned surface=0;surface<RAGE_CAR_SURFACE_COUNT;surface++)map[j+surface*RAGE_CAR_SURFACE_SOURCE_STRIDE]=(uint32_t)j+surface*RAGE_CAR_SURFACE_RUNTIME_STRIDE;
-        }else for (j = 0; j < car->materialCount; j++) {
-            const AuthoredCarMaterial *material = &car->materials[j];
-            int slot = imported ? NativeAssetImporterMaterialSlot(instance,
-                material->page, material->clut) : material->cacheSlot;
-            if (slot < 0 || slot >= RAGE_CAR_SURFACE_RUNTIME_STRIDE ||
-                material->source >= RAGE_CAR_SURFACE_SOURCE_STRIDE) {
-                fprintf(stderr, "rage-port: %s asset %u material %u unavailable\n",
-                        car->name, car->assetKey, material->source);
-                goto failed;
-            }
-            map[material->source] = (uint32_t)slot;
-            for (unsigned surface = 1; surface < RAGE_CAR_SURFACE_COUNT; surface++)
-                map[material->source + surface * RAGE_CAR_SURFACE_SOURCE_STRIDE] =
-                    (uint32_t)slot + surface * RAGE_CAR_SURFACE_RUNTIME_STRIDE;
-        }
         if (override) {
             size_t modSize;
             snprintf(fullPath, sizeof(fullPath), "%s/%s", s_modRoot, override);
@@ -209,6 +190,37 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
             fprintf(stderr, "rage-port: authored %s asset %u submesh %u: embedded mesh unreadable\n",
                     car->name, car->assetKey, car->submesh);
             goto failed;
+        }
+        for (j = 0; j < sizeof(map)/sizeof(map[0]); j++) map[j] = UINT32_MAX;
+        int bankBindings = override ? RuntimeMeshCarBindings(&body) : 0;
+        if (bankBindings < 0) {
+            SDL_free(modBytes);
+            fprintf(stderr, "rage-port: mixed car material bindings %s\n", key);
+            goto failed;
+        }
+        if (bankBindings || (raw && override)) {
+            RageImportedTextureKey texture;
+            for (j=0; j<RAGE_CAR_SURFACE_SOURCE_STRIDE &&
+                 NativeAssetImporterMaterialKey(instance,(uint32_t)j,&texture); j++) {
+                for (unsigned surface=0; surface<RAGE_CAR_SURFACE_COUNT; surface++)
+                    map[j + surface*RAGE_CAR_SURFACE_SOURCE_STRIDE] =
+                        (uint32_t)j + surface*RAGE_CAR_SURFACE_RUNTIME_STRIDE;
+            }
+        }else for (j = 0; j < car->materialCount; j++) {
+            const AuthoredCarMaterial *material = &car->materials[j];
+            int slot = imported ? NativeAssetImporterMaterialSlot(instance,
+                material->page, material->clut) : material->cacheSlot;
+            if (slot < 0 || slot >= RAGE_CAR_SURFACE_RUNTIME_STRIDE ||
+                material->source >= RAGE_CAR_SURFACE_SOURCE_STRIDE) {
+                fprintf(stderr, "rage-port: %s asset %u material %u unavailable\n",
+                        car->name, car->assetKey, material->source);
+                SDL_free(modBytes);
+                goto failed;
+            }
+            map[material->source] = (uint32_t)slot;
+            for (unsigned surface = 1; surface < RAGE_CAR_SURFACE_COUNT; surface++)
+                map[material->source + surface * RAGE_CAR_SURFACE_SOURCE_STRIDE] =
+                    (uint32_t)slot + surface * RAGE_CAR_SURFACE_RUNTIME_STRIDE;
         }
         bytes = RuntimeMeshReplace(&working, car->submesh, &body,
                                    map, sizeof(map)/sizeof(map[0]), &size);
@@ -229,8 +241,9 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         working = next;
         ownedSize = size;
         if (override)
-            fprintf(stderr, "rage-port: car mesh override %s <- %s (%u triangles)\n",
-                    key, fullPath, body.indexCount / 3);
+            fprintf(stderr, "rage-port: car mesh override %s <- %s (%u triangles, %s bindings)\n",
+                    key, fullPath, body.indexCount / 3,
+                    bankBindings || raw ? "bank" : "built-in");
         fprintf(stderr, "rage-port: authored %s %s %s installed asset=%u (%u triangles)\n",
                 car->name, car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? "player" : "rival",
                 (car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ? car->submesh == 0 : car->submesh % 5 == 0) ? "body" : "wheel",
