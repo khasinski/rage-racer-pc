@@ -75,6 +75,7 @@ handle('duplicate-track-object',(bank,index,revision)=>service.duplicateTrackObj
 handle('remove-track-object',(bank,index,revision)=>service.removeTrackObject(bank,index,revision));
 handle('save-track-object',(bank,index,values,revision)=>service.saveTrackObject(bank,index,values,revision));
 handle('save-road-point',(bank,index,values,revision)=>service.saveRoadPoint(bank,index,values,revision));
+handle('save-ai-hint',(bank,index,values,revision)=>service.saveAiHint(bank,index,values,revision));
 handle('save-environment',(bank,entries,revision)=>service.saveEnvironment(bank,entries,revision));
 handle('save-terrain-cell',(bank,index,values,revision)=>service.saveTerrainCell(bank,index,values,revision));
 handle('save-road-arc',(bank,index,values,revision)=>service.saveRoadArc(bank,index,values,revision));

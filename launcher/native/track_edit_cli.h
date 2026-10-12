@@ -5,6 +5,7 @@
  * field edits preserve all other bytes, including block tails. */
 static void TrackStore32(unsigned char *p,uint32_t n){for(unsigned i=0;i<4;i++)p[i]=(unsigned char)(n>>(i*8));}
 #include "track_environment.h"
+#include "track_ai.h"
 static int TrackAppend(void **bytes,size_t *size,TrackBlock *blocks,uint32_t models,Placements *placements){
  if(placements->count>=10000||*size>128u*1024u*1024u-20)return 0;
  size_t at=(size_t)(blocks[8].data-(unsigned char *)*bytes)+4+(size_t)placements->count*20;
@@ -36,7 +37,8 @@ static int TrackEditCommand(const char *source,const char *output) {
     if(!TrackPackOpen(bytes,size,blocks)||blocks[5].size<4)goto done;
     uint32_t models=SpecU32(blocks[5].data);
     if(!PlacementsOpen(blocks[8].data,blocks[8].size,models,&placements))goto done;
-    uint32_t envCount=0;int envValid=EnvCount(&blocks[2],&envCount),envChanged=0;
+    uint32_t envCount=0;int envValid=EnvCount(&blocks[2],&envCount),envChanged=0,aiChanged=0;
+    unsigned aiCounts[2]={0};int aiValid[2]={AiHints(&blocks[9],0,&aiCounts[0]),AiHints(&blocks[9],1,&aiCounts[1])};
     size_t i,count;yyjson_val *edit;
     yyjson_arr_foreach(edits,i,count,edit){
         if(!yyjson_is_arr(edit)||yyjson_arr_size(edit)!=3)goto done;
@@ -48,6 +50,7 @@ static int TrackEditCommand(const char *source,const char *output) {
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
         if(yyjson_get_uint(index)>UINT32_MAX)goto done;
         uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strncmp(name,"ai.",3)){if(!AiEdit(&blocks[9],at,name+3,value,aiValid,aiCounts))goto done;aiChanged|=1<<(at/AI_HINT_COUNT);continue;}
         if(!strncmp(name,"environment.",12)){
             if(!envValid||at!=0)goto done;
             unsigned char *header=(unsigned char *)blocks[2].data;
@@ -105,6 +108,7 @@ static int TrackEditCommand(const char *source,const char *output) {
         if(!PlacementWrite((unsigned char *)bytes+(blocks[8].data-(unsigned char *)bytes),blocks[8].size,models,at,&p))goto done;
     }
     if(envChanged&&!EnvCount(&blocks[2],&envCount))goto done;
+    if(aiChanged){unsigned count;for(unsigned s=0;s<2;s++)if((aiChanged&(1<<s))&&!AiHints(&blocks[9],s,&count))goto done;}
     ok=ModFileWriteExclusive(output,bytes,size);
 done:
     SDL_free(bytes);yyjson_doc_free(doc);free(input);

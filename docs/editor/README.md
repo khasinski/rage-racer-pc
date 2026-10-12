@@ -82,3 +82,18 @@ material assignments use the same importer and history as PNG.
 Remote URIs, parent paths, symlinks, animation/skins and
 unsupported extensions are currently rejected.
 Use PNG/JPEG textures and static GLB/glTF for this workflow. Original files stay intact.
+
+## Rival racing-line hints
+
+In Tracks, expand **Rivals · Racing line**, choose **Forward** or **Reverse**,
+then a stretch. Set its minimum/maximum sideways offset and the correction per
+simulation tick. These are lateral game units, not heights. The game nudges the
+front four rivals only when no nearby car blocks them; equal bounds disable the
+nudge. This is one part of rival driving behaviour, not a full replacement AI.
+
+Start/end progress are under **Stretch boundaries**, in internal progress / 16.
+Keep entries ordered and non-overlapping. **Save racing line to project** creates
+one Undo step; **Save & apply** publishes it for the next race. An unsupported
+source table is shown explicitly. Sentinel, unused records and reserved bytes
+are preserved. Adding hints, start grids, speed keys and camera editing remain
+separate pending work.

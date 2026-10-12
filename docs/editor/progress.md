@@ -1386,3 +1386,34 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   oversized JPEG dimension rejection. Linux POSIX declarations are explicitly
   enabled before headers; SDL linkage uses the existing bundled target. No new
   external/runtime image-conversion requirement was introduced.
+
+### Rival racing-line hint authoring in Tracks
+
+- Added a named Forward/Reverse → Stretch editor for runtime sideways nudges:
+  lateral min/max and signed per-tick adjustment are basic fields; progress
+  boundaries are advanced. No anonymous archive/record browser or mock.
+- C decoder/edit path matches TrackEventData using compile-time offset/count/
+  size assertions (132-byte offset, two 30-entry series, 12-byte records). Reads
+  unaligned signed fields, retains sentinel/unused entries/reserved and all other
+  bank bytes. Batch edits validate final ordered non-overlapping ranges after
+  the complete change, allowing min/max to move together. Equal ranges are
+  valid retail no-ops. UI does not call historic 'height' fields actual height.
+- Original PAL 24-bank survey: normal tables in both directions except bank104
+  reverse has unsupported records. Its valid forward table remains available;
+  reverse is explicit null/uneditable, not guessed or used to block other edits.
+- Typed track.ai changes use existing composition/build/source identity and one
+  project edit/undo. Native/service/form regression: reserved-byte preservation,
+  final batch ranges, signed -32768 correction, series IDs, sentinel/out-of-range/
+  overlap/overflow rejection without files, effective scene, undo and revision.
+- Track input protection now includes AI forms. Other dirty forms cannot be
+  submitted over them; live state updates do not redraw dirty track drafts.
+- Actual PAL headless app.js/live state invalid range → error → draft still300,
+  unchanged revision → correction and Save → effective hint → publish PASS.
+  Full npm: 172 JS tests, 165 PASS, 7 optional skips, 0 failures; native
+  save-format checks PASS. Focused AI/track workspace suite 10 PASS.
+- Updated existing normal-race gate edits hint0 adjustment to0 along with scenery/
+  atmosphere, verifies exact built event bytes and loads bank88 in both classic
+  and modern without invalid-pack diagnostics, reaching scene12/timer20 PASS
+  (~54 sec). This proves bank activation, not full-lap AI trajectory behaviour.
+- Still open: full-lap T09 behaviour, hint insertion/removal, start grids, speed
+  keys, cameras/intro/replay/events, driveable mesh bake and broader editor scope.
