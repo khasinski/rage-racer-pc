@@ -1764,3 +1764,31 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   from the preceding packaging milestone are not claimed to contain this commit.
   Classic PNG adapter, effective shared-geometry dependencies, untextured vertex
   color authoring, all regions/Blender/platform workflows and wider scope stay open.
+
+### Current car surface dependencies
+
+- Car Used by now resolves indexed material usage from every exported model in
+  the current editor bank, then selected-package/project replacements. Original
+  stream membership is updated per part; removed materials stop claiming that
+  part, additions are mapped through its original page/CLUT bindings, membership
+  is unique/sorted. Unknown replacement sources fail instead of reporting false
+  sharing. This also accounts for differences in embedded catalogue geometry.
+- Import/export/reset do not request the full dependency scan; only the surface
+  inspector does. One composed view is retained across the scan, without a new
+  persistent cache/global invalidation mechanism. Material ID/source files and
+  project history remain unchanged by reading dependencies.
+- Synthetic service regression: original body plus imported wheel members,
+  untextured front replacement removes its membership, undo restores it, package
+  plain body becomes effective after clearing project body, project undo restores
+  its precedence. Shared-panel labels now say Used by rather than Original usage.
+- Actual PAL front/rear wheel pair: export rear native model, preserve all vertex
+  fields except material65535, import as untextured rear, front remains a user of
+  the shared surface, rear disappears, undo restores the exact list PASS. Initial
+  body/LOD assumption was rejected by real data (no shared surface in that pair);
+  the verified case uses the actual shared wheel material. Temporary headless
+  harness /tmp/rr-current-wheel-usage.cjs, log rr-current-wheel-usage2.log.
+- Full npm187 tests:177 PASS,10 optional skips,0 failures; native save-format PASS.
+  Focused surface/service tests4 PASS. Raw car-bank replacements are explicitly
+  flagged as outside this dependency view rather than silently represented as
+  current. Full raw-provider/effective runtime parity, break-link authoring,
+  geometry/road bake and other acceptance gates remain open.
