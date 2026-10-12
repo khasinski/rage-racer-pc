@@ -22,3 +22,10 @@ test('car sections separate everyday actions from technical details and retain e
  const rival=carWorkspace({...car,rival:true},parts,{tab:'driving'});
  assert.ok(!rival.includes('data-car-spec='));assert.match(rival,/not a separate player specification/);
 });
+test('lost car mappings show named required assignments and escape imported names',async()=>{
+ const {carImportForm}=await import('../renderer/car-workshop.mjs');
+ const html=carImportForm({token:'test',nodes:[{node:2,name:'<part>'}],materials:[{material:3,name:'<paint>'}],roles:[{instance:0,label:'Body'}],choices:[{word:0,label:'Body texture'}]});
+ assert.match(html,/data-import-node="2"/);assert.match(html,/data-import-material="3"/);
+ assert.match(html,/&lt;part&gt;/);assert.match(html,/&lt;paint&gt;/);
+ assert.equal((html.match(/select required/g)||[]).length,2);assert.match(html,/Choose…/);assert.match(html,/Import mapped car/);
+});

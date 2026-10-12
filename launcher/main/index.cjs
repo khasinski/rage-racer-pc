@@ -79,7 +79,12 @@ handle('save-environment',(bank,entries,revision)=>service.saveEnvironment(bank,
 handle('save-terrain-cell',(bank,index,values,revision)=>service.saveTerrainCell(bank,index,values,revision));
 handle('save-road-arc',(bank,index,values,revision)=>service.saveRoadArc(bank,index,values,revision));
 handle('export-car-set',async key=>{const dir=await open({title:'Export complete car to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCarSet(key,dir);return null;});
-handle('import-car-set',async(key,format)=>{const file=await open(format==='glb'?{title:'Import complete car GLB',filters:[{name:'Complete car',extensions:['glb']}],properties:['openFile']}:{title:'Choose car set folder (car-set.json, models and textures)',properties:['openDirectory']});if(file)return service.importCarSet(key,file);return null;});
+handle('import-car-set',async(key,format)=>{
+ const file=await open(format==='glb'?{title:'Import complete car GLB',filters:[{name:'Complete car',extensions:['glb']}],properties:['openFile']}:{title:'Choose car set folder (car-set.json, models and textures)',properties:['openDirectory']});if(!file)return null;
+ try{return await service.importCarSet(key,file);}catch(e){if(format==='glb'&&/Missing car part|Missing material mapping|Choose a complete GLB exported/.test(e.message))return {mapping:await service.prepareCarImport(key,file)};throw e;}
+});
+handle('complete-car-import',(token,mapping)=>service.completeCarImport(token,mapping));
+handle('cancel-car-import',token=>service.cancelCarImport(token));
 handle('preview-whole-car',(bank,body,rival,modId)=>service.previewWholeCar(bank,body,rival,modId));
 handle('car-spec',bank=>service.carSpec(bank));
 handle('save-car-spec',(bank,edits,revision)=>service.saveCarSpec(bank,edits,revision));

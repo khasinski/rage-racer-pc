@@ -102,6 +102,17 @@ test('complete car import installs all models and textures atomically and reject
   project=await service.projectHistory('undo',editedProject.revision);assert.deepEqual(project.changes,changes);
   const rewrite=edit=>{const doc=JSON.parse(whole.subarray(20,20+jsonLength));edit(doc);const text=Buffer.from(JSON.stringify(doc)),padded=Buffer.alloc((text.length+3)&~3,32);text.copy(padded);const rest=whole.subarray(20+jsonLength),file=Buffer.alloc(20+padded.length+rest.length);whole.copy(file,0,0,12);file.writeUInt32LE(file.length,8);file.writeUInt32LE(padded.length,12);file.write('JSON',16);padded.copy(file,20);rest.copy(file,20+padded.length);return file;};
   const nodeProperties=path.join(root,'node-properties.glb');await fs.writeFile(nodeProperties,rewrite(d=>{delete d.extras;}));assert.deepEqual((await service.importCarSet(key,nodeProperties)).changes,changes);
+  const lost=path.join(root,'lost-properties.glb'),lostBytes=rewrite(d=>{delete d.extras;for(const n of d.nodes)delete n.extras;for(const m of d.meshes)delete m.extras;for(const m of d.materials){delete m.extras;m.name='Edited material';}});await fs.writeFile(lost,lostBytes);
+  const pending=await service.prepareCarImport(key,lost);assert.equal(pending.nodes.length,4);assert.equal(pending.roles.length,4);assert.equal((await service.project()).revision,project.revision);
+  const mapping={nodes:pending.nodes.map(n=>({node:n.node,instance:glb.nodes[n.node].extras.rr_instance})),materials:pending.materials.map(m=>({material:m.material,word:0}))};
+  await assert.rejects(service.completeCarImport(pending.token,{...mapping,nodes:mapping.nodes.map(n=>({...n,instance:0}))}),/different role/);
+  await assert.rejects(service.completeCarImport(pending.token,{...mapping,materials:mapping.materials.map(m=>({...m,word:999999}))}),/original car materials/);
+  assert.equal((await service.project()).revision,project.revision);
+  assert.deepEqual((await service.completeCarImport(pending.token,mapping)).changes,changes);assert.equal(service.carImport,null);assert.deepEqual(await fs.readFile(lost),lostBytes);
+  const cancelled=await service.prepareCarImport(key,lost);await service.cancelCarImport(cancelled.token);await assert.rejects(service.completeCarImport(cancelled.token,mapping),/expired/);
+  const stale=await service.prepareCarImport(key,lost);project=await service.saveMaterial('',materialList.materials[0].id,properties,project.revision);project=await service.projectHistory('undo',project.revision);
+  await assert.rejects(service.completeCarImport(stale.token,mapping),/Project changed/);assert.deepEqual((await service.project()).changes,changes);await service.cancelCarImport(stale.token);
+  assert.equal((await fs.readdir(service.root)).some(n=>n.startsWith('car-map-')),false);
   for(const edit of [d=>{d.extras.rr_source.key='car.player.12.part.0';},d=>{d.extras.rr_source.fingerprint='sha256:'+'0'.repeat(64);},d=>{delete d.nodes[1].extras.rr_part;},d=>{d.nodes[4].translation[0]+=5;},d=>{d.nodes[1].scale=[0,1,1];}]){
    const bad=path.join(root,'invalid-car.glb');await fs.writeFile(bad,rewrite(edit));await assert.rejects(service.importCarSet(key,bad));assert.equal((await service.project()).revision,project.revision);assert.deepEqual((await service.project()).changes,changes);
   }

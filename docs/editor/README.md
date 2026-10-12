@@ -47,8 +47,13 @@ Use **Import edited GLB** on the same car and disc revision. Invalid input leave
 previous edits intact. The complete import is one undo step. Use **Save & apply**
 to publish the project to the game's automatically detected mod directory.
 Geometry replacement currently targets the modern renderer. Shader graph/PBR
-property changes are not imported. If custom properties were lost, the importer
-reports the missing mapping; a mapping wizard is still pending.
+property changes are not imported. If custom properties were lost or refer to
+another source, the importer opens **Assign car parts & materials**. Assign
+Body, Rear wheels, Front left wheel and Front right wheel, then choose the
+original car materials for the imported materials. The selected target car is
+shown in the dialog. Confirm with **Import mapped car** or cancel without
+changing the project. Both front wheels must share one mesh. A stale dialog is
+rejected if the project changed after you selected the file.
 
 The exported folder also contains three OBJ models and shared PNGs. Import that
 folder through **OBJ sets and individual parts → Import OBJ car set folder**.

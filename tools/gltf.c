@@ -310,3 +310,34 @@ int GlbSeparate(const char *input,const char *directory){
  ok=1;
  done:if(!ok){while(written)remove(paths[--written]);fputs("Cannot split complete car GLB; project remains unchanged\n",stderr);}yyjson_doc_free(jsonDoc);yyjson_doc_free(specDoc);cgltf_free(data);free(bytes);return ok;
 }
+
+/* Metadata inspection/remapping only: existing import validates actual content. */
+int GlbMapping(const char *input,const char *output){
+ size_t size=0,budget=LIMIT;unsigned char *bytes=Load(input,&size),*file=NULL;cgltf_data *data=NULL;yyjson_doc *original=NULL,*request=NULL;yyjson_mut_doc *doc=NULL;char *json=NULL;int ok=0;
+ cgltf_options options={0};options.memory.alloc_func=Allocate;options.memory.free_func=Release;options.memory.user_data=&budget;
+ if(!bytes||cgltf_parse(&options,bytes,size,&data)!=cgltf_result_success||data->file_type!=cgltf_file_type_glb||data->buffers_count!=1||data->buffers[0].uri||data->extensions_used_count||data->extensions_required_count||data->animations_count||data->skins_count||data->cameras_count||data->lights_count||data->nodes_count>10000||data->materials_count>MAX_PRIMITIVES||cgltf_load_buffers(&options,data,NULL)!=cgltf_result_success||cgltf_validate(data)!=cgltf_result_success)goto done;
+ const cgltf_scene *scene=data->scene?data->scene:data->scenes_count==1?data->scenes:NULL;if(!scene)goto done;
+ for(size_t i=0;i<data->nodes_count;i++){unsigned depth=0;for(const cgltf_node *p=&data->nodes[i];p;p=p->parent)if(++depth>64)goto done;}
+ original=yyjson_read(data->json,data->json_size,0);doc=yyjson_mut_doc_new(NULL);if(!original||!doc)goto done;
+ if(!output){
+  yyjson_mut_val *root=yyjson_mut_obj(doc);yyjson_mut_doc_set_root(doc,root);yyjson_mut_val *nodes=Array(doc,root,"nodes"),*materials=Array(doc,root,"materials");
+  for(size_t i=0;i<data->nodes_count;i++)if(data->nodes[i].mesh&&Active(scene,&data->nodes[i])){yyjson_mut_val *node=Element(doc,nodes);Number(doc,node,"node",(uint32_t)i);Number(doc,node,"mesh",(uint32_t)(data->nodes[i].mesh-data->meshes));Text(doc,node,"name",data->nodes[i].name?data->nodes[i].name:"Unnamed part");yyjson_val *extras=yyjson_obj_get(yyjson_arr_get(yyjson_obj_get(yyjson_doc_get_root(original),"nodes"),i),"extras");yyjson_val *instance=yyjson_obj_get(extras,"rr_instance");if(yyjson_is_uint(instance))Number(doc,node,"instance",(uint32_t)yyjson_get_uint(instance));}
+  unsigned char used[MAX_PRIMITIVES]={0};unsigned active=0;
+  for(size_t n=0;n<data->nodes_count;n++)if(data->nodes[n].mesh&&Active(scene,&data->nodes[n])){const cgltf_mesh *mesh=data->nodes[n].mesh;if(++active>8||mesh->primitives_count>MAX_PRIMITIVES)goto done;for(size_t p=0;p<mesh->primitives_count;p++){const cgltf_material *m=mesh->primitives[p].material;if(!m){fputs("Assign a material to every mesh in the 3D editor before import\n",stderr);goto done;}used[m-data->materials]=1;}}
+  for(size_t i=0;i<data->materials_count;i++){if(!used[i])continue;yyjson_mut_val *m=Element(doc,materials);Number(doc,m,"material",(uint32_t)i);Text(doc,m,"name",data->materials[i].name?data->materials[i].name:"Unnamed material");uint32_t word;if(Material(&data->materials[i],&word))Number(doc,m,"word",word);}
+  json=yyjson_mut_write(doc,0,NULL);if(json){puts(json);ok=1;}goto done;
+ }
+ char text[65537];size_t length=fread(text,1,sizeof(text),stdin);if(ferror(stdin)||length==sizeof(text))goto done;request=yyjson_read(text,length,0);if(!request)goto done;
+ yyjson_val *spec=yyjson_doc_get_root(request),*nodes=yyjson_obj_get(spec,"nodes"),*materials=yyjson_obj_get(spec,"materials"),*source=yyjson_obj_get(spec,"source");if(!yyjson_is_arr(nodes)||yyjson_arr_size(nodes)>8||!yyjson_is_arr(materials)||yyjson_arr_size(materials)>MAX_PRIMITIVES||!yyjson_is_obj(source))goto done;
+ yyjson_mut_val *root=yyjson_val_mut_copy(doc,yyjson_doc_get_root(original));yyjson_mut_doc_set_root(doc,root);yyjson_mut_val *extras=yyjson_mut_obj_get(root,"extras");if(!extras)extras=Object(doc,root,"extras");yyjson_mut_obj_remove_str(extras,"rr_source");yyjson_mut_obj_add_val(doc,extras,"rr_source",yyjson_val_mut_copy(doc,source));
+ yyjson_val *entry;size_t i,count;yyjson_arr_foreach(nodes,i,count,entry){yyjson_val *id=yyjson_obj_get(entry,"node"),*instance=yyjson_obj_get(entry,"instance"),*part=yyjson_obj_get(entry,"part");if(!yyjson_is_uint(id)||yyjson_get_uint(id)>=data->nodes_count||!data->nodes[yyjson_get_uint(id)].mesh||!Active(scene,&data->nodes[yyjson_get_uint(id)])||!yyjson_is_uint(instance)||yyjson_get_uint(instance)>=8||!yyjson_is_str(part)||!yyjson_get_len(part)||yyjson_get_len(part)>159)goto done;
+  for(size_t j=0;j<i;j++)if(yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(nodes,j),"node"))==yyjson_get_uint(id)||yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(nodes,j),"instance"))==yyjson_get_uint(instance))goto done;
+  yyjson_mut_val *node=yyjson_mut_arr_get(yyjson_mut_obj_get(root,"nodes"),(size_t)yyjson_get_uint(id)),*e=yyjson_mut_obj_get(node,"extras");if(!e)e=Object(doc,node,"extras");yyjson_mut_obj_remove_str(e,"rr_instance");yyjson_mut_obj_remove_str(e,"rr_part");Number(doc,e,"rr_instance",(uint32_t)yyjson_get_uint(instance));Text(doc,e,"rr_part",yyjson_get_str(part));
+ }
+ yyjson_arr_foreach(materials,i,count,entry){yyjson_val *id=yyjson_obj_get(entry,"material"),*word=yyjson_obj_get(entry,"word");if(!yyjson_is_uint(id)||yyjson_get_uint(id)>=data->materials_count||!yyjson_is_uint(word)||yyjson_get_uint(word)>UINT32_MAX)goto done;for(size_t j=0;j<i;j++)if(yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(materials,j),"material"))==yyjson_get_uint(id))goto done;
+  yyjson_mut_val *material=yyjson_mut_arr_get(yyjson_mut_obj_get(root,"materials"),(size_t)yyjson_get_uint(id)),*e=yyjson_mut_obj_get(material,"extras");if(!e)e=Object(doc,material,"extras");yyjson_mut_obj_remove_str(e,"rr_material");Number(doc,e,"rr_material",(uint32_t)yyjson_get_uint(word));
+ }
+ size_t jsonSize=0;json=yyjson_mut_write(doc,0,&jsonSize);size_t padded=(jsonSize+3)&~(size_t)3,binSize=(data->buffers[0].size+3)&~(size_t)3,total=28+padded+binSize;if(!json||jsonSize>8u*1024u*1024u||total>LIMIT)goto done;file=calloc(1,total);if(!file)goto done;
+ Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)binSize);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,data->buffers[0].data,data->buffers[0].size);ok=Write(output,file,total);
+ done:free(json);free(file);free(bytes);cgltf_free(data);yyjson_doc_free(original);yyjson_doc_free(request);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot inspect/map static car GLB; input or mapping is invalid\n",stderr);return ok;
+}

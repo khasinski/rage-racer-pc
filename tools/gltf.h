@@ -6,4 +6,5 @@ int GlbExportTextures(const char *input, unsigned part, const char *output, cons
 int GlbImportTextures(const char *input, const char *output, const char *textures);
 int GlbAssemble(const char *output);
 int GlbSeparate(const char *input, const char *directory);
+int GlbMapping(const char *input, const char *output);
 #endif

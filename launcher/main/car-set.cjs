@@ -51,9 +51,10 @@ exports.exportSet=async(service,key,destination)=>{
   }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
  }));
 };
-exports.importSet=async(service,key,source)=>{
+exports.importSet=async(service,key,source,revision)=>{
  service.requireReady();return service.operation('Importing complete car',async signal=>{
   const {run}=require('./service.cjs'),c=await car(service,key,signal);
+  if(revision!==undefined)(await service.loadProject()).checkRevision(revision);
   const materials=await table(service,c,signal),staging=path.join(service.root,'car-set-import-'+randomUUID());await fs.mkdir(path.join(staging,'meshes'),{recursive:true});await fs.mkdir(path.join(staging,'textures'));
   try{
    const whole=(await fs.stat(source)).isFile();let manifest;
@@ -112,3 +113,38 @@ exports.importSet=async(service,key,source)=>{
   }finally{await fs.rm(staging,{recursive:true,force:true});}
  });
 };
+
+exports.prepare=async(service,key,file)=>service.operation('Inspecting car import',async signal=>{
+ const {run}=require('./service.cjs'),c=await car(service,key,signal),project=await service.loadProject();if(!project)throw Error('Import a game source before mapping a car');
+ if(service.carImport)await fs.rm(service.carImport.folder,{recursive:true,force:true});service.carImport=null;
+ const folder=path.join(service.root,'car-map-'+randomUUID());await fs.mkdir(folder);
+ try{
+  const candidate=path.join(folder,'source.glb'),stat=await fs.stat(file);if(!stat.isFile()||stat.size>128*1024*1024)throw Error('GLB exceeds the 128 MiB limit');await fs.copyFile(file,candidate);
+  const inspection=JSON.parse(await run(service.tool('rage-mesh-obj'),['inspect-glb',candidate],{signal}));
+  const raw=path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`),layout=JSON.parse(await run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));
+  const roles=layout.instances.map((instance,index)=>({instance:index,part:`car.${c.rival?'rival':'player'}.${c.bank}.part.${instance.part}`,label:instance.part===c.part?'Body':instance.part===c.part+3?'Rear wheels':instance.position[0]<0?'Front left wheel':'Front right wheel'}));
+  if(inspection.nodes.length!==roles.length)throw Error(`This car needs ${roles.length} mesh instances; the file has ${inspection.nodes.length}. Keep both front wheels linked to one mesh.`);
+  const available=new Map();
+  for(const [offset,label]of [[0,'body'],[2,'front wheels'],[3,'rear wheels']]){
+   const original=path.join(folder,'original.rmesh');await service.carTool(['--set',`tools.car_export=car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`,'--set','tools.car_output='+original],signal);
+   const glb=path.join(folder,'original.glb');await run(service.tool('rage-mesh-obj'),['export-glb',original,'0',glb],{signal});
+   const stats=JSON.parse(await run(service.tool('rage-mesh-obj'),['inspect-glb',glb],{signal}));for(const {word}of stats.materials){if(!available.has(word))available.set(word,new Set());available.get(word).add(label);}await fs.rm(original,{force:true});await fs.rm(glb,{force:true});
+  }
+  const materials=[...available].map(([word,parts],i)=>({word,label:`Original material ${i+1} · ${[...parts].join(', ')}`}));
+  const token=randomUUID();service.carImport={token,folder,key,revision:project.revision,source:{...project.document.source,key},roles,materials,inspection};
+  return {token,key,name:c.name,region:service.state.disc.region,revision:project.revision,nodes:inspection.nodes,materials:inspection.materials,roles,choices:materials};
+ }catch(e){await fs.rm(folder,{recursive:true,force:true});throw e;}
+});
+exports.complete=async(service,token,mapping)=>{
+ const candidate=service.carImport;if(!candidate||candidate.token!==token)throw Error('Car import expired; select the file again');
+ const file=await service.operation('Mapping car parts',async signal=>{
+  const project=await service.loadProject();if(!project||project.revision!==candidate.revision||project.document.source.fingerprint!==candidate.source.fingerprint)throw Error('Project changed; select the car file again');
+  if(!mapping||!Array.isArray(mapping.nodes)||mapping.nodes.length!==candidate.inspection.nodes.length||!Array.isArray(mapping.materials)||mapping.materials.length!==candidate.inspection.materials.length)throw Error('Assign every part and material');
+  const instances=new Set(),nodes=new Set(),materials=new Set();
+  for(const node of mapping.nodes){if(!Number.isInteger(node.node)||!candidate.inspection.nodes.some(n=>n.node===node.node)||nodes.has(node.node)||!Number.isInteger(node.instance)||!candidate.roles.some(r=>r.instance===node.instance)||instances.has(node.instance))throw Error('Each part needs a different role');nodes.add(node.node);instances.add(node.instance);}
+  for(const material of mapping.materials){if(!Number.isInteger(material.material)||!candidate.inspection.materials.some(m=>m.material===material.material)||materials.has(material.material)||!candidate.materials.some(m=>m.word===material.word))throw Error('Choose original car materials');materials.add(material.material);}
+  const output=path.join(candidate.folder,'mapped-'+randomUUID()+'.glb');await require('./service.cjs').run(service.tool('rage-mesh-obj'),['map-glb',path.join(candidate.folder,'source.glb'),output],{signal,input:JSON.stringify({source:candidate.source,nodes:mapping.nodes.map(n=>({...n,part:candidate.roles.find(r=>r.instance===n.instance).part})),materials:mapping.materials})});return output;
+ });
+ try{const result=await exports.importSet(service,candidate.key,file,candidate.revision);service.carImport=null;await fs.rm(candidate.folder,{recursive:true,force:true});return result;}finally{await fs.rm(file,{force:true});}
+};
+exports.cancel=async(service,token)=>{if(service.carImport?.token!==token)return true;return service.operation('Cancelling car import',async()=>{if(service.carImport?.token===token){await fs.rm(service.carImport.folder,{recursive:true,force:true});service.carImport=null;}return true;});};

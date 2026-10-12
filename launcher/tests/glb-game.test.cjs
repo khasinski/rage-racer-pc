@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const {LauncherService}=require('../main/service.cjs');
 const source=process.env.RR_EDITOR_GAME_SOURCE,disc=process.env.RR_EDITOR_GAME_DISC,game=process.env.RR_EDITOR_GAME_RELEASE;
-test('normal modern race loads all car parts and embedded PNGs imported from complete GLB',{
+test('normal modern race loads all car parts and embedded PNGs from GLB with recovered mappings',{
  skip:!source||!disc||!game,timeout:150000
 },async t=>{
  const base=path.resolve(__dirname,'../..'),root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-scenery-game-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
@@ -14,6 +14,10 @@ test('normal modern race loads all car parts and embedded PNGs imported from com
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLttAAAAABJRU5ErkJggg==','base64'),bin=Buffer.from(bytes.subarray(20+oldLength));for(const image of doc.images){const view=doc.bufferViews[image.bufferView];assert.ok(view.byteLength>=png.length);png.copy(bin,8+view.byteOffset);view.byteLength=png.length;}
  const json=Buffer.from(JSON.stringify(doc)),padded=Buffer.alloc((json.length+3)&~3,32);json.copy(padded);const changed=Buffer.alloc(20+padded.length+bin.length);bytes.copy(changed,0,0,12);changed.writeUInt32LE(changed.length,8);changed.writeUInt32LE(padded.length,12);changed.write('JSON',16);padded.copy(changed,20);bin.copy(changed,20+padded.length);await fs.writeFile(filename,changed);
  const imported=await s.importCarSet(key,filename);assert.equal(imported.changes.filter(c=>c.field==='mesh').length,3);
+ await s.projectHistory('undo',imported.revision);
+ const lost=structuredClone(doc);delete lost.extras;for(const n of lost.nodes)delete n.extras;for(const m of lost.meshes)delete m.extras;for(const m of lost.materials){delete m.extras;m.name='Edited material';}
+ const lostJson=Buffer.from(JSON.stringify(lost)),lostPad=Buffer.alloc((lostJson.length+3)&~3,32);lostJson.copy(lostPad);const lostFile=Buffer.alloc(20+lostPad.length+bin.length);bytes.copy(lostFile,0,0,12);lostFile.writeUInt32LE(lostFile.length,8);lostFile.writeUInt32LE(lostPad.length,12);lostFile.write('JSON',16);lostPad.copy(lostFile,20);bin.copy(lostFile,20+lostPad.length);await fs.writeFile(filename,lostFile);
+ const mapping=await s.prepareCarImport(key,filename);const recovered=await s.completeCarImport(mapping.token,{nodes:mapping.nodes.map(n=>({node:n.node,instance:doc.nodes[n.node].extras.rr_instance})),materials:mapping.materials.map(m=>({material:m.material,word:doc.materials[m.material].extras.rr_material}))});assert.equal(recovered.changes.filter(c=>c.field==='mesh').length,3);
  const after=await s.previewWholeCar(10);assert.equal(after.indices.length,before.indices.length);
  for(let i=0;i<before.indices.length;i++)for(let c=0;c<9;c++)assert.ok(Math.abs(before.vertices[before.indices[i]*9+c]-after.vertices[after.indices[i]*9+c])<1e-5,`corner ${i} field ${c}`);
  await s.publishMods();

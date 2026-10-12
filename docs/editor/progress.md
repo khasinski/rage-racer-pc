@@ -1178,3 +1178,42 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   export/import/publish PASS. Source provenance is also stored on the Car node
   for editors that discard document extras; final focused tests 5 PASS including
   node-property-only provenance. No published release or source asset mutation.
+
+### Recover missing car part/material mappings in the actual editor
+
+- Import edited GLB automatically opens a real assignment form when source,
+  part/instance or material mappings are missing/incompatible. Target car/region
+  is explicit. Every active mesh node receives one unique role and every used
+  material receives an original material word. This covers static complete cars
+  with the existing four-instance layout; arbitrary assembly/LOD remains open.
+- Compiled inspect/map commands reuse the existing GLB worker. They validate a
+  bounded self-contained static scene, report active mesh/material names, retain
+  full 32-bit words and unknown JSON extras while assigning metadata, and leave
+  geometry/BIN/UV/color/image bytes unchanged. No new parser in renderer JS.
+- Material options are read from compiled original GLB exports: the existing
+  mesh summary only contains low 16 bits and must not supply full-word options.
+  Actual PAL UI validation exposed this and the corrected path preserves flags.
+- A private source copy and opaque pending token isolate the staged candidate;
+  one pending import per service. Duplicate roles, unsupported target materials,
+  invalid tokens and stale revisions are rejected. Cancellation cleans staging;
+  successful mapping still passes complete-car geometry/PNG/binding validation
+  and saves as one history operation. Failed validation leaves edits intact.
+- Regression tests: lost all node/mesh/material/document extras, renamed
+  materials, complete recovery, unchanged source file/project on failed maps,
+  cancellation cleanup, expired token, stale project. Native mapping test covers
+  full 0x12340003 words, byte-identical decoded geometry, unknown metadata,
+  exclusive outputs, duplicate/out-of-range mapping rejection. Form test checks
+  required named assignments and imported-name escaping.
+- Actual headless app.js + PAL service Export → erase metadata → form assignments
+  → Import → Save & apply PASS. The test bridge supplies native file picker
+  results; actual form and service/codecs run. Normal hidden modern GP after
+  recovered complete-car mappings loads all 3 mesh overrides and edited 1×1
+  embedded PNGs, preserves every preview corner and stops scene12/timer20 PASS.
+- Full npm suite: 166 tests, 159 PASS, 7 optional skips, 0 failures; native
+  save-format checks PASS. Focused native/service/form tests: 7 PASS. No visible
+  game windows, no source mutations, no release publication.
+- This form does not yet provide candidate 3D selection or material thumbnails;
+  lost-property recovery for separate single-part imports, external .gltf,
+  Blender proof, all-platform parity, full shader/property/unknown-extras project
+  roundtrip and standard physical unit conversion remain open. Full goal stays
+  active; the broader car/track/interface/media editor is not declared complete.

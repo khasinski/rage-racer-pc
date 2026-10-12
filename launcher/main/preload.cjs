@@ -41,6 +41,8 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   saveRoadArc:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-road-arc',bank,index,values,revision),
   exportCarSet:key=>ipcRenderer.invoke('launcher:export-car-set',key),
   importCarSet:(key,format)=>ipcRenderer.invoke('launcher:import-car-set',key,format),
+  completeCarImport:(token,mapping)=>ipcRenderer.invoke('launcher:complete-car-import',token,mapping),
+  cancelCarImport:token=>ipcRenderer.invoke('launcher:cancel-car-import',token),
   previewWholeCar:(bank,body,rival,modId)=>ipcRenderer.invoke('launcher:preview-whole-car',bank,body,rival,modId),
   carSpec:bank=>ipcRenderer.invoke('launcher:car-spec',bank),
   saveCarSpec:(bank,edits,revision)=>ipcRenderer.invoke('launcher:save-car-spec',bank,edits,revision),
