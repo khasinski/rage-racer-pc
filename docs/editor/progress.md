@@ -1417,3 +1417,29 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   (~54 sec). This proves bank activation, not full-lap AI trajectory behaviour.
 - Still open: full-lap T09 behaviour, hint insertion/removal, start grids, speed
   keys, cameras/intro/replay/events, driveable mesh bake and broader editor scope.
+
+### Rival pace-key authoring
+
+- Added named Forward/Reverse → Pace key forms: four rival target values are
+  basic fields; progress and slide pitch are advanced. UI explains these are
+  internal acceleration-limit tuning values, not speedometer units, and later
+  rivals derive their target from fourth contender's target.
+- Same C track-event codec owns bounded 2×48×12-byte speed records. Offset1140,
+  count and size asserted against actual TrackEventData. Reads signed targets,
+  progress and wrapped pitch; edits preserve all other bytes/sentinels/tails.
+  Does not sort or reject local reversals, and supports all48 active slots.
+  Sentinel -1 cannot be introduced through editing an active key.
+- Original PAL24-bank survey matches runtime tables; e.g bank96 reverse uses
+  all48 slots. Synthetic native/service/form regression covers local reversal,
+  full48, signed boundary values, overflow/sentinel/nonexistent-row rejection,
+  exact changed-byte inventory, effective direction/table and one-step undo.
+- Actual PAL headless app.js/live state: Forward key1 rival1 target143→150 →
+  save to project → effective scene150 → publish PASS, no JS errors. Test picker
+  flow/controls use real application and native service, no new mock layout.
+- Existing normal hidden race gate verifies built event target150 alongside AI
+  hint/scenery/environment edits, then loads bank88 on classic and modern,
+  scene12/timer20 without invalid-pack diagnostics PASS (~55 sec). This proves
+  activation, not full-lap AI trajectories or observed acceleration changes.
+- Full npm173 JS tests:166 PASS,7 optional skips,0 failures; native save-format
+  PASS. Dedicated hint+pace codec/service/form tests2 PASS. Cameras, start grids,
+  key insertion/removal, full-lap T09 and broader editor requirements remain open.

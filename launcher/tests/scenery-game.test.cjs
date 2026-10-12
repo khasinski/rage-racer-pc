@@ -12,9 +12,11 @@ test('normal race loads edited scenery and atmosphere without an asset_000 marke
  const s=new LauncherService({root:path.join(root,'editor'),bin:path.join(base,'launcher/resources/bin'),config:path.join(base,'rage-port.ini'),modsRoot:path.join(root,'mods')});await s.init();s.requireReady=()=>{};s.state.disc={archive:path.join(source,'RAGE.BIN'),path:disc,region:'PAL',data:path.join(source,'data')};
  const p=await s.project(),scene=await s.trackScene(88),index=scene.objects.findIndex(o=>o.model>=0);assert.ok(index>=0);let edited=await s.duplicateTrackObject(88,index,p.revision);assert.ok(scene.environment?.cues.length);
  edited=await s.saveAiHint(88,0,{adjustment:0},edited.revision);assert.equal((await s.trackScene(88)).ai.hints[0][0].adjustment,0);
+ edited=await s.saveAiSpeed(88,0,{target_0:150},edited.revision);assert.equal((await s.trackScene(88)).ai.speeds[0][0].targets[0],150);
  await s.saveEnvironment(88,[{type:'environment',index:0,values:{length:scene.environment.length+600,sky_row:1}},...scene.environment.cues.map((cue,index)=>({index,values:{color_0:0xcc33ff,color_2:0xcc33ff}})),...scene.environment.palettes.map((palette,index)=>({type:'palette',index,values:Object.fromEntries(Array.from({length:15},(_,i)=>['color_'+(i+1),0x00ff00]))}))],edited.revision);await s.publishMods();
  const pointer=JSON.parse(await fs.readFile(path.join(s.modsRoot,'active.json'))),build=path.join(s.modsRoot,'builds',pointer.build);await assert.rejects(fs.stat(path.join(build,'raw/asset_000.bin')),/ENOENT/);
  const bank=await fs.readFile(path.join(build,'raw/asset_088.bin'));assert.equal(bank.readInt16LE(bank.readUInt32LE(36)+132+8),0);
+ assert.equal(bank.readInt16LE(bank.readUInt32LE(36)+1140+4),150);
  const scenario=path.join(root,'race.ini');await fs.writeFile(scenario,'[race]\nmode=grand-prix\nclass=0\ncourse=0\ncar=3\n[boot]\ndirect=true\nskip_sequences=true\n');
  for(const renderer of ['classic','modern']){
   const capture=path.join(base,'build/reports/editor/atmosphere-layout-modern.ppm');await fs.mkdir(path.dirname(capture),{recursive:true});

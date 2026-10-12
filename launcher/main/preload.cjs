@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   saveTrackObject:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-track-object',bank,index,values,revision),
   saveRoadPoint:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-road-point',bank,index,values,revision),
   saveAiHint:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-ai-hint',bank,index,values,revision),
+  saveAiSpeed:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-ai-speed',bank,index,values,revision),
   saveEnvironment:(bank,entries,revision)=>ipcRenderer.invoke('launcher:save-environment',bank,entries,revision),
   saveTerrainCell:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-terrain-cell',bank,index,values,revision),
   saveRoadArc:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-road-arc',bank,index,values,revision),

@@ -50,6 +50,7 @@ static int TrackEditCommand(const char *source,const char *output) {
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
         if(yyjson_get_uint(index)>UINT32_MAX)goto done;
         uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strncmp(name,"speed.",6)){if(!AiSpeedEdit(&blocks[9],at,name+6,value))goto done;continue;}
         if(!strncmp(name,"ai.",3)){if(!AiEdit(&blocks[9],at,name+3,value,aiValid,aiCounts))goto done;aiChanged|=1<<(at/AI_HINT_COUNT);continue;}
         if(!strncmp(name,"environment.",12)){
             if(!envValid||at!=0)goto done;

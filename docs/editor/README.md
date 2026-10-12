@@ -97,3 +97,16 @@ one Undo step; **Save & apply** publishes it for the next race. An unsupported
 source table is shown explicitly. Sentinel, unused records and reserved bytes
 are preserved. Adding hints, start grids, speed keys and camera editing remain
 separate pending work.
+
+## Rival pace keys
+
+In Tracks, expand **Rivals · Pace keys**, choose the direction and a key. Four
+basic target fields tune the leading rivals. The game interpolates targets
+between progress keys, derives acceleration limits from them and scales later
+rivals from rival 4. These values are not kph/mph speed limits.
+
+Progress and slide pitch are under **Progress & slide pitch**. Progress uses
+internal track progress / 16; pitch uses 4096 units per turn. Keep authored order:
+retail data includes local progress reversals and tables using all 48 slots.
+Save to project, Undo and Save & apply work like other track edits. Sentinel -1
+and unused slots are preserved; adding/removing keys is not connected yet.
