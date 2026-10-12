@@ -59,13 +59,15 @@ static int ExportGlb(const char *input,unsigned part,const char *output,const ch
    for(unsigned j=0;j<3;j++){
     uint32_t index;RageRuntimeVertex v;unsigned char encoded[40];
     if(!RuntimeMeshIndex(&mesh,first+runEnd+j,&index)||!RuntimeMeshVertex(&mesh,index,&v))goto done;
-    if(j&&v.material!=triangleWord)goto done;triangleWord=v.material;
+    if(j&&v.material!=triangleWord)goto done;
+    triangleWord=v.material;
     if(!RuntimeVertexEncode(encoded,sizeof(encoded),&v))goto done;
     memcpy(binary+(size_t)(runEnd+j)*48,encoded,36);
     memcpy(binary+(size_t)(runEnd+j)*48+36,encoded+12,12);
     RageRuntimeVertex standard=v;double length=sqrt((double)v.normal[0]*v.normal[0]+(double)v.normal[1]*v.normal[1]+(double)v.normal[2]*v.normal[2]);
     for(unsigned n=0;n<3;n++)standard.normal[n]=length>1e-20f?v.normal[n]/length:(n==1?1.0f:0.0f);
-    if(!RuntimeVertexEncode(encoded,sizeof(encoded),&standard))goto done;memcpy(binary+(size_t)(runEnd+j)*48+12,encoded+12,12);
+    if(!RuntimeVertexEncode(encoded,sizeof(encoded),&standard))goto done;
+    memcpy(binary+(size_t)(runEnd+j)*48+12,encoded+12,12);
     for(unsigned c=0;c<3;c++){if(v.position[c]<low[c])low[c]=v.position[c];if(v.position[c]>high[c])high[c]=v.position[c];}
    }
    if(runEnd==i)word=triangleWord;
@@ -125,7 +127,8 @@ static const cgltf_accessor *Attribute(const cgltf_primitive *p,cgltf_attribute_
 }
 static int Read(const cgltf_accessor *a,size_t at,float *value,unsigned count){
  if(!a||a->is_sparse||a->count<=at||cgltf_num_components(a->type)!=count||!cgltf_accessor_read_float(a,at,value,count))return 0;
- for(unsigned i=0;i<count;i++)if(!isfinite(value[i]))return 0;return 1;
+ for(unsigned i=0;i<count;i++)if(!isfinite(value[i]))return 0;
+ return 1;
 }
 static int Active(const cgltf_scene *scene,const cgltf_node *node){
  for(unsigned depth=0;node&&depth<64;depth++,node=node->parent)for(size_t i=0;i<scene->nodes_count;i++)if(scene->nodes[i]==node)return 1;
@@ -183,7 +186,9 @@ static int ImportGlb(const char *input,const char *output,const char *textureDir
    if(uv&&!Read(uv,index,v.uv,2))goto done;
    if(color){unsigned components=(unsigned)cgltf_num_components(color->type);if((components!=3&&components!=4)||!Read(color,index,rgba,components))goto done;}
    for(unsigned c=0;c<4;c++){if(rgba[c]<0||rgba[c]>1)goto done;v.color[c]=(uint8_t)lroundf(rgba[c]*255);}
-   if(!RuntimeVertexEncode(wire+layout.verticesOffset+cursor*40,40,&v))goto done;Put32(wire+layout.indicesOffset+cursor*4,(uint32_t)cursor);cursor++;
+   if(!RuntimeVertexEncode(wire+layout.verticesOffset+cursor*40,40,&v))goto done;
+   Put32(wire+layout.indicesOffset+cursor*4,(uint32_t)cursor);
+   cursor++;
   }
  }
  RageRuntimeMesh checked;if(!RuntimeMeshOpen(&checked,wire,layout.totalSize))goto done;
@@ -223,7 +228,11 @@ static int Shift(yyjson_mut_doc *doc,yyjson_mut_val *obj,const char *key,uint32_
 }
 int GlbAssemble(const char *output){
  enum { INPUT_LIMIT=1024*1024 };char *input=malloc(INPUT_LIMIT+1u),*json=NULL;unsigned char *bin=NULL,*file=NULL;yyjson_doc *manifest=NULL,*partDoc=NULL;yyjson_mut_doc *doc=NULL;int ok=0;size_t binSize=0,jsonSize=0;
- if(!input)goto done;size_t n=fread(input,1,INPUT_LIMIT+1u,stdin);if(ferror(stdin)||n>INPUT_LIMIT)goto done;manifest=yyjson_read(input,n,0);if(!manifest)goto done;
+ if(!input)goto done;
+ size_t n=fread(input,1,INPUT_LIMIT+1u,stdin);
+ if(ferror(stdin)||n>INPUT_LIMIT)goto done;
+ manifest=yyjson_read(input,n,0);
+ if(!manifest)goto done;
  yyjson_val *spec=yyjson_doc_get_root(manifest),*parts=yyjson_obj_get(spec,"parts"),*instances=yyjson_obj_get(spec,"instances");
  if(!yyjson_is_obj(yyjson_obj_get(spec,"source"))||!yyjson_is_arr(parts)||yyjson_arr_size(parts)!=3||!yyjson_is_arr(instances)||yyjson_arr_size(instances)<3||yyjson_arr_size(instances)>8)goto done;
  doc=yyjson_mut_doc_new(NULL);if(!doc)goto done;yyjson_mut_val *root=yyjson_mut_obj(doc);yyjson_mut_doc_set_root(doc,root);
@@ -242,7 +251,11 @@ int GlbAssemble(const char *output){
   uint32_t offsets[7];for(unsigned i=0;i<7;i++)offsets[i]=(uint32_t)yyjson_mut_arr_size(arrays[i]);
   for(unsigned group=0;group<7;group++){
    yyjson_val *table=yyjson_obj_get(partRoot,names[group]),*entry;size_t i,count;
-   if(!table)continue;if(!yyjson_is_arr(table)){cgltf_free(parsed);free(bytes);goto done;}
+   if(!table)continue;
+   if(!yyjson_is_arr(table)){cgltf_free(parsed);
+   free(bytes);
+   goto done;
+   }
    yyjson_arr_foreach(table,i,count,entry){
     yyjson_mut_val *copy=yyjson_val_mut_copy(doc,entry);if(!copy||!yyjson_mut_is_obj(copy)){cgltf_free(parsed);free(bytes);goto done;}
     int valid=1;
@@ -348,7 +361,9 @@ int GlbMapping(const char *input,const char *output){
  }
  yyjson_val *preview=yyjson_obj_get(spec,"preview_node");
  if(preview){
-  if(!yyjson_is_uint(preview)||yyjson_get_uint(preview)>=data->nodes_count)goto done;const cgltf_node *selected=&data->nodes[yyjson_get_uint(preview)];if(!selected->mesh||!Active(scene,selected))goto done;
+  if(!yyjson_is_uint(preview)||yyjson_get_uint(preview)>=data->nodes_count)goto done;
+  const cgltf_node *selected=&data->nodes[yyjson_get_uint(preview)];
+  if(!selected->mesh||!Active(scene,selected))goto done;
   float transform[16];cgltf_node_transform_world(selected,transform);for(unsigned c=0;c<16;c++)if(!isfinite(transform[c]))goto done;
   yyjson_mut_obj_remove_str(root,"meshes");yyjson_mut_arr_add_val(Array(doc,root,"meshes"),yyjson_val_mut_copy(doc,yyjson_arr_get(yyjson_obj_get(yyjson_doc_get_root(original),"meshes"),(size_t)(selected->mesh-data->meshes))));
   yyjson_mut_obj_remove_str(root,"nodes");yyjson_mut_val *node=Element(doc,Array(doc,root,"nodes")),*matrix=Array(doc,node,"matrix");Number(doc,node,"mesh",0);for(unsigned c=0;c<16;c++)yyjson_mut_arr_add_real(doc,matrix,transform[c]);
@@ -378,7 +393,9 @@ static int SidecarKind(const char *path,int directory){
 }
 static int Hex(unsigned char c){return c>='0'&&c<='9'?c-'0':c>='a'&&c<='f'?c-'a'+10:c>='A'&&c<='F'?c-'A'+10:-1;}
 static int Sidecar(const char *input,const char *uri,char path[4096]){
- if(!uri||!*uri||strlen(uri)>=4096)return 0;char relative[4096];size_t at=0;
+ if(!uri||!*uri||strlen(uri)>=4096)return 0;
+ char relative[4096];
+ size_t at=0;
  for(size_t i=0;uri[i];i++){unsigned char c=(unsigned char)uri[i];if(c=='?'||c=='#')return 0;if(c=='%'){if(!uri[i+1]||!uri[i+2]||Hex((unsigned char)uri[i+1])<0||Hex((unsigned char)uri[i+2])<0)return 0;c=(unsigned char)(Hex((unsigned char)uri[i+1])*16+Hex((unsigned char)uri[i+2]));i+=2;}if(!c||c=='\\'||c==':'||c<32)return 0;relative[at++]=(char)c;}relative[at]=0;if(relative[0]=='/')return 0;
  const char *slash=strrchr(input,'/'),*back=strrchr(input,'\\');if(back&&(!slash||back>slash))slash=back;size_t root=slash?(size_t)(slash-input)+1:0;if(root>=4096)return 0;memcpy(path,input,root);path[root]=0;
  const char *part=relative;while(*part){const char *end=strchr(part,'/');size_t length=end?(size_t)(end-part):strlen(part);if(!length||(length==2&&!memcmp(part,"..",2)))return 0;if(length!=1||*part!='.'){size_t n=strlen(path);if(n+length+2>4096)return 0;memcpy(path+n,part,length);path[n+length]=0;if(!SidecarKind(path,end!=NULL))return 0;if(end){path[n+length]='/';path[n+length+1]=0;}}if(!end)break;part=end+1;if(!*part)return 0;}
@@ -389,10 +406,14 @@ static unsigned char *JpegPng(const unsigned char *bytes,size_t size,size_t *png
  unsigned w=0,h=0;size_t at=2;unsigned char *pixels=NULL,*png=NULL;SDL_Surface *surface=NULL;SDL_IOStream *stream=NULL;
  if(size<4||size>32u*1024u*1024u||bytes[0]!=255||bytes[1]!=216||bytes[size-2]!=255||bytes[size-1]!=217)return NULL;
  while(at<size){if(bytes[at++]!=255)goto done;while(at<size&&bytes[at]==255)at++;if(at>=size)goto done;unsigned marker=bytes[at++];if(marker==218||marker==217||!marker)goto done;if(marker==1||(marker>=208&&marker<=215))continue;
-  if(size-at<2)goto done;unsigned length=(unsigned)bytes[at]*256+bytes[at+1];if(length<2||length>size-at)goto done;
+  if(size-at<2)goto done;
+  unsigned length=(unsigned)bytes[at]*256+bytes[at+1];
+  if(length<2||length>size-at)goto done;
   if(marker==192||marker==193||marker==194){if(length<8||bytes[at+2]!=8)goto done;h=(unsigned)bytes[at+3]*256+bytes[at+4];w=(unsigned)bytes[at+5]*256+bytes[at+6];unsigned components=bytes[at+7];if((components!=1&&components!=3&&components!=4)||length!=8+components*3)goto done;break;}at+=length;
  }
- if(!w||!h||w>4096||h>4096)goto done;pixels=malloc((size_t)w*h*4);if(!pixels)goto done;
+ if(!w||!h||w>4096||h>4096)goto done;
+ pixels=malloc((size_t)w*h*4);
+ if(!pixels)goto done;
  if(!SDL_ConvertPixels((int)w,(int)h,SDL_PIXELFORMAT_MJPG,bytes,(int)size,SDL_PIXELFORMAT_RGBA32,pixels,(int)w*4)){fprintf(stderr,"Cannot decode JPEG: %s\n",SDL_GetError());goto done;}
  surface=SDL_CreateSurfaceFrom((int)w,(int)h,SDL_PIXELFORMAT_RGBA32,pixels,(int)w*4);stream=SDL_IOFromDynamicMem();if(!surface||!stream||!SDL_SavePNG_IO(surface,stream,false))goto done;
  Sint64 n=SDL_GetIOSize(stream);const void *data=SDL_GetPointerProperty(SDL_GetIOProperties(stream),SDL_PROP_IOSTREAM_DYNAMIC_MEMORY_POINTER,NULL);if(n<=0||n>32*1024*1024||!data)goto done;png=malloc((size_t)n);if(png){memcpy(png,data,(size_t)n);*pngSize=(size_t)n;}
@@ -404,7 +425,13 @@ static unsigned char *Asset(const char *input,const char *uri,size_t *size,size_
  const char *payload=NULL;
  const char *types[]={"data:application/octet-stream;base64,","data:application/gltf-buffer;base64,","data:image/png;base64,","data:image/jpeg;base64,"};
  for(unsigned i=image?2:0;i<(image?4u:2u);i++){size_t n=strlen(types[i]);if(!strncmp(uri,types[i],n)){payload=uri+n;break;}}
- if(!payload)return NULL;size_t n=strlen(payload);if(n%4||n/4>limit/3+1)return NULL;size_t count=n/4*3;if(n&&payload[n-1]=='=')count--;if(n>1&&payload[n-2]=='=')count--;if(count>limit)return NULL;
+ if(!payload)return NULL;
+ size_t n=strlen(payload);
+ if(n%4||n/4>limit/3+1)return NULL;
+ size_t count=n/4*3;
+ if(n&&payload[n-1]=='=')count--;
+ if(n>1&&payload[n-2]=='=')count--;
+ if(count>limit)return NULL;
  unsigned char *bytes=malloc(count?count:1);if(!bytes)return NULL;size_t at=0;
  for(size_t i=0;i<n;i+=4){int a=Base64((unsigned char)payload[i]),b=Base64((unsigned char)payload[i+1]),c=payload[i+2]=='='?-2:Base64((unsigned char)payload[i+2]),d=payload[i+3]=='='?-2:Base64((unsigned char)payload[i+3]);
   if(a<0||b<0||c==-1||d==-1||(c==-2&&(d!=-2||i+4!=n||(b&15)))||(c>=0&&d==-2&&(i+4!=n||(c&3)))){free(bytes);return NULL;}

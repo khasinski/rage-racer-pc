@@ -1674,3 +1674,46 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - S01 is partial macOS evidence, not all-platform completion. Linux/Windows
   packaged installation, native dialog workflows, disc import and complete
   editing/play workflows remain acceptance work, as does the broader editor.
+
+### Linux/Windows packaged editor verification
+
+- Tested in isolated /home/hasik/Projects/rage-editor-381b75ae on darwine and
+  C:\Users\hasik\rage-editor-381b75ae in its aya-win11 VM, copied from HEAD381b75ae
+  plus the changes recorded here. Existing checkouts/profiles/disc libraries were
+  not modified. Windows access uses local SSH through darwine; no credentials
+  or private keys were copied to the host/VM.
+- Fixed GCC -Werror misleading-indentation failures in SHA/snapshot rejection
+  and GLB/glTF codecs by separating statements, without suppressing warnings.
+  Native editor builds PASS on Linux GCC and Windows ClangCL. Fixed editor tests
+  that assumed single-config build paths: use the staged tools as other editor
+  tests do. Native-resolved active build/profile paths are normalized at the JS
+  service boundary. The PCM-repair fixture now waits for its child and retries
+  owned-directory cleanup on Windows, instead of deleting a running child's cwd.
+- Hidden Electron runs use offscreen rendering as well as hidden/no-throttle
+  windows. This fixes Linux CDP screenshot stalls under Xvfb and retains no-focus
+  testing. Actual package tests2 PASS on each of macOS, Linux and Windows; these
+  verify clean/private stored profiles, real preload/IPC, packaged tool/profile
+  byte equality, regional new-save checksum recognition and bridge/error behavior.
+  Screenshots from all three were visually inspected (no-disc Save editor).
+- Linux unpacked Electron fails default startup on this Ubuntu host because its
+  SUID sandbox helper is not root-owned. Added a Debian installer, not --no-sandbox:
+  /opt/rage-racer-editor payload, desktop launcher, root-owner metadata and4755
+  Chromium helper, declared desktop/Vulkan runtime dependencies. Stage/application
+  directories explicitly0755; Electron's temporary700 root must not survive into
+  an installed root-owned application. Contract test verifies modes/ownership,
+  desktop exec, input validation, symlink rejection and staging cleanup.
+- Actual .deb payload was extracted as root into this task's private installation
+  prefix, then launched as normal user under Xvfb with sandbox enabled. No global
+  application install/system security change. Installed package gate2 PASS.
+  This is not a package-manager GUI/dependency-install test. Debian/Ubuntu package
+  only; RPM/Flatpak and other Linux distributions remain open.
+- Full npm183 tests: macOS173 PASS/10 skips; Linux174 PASS/9 skips; Windows170
+  PASS/13 skips; zero failures, native save-format PASS on each. Windows's three
+  additional skips are existing POSIX SIGTERM2 and symlink-copy tests. Optional
+  disc/game gates were not enabled in this platform run; no new feature test was
+  disabled to obtain the passes. Windows/Linux gameplay and actual disc import,
+  Blender/UI edit/publish/play workflows remain separate acceptance work.
+- Local test artifacts: launcher/out/Rage-Racer-Editor-macOS-arm64.zip (~160MiB),
+  Rage-Racer-Editor-Windows-x64.zip (~161MiB),
+  Rage-Racer-Editor-0.1.0-amd64.deb (~96MiB). ZIP integrity PASS. Neither published
+  nor tagged. Logs/screenshots: build/reports/editor/platforms/ and /tmp/rr-editor-*.

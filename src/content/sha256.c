@@ -65,6 +65,8 @@ int Sha256File(const char *path,size_t limit,char hex[65]){
         if(n>limit-total){ok=0;break;}
         total+=n;Sha256Update(&hash,bytes,n);
     }
-    if(ferror(file))ok=0;if(fclose(file))ok=0;
-    if(ok)Sha256Finish(&hash,hex);return ok;
+    if(ferror(file))ok=0;
+    if(fclose(file))ok=0;
+    if(ok)Sha256Finish(&hash,hex);
+    return ok;
 }

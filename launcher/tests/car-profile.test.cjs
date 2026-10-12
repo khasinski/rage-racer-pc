@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const path=require('node:path'),fs=require('node:fs/promises'),os=require('node:os');
 const {run}=require('../main/service.cjs');
 const root=path.resolve(__dirname,'../..');
-const cli=path.join(root,process.env.RAGE_LAUNCHER_BUILD_DIR||'build/release','rage-mod-cli'+(process.platform==='win32'?'.exe':''));
+const cli=path.resolve(__dirname,'../resources/bin','rage-mod-cli'+(process.platform==='win32'?'.exe':''));
 test('editor uses the game parser for both regional catalogs and rejects malformed values',async()=>{
   for(const name of ['cars.toml','cars.ntscj.toml']){
     const {cars}=JSON.parse(await run(cli,['--car-profile',path.join(root,name)]));

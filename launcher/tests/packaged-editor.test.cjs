@@ -4,7 +4,7 @@ const {run}=require('../main/service.cjs');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 for(const seeded of [false,true])test('packaged editor boots hidden with real preload/IPC and '+(seeded?'its private stored settings':'a clean isolated profile'), {skip:!executable,timeout:45000},async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-packaged-editor-'));let socket,child;
- t.after(async()=>{socket?.close();if(child&&child.exitCode===null){child.kill();await Promise.race([new Promise(resolve=>child.once('exit',resolve)),pause(3000)]);if(child.exitCode===null)child.kill('SIGKILL');}await fs.rm(root,{recursive:true,force:true});});
+ t.after(async()=>{socket?.close();if(child&&child.exitCode===null&&child.signalCode===null){child.kill();await Promise.race([new Promise(resolve=>child.once('exit',resolve)),pause(3000)]);if(child.exitCode===null&&child.signalCode===null)child.kill('SIGKILL');}await fs.rm(root,{recursive:true,force:true});});
  if(seeded)await fs.writeFile(path.join(root,'launcher.json'),JSON.stringify({settings:{'video.internal_scale':'2'},disc:null,mods:[]}));
  const resources=process.platform==='darwin'?path.resolve(path.dirname(executable),'../Resources/resources'):path.join(path.dirname(executable),'resources/resources');
  const suffix=process.platform==='win32'?'.exe':'';
@@ -15,7 +15,7 @@ for(const seeded of [false,true])test('packaged editor boots hidden with real pr
  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;delete env.RAGE_LAUNCHER_USER_DATA;
  child=spawn(executable,['--hidden','--user-data-dir='+root,'--remote-debugging-port=0'],{env,stdio:['ignore','pipe','pipe'],windowsHide:true});let logs='',spawnError;child.on('error',e=>spawnError=e);child.stdout.on('data',b=>logs+=b);child.stderr.on('data',b=>logs+=b);
  let port;const deadline=Date.now()+25000;
- while(Date.now()<deadline){if(spawnError)throw spawnError;if(child.exitCode!==null)throw Error('Editor exited before boot: '+logs);const info=await fs.readFile(path.join(root,'DevToolsActivePort'),'utf8').catch(()=>null);if(info){port=Number(info.split('\n')[0]);break;}await pause(50);}assert.ok(port,logs);
+ while(Date.now()<deadline){if(spawnError)throw spawnError;if((child.exitCode!==null||child.signalCode!==null))throw Error('Editor exited before boot: '+logs);const info=await fs.readFile(path.join(root,'DevToolsActivePort'),'utf8').catch(()=>null);if(info){port=Number(info.split('\n')[0]);break;}await pause(50);}assert.ok(port,logs);
  let page;while(Date.now()<deadline){const targets=await fetch('http://127.0.0.1:'+port+'/json/list').then(r=>r.json());page=targets.find(x=>x.type==='page'&&x.url.startsWith('file:'));if(page)break;await pause(50);}assert.ok(page,logs);
  socket=new WebSocket(page.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{socket.addEventListener('open',resolve,{once:true});socket.addEventListener('error',reject,{once:true});});let sequence=0;const pending=new Map();socket.addEventListener('message',e=>{const result=JSON.parse(e.data),entry=pending.get(result.id);if(!entry)return;pending.delete(result.id);clearTimeout(entry.timer);result.error?entry.reject(Error(result.error.message)):entry.resolve(result.result);});
  const call=(method,params={})=>new Promise((resolve,reject)=>{const id=++sequence,timer=setTimeout(()=>{pending.delete(id);reject(Error('CDP timed out: '+method));},10000);pending.set(id,{resolve,reject,timer});socket.send(JSON.stringify({id,method,params}));});

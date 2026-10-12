@@ -9,7 +9,8 @@
 #include <string.h>
 
 static int Reject(char *error,size_t size,const char *reason){
-    if(error&&size)snprintf(error,size,"%s",reason);return -1;
+    if(error&&size)snprintf(error,size,"%s",reason);
+    return -1;
 }
 static const char *String(yyjson_val *value){
     const char *s=yyjson_get_str(value);

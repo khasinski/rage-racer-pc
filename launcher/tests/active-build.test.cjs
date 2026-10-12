@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path');
 const {createHash}=require('node:crypto');
 const {run}=require('../main/service.cjs');
-const cli=path.resolve(__dirname,'../..',process.env.RAGE_LAUNCHER_BUILD_DIR||'build/release','rage-mod-cli'+(process.platform==='win32'?'.exe':''));
+const cli=path.resolve(__dirname,'../resources/bin','rage-mod-cli'+(process.platform==='win32'?'.exe':''));
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 
 test('native SHA-256 matches Node across block and streaming boundaries',async()=>{

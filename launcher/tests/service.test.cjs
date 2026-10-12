@@ -311,8 +311,9 @@ test('launch regenerates missing menu PCM with the normal extractor',async()=>{
   await service.init();service.state.disc={path:disc,data,archive,region:'PAL'};
   service.tool=()=>process.execPath;
   await service.launch();
+  const child=service.game;if(child)await new Promise(resolve=>child.once('close',resolve));
   assert.equal(await fs.readFile(path.join(data,'menu_music.wav'),'utf8'),'pcm');
- }finally{await fs.rm(root,{recursive:true,force:true});}
+ }finally{await fs.rm(root,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 });
 
 test('diagnostics reads bounded tails and handles logs not created yet',async()=>{

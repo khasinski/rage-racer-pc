@@ -51,7 +51,7 @@ test('apply compiles car deltas, atomically activates for launch, and retains th
   try{
     const bin=path.join(root,'bin');await fs.mkdir(bin);
     const native='rage-mod-cli'+(process.platform==='win32'?'.exe':'');
-    await fs.copyFile(path.join(repo,process.env.RAGE_LAUNCHER_BUILD_DIR||'build/release',native),path.join(bin,native));
+    await fs.copyFile(path.resolve(__dirname,'../resources/bin',native),path.join(bin,native));
     for(const file of ['cars.toml','cars.ntscj.toml'])await fs.copyFile(path.join(repo,file),path.join(bin,file));
     const archive=path.join(root,'RAGE.BIN'),config=path.join(root,'default.ini');
     await fs.writeFile(archive,'source revision one');await fs.writeFile(config,'[video]\nrenderer = modern\n');
@@ -101,7 +101,7 @@ test('one applied build retains car edits and selected model packages, freezes b
     const bin=path.join(root,'bin');await fs.mkdir(bin);
     for(const name of ['rage-mod-cli','rage-mesh-obj']){
       const exe=name+(process.platform==='win32'?'.exe':'');
-      await fs.copyFile(path.join(repo,process.env.RAGE_LAUNCHER_BUILD_DIR||'build/release',exe),path.join(bin,exe));
+      await fs.copyFile(path.resolve(__dirname,'../resources/bin',exe),path.join(bin,exe));
     }
     for(const file of ['cars.toml','cars.ntscj.toml'])await fs.copyFile(path.join(repo,file),path.join(bin,file));
     const config=path.join(root,'default.ini'),archive=path.join(root,'RAGE.BIN');

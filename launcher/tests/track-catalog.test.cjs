@@ -10,7 +10,7 @@ test('original track catalog preserves every class, direction and named block wi
     const bytes=Buffer.alloc(88);
     for(let i=0;i<11;i++)bytes.writeUInt32LE(44+i*4,i*4);
     for(let bank=88;bank<=134;bank+=2)await fs.writeFile(path.join(root,'raw',`asset_${String(bank).padStart(3,"0")}.bin`),bytes);
-    const service=new LauncherService({root,bin:path.resolve(__dirname,'../../build/release'),config:''});
+    const service=new LauncherService({root,bin:path.resolve(__dirname,'../resources/bin'),config:''});
     service.state.disc={data:root,region:'pal'};
     service.requireReady=()=>{};
     const {tracks}=await service.tracks();

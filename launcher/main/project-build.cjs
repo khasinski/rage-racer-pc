@@ -111,7 +111,7 @@ async function activeBuild(service){
   const {source}=require('./service.cjs'),identity=await source(service.state.disc);
   const {run}=require('./service.cjs'),directory=await service.gameModRoot();
   const result=JSON.parse(await run(service.tool('rage-mod-cli'),['--active-build',directory,identity.region,identity.fingerprint]));
-  return result.active?result:null;
+  return result.active?{...result,directory:path.normalize(result.directory),profile:path.normalize(result.profile)}:null;
 }
 async function activeProfile(service){return (await activeBuild(service))?.profile||'';}
 module.exports={apply,activeBuild,activeProfile};

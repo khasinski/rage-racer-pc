@@ -117,7 +117,7 @@ handle('remove-mod',async id=>{const answer=await dialog.showMessageBox(window,{
 handle('export-mod',async id=>{const dir=await open({title:'Choose export destination',properties:['openDirectory','createDirectory']});if(dir)return service.exportMod(id,dir);});
 }
 async function createWindow(){
-  window=new BrowserWindow({show:!hidden,width:1280,height:900,minWidth:960,minHeight:680,backgroundColor:'#101319',title:'Rage Racer Editor',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:!hidden}});
+  window=new BrowserWindow({show:!hidden,width:1280,height:900,minWidth:960,minHeight:680,backgroundColor:'#101319',title:'Rage Racer Editor',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:!hidden,offscreen:hidden}});
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   window.webContents.on('will-navigate',event=>event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_w,_p,callback)=>callback(false));
