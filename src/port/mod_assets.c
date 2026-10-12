@@ -33,16 +33,17 @@ static int s_manifestReady;
 static int s_legacyLayout;
 static int s_initialized;
 static char s_region[16],s_source[72],s_carProfile[1024];
-static int s_announced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
-static int s_patchedAnnounced[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+static struct { unsigned char loaded,geometry,announced,patched; } s_assets[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+void ModAssetSetGeometryChanged(unsigned index,int changed){if(index<RAGE_ARCHIVE_INDEX_ENTRY_COUNT)s_assets[index].geometry=(unsigned char)(changed!=0);}
+int ModAssetGeometryChanged(unsigned index){return index<RAGE_ARCHIVE_INDEX_ENTRY_COUNT&&s_assets[index].geometry;}
+int ModAssetWasReplaced(unsigned index){return index<RAGE_ARCHIVE_INDEX_ENTRY_COUNT&&s_assets[index].loaded;}
 
 void ModAssetsShutdown(void) {
     s_generation++;
     s_directory = NULL;
     memset(s_directoryStorage, 0, sizeof(s_directoryStorage));
     memset(&s_manifest, 0, sizeof(s_manifest));
-    memset(s_announced, 0, sizeof(s_announced));
-    memset(s_patchedAnnounced, 0, sizeof(s_patchedAnnounced));
+    memset(s_assets, 0, sizeof(s_assets));
     s_manifestReady = 0;
     s_legacyLayout = 0;
     s_initialized = 0;
@@ -228,6 +229,7 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     if (destination == NULL ||
         (unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return 0;
     ModAssetsInit();
+    s_assets[index].loaded=0;s_assets[index].geometry=0;
     file = ModOpen(index, &size);
     if (file == NULL) return 0;
 
@@ -255,10 +257,11 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
         return 0;
     }
     memcpy(destination, replacement, (size_t)size);
+    s_assets[index].loaded=1;s_assets[index].geometry=1;
     free(replacement);
     if ((unsigned int)size != originalSize) {
-        if (!s_announced[index]) {
-            s_announced[index] = 1;
+        if (!s_assets[index].announced) {
+            s_assets[index].announced = 1;
             fprintf(stderr, "rage-port: asset %d overridden, %u -> %ld bytes\n",
                     index, originalSize, size);
         }
@@ -273,8 +276,8 @@ void ModPatchTextures(int index, void *data, size_t size) {
     ModAssetsInit();
     if (s_directory == NULL || !s_legacyLayout) return;
     patched = TexturePatchAsset(s_directory, index, data, size);
-    if (patched > 0 && !s_patchedAnnounced[index]) {
-        s_patchedAnnounced[index] = 1;
+    if (patched > 0 && !s_assets[index].patched) {
+        s_assets[index].patched = 1;
         fprintf(stderr, "rage-port: asset %d patched from %d texture images\n",
                 index, patched);
     }

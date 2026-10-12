@@ -35,6 +35,7 @@ int RuntimeConfigEnabled(const char *name) {
     return 0;
 }
 
+void ModAssetSetGeometryChanged(unsigned index,int changed){(void)index;(void)changed;}
 int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     (void)index;
     (void)destination;

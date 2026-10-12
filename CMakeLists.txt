@@ -149,7 +149,8 @@ endif()
 
 add_library(rage-json STATIC external/yyjson/yyjson.c)
 target_include_directories(rage-json PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/external/yyjson)
-target_sources(rage-content PRIVATE src/content/active_build.c)
+target_sources(rage-content PRIVATE src/content/active_build.c
+    src/content/car_bank.c)
 target_link_libraries(rage-content PRIVATE rage-json rage-car-catalog)
 target_compile_definitions(rage-content PRIVATE __psyz=1)
 add_library(rage-mod-package STATIC src/render/mod_package.c)
@@ -390,6 +391,7 @@ if(RAGE_BUILD_PORT)
         src/port/native_visibility.c
         src/port/native_asset_importer.c
         src/port/track_export.c
+        src/port/car_export.c
         src/port/native_mesh_writer.c
         src/port/track_texture_snapshot.c
         src/port/modern/modern_renderer.c

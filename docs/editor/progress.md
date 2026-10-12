@@ -1792,3 +1792,28 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   flagged as outside this dependency view rather than silently represented as
   current. Full raw-provider/effective runtime parity, break-link authoring,
   geometry/road bake and other acceptance gates remain open.
+
+### Raw car banks in the real editor
+
+- Preview, part/whole-car export, texture lookup, material mapping and Used by
+  now resolve the selected package's raw player/rival bank in the same temporary
+  composed view. Source files remain read-only; explicit project meshes retain
+  priority over package meshes and raw banks.
+- The compiled game worker exports raw parts through the live validated asset
+  installer/native importer into RRMESH. No second decoder or visible game window
+  is introduced. Invalid/truncated banks and existing output files are rejected.
+- Runtime built-in geometry no longer overwrites changed raw car geometry.
+  Comparison examines only the car-model block: texture, environment or other
+  track edits preserve built-in car improvements. Comparison happens at asset
+  loading and once per bank in an editor transaction, never per rendered frame.
+- Synthetic geometry comparison covers moved blocks, image-only differences,
+  changed geometry and invalid bounds. Full launcher suite:190 tests,178 PASS,
+  12 optional skips,0 failures. Native asset loader/mod fallback:2 PASS on macOS.
+- Remaining limits: catalogue expansion/new model IDs, greater-than-64 material
+  sources, all-region and cross-platform validation of this change are still
+  open. Earlier platform packages do not contain this latest work.
+- Actual PAL validation: translated raw player vertices are visible in preview;
+  GLB export/import preserves vertices and indices exactly; original bank bytes
+  remain unchanged. Two isolated headless modern races verify raw geometry wins
+  over built-ins and an explicit mesh subsequently wins over the raw bank.
+  Focused real-data suite:3 PASS,0 skips,0 failures.

@@ -10,6 +10,7 @@
 #include "content/track_pack.h"
 #include "content/sha256.h"
 #include "content/active_build.h"
+#include "content/car_bank.h"
 #include "port/car_catalog.h"
 #include <string.h>
 #include <stdio.h>
@@ -93,6 +94,14 @@ done:
     return ok?0:1;
 }
 int main(int argc,char **argv) {
+    if(argc==5&&!strcmp(argv[1],"--car-bank-equal")){
+        size_t aSize=0,bSize=0;void *a=NULL,*b=NULL;SDL_PathInfo info;int ok=0;
+        if(strcmp(argv[2],"player")&&strcmp(argv[2],"rival"))return 1;
+        if(SDL_GetPathInfo(argv[3],&info)&&info.type==SDL_PATHTYPE_FILE&&info.size<=128u*1024u*1024u)a=SDL_LoadFile(argv[3],&aSize);
+        if(SDL_GetPathInfo(argv[4],&info)&&info.type==SDL_PATHTYPE_FILE&&info.size<=128u*1024u*1024u)b=SDL_LoadFile(argv[4],&bSize);
+        if(a&&b){printf("{\"equal\":%s}\n",CarBankGeometryEqual(a,aSize,b,bSize,!strcmp(argv[2],"rival"))?"true":"false");ok=1;}
+        SDL_free(a);SDL_free(b);return ok?0:1;
+    }
     if(argc==6&&!strcmp(argv[1],"--replace-mesh")){
         void *baseBytes=NULL,*partBytes=NULL,*result=NULL;size_t baseSize=0,partSize=0,size=0;
         RageRuntimeMesh base,part;SDL_PathInfo info;int ok=0;char *end;

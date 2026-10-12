@@ -146,6 +146,7 @@ int main(int argc, char **argv) {
         EXPECT(ModAssetLoad(0,destination,2)==0); /* old root/raw is not mixed in */
         ModAssetsShutdown();EXPECT(ModAssetsCarProfile()!=NULL); /* reload retains mounted source */
         ModAssetsShutdown();
+    EXPECT(!ModAssetWasReplaced(0));
         EXPECT(WriteFixtureFile(buildAsset,oversized,sizeof(oversized)));
         EXPECT(ModAssetsDirectory()==NULL && ModAssetsCarProfile()==NULL && ModAssetsManifest()==NULL);
         EXPECT(WriteFixtureFile(buildAsset,valid,sizeof(valid)));
@@ -253,7 +254,9 @@ int main(int argc, char **argv) {
 
     memset(destination, 0xA5, sizeof(destination));
     s_room = sizeof(destination);
+    EXPECT(!ModAssetWasReplaced(0));
     EXPECT(ModAssetLoad(0, destination, 2) == 8);
+    EXPECT(ModAssetWasReplaced(0));
     EXPECT(memcmp(destination, valid, sizeof(valid)) == 0);
 
     memset(destination, 0xA5, sizeof(destination));
@@ -263,6 +266,7 @@ int main(int argc, char **argv) {
 
     s_room = 0;
     EXPECT(ModAssetLoad(0, destination, 2) == 0);
+    EXPECT(!ModAssetWasReplaced(0));
     EXPECT(destination[0] == 0xA5 && destination[15] == 0xA5);
 
     EXPECT(WriteFixtureFile(asset0, unaligned, sizeof(unaligned)));

@@ -335,8 +335,10 @@ set_tests_properties(native_terrain_material PROPERTIES LABELS unit)
 
 add_executable(native_asset_loader_tests
     native_asset_loader_tests.c
+    ${CMAKE_SOURCE_DIR}/src/content/car_bank.c
     ${CMAKE_SOURCE_DIR}/src/port/native_asset_loader.c)
 target_include_directories(native_asset_loader_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

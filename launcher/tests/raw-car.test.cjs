@@ -1,0 +1,22 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+const {LauncherService,run}=require('../main/service.cjs');
+const source=process.env.RR_EDITOR_GAME_SOURCE,disc=process.env.RR_EDITOR_GAME_DISC;
+test('real raw player bank changes reach editor geometry and preserve original source', {skip:!source||!disc,timeout:60000},async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-raw-car-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const base=path.resolve(__dirname,'../..'),file=path.join(source,'data/raw/asset_010.bin'),original=await fs.readFile(file),changed=Buffer.from(original),bank=changed.readUInt32LE(32),vertices=bank+changed.readUInt32LE(bank+4),end=bank+changed.readUInt32LE(bank+8);for(let at=vertices;at+8<=end;at+=8)changed.writeInt16LE(changed.readInt16LE(at)+32,at);
+ const s=new LauncherService({root:path.join(root,'editor'),modsRoot:path.join(root,'applied'),bin:path.join(base,'launcher/resources/bin'),config:path.join(base,'launcher/resources/rage-port.ini')});await s.init();s.requireReady=()=>{};s.state.disc={archive:path.join(source,'RAGE.BIN'),path:disc,region:'PAL',data:path.join(source,'data')};await s.project();const output=path.join(root,'original.rmesh');const metadata=JSON.parse(await run(s.tool('rage-racer'),['--set','tools.car_raw='+file,'--set','tools.car_bank=10','--set','tools.car_part=0','--set','tools.car_output='+output]));assert.ok(metadata.materials.length);const before=JSON.parse(await run(s.tool('rage-mod-cli'),['--preview',output]));
+ const folder=path.join(root,'package');await fs.mkdir(path.join(folder,'raw'),{recursive:true});await fs.writeFile(path.join(folder,'raw/asset_010.bin'),changed);await fs.writeFile(path.join(folder,'mod.toml'),'[mod]\nid="raw-car"\n');const mod=await s.importMod(folder);await s.toggleMod(mod.id,true);const current=await s.previewCar('car.player.10.part.0');assert.equal(current.indices.length,before.indices.length);for(let i=0;i<before.vertices.length;i+=9)assert.equal(current.vertices[i],before.vertices[i]+32);assert.deepEqual(await fs.readFile(file),original);assert.ok((await s.carMaterials('car.player.10.part.0')).surfaces.length);const exported=await s.exportCar('car.player.10.part.0',root,'glb');await s.importCar('car.player.10.part.0',path.join(exported,'model.glb'));const roundtrip=await s.previewCar('car.player.10.part.0');assert.deepEqual(roundtrip.vertices,current.vertices);assert.deepEqual(roundtrip.indices,current.indices);
+ for(const input of [Buffer.alloc(44),original.subarray(0,100)]){const broken=path.join(root,'broken.bin'),out=path.join(root,'broken.rmesh');await fs.writeFile(broken,input);await assert.rejects(run(s.tool('rage-racer'),['--set','tools.car_raw='+broken,'--set','tools.car_bank=10','--set','tools.car_output='+out]));await assert.rejects(fs.stat(out),/ENOENT/);}
+ await assert.rejects(run(s.tool('rage-racer'),['--set','tools.car_raw='+file,'--set','tools.car_bank=10','--set','tools.car_output='+output]));assert.deepEqual(JSON.parse(await run(s.tool('rage-mod-cli'),['--preview',output])),before);
+});
+
+test('geometry comparison ignores images, accepts relocated blocks and rejects malformed bounds',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-bank-compare-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const tool=path.resolve(__dirname,'../resources/bin/rage-mod-cli');
+ for(const rival of [false,true]){
+  const make=offset=>{const b=Buffer.alloc(160);b.writeUInt32LE(offset,rival?12:32);b.writeUInt32LE(rival?offset+16:16,rival?16:24);b.fill(7,offset,offset+16);return b;};
+  const a=make(64),b=make(96),left=path.join(root,'left.bin'),right=path.join(root,'right.bin');await fs.writeFile(left,a);
+  const compare=async bytes=>{await fs.writeFile(right,bytes);return JSON.parse(await run(tool,['--car-bank-equal',rival?'rival':'player',left,right])).equal;};
+  b[150]=99;assert.equal(await compare(b),true);b[100]=8;assert.equal(await compare(b),false);
+  assert.equal(await compare(Buffer.alloc(12)),false);const invalid=make(64);invalid.writeUInt32LE(0xffffffff,rival?16:24);assert.equal(await compare(invalid),false);
+ }
+});

@@ -4,7 +4,8 @@ async function car(service,key,signal){
  const catalog=JSON.parse(await service.carTool(['--set','tools.car_catalog=true'],signal));
  const body=catalog.parts.find(p=>p.key===key&&(p.rival?p.part%5===0:p.part===0));if(!body)throw Error('Choose a complete car');return body;
 }
-async function table(service,c,signal){const {run}=require('./service.cjs');return JSON.parse(await run(service.tool('rage-mod-cli'),['--car-materials',c.rival?'rival':'player',path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`),String(c.bank)],{signal})).materials;}
+async function table(service,c,signal,view){const {run}=require('./service.cjs');return require('./car-view.cjs').withView(service,signal,view,async selected=>JSON.parse(await run(service.tool('rage-mod-cli'),['--car-materials',c.rival?'rival':'player',require('./car-view.cjs').rawSource(service,c.bank,selected),String(c.bank)],{signal})).materials);}
+async function layout(service,c,signal,view){return require('./car-view.cjs').withView(service,signal,view,async selected=>{const raw=require('./car-view.cjs').rawSource(service,c.bank,selected);return JSON.parse(await require('./service.cjs').run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));});}
 async function boundedFile(root,relative,max){
  if(typeof relative!=='string'||!relative||relative.includes('\\')||relative.split('/').some(p=>!p||p==='.'||p==='..')||path.isAbsolute(relative))throw Error('Invalid car set file path');
  let file=root;for(const part of relative.split('/')){file=path.join(file,part);if((await fs.lstat(file)).isSymbolicLink())throw Error('Car sets cannot contain symbolic links');}
@@ -13,7 +14,7 @@ async function boundedFile(root,relative,max){
 exports.pack=async(service,file,output,signal)=>{const stat=await fs.stat(file);if(!stat.isFile()||stat.size>128*1024*1024)throw Error('Choose a model file up to 128 MiB');if(['.glb','.gltf'].includes(path.extname(file).toLowerCase()))await require('./service.cjs').run(service.tool('rage-mesh-obj'),['pack-gltf',file,output],{signal});else await fs.copyFile(file,output);return output;};
 exports.exportSet=async(service,key,destination)=>{
  service.requireReady();return service.operation('Exporting complete car',signal=>require('./car-view.cjs').withView(service,signal,undefined,async view=>{
-  const c=await car(service,key,signal),materials=await table(service,c,signal),target=path.join(destination,'car-set-'+randomUUID());await fs.mkdir(target);
+  const c=await car(service,key,signal),materials=await table(service,c,signal,view),target=path.join(destination,'car-set-'+randomUUID());await fs.mkdir(target);
   try{
    const manifest={format:1,region:service.state.disc.region,key,parts:{},textures:{}};await fs.mkdir(path.join(target,'textures'));
    for(const [role,offset]of [['body',0],['front-wheels',2],['rear-wheels',3]]){
@@ -32,15 +33,15 @@ exports.exportSet=async(service,key,destination)=>{
     for(const name of await fs.readdir(named))if(!['model.obj','model.obj.mtl'].includes(name))await fs.rm(path.join(named,name));
    }
    await fs.writeFile(path.join(target,'car-set.json'),JSON.stringify(manifest,null,2));
-   const {run}=require('./service.cjs'),raw=path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`);
-   const layout=JSON.parse(await run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));
+   const {run}=require('./service.cjs');
+   const placement=await layout(service,c,signal,view);
    const parts=[],folders=[];
    try{
     for(const offset of [0,2,3]){
      const id=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
      const folder=await service.exportCarData(id,target,signal,'png',view,'glb');folders.push(folder);parts.push({id,file:path.join(folder,'model.glb')});
     }
-    const instances=layout.instances.map((instance,i)=>{
+    const instances=placement.instances.map((instance,i)=>{
      const mesh=[0,2,3].indexOf(instance.part-c.part);if(mesh<0)throw Error('Unknown car layout part');
      return {mesh,name:mesh===0?'body':mesh===2?'rear-wheels':`front-wheel-${i}`,position:instance.position,scale:instance.scale};
     });
@@ -63,10 +64,9 @@ exports.importSet=async(service,key,source,revision,owner)=>{
    if(whole){
     if(!['.glb','.gltf'].includes(path.extname(source).toLowerCase()))throw Error('Choose a complete GLB or glTF car');
     source=await exports.pack(service,source,path.join(staging,'source.glb'),signal);
-    const raw=path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`);
-    const layout=JSON.parse(await run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));
+    const placement=await layout(service,c,signal);
     const parts=[0,2,3].map(offset=>({id:`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`}));
-    const instances=layout.instances.map(i=>({mesh:[0,2,3].indexOf(i.part-c.part),position:i.position,scale:i.scale}));
+    const instances=placement.instances.map(i=>({mesh:[0,2,3].indexOf(i.part-c.part),position:i.position,scale:i.scale}));
     const project=await service.loadProject();
     await run(service.tool('rage-mesh-obj'),['separate-glb',source,staging],{signal,input:JSON.stringify({source:{region:service.state.disc.region,key,fingerprint:project?.document.source.fingerprint||null},parts,instances})});
     source=staging;manifest={format:1,region:service.state.disc.region,key,parts:{body:'part-0.glb','front-wheels':'part-1.glb','rear-wheels':'part-2.glb'},textures:{}};
@@ -83,7 +83,7 @@ exports.importSet=async(service,key,source,revision,owner)=>{
     await require('./car-material-bindings.cjs')(service,partKey,out,staging,role,signal);
     meshes.push(`"${partKey}" = "${relative}"`);
     if(images.length){
-     const binding=path.join(staging,'bindings-'+role+'.rmesh'),meta=JSON.parse(await service.carTool(['--set','tools.car_export='+partKey,'--set','tools.car_output='+binding],signal));await fs.rm(binding,{force:true});
+     const binding=path.join(staging,'bindings-'+role+'.rmesh'),meta=await require('./car-view.cjs').exportPart(service,partKey,binding,undefined,signal);await fs.rm(binding,{force:true});
      for(const image of images){
       const original=meta.materials.find(m=>m.source===image),material=original&&materials.find(m=>m.page===original.page&&m.clut===original.clut);if(!material)throw Error('GLB image has no matching car texture source');
       const png=path.join(imageDir,`texture-${image}.png`),previous=embedded[material.slot]||manifest.textures[material.slot];
@@ -124,12 +124,12 @@ exports.prepare=async(service,key,file)=>service.operation('Inspecting car impor
  try{
   const candidate=path.join(folder,'source.glb'),stat=await fs.stat(file);if(!stat.isFile()||stat.size>128*1024*1024)throw Error('Model exceeds the 128 MiB limit');await exports.pack(service,file,candidate,signal);
   const inspection=JSON.parse(await run(service.tool('rage-mesh-obj'),['inspect-glb',candidate],{signal}));
-  const raw=path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`),layout=JSON.parse(await run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));
-  const roles=layout.instances.map((instance,index)=>({instance:index,part:`car.${c.rival?'rival':'player'}.${c.bank}.part.${instance.part}`,label:instance.part===c.part?'Body':instance.part===c.part+3?'Rear wheels':instance.position[0]<0?'Front left wheel':'Front right wheel'}));
+  const placement=await layout(service,c,signal);
+  const roles=placement.instances.map((instance,index)=>({instance:index,part:`car.${c.rival?'rival':'player'}.${c.bank}.part.${instance.part}`,label:instance.part===c.part?'Body':instance.part===c.part+3?'Rear wheels':instance.position[0]<0?'Front left wheel':'Front right wheel'}));
   if(inspection.nodes.length!==roles.length)throw Error(`This car needs ${roles.length} mesh instances; the file has ${inspection.nodes.length}. Keep both front wheels linked to one mesh.`);
   const available=new Map();
   for(const [offset,label]of [[0,'body'],[2,'front wheels'],[3,'rear wheels']]){
-   const original=path.join(folder,'original.rmesh');await service.carTool(['--set',`tools.car_export=car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`,'--set','tools.car_output='+original],signal);
+   const original=path.join(folder,'original.rmesh');await require('./car-view.cjs').exportPart(service,`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`,original,undefined,signal);
    const glb=path.join(folder,'original.glb');await run(service.tool('rage-mesh-obj'),['export-glb',original,'0',glb],{signal});
    const stats=JSON.parse(await run(service.tool('rage-mesh-obj'),['inspect-glb',glb],{signal}));for(const {word}of stats.materials){if(!available.has(word))available.set(word,new Set());available.get(word).add(label);}await fs.rm(original,{force:true});await fs.rm(glb,{force:true});
   }
@@ -177,7 +177,7 @@ exports.texture=async(service,token,word)=>{const candidate=service.carImport;re
  const result={label:material.label,note:'Target car texture, including current project and selected mod replacements.'};if(id===65535||id>>>6===1){result.color=id===65535?'#28292e':'#314459';candidate.textures.set(key,result);return result;}
  const folder=path.join(candidate.folder,'material-'+word);await fs.mkdir(folder);
  try{return await require('./car-view.cjs').withView(service,signal,undefined,async view=>{
-  const meta=JSON.parse(await service.carTool(['--set','tools.car_export='+material.part,'--set','tools.car_output='+path.join(folder,'source.rmesh')],signal));
+  const meta=await require('./car-view.cjs').exportPart(service,material.part,path.join(folder,'source.rmesh'),undefined,signal);
   const source=id%64,appearance=await require('./preview-materials.cjs')(service,material.part,meta,view,signal);
   if(appearance[source]?.texture)result.png=appearance[source].texture.png;
   else{const textures=await require('./preview-textures.cjs')(service,material.part,{vertices:[0,0,0,0,0,0,word,0,0]},{...meta,materials:meta.materials.filter(m=>m.source===source)},folder,signal,'png');if(!textures[source])throw Error('Original material has no texture binding');result.png=(await fs.readFile(path.join(folder,textures[source]))).toString('base64');}

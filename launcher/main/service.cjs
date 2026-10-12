@@ -293,14 +293,14 @@ class LauncherService {
       const target=path.join(destination,key);await fs.mkdir(target);
       try{
         const mesh=path.join(target,'model.rmesh');
-        const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+mesh],signal));
+        const metadata=await require('./car-view.cjs').exportPart(this,key,mesh,mod,signal);
         await require('./car-view.cjs').model(this,key,mesh,mod);
 
         if(modelFormat!=='glb')await run(this.tool('rage-mesh-obj'),['export',mesh,'0',path.join(target,'model.obj')],{signal});
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',mesh],{signal,maxOutput:16*1024*1024}));
         const appearance=await require('./preview-materials.cjs')(this,key,metadata,mod,signal);
         const baseMetadata={...metadata,materials:metadata.materials.filter(m=>!appearance[m.source]?.texture)};
-        const textures=await require('./preview-textures.cjs')(this,key,geometry,baseMetadata,target,signal,format);
+        const textures=await require('./preview-textures.cjs')(this,key,geometry,baseMetadata,target,signal,format,mod);
         for(const [source,material]of Object.entries(appearance))if(material.texture){
           const name='texture-'+source+'.png';
           await fs.writeFile(path.join(target,name),Buffer.from(material.texture.png,'base64'));textures[source]=name;
@@ -347,9 +347,9 @@ class LauncherService {
         await require('./car-material-bindings.cjs')(this,key,mesh,staging,label,signal);
         const textureChanges=[];
         if(glbTextures.length){
-          const meta=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+path.join(staging,'bindings.rmesh')],signal));
+          const meta=await require('./car-view.cjs').exportPart(this,key,path.join(staging,'bindings.rmesh'),undefined,signal);
           await fs.rm(path.join(staging,'bindings.rmesh'),{force:true});
-          const table=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-materials',part.rival?'rival':'player',path.join(this.state.disc.data,'raw',`asset_${String(part.bank).padStart(3,'0')}.bin`),String(part.bank)],{signal}));
+          const table=await require('./car-view.cjs').withView(this,signal,undefined,async view=>JSON.parse(await run(this.tool('rage-mod-cli'),['--car-materials',part.rival?'rival':'player',require('./car-view.cjs').rawSource(this,part.bank,view),String(part.bank)],{signal})));
           for(const source of glbTextures){const original=meta.materials.find(m=>m.source===source),slot=original&&table.materials.find(m=>m.page===original.page&&m.clut===original.clut);if(!slot)throw Error('GLB image has no matching car texture source');const image=path.join(staging,'textures',`texture-${source}.png`);await run(this.tool('rage-mod-cli'),['--png',image],{signal});const previous=textureChanges.find(t=>t.id===slot.id);if(previous){if(!(await fs.readFile(previous.file)).equals(await fs.readFile(image)))throw Error('Different GLB images map to the same car surface; resolve the material mapping');}else textureChanges.push({id:slot.id,file:image});}
         }
         await this.loadProject();
@@ -382,12 +382,12 @@ class LauncherService {
       const staging=path.join(this.root,'car-preview-'+randomUUID());await fs.mkdir(staging);
       try{
         let file=path.join(staging,'model.rmesh');
-        const metadata=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+file],signal));
+        const metadata=await require('./car-view.cjs').exportPart(this,key,file,mod,signal);
         if(modId!==undefined&&!mod.manifest.meshes?.[key])throw Error('Unknown mod model');
         await require('./car-view.cjs').model(this,key,file,mod);
         const geometry=JSON.parse(await run(this.tool('rage-mod-cli'),['--preview',file],{signal,maxOutput:16*1024*1024}));
         geometry.materials=await require('./preview-materials.cjs')(this,key,metadata,mod,signal);
-        geometry.textures=await require('./preview-textures.cjs')(this,key,geometry,{...metadata,materials:metadata.materials.filter(m=>!geometry.materials[m.source]?.texture)},staging,signal);
+        geometry.textures=await require('./preview-textures.cjs')(this,key,geometry,{...metadata,materials:metadata.materials.filter(m=>!geometry.materials[m.source]?.texture)},staging,signal,'rgba',mod);
         for(const [source,material]of Object.entries(geometry.materials))if(material.texture)geometry.textures[source]=material.texture;
         return geometry;
       }finally{await fs.rm(staging,{recursive:true,force:true});}

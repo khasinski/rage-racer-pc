@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "port/native_asset_importer.h"
+#include "port/native_mesh_writer.h"
 #include "port/mod_assets.h"
 #include "port/platform_paths.h"
 #include "port/runtime_config.h"
@@ -151,7 +152,8 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     size_t ownedSize = 0;
     void *owned = NULL;
     size_t first, i;
-    int authored = RuntimeConfigInt("modern.authored_cars", 1, 0, 1);
+    int raw=ModAssetGeometryChanged(instance->assetKey);
+    int authored = !raw&&RuntimeConfigInt("modern.authored_cars", 1, 0, 1);
     if (!base) return NULL;
     if (instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK &&
         instance->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) return base;
@@ -175,7 +177,10 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         override = s_modReady ? ModManifestFindMesh(s_modManifest, key) : NULL;
         if (!authored && !override) continue;
         for (j = 0; j < sizeof(map)/sizeof(map[0]); j++) map[j] = UINT32_MAX;
-        for (j = 0; j < car->materialCount; j++) {
+        if(raw){
+            RageImportedTextureKey texture;
+            for(j=0;j<RAGE_CAR_SURFACE_SOURCE_STRIDE&&NativeAssetImporterMaterialKey(instance,(uint32_t)j,&texture);j++)for(unsigned surface=0;surface<RAGE_CAR_SURFACE_COUNT;surface++)map[j+surface*RAGE_CAR_SURFACE_SOURCE_STRIDE]=(uint32_t)j+surface*RAGE_CAR_SURFACE_RUNTIME_STRIDE;
+        }else for (j = 0; j < car->materialCount; j++) {
             const AuthoredCarMaterial *material = &car->materials[j];
             int slot = imported ? NativeAssetImporterMaterialSlot(instance,
                 material->page, material->clut) : material->cacheSlot;

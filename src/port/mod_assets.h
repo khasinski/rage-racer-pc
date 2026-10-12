@@ -25,6 +25,10 @@ unsigned ModAssetsGeneration(void);
 /* Load archive entry `index` from the override directory into `destination`.
  * Returns the byte count on success, with the low two bits cleared the way a
  * disc load reports one, or 0 when there is no override or it does not fit. */
+/* Successful raw load in this asset generation; no filesystem query. */
+int ModAssetWasReplaced(unsigned index);
+void ModAssetSetGeometryChanged(unsigned index,int changed);
+int ModAssetGeometryChanged(unsigned index);
 int ModAssetLoad(int index, void *destination, unsigned int originalSize);
 
 /* Bytes usable from `at` to the end of the buffer it falls in, or 0 when the

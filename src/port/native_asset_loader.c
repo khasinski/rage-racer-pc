@@ -1,6 +1,8 @@
 /* Native asset loader for the extracted retail RAGE.BIN archive. */
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include "content/car_bank.h"
 
 #include "game/asset.h"
 #include "game/asset_internal.h"
@@ -19,6 +21,20 @@ static RageResourceStatus ResolveModRaw(void *context) {
     RawAssetRequest *request=context;
     request->loaded=ModAssetLoad(request->index,request->destination,
                                 g_AssetCdEntries[request->index].size);
+    int player = request->index >= 10 && request->index <= 72;
+    int rival = request->index >= 88 && request->index <= 134;
+    if (request->loaded > 0 && (player || rival) && request->index % 2 == 0) {
+        unsigned size = g_AssetCdEntries[request->index].size;
+        void *original = size <= 128u * 1024u * 1024u ? malloc(size) : NULL;
+        if (original && HostLoadAsset(
+                g_AssetCdEntries[request->index].position.sectorOffset,
+                size, original) == (int)(size & ~3u)) {
+            ModAssetSetGeometryChanged((unsigned)request->index,
+                !CarBankGeometryEqual(original, size, request->destination,
+                                      (size_t)request->loaded, rival));
+        }
+        free(original);
+    }
     /* Preserve legacy raw override policy: rejected overrides use retail data. */
     return request->loaded>0?RAGE_RESOURCE_READY:RAGE_RESOURCE_MISSING;
 }

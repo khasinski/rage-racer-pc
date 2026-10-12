@@ -11,7 +11,7 @@ module.exports=async function(service,key,metadata,mod,signal){
  const prefix=kind==='player'?`car.${(bank-10)/2}.material.`:`track.${['big','mid','hi','oval'][index%4]}${Math.floor(index/4)+1}.model-bank-1.material.`;
  if(![...Object.keys(properties),...Object.keys(textures),...Object.keys(projectTextures)].some(id=>id.startsWith(prefix)))return {};
  const {run}=require('./service.cjs');
- const file=path.join(service.state.disc.data,'raw',`asset_${bankText.padStart(3,'0')}.bin`);
+ const file=require('./car-view.cjs').rawSource(service,bankText,mod);
  const table=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-materials',kind,file,bankText],{signal}));
  const result={};
  for(const material of metadata.materials){

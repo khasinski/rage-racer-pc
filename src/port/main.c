@@ -21,6 +21,7 @@
 #include "modern/modern_assets.h"
 #include "native_asset_importer.h"
 #include "track_export.h"
+#include "car_export.h"
 #include "platform_paths.h"
 #include "menu_music_runtime.h"
 
@@ -78,6 +79,8 @@ int main(int argc, char **argv) {
     char carCatalogError[256] = {0};
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
+    if(RuntimeConfigGet("tools.car_raw"))
+        return ExportRawCar(RuntimeConfigGet("tools.car_raw"),RuntimeConfigInt("tools.car_bank",10,0,255),RuntimeConfigEnabled("tools.car_rival"),RuntimeConfigInt("tools.car_part",0,0,255),RuntimeConfigGet("tools.car_output"))?EXIT_SUCCESS:EXIT_FAILURE;
     if(RuntimeConfigGet("tools.track_export"))
         return ExportTrack(RuntimeConfigGet("tools.track_export"),
             RuntimeConfigInt("tools.track_bank",88,88,134),RuntimeConfigGet("tools.track_output"))?EXIT_SUCCESS:EXIT_FAILURE;
