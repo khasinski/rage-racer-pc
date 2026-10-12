@@ -3,17 +3,21 @@ const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 const {LauncherService}=require('./service.cjs');
 let window,service,savePaths=new Map(),currentSave;
+const hidden=app.commandLine.hasSwitch('hidden');
+if(hidden&&process.platform==='darwin')app.setActivationPolicy('prohibited');
 const page=path.join(__dirname,'../renderer/index.html');
 const resources=app.isPackaged?path.join(process.resourcesPath,'resources'):path.join(__dirname,'../resources');
 const testRoot=process.env.RAGE_LAUNCHER_USER_DATA;
-if(testRoot&&!app.isPackaged)app.setPath('userData',testRoot);
+const userData=app.commandLine.getSwitchValue('user-data-dir');
+if(userData)app.setPath('userData',path.resolve(userData));
+else if(testRoot&&!app.isPackaged)app.setPath('userData',testRoot);
 else if(!app.commandLine.hasSwitch('user-data-dir')){
   // Keep existing profiles when changing the visible product name.
   app.setPath('userData',path.join(app.getPath('appData'),'Rage Racer Launcher'));
 }
 if(!app.requestSingleInstanceLock())app.quit();
 else {
-app.on('second-instance',()=>{window?.show();window?.focus();});
+app.on('second-instance',()=>{if(!hidden){window?.show();window?.focus();}});
 function handle(name,fn){ipcMain.handle('launcher:'+name,async(event,...args)=>{
   if(event.sender!==window?.webContents||event.senderFrame!==window.webContents.mainFrame||event.senderFrame.url!==pathToFileURL(page).href)throw Error('Untrusted request');
   try{return{ok:true,value:await fn(...args)};}catch(e){return{ok:false,error:e.message};}
@@ -113,7 +117,7 @@ handle('remove-mod',async id=>{const answer=await dialog.showMessageBox(window,{
 handle('export-mod',async id=>{const dir=await open({title:'Choose export destination',properties:['openDirectory','createDirectory']});if(dir)return service.exportMod(id,dir);});
 }
 async function createWindow(){
-  window=new BrowserWindow({width:1280,height:900,minWidth:960,minHeight:680,backgroundColor:'#101319',title:'Rage Racer Editor',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false}});
+  window=new BrowserWindow({show:!hidden,width:1280,height:900,minWidth:960,minHeight:680,backgroundColor:'#101319',title:'Rage Racer Editor',webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,backgroundThrottling:!hidden}});
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   window.webContents.on('will-navigate',event=>event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_w,_p,callback)=>callback(false));

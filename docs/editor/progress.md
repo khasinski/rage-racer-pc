@@ -1637,3 +1637,40 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   7 optional skips,0 failures; native save-format PASS. Final focused surface/build
   suite9 PASS after legacy migration handling. Untextured surface authoring and
   broader editor/platform/Blender acceptance gates remain open.
+
+### Packaged macOS editor / real Electron gate
+
+- Rebuilt all six staged native workers from current sources via build:native,
+  including the actual app game executable and profiles, then packaged one
+  Rage Racer Editor.app. Local artifact (not published):
+  launcher/out/Rage-Racer-Editor-macOS-arm64.zip (~160MiB compressed).
+- Added --hidden for automated Electron runs: no initial window display,
+  prohibited macOS activation, background rendering enabled, no second-instance
+  show/focus. Normal user launch is visible. --user-data-dir now explicitly
+  sets Electron service userData as well as Chromium storage; automated package
+  tests use a fresh owned temporary directory, not the user's editor profile.
+- Added optional packaged-editor.test.cjs using Node's WebSocket/CDP (no new
+  dependency) and actual packaged preload/IPC. Two cases: pristine no-disc
+  profile and private saved settings. Verifies source/project/mod empty state,
+  tools ready/no startup errors, saved setting isolation, Save editor navigation,
+  method bridge availability and no-source errors. No replacement service or
+  mocked success response. Native pickers/actual Finder double-click remain
+  manual gates; this tests the shipped application executable.
+- Test compares every packaged worker/profile/default INI byte-for-byte with
+  staging, creates PAL/NTSC-U/NTSC-J saves with the packaged compiled worker,
+  checks regional recognition and native checksum validation. Save files use
+  the same regional filenames as Create new save; region detection is filename
+  based and native payload is shorter than a padded PS1 memory-card block.
+- Package inventory now excludes remaining pruned node_modules directories/lock
+  metadata and implementation Markdown along with tests/native/scripts/out.
+  Actual ASAR inventory is asserted in the package test. All six native tools
+  link only macOS system libraries, no Homebrew/local runtime dependency.
+- Clean rebuilt package test2 PASS; final full npm182 tests:173 PASS,9 optional
+  skips,0 failures, native save-format PASS. Screenshot from actual hidden
+  Electron: build/reports/editor/packaged-editor.png (Save editor no-disc state),
+  visually inspected. ZIP integrity PASS. Earlier harness assertions about an
+  init-created settings file and padded save size were corrected against actual
+  service/native behavior before passing evidence.
+- S01 is partial macOS evidence, not all-platform completion. Linux/Windows
+  packaged installation, native dialog workflows, disc import and complete
+  editing/play workflows remain acceptance work, as does the broader editor.

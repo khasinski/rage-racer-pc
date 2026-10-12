@@ -11,6 +11,6 @@ const fs=require('node:fs');
   fs.accessSync(path.join(root,'resources','rage-port.ini'),fs.constants.R_OK);
   for(const name of ['cars.toml','cars.ntscj.toml'])fs.accessSync(path.join(root,'resources','bin',name),fs.constants.R_OK);
   const {packager}=await import('@electron/packager');
-  const result=await packager({dir:root,out:path.join(root,'out'),name:'Rage Racer Editor',executableName:'rage-launcher',appBundleId:'org.rageracer.launcher',extendInfo:{CFBundleDisplayName:'Rage Racer Editor'},overwrite:true,asar:true,prune:true,extraResource:[path.join(root,'resources')],ignore:[/^\/out($|\/)/,/^\/resources($|\/)/,/^\/tests($|\/)/,/^\/native($|\/)/,/^\/scripts($|\/)/],osxSign:undefined});
+  const result=await packager({dir:root,out:path.join(root,'out'),name:'Rage Racer Editor',executableName:'rage-launcher',appBundleId:'org.rageracer.launcher',extendInfo:{CFBundleDisplayName:'Rage Racer Editor'},overwrite:true,asar:true,prune:true,extraResource:[path.join(root,'resources')],ignore:[/^\/out($|\/)/,/^\/resources($|\/)/,/^\/tests($|\/)/,/^\/native($|\/)/,/^\/scripts($|\/)/,/^\/node_modules($|\/)/,/^\/[^/]+\.md$/,/^\/\.gitignore$/],osxSign:undefined});
   console.log(result.join('\n'));
 })().catch(e=>{console.error(e);process.exit(1)});
