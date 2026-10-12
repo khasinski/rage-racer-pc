@@ -1870,3 +1870,29 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   normalization is separate from model-preference stability.
 - Still open: new IDs/catalogue growth, break-link authoring, all-region/Blender
   and platform verification, road bake and wider asset/audio/interface coverage.
+
+### Named repeatable car exports
+
+- Public part and complete-car exports now reserve a new human-readable folder
+  for each export: Car - <car name>, then (2), (3), etc. Existing directories,
+  files and external edits are never reused or overwritten. Full-car UUID folder
+  names and part asset-ID folder names are no longer exposed by public export.
+- Catalog name resolution is shared by the car list, part export, complete-car
+  import/export and mapping wizard. Regional names and project-renamed player
+  bodies remain consistent; labels are sanitized only for filenames. Car slot,
+  source fingerprint and role/material metadata retain stable IDs inside files.
+- Reservation uses exclusive directory creation, including concurrent exports;
+  traversal/control/reserved filename characters are removed, UTF-8 names are
+  bounded without splitting characters, non-directory/symlink parents rejected.
+  Failed model generation removes only its newly reserved output folder.
+- Workshop explains numbered versions; export feedback reports the actual path.
+  No visible test windows and no new mock/prototype work.
+- Actual PAL service regression: export same part twice, retain externally edited
+  first GLB, import the new GLB; export complete car twice, preserve first notes,
+  import complete GLB and preview assembled geometry; project rename containing
+  Unicode/slash produces a safe named export; injected decoder failure leaves all
+  earlier exports intact.3 tests PASS,0 skips,0 failures. This is compiled-worker
+  integration, not a claim of manual Blender or native picker GUI verification.
+- Full launcher200 tests:183 PASS,17 optional skips,0 failures before final help
+  text update; focused workshop/export tests check the final renderer text.
+  Existing car-set/config tests5 PASS. Broader acceptance requirements remain open.

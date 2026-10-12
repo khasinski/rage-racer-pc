@@ -1,7 +1,7 @@
 const fs=require('node:fs/promises'),path=require('node:path'),{randomUUID}=require('node:crypto');
 async function car(service,key,signal){
  if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key))throw Error('Invalid car');
- const catalog=JSON.parse(await service.carTool(['--set','tools.car_catalog=true'],signal));
+ const catalog=await require('./car-catalog.cjs')(service,signal);
  const body=catalog.parts.find(p=>p.key===key&&(p.rival?p.part%5===0:p.part===0));if(!body)throw Error('Choose a complete car');return body;
 }
 async function table(service,c,signal,view){const {run}=require('./service.cjs');return require('./car-view.cjs').withView(service,signal,view,async selected=>JSON.parse(await run(service.tool('rage-mod-cli'),['--car-materials',c.rival?'rival':'player',require('./car-view.cjs').rawSource(service,c.bank,selected),String(c.bank)],{signal})).materials);}
@@ -14,7 +14,7 @@ async function boundedFile(root,relative,max){
 exports.pack=async(service,file,output,signal)=>{const stat=await fs.stat(file);if(!stat.isFile()||stat.size>128*1024*1024)throw Error('Choose a model file up to 128 MiB');if(['.glb','.gltf'].includes(path.extname(file).toLowerCase()))await require('./service.cjs').run(service.tool('rage-mesh-obj'),['pack-gltf',file,output],{signal});else await fs.copyFile(file,output);return output;};
 exports.exportSet=async(service,key,destination)=>{
  service.requireReady();return service.operation('Exporting complete car',signal=>require('./car-view.cjs').withView(service,signal,undefined,async view=>{
-  const c=await car(service,key,signal),materials=await table(service,c,signal,view),target=path.join(destination,'car-set-'+randomUUID());await fs.mkdir(target);
+  const c=await car(service,key,signal),materials=await table(service,c,signal,view),target=await require('./export-folder.cjs')(destination,c.name+' - Complete car');
   try{
    const manifest={format:1,region:service.state.disc.region,key,parts:{},textures:{}};await fs.mkdir(path.join(target,'textures'));
    for(const [role,offset]of [['body',0],['front-wheels',2],['rear-wheels',3]]){

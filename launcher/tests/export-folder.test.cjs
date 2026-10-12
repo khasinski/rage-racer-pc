@@ -1,0 +1,22 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os');
+const reserve=require('../main/export-folder.cjs');
+async function root(t){const directory=await fs.mkdtemp(path.join(os.tmpdir(),'rr-export-folder-'));t.after(()=>fs.rm(directory,{recursive:true,force:true}));return directory;}
+test('repeat and concurrent exports reserve new named folders and preserve edited previous exports',async t=>{
+ const directory=await root(t),first=await reserve(directory,'Esperanza - Body');await fs.writeFile(path.join(first,'model.glb'),'user edited this');
+ const next=await Promise.all(Array.from({length:8},()=>reserve(directory,'Esperanza - Body')));assert.equal(new Set([first,...next]).size,9);assert.equal(path.basename(first),'Car - Esperanza - Body');assert.ok(next.some(n=>path.basename(n)==='Car - Esperanza - Body (2)'));assert.equal(await fs.readFile(path.join(first,'model.glb'),'utf8'),'user edited this');
+});
+test('export labels cannot escape the chosen folder and collision with a file is preserved',async t=>{
+ const directory=await root(t);for(const name of ['../../outside','CON','NUL','A/B\\C:*?<>|"','日本 🚗'.repeat(90),'...']){const folder=await reserve(directory,name);assert.equal(path.dirname(folder),directory);assert.ok(Buffer.byteLength(path.basename(folder))<200);assert.ok(!/[<>:"/\\|?*]/.test(path.basename(folder)));}
+ const file=path.join(directory,'Car - Existing');await fs.writeFile(file,'keep');assert.equal(path.basename(await reserve(directory,'Existing')),'Car - Existing (2)');assert.equal(await fs.readFile(file,'utf8'),'keep');
+ await assert.rejects(reserve(file,'Anything'),/normal folder/);
+});
+const source=process.env.RR_EDITOR_GAME_SOURCE,disc=process.env.RR_EDITOR_GAME_DISC;
+test('real repeated part and complete car exports use names, retain external edits and can be imported again',{skip:!source||!disc,timeout:60000},async t=>{
+ const directory=await root(t),{LauncherService}=require('../main/service.cjs'),base=path.resolve(__dirname,'../..'),s=new LauncherService({root:path.join(directory,'editor'),bin:path.join(base,'launcher/resources/bin'),modsRoot:path.join(directory,'mods'),config:path.join(base,'launcher/resources/rage-port.ini')});await s.init();s.requireReady=()=>{};s.state.disc={archive:path.join(source,'RAGE.BIN'),path:disc,region:'PAL',data:path.join(source,'data')};await s.project();const key='car.player.10.part.0',label=(await s.cars()).parts.find(p=>p.key===key).name;
+ const first=await s.exportCar(key,directory,'glb');assert.equal(path.basename(first),'Car - '+label);assert.doesNotMatch(path.basename(first),/car\.player/);await fs.writeFile(path.join(first,'model.glb'),'edited externally');
+ const second=await s.exportCar(key,directory,'glb');assert.notEqual(first,second);assert.equal(await fs.readFile(path.join(first,'model.glb'),'utf8'),'edited externally');assert.equal((await fs.readFile(path.join(second,'model.glb'))).toString('ascii',0,4),'glTF');await s.importCar(key,path.join(second,'model.glb'));
+ const whole=await s.exportCarSet(key,directory);assert.equal(path.basename(whole),'Car - '+label+' - Complete car');await fs.writeFile(path.join(whole,'notes.txt'),'keep my Blender notes');const another=await s.exportCarSet(key,directory);assert.notEqual(whole,another);assert.equal(await fs.readFile(path.join(whole,'notes.txt'),'utf8'),'keep my Blender notes');await s.importCarSet(key,path.join(another,'car.glb'));assert.ok((await s.previewWholeCar(10)).vertices.length);
+ const spec=await s.carSpec(10);await s.saveCarSpec(10,{name:'My / Racer 🚗'},spec.revision);const renamed=await s.exportCarSet(key,directory);assert.equal(path.basename(renamed),'Car - My Racer 🚗 - Complete car');assert.equal((await s.cars()).parts.find(p=>p.key===key).name,'My / Racer 🚗');
+ // Failure after reserving a new directory removes only that failed export.
+ const before=await fs.readdir(directory),worker=s.carTool;s.carTool=async(args,signal)=>{if(args.some(a=>a.startsWith('tools.car_export=')))throw Error('decoder failure');return worker.call(s,args,signal);};await assert.rejects(s.exportCar(key,directory,'glb'),/decoder failure/);assert.deepEqual(await fs.readdir(directory),before);assert.equal(await fs.readFile(path.join(first,'model.glb'),'utf8'),'edited externally');
+});

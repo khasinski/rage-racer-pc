@@ -72,14 +72,7 @@ class LauncherService {
     return run(this.tool('rage-racer'),['--config',this.baseConfig,'--set','disc.image='+this.state.disc.path,'--set','disc.choose=false',...args],{cwd:this.root,signal});
   }
   async cars() {
-    this.requireReady();const project=await this.project();return this.operation('Reading car models',async signal=>{
-      const catalog=JSON.parse(await this.carTool(['--set','tools.car_catalog=true'],signal));
-      const names=JSON.parse(await run(this.tool('rage-save-cli'),['car-names'],{signal}));
-      const display=require('./car-names.cjs');
-      const profile=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-profile',path.join(this.bin,this.state.disc.region==='NTSC-J'?'cars.ntscj.toml':'cars.toml')],{signal}));
-      const authoredNames=new Map(project.changes.filter(c=>c.kind==='car'&&c.field==='name').map(c=>[c.id,c.value]));
-      return {...catalog,parts:catalog.parts.map(part=>{const car=!part.rival&&part.part===0?profile.cars.find(c=>c.variant===(part.bank-10)/2):null;return {...part,name:car&&authoredNames.has(car.id)?authoredNames.get(car.id):display(part.name,this.state.disc.region,names)};})};
-    });
+    this.requireReady();return this.operation('Reading car models',signal=>require('./car-catalog.cjs')(this,signal));
   }
   async audio(){return require('./audio.cjs').read(this);}
   async importAudio(id,input,revision){return require('./audio.cjs').importAudio(this,id,input,revision);}
@@ -286,11 +279,15 @@ class LauncherService {
   async exportCar(key,destination,modelFormat='obj') {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     if(!['obj','glb'].includes(modelFormat))throw Error('Choose OBJ or GLB geometry');
-    return this.operation('Exporting car model',signal=>this.exportCarData(key,destination,signal,'png',undefined,modelFormat));
+    return this.operation('Exporting car model',async signal=>{
+      const car=(await require('./car-catalog.cjs')(this,signal)).parts.find(part=>part.key===key);
+      if(!car)throw Error('Unknown car part');
+      return this.exportCarData(key,destination,signal,'png',undefined,modelFormat,car.name);
+    });
   }
-  async exportCarData(key,destination,signal,format='png',view,modelFormat='obj'){
+  async exportCarData(key,destination,signal,format='png',view,modelFormat='obj',label=key){
     return require('./car-view.cjs').withView(this,signal,view,async mod=>{
-      const target=path.join(destination,key);await fs.mkdir(target);
+      const target=await require('./export-folder.cjs')(destination,label);
       try{
         const mesh=path.join(target,'model.rmesh');
         const metadata=await require('./car-view.cjs').exportPart(this,key,mesh,mod,signal);
