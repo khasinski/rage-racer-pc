@@ -64,6 +64,10 @@ handle('export-title-image',async id=>{require('./title-images.cjs').slot(id);co
 handle('reset-title-image',(id,revision)=>service.resetTitleImage(id,revision));
 handle('tracks',()=>service.tracks());
 handle('track-scene',bank=>service.trackScene(bank));
+handle('track-textures',(id,part)=>service.trackTextures(id,part));
+handle('import-track-texture',async(id,part,source,revision)=>{const file=await open({title:'Replace track surface PNG',filters:[{name:'PNG image',extensions:['png']}],properties:['openFile']});return file?service.importTrackTexture(id,part,source,file,revision):null;});
+handle('export-track-texture',async(id,part,source)=>{const file=await output({title:'Export effective track surface PNG',defaultPath:'track-surface-'+source+'.png',filters:[{name:'PNG image',extensions:['png']}]});return file?service.exportTrackTexture(id,part,source,file):null;});
+handle('reset-track-texture',(id,part,source,revision)=>service.resetTrackTexture(id,part,source,revision));
 handle('preview-track-part',(id,part)=>service.previewTrackPart(id,part));
 handle('import-track-part',async(id,part,revision)=>{const file=await open({title:'Import track model',filters:[{name:'3D model',extensions:['obj','glb','gltf']}],properties:['openFile']});return file?service.importTrackPart(id,part,file,revision):null;});
 handle('export-track-part',async(id,part,format='obj')=>{if(!['obj','glb'].includes(format))throw Error('Choose OBJ or GLB export');const dir=await open({title:'Export track model '+format.toUpperCase()+' to folder',properties:['openDirectory','createDirectory']});return dir?service.exportTrackPart(id,part,dir,format):null;});

@@ -148,3 +148,37 @@ async function texturedPart(service,id,part,{file,directory,metadata,view},signa
  await require('./track-textures.cjs')(service,bank,{[name]:{geometry,instances:[{mesh:part}]}},{[name]:metadata},directory,[],signal,view);
  return geometry;
 }
+
+function surfaces(geometry,part){
+ const range=geometry.ranges[part];if(!range||!range[1])throw Error('Choose a non-empty track model');
+ const used=new Map();for(let i=range[0];i<range[0]+range[1];i++){const source=geometry.vertices[geometry.indices[i]*9+6]&65535;if(source!==65535&&!used.has(source))used.set(source,{source,models:[]});}
+ geometry.ranges.forEach(([first,count],model)=>{const seen=new Set();for(let i=first;i<first+count;i++){const source=geometry.vertices[geometry.indices[i]*9+6]&65535;if(used.has(source)&&!seen.has(source)){used.get(source).models.push(model);seen.add(source);}}});
+ return [...used.values()];
+}
+async function withSurfaces(service,id,part,work){
+ service.requireReady();slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
+ return service.operation('Reading track surfaces',signal=>withBank(service,id,signal,async context=>{
+  await model(service,id,context.file,context.view.root,context.view.files,signal,context.metadata.meshes);
+  const geometry=await texturedPart(service,id,part,context,signal);
+  return work(surfaces(geometry,part),geometry,context,signal);
+ }));
+}
+async function textures(service,id,part){return withSurfaces(service,id,part,(surfaces,geometry,{view})=>{
+ const project=service.editor.project.snapshot();return {id,part,revision:project.revision,surfaces:surfaces.filter(s=>geometry.textures[s.source]).map((s,n)=>{
+  const key=id+'.material.'+s.source,change=project.changes.find(c=>c.kind==='track'&&c.id===key&&c.field==='texture'),png=geometry.textures[s.source].png,bytes=Buffer.from(png,'base64');
+  return {...s,id:key,label:'Surface '+(n+1),png,width:bytes.readUInt32BE(16),height:bytes.readUInt32BE(20),overridden:Boolean(change),origin:change?'project':view.manifest.textures?.[key]||view.manifest.textures?.[key+'.variant.0']?'selected packages':'disc'};
+ })};
+});}
+async function importTexture(service,id,part,source,input,revision){return withSurfaces(service,id,part,async(surfaces,geometry,{directory},signal)=>{
+ const project=service.editor.project;project.checkRevision(revision);if(!Number.isInteger(source)||!surfaces.some(s=>s.source===source)||!geometry.textures[source])throw Error('Choose a texture used by this model');
+ const stat=await fs.lstat(input);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>32*1024*1024||path.extname(input).toLowerCase()!=='.png')throw Error('Choose a PNG smaller than 32 MiB');
+ const frozen=path.join(directory,'surface.png');await fs.copyFile(input,frozen);const {run}=require('./service.cjs'),info=JSON.parse(await run(service.tool('rage-mod-cli'),['--png',frozen],{signal}));if(info.width>4096||info.height>4096)throw Error('Track textures must be at most 4096 × 4096 pixels');
+ const value=await new ProjectFiles(service.editor.file).put(frozen,'png');if(signal.aborted)throw Error('Operation canceled');return project.edit([{kind:'track',id:id+'.material.'+source,field:'texture',value}],revision);
+});}
+async function exportTexture(service,id,part,source,output){return withSurfaces(service,id,part,async(surfaces,geometry)=>{
+ if(!Number.isInteger(source)||!surfaces.some(s=>s.source===source)||!geometry.textures[source])throw Error('Choose a texture used by this model');await require('./service.cjs').atomic(output,Buffer.from(geometry.textures[source].png,'base64'));return output;
+});}
+async function resetTexture(service,id,part,source,revision){return withSurfaces(service,id,part,(surfaces,geometry,context,signal)=>{
+ if(!Number.isInteger(source)||!surfaces.some(s=>s.source===source)||!geometry.textures[source])throw Error('Choose a texture used by this model');if(signal.aborted)throw Error('Operation canceled');return service.editor.project.edit([{kind:'track',id:id+'.material.'+source,field:'texture',value:null}],revision);
+});}
+Object.assign(module.exports,{surfaces,textures,importTexture,exportTexture,resetTexture});

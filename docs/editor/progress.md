@@ -1569,3 +1569,39 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Final full npm177 JS tests:170 PASS,7 optional skips,0 failures; native
   save-format PASS. Expanded actual PAL GLB+glTF activation gate PASS (~54sec)
   on both renderers. Blender manual roundtrip and all-platform gates remain open.
+
+### Direct track texture editing
+
+- Added Textures actions to placed-model and terrain-cell controls (including
+  model changes in the cell picker). Surface dialog shows effective PNG, pixel
+  dimensions, disc/package/project origin, shared Used by model list and
+  technical binding in details. Replace/export PNG/reset are connected to the
+  real project; no whole-model export or sidecar is required for a texture edit.
+- Compiled texture extraction and existing bank composition provide the same
+  effective images as model preview/export. Usage is derived from effective
+  indexed geometry, retaining full low16 track source identity and excluding
+  untextured faces. Replacements require a used, replaceable source, regular
+  non-symlink PNG ≤32MiB and ≤4096×4096, decoded before immutable storage/edit.
+  Undo/reset/build preserve source and package contents. Cancellation before
+  committing import/reset is checked. UI states modern-only scope.
+- Fixed a real preview/build precedence discrepancy: project base track-surface
+  PNG now replaces selected-package exact-variant texture bindings in the built
+  manifest too. Explicit project variant changes retain priority. Reset restores
+  the package variants, without changing unrelated surfaces or material settings.
+  Native manifest/build regression verifies replacement/reset and library bytes.
+- Tests cover shared indexed usage, full material IDs3/67, untextured/empty models,
+  named/escaped controls, thumbnails, identity, revisions and disabled reset.
+  Actual PAL headless app.js + live state + compiled service: Textures → Replace
+  PNG1×1 → Export exact PNG → Publish → invalid PNG rejection with unchanged
+  revision → Reset original → Undo restores replacement PASS. Initial temporary
+  harness missed awaiting export completion; corrected harness uses the UI toast
+  and reset state as completion evidence (/tmp/rr-track-texture-ui2.log).
+- Expanded normal isolated race gate performs direct PNG replacement/export,
+  checks effective origin/dimensions/content, rejects unknown surface and corrupt
+  PNG with no revision mutation, and loads the build on classic/modern PASS
+  (~54seconds). This is activation evidence; it does not verify every surface
+  visually or add classic texture replacement support. Region/platform/manual
+  usability and broader editor acceptance gates remain open.
+- Final full npm180 JS tests:173 PASS,7 optional skips,0 failures; native
+  save-format PASS. Shared usage collection scans each bank model once rather
+  than once per surface; focused surface/build regression9 PASS after that change.

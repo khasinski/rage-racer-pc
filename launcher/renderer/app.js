@@ -1,5 +1,5 @@
 import {carWorkspace,workshopTabs,carImportForm} from './car-workshop.mjs';
-import {trackWorkspace,terrainCellEditor} from './tracks.mjs';
+import {trackWorkspace,terrainCellEditor,trackTextureDialog} from './tracks.mjs';
 import {interfaceWorkspace} from './interface.mjs';
 import {audioWorkspace,initAudioPreview} from './audio.mjs';
 import {projectWorkspace} from './project.mjs';
@@ -122,6 +122,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||
  if(b.dataset.page)return navigate(b.dataset.page);
  if(b.dataset.discard){dirty=false;edits={};draft={...state.settings};$('#dialog').close();return enter(b.dataset.discard);}
  if(b.dataset.tab){if(!$('#settings-form').reportValidity())return;tab=b.dataset.tab;render();return;}
+ if(b.dataset.trackTextures){const data=await request('trackTextures',b.dataset.trackTextures,Number(b.dataset.part));$('#dialog').innerHTML=trackTextureDialog(data);$('#dialog').showModal();return;}
+ if(b.dataset.importTrackTexture!==undefined||b.dataset.exportTrackTexture!==undefined||b.dataset.resetTrackTexture!==undefined){const host=b.closest('[data-track-surfaces]'),id=host.dataset.trackSurfaces,part=Number(host.dataset.part),source=Number(b.dataset.importTrackTexture??b.dataset.exportTrackTexture??b.dataset.resetTrackTexture);if(b.dataset.exportTrackTexture!==undefined){if(await request('exportTrackTexture',id,part,source))toast('Effective surface PNG exported');return;}const result=await request(b.dataset.importTrackTexture!==undefined?'importTrackTexture':'resetTrackTexture',id,part,source,Number(host.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);render();$('#dialog').innerHTML=trackTextureDialog(await request('trackTextures',id,part));toast('Surface saved to project; Save & apply to use it in game');}return;}
  if(b.dataset.previewAddModel){await mountModelPreview($('#dialog'),await request('previewTrackPart',b.dataset.previewAddModel,Number($('#track-add-object [name="model"]').value)));return;}
  if(b.dataset.previewTrackPart){$('#dialog').close();await mountModelPreview($('#dialog'),await request('previewTrackPart',b.dataset.previewTrackPart,Number(b.dataset.part)));return;}
  if((b.dataset.exportAudio||b.dataset.importAudio||b.dataset.resetAudio)&&[...document.querySelectorAll('[data-audio-edit] [data-original]')].some(i=>i.value!==i.dataset.original)){toast('Save audio edits to your project first');return;}

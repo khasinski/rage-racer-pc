@@ -188,6 +188,10 @@ class LauncherService {
       return {tracks};
     });
   }
+  async trackTextures(id,part){return require('./track-meshes.cjs').textures(this,id,part);}
+  async importTrackTexture(id,part,source,file,revision){return require('./track-meshes.cjs').importTexture(this,id,part,source,file,revision);}
+  async exportTrackTexture(id,part,source,file){return require('./track-meshes.cjs').exportTexture(this,id,part,source,file);}
+  async resetTrackTexture(id,part,source,revision){return require('./track-meshes.cjs').resetTexture(this,id,part,source,revision);}
   async previewTrackPart(id,part){return require('./track-meshes.cjs').previewPart(this,id,part);}
   async importTrackPart(id,part,file,revision){return require('./track-meshes.cjs').importPart(this,id,part,file,revision);}
   async exportTrackPart(id,part,directory,format){return require('./track-meshes.cjs').exportPart(this,id,part,directory,format);}
