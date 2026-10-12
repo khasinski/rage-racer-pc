@@ -123,3 +123,21 @@ explicitly and stay inactive when moved. The original seed flag is preserved:
 -1 disables a slot, while active values also select initial progress traversal.
 Changing activity/progress seed is not exposed until model/session validation
 supports it safely, especially for Class 6's missing rivals.
+
+## Track cameras
+
+In Tracks, expand **Track cameras** and choose GP forward, GP reverse or Default,
+then a view. Set its rendering section and transition duration. These section
+references are not road-point indices. Non-positive duration uses the game's
+one-tick fallback.
+
+**Camera type & parameters** exposes in-car, chase, blended world node, path,
+sliding world node and orbit modes. World-node coordinates differ from path
+pitch/yaw/roll/distance; angles use 4096 units per turn. Changing mode reinterprets
+stored parameters, so save to refresh their labels. Car/chase/orbit modes ignore
+those stored parameters. Offsets mean car-relative focus for blended/path views,
+and destination coordinates for sliding views.
+
+**Used by** identifies shared records: changing one updates every referencing
+list. Save to project, Undo and Save & apply work normally. The GP intro camera
+path lives in the race-events block and is not edited by this section yet.

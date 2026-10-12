@@ -1471,3 +1471,31 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Full npm174 JS tests:167 PASS,7 optional skips,0 failures; native save-format
   PASS. Hint/pace/start native/service/form suite3 PASS. Activity/seed authoring,
   full-lap AI, cameras and wider editor acceptance requirements remain open.
+
+### Track-camera list authoring
+
+- Added named Track cameras → GP forward/GP reverse/Default → View forms.
+  Section/duration are basic; mode and mode-specific world/orientation/offset
+  parameters are advanced. UI distinguishes rendering sections from road points,
+  native angles/world units, runtime duration fallback and the separate GP intro.
+- C parser matches the runtime table (12-byte header, 36-byte nodes, assertions),
+  requires aligned in-bounds list offsets, valid0..5 modes and terminating -1.
+  No sort assumption. Physical node IDs preserve aliases/shared tails between
+  lists; Used by identifies all referencing tables. Editing cannot target header,
+  interior, sentinel or unreferenced bytes, or introduce a sentinel/mode overflow.
+- Typed camera project deltas share existing composition/build/undo. Node values
+  retain full signed32 bits; mode/section retain signed16 layout. Reserved data,
+  list offsets/sentinels/tails and other bank blocks survive field edits exactly.
+  No game camera code or global runtime state was replaced.
+- Native/service/form regression: shared forward/reverse list alias, independent
+  default/path list, exact changed bytes, invalid IDs/modes/sections/overflow
+  rejected without output, effective shared change and one-step undo.
+- Actual PAL headless app.js/live state GP forward view1 world Y5922→5923 → save
+  → effective scene → publish PASS, no errors. Normal hidden race gate verifies
+  edited camera bytes alongside prior track edits and loads bank88 successfully
+  on classic/modern, scene12/timer20 PASS (~54 sec).
+- Full npm175 JS tests:168 PASS,7 optional skips,0 failures; native save-format
+  PASS. Focused camera+AI suite4 PASS. The runtime gate proves camera-table
+  activation, not observed replay-cut framing/sky or isolated GP intro geometry.
+  Those T10 gates, camera insertion/removal/preview, GP intro event path and the
+  remaining editor scope stay open.
