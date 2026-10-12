@@ -43,7 +43,7 @@ instances linked to the same mesh. Compatible local transforms are supported;
 independent edits to the shared front wheels require a future runtime format.
 Export a static GLB without skins, animation or compression extensions.
 
-Use **Import edited GLB** on the same car and disc revision. Invalid input leaves
+Use **Import edited GLB/glTF** on the same car and disc revision. Invalid input leaves
 previous edits intact. The complete import is one undo step. Use **Save & apply**
 to publish the project to the game's automatically detected mod directory.
 Geometry replacement currently targets the modern renderer. Shader graph/PBR
@@ -64,3 +64,12 @@ show a colour swatch. Changing the choice clears the previous thumbnail.
 
 The exported folder also contains three OBJ models and shared PNGs. Import that
 folder through **OBJ sets and individual parts → Import OBJ car set folder**.
+
+External `.gltf` imports also work for a complete car or an individual part.
+Select the `.gltf` file; keep its BIN and PNG files in the same directory or
+subdirectories. Relative paths, spaces and URI-encoded Unicode names are
+supported. Import snapshots the referenced bytes into a private GLB, so editing
+the source files after selecting them does not change a pending import.
+Missing/truncated sidecars are errors. Remote/data URIs, parent paths, symlinks,
+JPEG textures, animation/skins and unsupported extensions are currently rejected.
+Use PNG textures and static GLB/glTF for this workflow. Original files stay intact.

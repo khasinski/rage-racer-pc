@@ -93,6 +93,14 @@ test('complete car import installs all models and textures atomically and reject
   assert.deepEqual(exportedProject.changes,changes); // Native OBJ/PNG round trip.
   const wholeProject=await service.importCarSet(key,path.join(exported,'car.glb'));
   assert.deepEqual(wholeProject.changes,changes); // Complete embedded GLB round trip.
+  const external=path.join(root,'external');await fs.mkdir(path.join(external,'textures'),{recursive:true});
+  const externalDoc=structuredClone(glb);externalDoc.buffers[0].uri='geometry.bin';await fs.writeFile(path.join(external,'geometry.bin'),bin);
+  for(const [i,image]of externalDoc.images.entries()){const view=externalDoc.bufferViews[image.bufferView];await fs.writeFile(path.join(external,'textures',i+'.png'),bin.subarray(view.byteOffset,view.byteOffset+view.byteLength));delete image.bufferView;delete image.mimeType;image.uri='textures/'+i+'.png';}
+  const externalFile=path.join(external,'car.gltf'),externalText=JSON.stringify(externalDoc);await fs.writeFile(externalFile,externalText);
+  assert.deepEqual((await service.importCarSet(key,externalFile)).changes,changes);assert.equal(await fs.readFile(externalFile,'utf8'),externalText);
+  const externalCandidate=await service.prepareCarImport(key,externalFile);await fs.writeFile(path.join(external,'geometry.bin'),'changed after selection');
+  const externalMapping={nodes:externalCandidate.nodes.map(n=>({node:n.node,instance:glb.nodes[n.node].extras.rr_instance})),materials:externalCandidate.materials.map(m=>({material:m.material,word:glb.materials[m.material].extras.rr_material}))};
+  assert.deepEqual((await service.completeCarImport(externalCandidate.token,externalMapping)).changes,changes);await fs.writeFile(path.join(external,'geometry.bin'),bin);
   const edited=Buffer.from(whole),bodyPosition=glb.accessors[glb.meshes[0].primitives[0].attributes.POSITION],bodyView=glb.bufferViews[bodyPosition.bufferView],vertexAt=28+jsonLength+bodyView.byteOffset+(bodyPosition.byteOffset||0);
   edited.writeFloatLE(7,vertexAt);const editedFile=path.join(root,'edited.glb');await fs.writeFile(editedFile,edited);
   let editedProject=await service.importCarSet(key,editedFile);

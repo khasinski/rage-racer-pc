@@ -80,7 +80,7 @@ handle('save-terrain-cell',(bank,index,values,revision)=>service.saveTerrainCell
 handle('save-road-arc',(bank,index,values,revision)=>service.saveRoadArc(bank,index,values,revision));
 handle('export-car-set',async key=>{const dir=await open({title:'Export complete car to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCarSet(key,dir);return null;});
 handle('import-car-set',async(key,format)=>{
- const file=await open(format==='glb'?{title:'Import complete car GLB',filters:[{name:'Complete car',extensions:['glb']}],properties:['openFile']}:{title:'Choose car set folder (car-set.json, models and textures)',properties:['openDirectory']});if(!file)return null;
+ const file=await open(format==='glb'?{title:'Import complete car GLB or glTF',filters:[{name:'Complete car',extensions:['glb','gltf']}],properties:['openFile']}:{title:'Choose car set folder (car-set.json, models and textures)',properties:['openDirectory']});if(!file)return null;
  try{return await service.importCarSet(key,file);}catch(e){if(format==='glb'&&/Missing car part|Missing material mapping|Choose a complete GLB exported/.test(e.message))return {mapping:await service.prepareCarImport(key,file)};throw e;}
 });
 handle('complete-car-import',(token,mapping)=>service.completeCarImport(token,mapping));
@@ -92,7 +92,7 @@ handle('car-spec',bank=>service.carSpec(bank));
 handle('save-car-spec',(bank,edits,revision)=>service.saveCarSpec(bank,edits,revision));
 handle('preview-car',(key,modId)=>service.previewCar(key,modId));
 handle('car-materials',key=>service.carMaterials(key));
-handle('import-car',async key=>{const file=await open({title:'Import a replacement car part',filters:[{name:'Car models',extensions:['obj','glb','rmesh']}],properties:['openFile']});if(file)return service.importCar(key,file);return null;});
+handle('import-car',async key=>{const file=await open({title:'Import a replacement car part',filters:[{name:'Car models',extensions:['obj','glb','gltf','rmesh']}],properties:['openFile']});if(file)return service.importCar(key,file);return null;});
 handle('export-car',async(key,format='obj')=>{if(!['obj','glb'].includes(format))throw Error('Choose OBJ or GLB geometry');const dir=await open({title:'Export car model to folder',properties:['openDirectory','createDirectory']});if(dir)return service.exportCar(key,dir,format);return null;});
 handle('export-asset',async index=>{const file=await output({title:'Export raw asset',defaultPath:`asset_${String(index).padStart(3,'0')}.bin`});if(file)await service.exportAsset(index,file);return !!file;});
 handle('replace-asset',async index=>{const file=await open({title:'Choose a replacement raw asset',filters:[{name:'Raw asset',extensions:['bin']}],properties:['openFile']});if(file)return service.replaceAsset(index,file);return null;});

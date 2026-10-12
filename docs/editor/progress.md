@@ -1284,3 +1284,39 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   save-format checks PASS. Focused cancellation + car-set tests 11 PASS; final
   late-commit cancellation case PASS in the native-backed car-set test. No game
   runtime or release changed. Broader editor acceptance requirements remain open.
+
+### External glTF import through the existing compiled worker
+
+- Complete-car picker and individual-part picker accept `.gltf` beside GLB.
+  Same car/project/undo pipeline; folder car sets can also reference glTF parts.
+  The editor normalises into a private GLB before geometry/image validation or
+  missing-property mapping. Source JSON/BIN/PNG stay read-only.
+- Compiled pack-gltf uses cgltf + existing yyjson; merges up to 64 external BINs
+  with four-byte alignment, remaps buffer-view offsets and embeds external PNGs.
+  It preserves scene hierarchy, accessor/material references and JSON extras.
+  Validates original declared bounds before merging (otherwise invalid old views
+  could cross into the next merged buffer), then validates the resulting GLB.
+- Bounded source JSON (8 MiB), total GLB (128 MiB), PNG inputs (32 MiB); exclusive
+  output. Asset paths stay under selected glTF directory, decode URI percent
+  bytes/UTF-8, allow ./ and nested directories; reject parent/absolute/remote/data
+  paths, missing files, links/reparse points and non-file sidecars. Missing assets
+  are named in errors. JPEG/embedded data-URI support remains open.
+- Native test with two buffers (unaligned first buffer), encoded Unicode/space
+  BIN and PNG paths: exact native geometry/full words/RGBA/UV/normals and exact
+  PNG bytes, preserved unknown extras, output exclusivity and source integrity.
+  Tests reject escapes/encoded escapes, remote/absolute/backslash/NUL/bad-percent
+  paths, symlink sidecar, original-bound mismatch and truncated BIN.
+- Service tests: whole-car external BIN/PNG round trip, independent part glTF
+  import, same one-operation geometry/image history. Pending glTF candidate stays
+  unchanged after external BIN is overwritten following file selection.
+- Actual PAL headless app.js with live state: external glTF + URI-encoded BIN +
+  separate PNGs → missing-ID recovery → body/wheel preview → target texture →
+  Import → Save & apply PASS, no page errors. Native pickers supplied by bridge.
+- Normal headless modern GP gate now covers external glTF recovered mappings:
+  all three mesh overrides plus edited 1×1 PNGs loaded; every whole-preview corner
+  unchanged; scene12/timer20 PASS (~30 sec). Full npm 169 tests: 162 PASS,
+  7 optional skips, 0 failures; native save-format PASS. Final model-file stat
+  guard rerun in the focused suite; no game/runtime source or release changed.
+- Still open: Blender proof, data URI/JPEG variations, broader assemblies/LOD,
+  complete shader/unknown-extra project roundtrip, physical units, single-part
+  missing-ID recovery and broader track/interface/media acceptance scope.

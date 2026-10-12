@@ -330,12 +330,12 @@ class LauncherService {
       await fs.mkdir(path.join(staging,'meshes'),{recursive:true});await fs.mkdir(path.join(staging,'textures'),{recursive:true});
       try{
         let glbTextures=[];const mesh=path.join(staging,'meshes/model.rmesh');
-        const extension=path.extname(file).toLowerCase();
-        if(extension==='.glb')glbTextures=JSON.parse(await run(this.tool('rage-mesh-obj'),['import-glb',file,mesh,path.join(staging,'textures')],{signal})).textures;
+        const extension=path.extname(file).toLowerCase(),label=path.basename(file);
+        if(extension==='.glb'||extension==='.gltf'){if(extension==='.gltf')file=await require('./car-set.cjs').pack(this,file,path.join(staging,'source.glb'),signal);glbTextures=JSON.parse(await run(this.tool('rage-mesh-obj'),['import-glb',file,mesh,path.join(staging,'textures')],{signal})).textures;}
         else if(extension==='.obj')await run(this.tool('rage-mesh-obj'),['import',file,mesh],{signal});
         else if(extension==='.rmesh')await fs.copyFile(file,mesh);
-        else throw Error('Choose an OBJ, GLB or RRMESH file');
-        await require('./car-material-bindings.cjs')(this,key,mesh,staging,path.basename(file),signal);
+        else throw Error('Choose an OBJ, GLB, glTF or RRMESH file');
+        await require('./car-material-bindings.cjs')(this,key,mesh,staging,label,signal);
         const textureChanges=[];
         if(glbTextures.length){
           const meta=JSON.parse(await this.carTool(['--set','tools.car_export='+key,'--set','tools.car_output='+path.join(staging,'bindings.rmesh')],signal));

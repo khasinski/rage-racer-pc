@@ -349,3 +349,57 @@ int GlbMapping(const char *input,const char *output){
  Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)binSize);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,data->buffers[0].data,data->buffers[0].size);ok=Write(output,file,total);
  done:free(json);free(file);free(bytes);cgltf_free(data);yyjson_doc_free(original);yyjson_doc_free(request);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot inspect/map static car GLB; input or mapping is invalid\n",stderr);return ok;
 }
+
+/* External glTF stays inside the selected file's directory. Normalise it to
+ * one immutable GLB before any editor import/history operation. */
+#ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
+#include <sys/stat.h>
+#endif
+static int SidecarKind(const char *path,int directory){
+#ifdef _WIN32
+ int count=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,NULL,0);if(count<=0)return 0;wchar_t *wide=malloc((size_t)count*sizeof(*wide));if(!wide)return 0;DWORD flags=INVALID_FILE_ATTRIBUTES;if(MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,path,-1,wide,count))flags=GetFileAttributesW(wide);free(wide);return flags!=INVALID_FILE_ATTRIBUTES&&!(flags&FILE_ATTRIBUTE_REPARSE_POINT)&&!!(flags&FILE_ATTRIBUTE_DIRECTORY)==directory;
+#else
+ struct stat info;return !lstat(path,&info)&&!S_ISLNK(info.st_mode)&&(directory?S_ISDIR(info.st_mode):S_ISREG(info.st_mode));
+#endif
+}
+static int Hex(unsigned char c){return c>='0'&&c<='9'?c-'0':c>='a'&&c<='f'?c-'a'+10:c>='A'&&c<='F'?c-'A'+10:-1;}
+static int Sidecar(const char *input,const char *uri,char path[4096]){
+ if(!uri||!*uri||strlen(uri)>=4096)return 0;char relative[4096];size_t at=0;
+ for(size_t i=0;uri[i];i++){unsigned char c=(unsigned char)uri[i];if(c=='?'||c=='#')return 0;if(c=='%'){if(!uri[i+1]||!uri[i+2]||Hex((unsigned char)uri[i+1])<0||Hex((unsigned char)uri[i+2])<0)return 0;c=(unsigned char)(Hex((unsigned char)uri[i+1])*16+Hex((unsigned char)uri[i+2]));i+=2;}if(!c||c=='\\'||c==':'||c<32)return 0;relative[at++]=(char)c;}relative[at]=0;if(relative[0]=='/')return 0;
+ const char *slash=strrchr(input,'/'),*back=strrchr(input,'\\');if(back&&(!slash||back>slash))slash=back;size_t root=slash?(size_t)(slash-input)+1:0;if(root>=4096)return 0;memcpy(path,input,root);path[root]=0;
+ const char *part=relative;while(*part){const char *end=strchr(part,'/');size_t length=end?(size_t)(end-part):strlen(part);if(!length||(length==2&&!memcmp(part,"..",2)))return 0;if(length!=1||*part!='.'){size_t n=strlen(path);if(n+length+2>4096)return 0;memcpy(path+n,part,length);path[n+length]=0;if(!SidecarKind(path,end!=NULL))return 0;if(end){path[n+length]='/';path[n+length+1]=0;}}if(!end)break;part=end+1;if(!*part)return 0;}
+ return strlen(path)>root&&SidecarKind(path,0);
+}
+static int SaveGlb(yyjson_mut_doc *doc,const unsigned char *bin,size_t binSize,const char *output){
+ size_t jsonSize=0;char *json=yyjson_mut_write(doc,0,&jsonSize);size_t padded=(jsonSize+3)&~(size_t)3,aligned=(binSize+3)&~(size_t)3,total=28+padded+aligned;unsigned char *file=NULL;cgltf_data *check=NULL;int ok=0;if(!json||jsonSize>8u*1024u*1024u||total>LIMIT)goto done;
+ file=calloc(1,total);if(!file)goto done;Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)aligned);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,bin,binSize);
+ size_t budget=LIMIT;cgltf_options options={0};options.memory.alloc_func=Allocate;options.memory.free_func=Release;options.memory.user_data=&budget;if(cgltf_parse(&options,file,total,&check)==cgltf_result_success&&cgltf_load_buffers(&options,check,NULL)==cgltf_result_success&&cgltf_validate(check)==cgltf_result_success)ok=Write(output,file,total);
+ done:cgltf_free(check);free(file);free(json);return ok;
+}
+int GltfPack(const char *input,const char *output){
+ size_t size=0,budget=LIMIT,binSize=0;unsigned char *bytes=Load(input,&size),*bin=NULL;cgltf_data *data=NULL;yyjson_doc *original=NULL;yyjson_mut_doc *doc=NULL;int ok=0;uint32_t offsets[64];
+ cgltf_options options={0};options.memory.alloc_func=Allocate;options.memory.free_func=Release;options.memory.user_data=&budget;
+ if(!bytes||size>8u*1024u*1024u||cgltf_parse(&options,bytes,size,&data)!=cgltf_result_success||data->file_type!=cgltf_file_type_gltf||!data->buffers_count||data->buffers_count>64||data->images_count>64||data->extensions_used_count||data->extensions_required_count||data->animations_count||data->skins_count||data->cameras_count||data->lights_count)goto done;
+ if(cgltf_validate(data)!=cgltf_result_success)goto done;
+ original=yyjson_read((const char *)bytes,size,0);doc=yyjson_mut_doc_new(NULL);if(!original||!doc)goto done;yyjson_mut_val *root=yyjson_val_mut_copy(doc,yyjson_doc_get_root(original));yyjson_mut_doc_set_root(doc,root);
+ for(size_t i=0;i<data->buffers_count;i++){
+  char path[4096];if(!Sidecar(input,data->buffers[i].uri,path)){fprintf(stderr,"Cannot read glTF buffer %.160s: use an existing relative local file, without parent paths or links\n",data->buffers[i].uri?data->buffers[i].uri:"<missing URI>");goto done;}size_t count=0;unsigned char *buffer=Load(path,&count);size_t required=data->buffers[i].size,padded=(required+3)&~(size_t)3;if(!buffer||count<required||required>LIMIT||padded>LIMIT-binSize){free(buffer);goto done;}unsigned char *next=realloc(bin,binSize+padded);if(!next){free(buffer);goto done;}bin=next;offsets[i]=(uint32_t)binSize;memcpy(bin+binSize,buffer,required);memset(bin+binSize+required,0,padded-required);binSize+=padded;free(buffer);
+ }
+ yyjson_mut_val *views=yyjson_mut_obj_get(root,"bufferViews"),*entry;size_t i,count;if(!views)views=Array(doc,root,"bufferViews");if(!yyjson_mut_is_arr(views))goto done;
+ yyjson_mut_arr_foreach(views,i,count,entry){yyjson_mut_val *buffer=yyjson_mut_obj_get(entry,"buffer");if(!yyjson_mut_is_uint(buffer)||yyjson_mut_get_uint(buffer)>=data->buffers_count)goto done;uint32_t index=(uint32_t)yyjson_mut_get_uint(buffer);if(!yyjson_mut_obj_get(entry,"byteOffset"))Number(doc,entry,"byteOffset",0);if(!Shift(doc,entry,"byteOffset",offsets[index]))goto done;yyjson_mut_set_uint(buffer,0);}
+ yyjson_mut_val *images=yyjson_mut_obj_get(root,"images");
+ for(size_t image=0;image<data->images_count;image++){
+  const cgltf_image *source=&data->images[image];if(!source->uri){if(!source->buffer_view||!source->mime_type||strcmp(source->mime_type,"image/png"))goto done;continue;}
+  char path[4096];if(!Sidecar(input,source->uri,path)){fprintf(stderr,"Cannot read glTF image %.160s: use an existing relative local PNG, without parent paths or links\n",source->uri);goto done;}size_t pngSize=0;unsigned char *png=Load(path,&pngSize);size_t padded=(pngSize+3)&~(size_t)3;if(!png||pngSize<24||pngSize>32u*1024u*1024u||memcmp(png,"\x89PNG\r\n\x1a\n",8)||memcmp(png+12,"IHDR",4)||padded>LIMIT-binSize){free(png);fputs("glTF image must be PNG, within the supported size limit\n",stderr);goto done;}
+  unsigned char *next=realloc(bin,binSize+padded);if(!next){free(png);goto done;}bin=next;memcpy(bin+binSize,png,pngSize);memset(bin+binSize+pngSize,0,padded-pngSize);free(png);
+  yyjson_mut_val *view=Element(doc,views);Number(doc,view,"buffer",0);Number(doc,view,"byteOffset",(uint32_t)binSize);Number(doc,view,"byteLength",(uint32_t)pngSize);binSize+=padded;
+  yyjson_mut_val *target=yyjson_mut_arr_get(images,image);yyjson_mut_obj_remove_str(target,"uri");yyjson_mut_obj_remove_str(target,"bufferView");yyjson_mut_obj_remove_str(target,"mimeType");Number(doc,target,"bufferView",(uint32_t)yyjson_mut_arr_size(views)-1);Text(doc,target,"mimeType","image/png");
+ }
+ yyjson_mut_obj_remove_str(root,"buffers");Number(doc,Element(doc,Array(doc,root,"buffers")),"byteLength",(uint32_t)binSize);ok=SaveGlb(doc,bin,binSize,output);
+ done:free(bytes);free(bin);cgltf_free(data);yyjson_doc_free(original);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot import external glTF; use a bounded static scene with local BIN/PNG assets\n",stderr);return ok;
+}
