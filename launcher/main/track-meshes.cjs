@@ -80,27 +80,30 @@ module.exports.importMesh=importMesh;module.exports.exportMesh=exportMesh;
 module.exports.checkBank=checkBank;
 async function importPart(service,id,part,input,revision){
  service.requireReady();slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
- return service.operation('Importing track model OBJ',signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
+ return service.operation('Importing track model',signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
   const project=service.editor?.project;if(!project)throw Error('Open a source project first');project.checkRevision(revision);
   await model(service,id,file,view.root,view.files,signal,metadata.meshes);
-  if(path.extname(input).toLowerCase()!=='.obj'||(await fs.stat(input)).size>128*1024*1024)throw Error('Choose a triangulated OBJ smaller than 128 MiB');
+  const format=path.extname(input).toLowerCase(),stat=await fs.stat(input);if(!['.obj','.glb','.gltf'].includes(format)||!stat.isFile()||stat.size>128*1024*1024)throw Error('Choose an OBJ, GLB or glTF model smaller than 128 MiB');
   const {run}=require('./service.cjs'),replacement=path.join(directory,'part.rmesh'),output=path.join(directory,'replacement.rmesh');
-  await run(service.tool('rage-mesh-obj'),['import',input,replacement],{signal});
+  let images=[];if(format==='.obj')await run(service.tool('rage-mesh-obj'),['import',input,replacement],{signal});else{const packed=await require('./car-set.cjs').pack(service,input,path.join(directory,'input.glb'),signal);images=JSON.parse(await run(service.tool('rage-mesh-obj'),['import-track-glb',packed,replacement,directory],{signal})).textures;}
   await run(service.tool('rage-mod-cli'),['--replace-mesh',file,String(part),replacement,output],{signal});
   checkBank(JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh-bank',output],{signal})),metadata);
   const reference=await new ProjectFiles(service.editor.file).put(output);
-  const textures=await importTextures(service,id,part,input,metadata,signal,directory);
+  const textures=format==='.obj'?await importTextures(service,id,part,input,metadata,signal,directory):[];
+  for(const image of images){if(!metadata.materials.some(m=>m.source===image))throw Error('GLB image uses an unknown track material');const png=path.join(directory,'texture-'+image+'.png');await run(service.tool('rage-mod-cli'),['--png',png],{signal});textures.push({kind:'track',id:id+'.material.'+image,field:'texture',value:await new ProjectFiles(service.editor.file).put(png,'png')});}
   if(signal.aborted)throw Error('Operation canceled');return project.edit([{kind:'track',id,field:'mesh',value:reference},...textures],revision);
  }));
 }
-async function exportPart(service,id,part,destination){
+async function exportPart(service,id,part,destination,format='obj'){
+ if(!['obj','glb'].includes(format))throw Error('Choose OBJ or GLB export');
  service.requireReady();slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
- return service.operation('Exporting track model OBJ',signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
+ return service.operation('Exporting track model '+format.toUpperCase(),signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
   await model(service,id,file,view.root,view.files,signal,metadata.meshes);
   const {randomUUID}=require('node:crypto'),{run}=require('./service.cjs'),folder=path.join(destination,'track-model-'+randomUUID());await fs.mkdir(folder);
-  try{await run(service.tool('rage-mesh-obj'),['export',file,String(part),path.join(folder,'model.obj')],{signal});
+  try{if(format==='obj')await run(service.tool('rage-mesh-obj'),['export',file,String(part),path.join(folder,'model.obj')],{signal});
    const geometry=await texturedPart(service,id,part,{file,directory,metadata,view},signal);
    const textures={};for(const [source,texture]of Object.entries(geometry.textures)){const relative='texture-'+source+'.png';await fs.writeFile(path.join(folder,relative),Buffer.from(texture.png,'base64'));textures[source]=relative;}
+   if(format==='glb'){await run(service.tool('rage-mesh-obj'),['export-track-glb',file,String(part),path.join(folder,'model.glb'),folder],{signal});for(const relative of Object.values(textures))await fs.rm(path.join(folder,relative));await fs.writeFile(path.join(folder,'README.txt'),'Edit model.glb in Blender and import GLB or glTF on the same track model. Keep material custom properties (rr_material) or rage_N names, normals, vertex colors and UVs. Single static mesh node; no animation or PBR material edits. Embedded PNG textures are imported together with geometry. Up to 64 texture sources, each up to 4096 x 4096; model file up to 128 MiB. Native local Y-up renderer coordinates (4 per game world unit). Geometry changes affect modern rendering only, not the driveable road. Material textures are shared with other models using the same slot.\n');return folder;}
    const mtlFile=path.join(folder,'model.obj.mtl');let mtl=await fs.readFile(mtlFile,'utf8');
    mtl=mtl.replace(/newmtl rage_(\d+)\n/g,(line,word)=>{const texture=textures[Number(word)&65535];return line+(texture?'map_Kd '+texture+'\n':'');});await fs.writeFile(mtlFile,mtl);
    await fs.writeFile(path.join(folder,'track-model.json'),JSON.stringify({format:1,id,part,source:service.editor?.project.snapshot().source,textures},null,2));

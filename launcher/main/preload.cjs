@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   tracks:()=>ipcRenderer.invoke('launcher:tracks'),
   previewTrackPart:(id,part)=>ipcRenderer.invoke('launcher:preview-track-part',id,part),
   importTrackPart:(id,part,revision)=>ipcRenderer.invoke('launcher:import-track-part',id,part,revision),
-  exportTrackPart:(id,part)=>ipcRenderer.invoke('launcher:export-track-part',id,part),
+  exportTrackPart:(id,part,format)=>ipcRenderer.invoke('launcher:export-track-part',id,part,format),
   importTrackMesh:(id,revision)=>ipcRenderer.invoke('launcher:import-track-mesh',id,revision),
   exportTrackMesh:id=>ipcRenderer.invoke('launcher:export-track-mesh',id),
   trackScene:bank=>ipcRenderer.invoke('launcher:track-scene',bank),

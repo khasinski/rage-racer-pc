@@ -1,5 +1,7 @@
 #ifndef RR_GLTF_H
 #define RR_GLTF_H
+int GlbExportTrack(const char *input,unsigned part,const char *output,const char *textures);
+int GlbImportTrack(const char *input,const char *output,const char *textures);
 int GlbExport(const char *input, unsigned part, const char *output);
 int GlbImport(const char *input, const char *output);
 int GlbExportTextures(const char *input, unsigned part, const char *output, const char *textures);

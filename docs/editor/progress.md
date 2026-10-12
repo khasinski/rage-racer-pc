@@ -1532,3 +1532,40 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   This is activation evidence, not visual camera-path/cut fidelity verification.
   Camera visual preview, full timeline authoring, Blender and platform gates and
   the broader editor acceptance criteria remain open.
+
+### Track model GLB/glTF interchange
+
+- Existing placed-object and terrain-model controls now import OBJ/GLB/glTF.
+  GLB export is the primary model action; placed objects retain an OBJ export
+  alternative. GLB embeds effective source/package/project PNG textures, with
+  no external PNG files needed beside the exported model. Native bank exchange
+  stays advanced. UI explains shared geometry/texture scope and modern-only
+  appearance changes, separate from the driveable physics route.
+- Reused the compiled static-part GLB codec and bounded glTF normalizer (local
+  external/data-URI PNG/JPEG). Track codec keeps the full low16 material source;
+  car bank modulo64/untextured rules remain unchanged. Compact mapping has an
+  explicit 64 texture-source limit per imported/exported part, not a source-ID
+  limit. Full material words, native normals/colors/UVs/triangle order remain
+  preserved. Embedded images are decoded before project mutation.
+- Replacement retains bank model order/count and original material slots; one
+  project edit contains geometry plus all imported PNG references, with normal
+  undo/build composition. Malformed input does not advance project revision.
+  This remains single static mesh-node exchange; material mapping recovery,
+  arbitrary PBR/animation, classic native geometry and road bake remain open.
+- Native regression fixture distinguishes source3/source67/source131 (same car
+  modulo64 result): three independent embedded/extracted images, byte-exact
+  native geometry and existing-output protection. Existing car GLB/glTF tests
+  remain green. UI assertions cover both GLB and OBJ action wiring.
+- Actual PAL headless app.js/live-state/native-service test: click export model
+  GLB, change node Y by4 renderer units, click import, effective preview Y+1 game
+  unit, publish and undo PASS. No visible game/editor window or source changes.
+  Temporary harness /tmp/rr-track-glb-ui.cjs; latest log rr-track-glb-ui3.log.
+- Normal isolated classic/modern race gate imports the changed course model and
+  embedded textures, checks effective preview displacement, rejects damaged GLB
+  without revision change, then publishes and loads the mod without invalid
+  track-mesh diagnostics (~54seconds PASS). Activation evidence does not prove
+  every imported surface visually matches Blender. Expanded gate also exercises
+  the same real model through data-URI glTF before activation.
+- Final full npm177 JS tests:170 PASS,7 optional skips,0 failures; native
+  save-format PASS. Expanded actual PAL GLB+glTF activation gate PASS (~54sec)
+  on both renderers. Blender manual roundtrip and all-platform gates remain open.
