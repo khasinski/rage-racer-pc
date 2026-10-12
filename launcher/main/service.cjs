@@ -510,13 +510,7 @@ class LauncherService {
     this.requireReady();
     return this.operation('Starting game', async signal => {
       if(!(await this.snapshot()).ready)throw Error('The source image is unavailable. Select it again.');
-      const menuMusic=path.join(this.state.disc.data,'menu_music.wav');
-      try{await fs.access(menuMusic);}catch{
-        this.busy.label='Repairing the asset library';await this.update();
-        await run(this.tool('rage-extract'),[this.state.disc.archive,this.state.disc.data],{cwd:this.root,signal});
-        await fs.access(menuMusic);
-        this.busy.label='Starting game';await this.update();
-      }
+      await require('./menu-music.cjs')(this,signal);
       // Imported source libraries launch the committed project (or originals),
       // never unsaved package choices. Legacy profiles lack a source archive.
       const active=this.state.disc.archive?'':await this.composeMods();

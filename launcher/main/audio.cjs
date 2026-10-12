@@ -10,9 +10,10 @@ async function withAudio(service,work){
 }
 async function original(service,view,temp,signal){
  const change=service.editor.project.snapshot().changes.find(c=>c.kind==='audio'&&c.id===ID&&c.field==='file');
- let file=path.join(service.state.disc.data,'menu_music.wav'),origin='disc';
+ let file,origin='disc';
  if(change){if(typeof change.value!=='string'||!change.value.endsWith('.wav'))throw Error('Invalid audio reference');file=path.join(temp,'effective.wav');await fs.writeFile(file,await new ProjectFiles(service.editor.file).read(change.value));origin='project';}
  else if(view.manifest.audio?.[ID]){const relative=view.manifest.audio[ID];if(!view.files.includes(relative))throw Error('Missing menu music WAV');file=path.join(view.root,relative);origin='selected packages';}
+ else file=await require('./menu-music.cjs')(service,signal);
  const {run}=require('./service.cjs');const info=JSON.parse(await run(service.tool('rage-mod-cli'),['--wav-info',file],{signal}));
  return {file,origin,overridden:Boolean(change),...info};
 }
@@ -54,16 +55,17 @@ async function edit(service,id,values,revision){
   return p.edit(Object.entries(values).map(([field,value])=>({kind:'audio',id,field,value:value===({start:0,end:audio.frames,gain:100})[field]?null:value})),revision);
  });
 }
-async function apply(service,changes,staging,files){
+async function apply(service,changes,staging,files,signal){
  const edits=changes.filter(c=>c.kind==='audio');if(!edits.length)return {};
  if(edits.some(c=>c.id!==ID))throw Error('Unknown editable audio cue');
  const {run}=require('./service.cjs');let manifest={};
  try{await fs.access(path.join(staging,'mod.toml'));manifest=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(staging,'mod.toml')]));}catch(e){if(e.code!=='ENOENT')throw e;}
  const temp=await fs.mkdtemp(path.join(staging,'.audio-'));
  try{
-  const change=edits.find(c=>c.field==='file');let source=path.join(service.state.disc.data,'menu_music.wav');
+  const change=edits.find(c=>c.field==='file');let source;
   if(change){if(typeof change.value!=='string'||!change.value.endsWith('.wav'))throw Error('Invalid audio reference');source=path.join(temp,'source.wav');await fs.writeFile(source,await new ProjectFiles(service.editor.file).read(change.value));}
   else if(manifest.audio?.[ID])source=path.join(staging,manifest.audio[ID]);
+  else source=await require('./menu-music.cjs')(service,signal);
   const info=JSON.parse(await run(service.tool('rage-mod-cli'),['--wav-info',source])),params=parameters(edits,info.frames);
   const relative='audio/project/menu.wav',output=path.join(staging,relative);await fs.mkdir(path.dirname(output),{recursive:true});
   await run(service.tool('rage-mod-cli'),['--wav-edit',source,output,String(params.start),String(params.end),String(params.gain)]);

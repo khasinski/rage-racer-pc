@@ -306,13 +306,15 @@ test('launch regenerates missing menu PCM with the normal extractor',async()=>{
  try{
   const data=path.join(root,'data'),disc=path.join(root,'disc.bin'),archive=path.join(root,'extract.cjs');
   await fs.mkdir(data);await fs.writeFile(path.join(data,'manifest.json'),'{}');await fs.writeFile(disc,'fixture');
-  await fs.writeFile(archive,"require('node:fs').writeFileSync(require('node:path').join(process.argv[2],'menu_music.wav'),'pcm')");
+  await fs.writeFile(archive,"const fs=require('node:fs'),path=require('node:path'),root=process.argv[2],b=Buffer.alloc(48);b.write('RIFF');b.writeUInt32LE(40,4);b.write('WAVEfmt ',8);b.writeUInt32LE(16,16);b.writeUInt16LE(1,20);b.writeUInt16LE(2,22);b.writeUInt32LE(44100,24);b.writeUInt32LE(176400,28);b.writeUInt16LE(4,32);b.writeUInt16LE(16,34);b.write('data',36);b.writeUInt32LE(4,40);fs.mkdirSync(root,{recursive:true});fs.writeFileSync(path.join(root,'menu_music.wav'),b)");
   const service=new LauncherService({root,bin:root,config:path.resolve(__dirname,'../resources/rage-port.ini')});
   await service.init();service.state.disc={path:disc,data,archive,region:'PAL'};
-  service.tool=()=>process.execPath;
+  service.tool=name=>name==='rage-mod-cli'?path.resolve(__dirname,'../resources/bin/rage-mod-cli'+(process.platform==='win32'?'.exe':'')):process.execPath;
   await service.launch();
   const child=service.game;if(child)await new Promise(resolve=>child.once('close',resolve));
-  assert.equal(await fs.readFile(path.join(data,'menu_music.wav'),'utf8'),'pcm');
+  assert.equal((await fs.readFile(path.join(data,'menu_music.wav'))).toString('ascii',0,4),'RIFF');
+  assert.equal(await fs.readFile(path.join(data,'manifest.json'),'utf8'),'{}');
+  assert.deepEqual((await fs.readdir(root)).filter(name=>name.startsWith('music-repair-')),[]);
  }finally{await fs.rm(root,{recursive:true,force:true,maxRetries:10,retryDelay:100});}
 });
 

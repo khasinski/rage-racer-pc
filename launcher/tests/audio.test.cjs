@@ -60,3 +60,10 @@ test('native saved gain clips safely, silence is editable, and invalid ranges ne
  const silence=path.join(root,'silent.wav');await run(tool,['--wav-edit',file,silence,'0','2','0']);assert.ok((await fs.readFile(silence)).subarray(44).every(n=>n===0));
  for(const args of [['0','0','100'],['0','3','100'],['-1','2','100'],['0','2','NaN'],['0','2','201']])await assert.rejects(run(tool,['--wav-edit',file,path.join(root,'bad.wav'),...args]));await assert.rejects(fs.stat(path.join(root,'bad.wav')),/ENOENT/);
 });
+
+test('project audio remains usable without generated original PCM; reset reports repair failure without changing the document',async t=>{
+ const {root,s}=await fixture(t),id='music.course-select',file=path.join(root,'replacement.wav');await fs.writeFile(file,wav({frames:8820}));const p=await s.importAudio(id,file,(await s.project()).revision);await fs.rm(path.join(root,'data/menu_music.wav'));
+ assert.equal((await s.audio()).cues[0].origin,'project');await s.publishMods();
+ const reset=await s.resetAudio(id,p.revision);await assert.rejects(s.audio(),/exit|failure|archive|entries/i);assert.equal((await s.project()).revision,reset.revision);
+ await s.projectHistory('undo',reset.revision);assert.equal((await s.audio()).cues[0].origin,'project');
+});

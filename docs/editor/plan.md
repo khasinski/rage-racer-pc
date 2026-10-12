@@ -1,9 +1,9 @@
 # Jeden Rage Racer Editor — pełny plan
 
-**Status: plan do przeglądu, nie opis gotowych funkcji.** 2026-10-11.
-Baza kodu: `main` / `5b3749725` z lokalnymi zmianami. W tej rundzie zmieniamy
-wyłącznie dokumentację i mockupy; ostatnie eksperymentalne zmiany produktu
-pozostają do osobnej oceny.
+**Status: implementacja na `feature/editor`; pełny zakres nadal nieukończony.**
+Plan powstał 2026-10-11 na bazie `main` / `5b3749725`.
+Wykonane funkcje i dowody testów opisuje [raport postępu](progress.md).
+Poniższe wymagania pozostają zakresem docelowym, nie deklaracją gotowości.
 
 [Audyt kodu i danych](audit.md) · [Pomiary PAL](inventory.json) ·
 [Klikalny mockup](../ux/rage-editor/index.html) · [Macierz odbioru](acceptance.md) ·
