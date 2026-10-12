@@ -1320,3 +1320,30 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Still open: Blender proof, data URI/JPEG variations, broader assemblies/LOD,
   complete shader/unknown-extra project roundtrip, physical units, single-part
   missing-ID recovery and broader track/interface/media acceptance scope.
+
+### Self-contained glTF data URI buffers and PNGs
+
+- Existing compiled glTF normaliser now accepts canonical base64 buffer URIs
+  (`application/octet-stream`, `application/gltf-buffer`) and PNG image URIs
+  (`image/png`). They join the same bounded, validated private GLB path as local
+  sidecars; no separate UI, decoder service, Python or extra dependency.
+- Decoder validates alphabet, quartet length, padding location and unused pad
+  bits before returning bytes; checks decoded size before allocation. MIME types
+  are explicit, whitespace/non-base64 data are errors. Literal NUL in URI JSON
+  strings is rejected instead of accepting a truncated C-string prefix.
+- JSON limit remains 8 MiB including encoded payloads; normalised GLB 128 MiB,
+  image bytes 32 MiB. Larger models can use external BIN/PNG. Remote/parent/link
+  restrictions remain; no external request is made for data URIs.
+- Compiled regression: all three padding-length cases, exact decoded native
+  geometry/full words/RGBA/UV/normals and PNG bytes; malformed quartet/padding/
+  alphabet/pad bits/whitespace/MIME/NUL and malformed image payloads rejected
+  without output files. Whole-car and single-part service round trips PASS;
+  invalid inline PNG leaves revision and changes untouched, original JSON intact.
+- Actual PAL headless app.js/live state: data-URI glTF → missing-ID assignment →
+  body/wheel inspection → target texture → Import → Save & apply PASS, zero page
+  errors. Native file selection is supplied by the test bridge.
+- Normal hidden modern GP with recovered data-URI glTF: all three mesh overrides
+  and edited 1×1 PNGs loaded; whole-preview geometry/material/UV fields unchanged;
+  scene12/timer20 PASS (~31 sec). Full npm 170 tests: 163 PASS, 7 optional skips,
+  0 failures; native save-format checks PASS. Focused compiled/service suite
+  7 PASS. JPEG, Blender proof and the remaining full editor scope stay open.

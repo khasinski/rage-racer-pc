@@ -375,6 +375,24 @@ static int Sidecar(const char *input,const char *uri,char path[4096]){
  const char *part=relative;while(*part){const char *end=strchr(part,'/');size_t length=end?(size_t)(end-part):strlen(part);if(!length||(length==2&&!memcmp(part,"..",2)))return 0;if(length!=1||*part!='.'){size_t n=strlen(path);if(n+length+2>4096)return 0;memcpy(path+n,part,length);path[n+length]=0;if(!SidecarKind(path,end!=NULL))return 0;if(end){path[n+length]='/';path[n+length+1]=0;}}if(!end)break;part=end+1;if(!*part)return 0;}
  return strlen(path)>root&&SidecarKind(path,0);
 }
+static int Base64(unsigned char c){return c>='A'&&c<='Z'?c-'A':c>='a'&&c<='z'?c-'a'+26:c>='0'&&c<='9'?c-'0'+52:c=='+'?62:c=='/'?63:-1;}
+static unsigned char *Asset(const char *input,const char *uri,size_t *size,size_t limit,int image){
+ if(!uri)return NULL;
+ if(strncmp(uri,"data:",5)){char path[4096];if(!Sidecar(input,uri,path))return NULL;unsigned char *bytes=Load(path,size);if(bytes&&*size>limit){free(bytes);return NULL;}return bytes;}
+ const char *payload=NULL;
+ const char *types[]={"data:application/octet-stream;base64,","data:application/gltf-buffer;base64,","data:image/png;base64,"};
+ for(unsigned i=image?2:0;i<(image?3u:2u);i++){size_t n=strlen(types[i]);if(!strncmp(uri,types[i],n)){payload=uri+n;break;}}
+ if(!payload)return NULL;size_t n=strlen(payload);if(n%4||n/4>limit/3+1)return NULL;size_t count=n/4*3;if(n&&payload[n-1]=='=')count--;if(n>1&&payload[n-2]=='=')count--;if(count>limit)return NULL;
+ unsigned char *bytes=malloc(count?count:1);if(!bytes)return NULL;size_t at=0;
+ for(size_t i=0;i<n;i+=4){int a=Base64((unsigned char)payload[i]),b=Base64((unsigned char)payload[i+1]),c=payload[i+2]=='='?-2:Base64((unsigned char)payload[i+2]),d=payload[i+3]=='='?-2:Base64((unsigned char)payload[i+3]);
+  if(a<0||b<0||c==-1||d==-1||(c==-2&&(d!=-2||i+4!=n||(b&15)))||(c>=0&&d==-2&&(i+4!=n||(c&3)))){free(bytes);return NULL;}
+  if(at>=count){free(bytes);return NULL;}bytes[at++]=(unsigned char)(a*4+b/16);if(c>=0){if(at>=count){free(bytes);return NULL;}bytes[at++]=(unsigned char)(b*16+c/4);if(d>=0){if(at>=count){free(bytes);return NULL;}bytes[at++]=(unsigned char)(c*64+d);}}
+ }
+ if(at!=count){free(bytes);return NULL;}*size=count;return bytes;
+}
+static int UriMatches(yyjson_doc *doc,const char *group,size_t index,const char *uri){
+ yyjson_val *value=yyjson_obj_get(yyjson_arr_get(yyjson_obj_get(yyjson_doc_get_root(doc),group),index),"uri");return yyjson_is_str(value)&&strlen(uri)==yyjson_get_len(value);
+}
 static int SaveGlb(yyjson_mut_doc *doc,const unsigned char *bin,size_t binSize,const char *output){
  size_t jsonSize=0;char *json=yyjson_mut_write(doc,0,&jsonSize);size_t padded=(jsonSize+3)&~(size_t)3,aligned=(binSize+3)&~(size_t)3,total=28+padded+aligned;unsigned char *file=NULL;cgltf_data *check=NULL;int ok=0;if(!json||jsonSize>8u*1024u*1024u||total>LIMIT)goto done;
  file=calloc(1,total);if(!file)goto done;Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)aligned);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,bin,binSize);
@@ -388,18 +406,18 @@ int GltfPack(const char *input,const char *output){
  if(cgltf_validate(data)!=cgltf_result_success)goto done;
  original=yyjson_read((const char *)bytes,size,0);doc=yyjson_mut_doc_new(NULL);if(!original||!doc)goto done;yyjson_mut_val *root=yyjson_val_mut_copy(doc,yyjson_doc_get_root(original));yyjson_mut_doc_set_root(doc,root);
  for(size_t i=0;i<data->buffers_count;i++){
-  char path[4096];if(!Sidecar(input,data->buffers[i].uri,path)){fprintf(stderr,"Cannot read glTF buffer %.160s: use an existing relative local file, without parent paths or links\n",data->buffers[i].uri?data->buffers[i].uri:"<missing URI>");goto done;}size_t count=0;unsigned char *buffer=Load(path,&count);size_t required=data->buffers[i].size,padded=(required+3)&~(size_t)3;if(!buffer||count<required||required>LIMIT||padded>LIMIT-binSize){free(buffer);goto done;}unsigned char *next=realloc(bin,binSize+padded);if(!next){free(buffer);goto done;}bin=next;offsets[i]=(uint32_t)binSize;memcpy(bin+binSize,buffer,required);memset(bin+binSize+required,0,padded-required);binSize+=padded;free(buffer);
+  const char *uri=data->buffers[i].uri;if(!uri||!UriMatches(original,"buffers",i,uri))goto done;size_t count=0;unsigned char *buffer=Asset(input,uri,&count,LIMIT-binSize,0);size_t required=data->buffers[i].size,padded=(required+3)&~(size_t)3;if(!buffer||count<required||required>LIMIT||padded>LIMIT-binSize){free(buffer);fprintf(stderr,"Cannot read glTF buffer %.160s: use a complete local BIN or valid base64 buffer URI\n",uri);goto done;}unsigned char *next=realloc(bin,binSize+padded);if(!next){free(buffer);goto done;}bin=next;offsets[i]=(uint32_t)binSize;memcpy(bin+binSize,buffer,required);memset(bin+binSize+required,0,padded-required);binSize+=padded;free(buffer);
  }
  yyjson_mut_val *views=yyjson_mut_obj_get(root,"bufferViews"),*entry;size_t i,count;if(!views)views=Array(doc,root,"bufferViews");if(!yyjson_mut_is_arr(views))goto done;
  yyjson_mut_arr_foreach(views,i,count,entry){yyjson_mut_val *buffer=yyjson_mut_obj_get(entry,"buffer");if(!yyjson_mut_is_uint(buffer)||yyjson_mut_get_uint(buffer)>=data->buffers_count)goto done;uint32_t index=(uint32_t)yyjson_mut_get_uint(buffer);if(!yyjson_mut_obj_get(entry,"byteOffset"))Number(doc,entry,"byteOffset",0);if(!Shift(doc,entry,"byteOffset",offsets[index]))goto done;yyjson_mut_set_uint(buffer,0);}
  yyjson_mut_val *images=yyjson_mut_obj_get(root,"images");
  for(size_t image=0;image<data->images_count;image++){
   const cgltf_image *source=&data->images[image];if(!source->uri){if(!source->buffer_view||!source->mime_type||strcmp(source->mime_type,"image/png"))goto done;continue;}
-  char path[4096];if(!Sidecar(input,source->uri,path)){fprintf(stderr,"Cannot read glTF image %.160s: use an existing relative local PNG, without parent paths or links\n",source->uri);goto done;}size_t pngSize=0;unsigned char *png=Load(path,&pngSize);size_t padded=(pngSize+3)&~(size_t)3;if(!png||pngSize<24||pngSize>32u*1024u*1024u||memcmp(png,"\x89PNG\r\n\x1a\n",8)||memcmp(png+12,"IHDR",4)||padded>LIMIT-binSize){free(png);fputs("glTF image must be PNG, within the supported size limit\n",stderr);goto done;}
+  if(!UriMatches(original,"images",image,source->uri))goto done;size_t pngSize=0;unsigned char *png=Asset(input,source->uri,&pngSize,32u*1024u*1024u,1);size_t padded=(pngSize+3)&~(size_t)3;if(!png||pngSize<24||memcmp(png,"\x89PNG\r\n\x1a\n",8)||memcmp(png+12,"IHDR",4)||padded>LIMIT-binSize){free(png);fputs("glTF image must be a local PNG or valid PNG base64 URI, within the supported size limit\n",stderr);goto done;}
   unsigned char *next=realloc(bin,binSize+padded);if(!next){free(png);goto done;}bin=next;memcpy(bin+binSize,png,pngSize);memset(bin+binSize+pngSize,0,padded-pngSize);free(png);
   yyjson_mut_val *view=Element(doc,views);Number(doc,view,"buffer",0);Number(doc,view,"byteOffset",(uint32_t)binSize);Number(doc,view,"byteLength",(uint32_t)pngSize);binSize+=padded;
   yyjson_mut_val *target=yyjson_mut_arr_get(images,image);yyjson_mut_obj_remove_str(target,"uri");yyjson_mut_obj_remove_str(target,"bufferView");yyjson_mut_obj_remove_str(target,"mimeType");Number(doc,target,"bufferView",(uint32_t)yyjson_mut_arr_size(views)-1);Text(doc,target,"mimeType","image/png");
  }
  yyjson_mut_obj_remove_str(root,"buffers");Number(doc,Element(doc,Array(doc,root,"buffers")),"byteLength",(uint32_t)binSize);ok=SaveGlb(doc,bin,binSize,output);
- done:free(bytes);free(bin);cgltf_free(data);yyjson_doc_free(original);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot import external glTF; use a bounded static scene with local BIN/PNG assets\n",stderr);return ok;
+ done:free(bytes);free(bin);cgltf_free(data);yyjson_doc_free(original);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot import glTF; use a bounded static scene with local or base64 BIN/PNG assets\n",stderr);return ok;
 }

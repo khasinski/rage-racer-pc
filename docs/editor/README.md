@@ -70,6 +70,11 @@ Select the `.gltf` file; keep its BIN and PNG files in the same directory or
 subdirectories. Relative paths, spaces and URI-encoded Unicode names are
 supported. Import snapshots the referenced bytes into a private GLB, so editing
 the source files after selecting them does not change a pending import.
-Missing/truncated sidecars are errors. Remote/data URIs, parent paths, symlinks,
-JPEG textures, animation/skins and unsupported extensions are currently rejected.
+Missing/truncated sidecars are errors. Canonical base64 data URIs also work:
+`application/octet-stream` or `application/gltf-buffer` for buffers and
+`image/png` for images. They do not need sidecar files. JSON input, including
+base64 payloads, is currently limited to 8 MiB; larger assets can use external
+BIN/PNG files (up to 128 MiB for the normalised GLB).
+Remote URIs, parent paths, symlinks, JPEG textures, animation/skins and
+unsupported extensions are currently rejected.
 Use PNG textures and static GLB/glTF for this workflow. Original files stay intact.
