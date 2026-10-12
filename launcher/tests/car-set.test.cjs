@@ -103,10 +103,13 @@ test('complete car import installs all models and textures atomically and reject
   const externalCandidate=await service.prepareCarImport(key,externalFile);await fs.writeFile(path.join(external,'geometry.bin'),'changed after selection');
   const externalMapping={nodes:externalCandidate.nodes.map(n=>({node:n.node,instance:glb.nodes[n.node].extras.rr_instance})),materials:externalCandidate.materials.map(m=>({material:m.material,word:glb.materials[m.material].extras.rr_material}))};
   assert.deepEqual((await service.completeCarImport(externalCandidate.token,externalMapping)).changes,changes);await fs.writeFile(path.join(external,'geometry.bin'),bin);
+  const jpeg=await fs.readFile(path.join(__dirname,'fixtures/red.jpg')),jpegDoc=structuredClone(inlineDoc);for(const image of jpegDoc.images)image.uri='data:image/jpeg;base64,'+jpeg.toString('base64');const jpegFile=path.join(root,'jpeg.gltf');await fs.writeFile(jpegFile,JSON.stringify(jpegDoc));
+  const jpegProject=await service.importCarSet(key,jpegFile);assert.equal(jpegProject.changes.filter(c=>c.field==='mesh').length,3);assert.equal(jpegProject.changes.filter(c=>c.field==='texture').length,1);assert.equal(jpegProject.revision,wholeProject.revision+1);
+  project=await service.projectHistory('undo',jpegProject.revision);assert.deepEqual(project.changes,changes);const beforeVertexEdit=project.revision;
   const edited=Buffer.from(whole),bodyPosition=glb.accessors[glb.meshes[0].primitives[0].attributes.POSITION],bodyView=glb.bufferViews[bodyPosition.bufferView],vertexAt=28+jsonLength+bodyView.byteOffset+(bodyPosition.byteOffset||0);
   edited.writeFloatLE(7,vertexAt);const editedFile=path.join(root,'edited.glb');await fs.writeFile(editedFile,edited);
   let editedProject=await service.importCarSet(key,editedFile);
-  assert.equal(editedProject.revision,wholeProject.revision+1);
+  assert.equal(editedProject.revision,beforeVertexEdit+1);
   const bodyChange=editedProject.changes.find(c=>c.id===key&&c.field==='mesh'),bodyBytes=await new (require('../main/project-files.cjs').ProjectFiles)(service.editor.file).read(bodyChange.value);
   assert.equal(bodyBytes.readFloatLE(32),7);assert.equal(editedProject.changes.length,changes.length);
   project=await service.projectHistory('undo',editedProject.revision);assert.deepEqual(project.changes,changes);

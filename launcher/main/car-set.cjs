@@ -10,7 +10,7 @@ async function boundedFile(root,relative,max){
  let file=root;for(const part of relative.split('/')){file=path.join(file,part);if((await fs.lstat(file)).isSymbolicLink())throw Error('Car sets cannot contain symbolic links');}
  const stat=await fs.stat(file);if(!stat.isFile()||stat.size>max)throw Error('Car set file is too large or not a file');return file;
 }
-exports.pack=async(service,file,output,signal)=>{const stat=await fs.stat(file);if(!stat.isFile()||stat.size>128*1024*1024)throw Error('Choose a model file up to 128 MiB');if(path.extname(file).toLowerCase()==='.gltf')await require('./service.cjs').run(service.tool('rage-mesh-obj'),['pack-gltf',file,output],{signal});else await fs.copyFile(file,output);return output;};
+exports.pack=async(service,file,output,signal)=>{const stat=await fs.stat(file);if(!stat.isFile()||stat.size>128*1024*1024)throw Error('Choose a model file up to 128 MiB');if(['.glb','.gltf'].includes(path.extname(file).toLowerCase()))await require('./service.cjs').run(service.tool('rage-mesh-obj'),['pack-gltf',file,output],{signal});else await fs.copyFile(file,output);return output;};
 exports.exportSet=async(service,key,destination)=>{
  service.requireReady();return service.operation('Exporting complete car',signal=>require('./car-view.cjs').withView(service,signal,undefined,async view=>{
   const c=await car(service,key,signal),materials=await table(service,c,signal),target=path.join(destination,'car-set-'+randomUUID());await fs.mkdir(target);
@@ -62,7 +62,7 @@ exports.importSet=async(service,key,source,revision,owner)=>{
    const whole=(await fs.stat(source)).isFile();let manifest;
    if(whole){
     if(!['.glb','.gltf'].includes(path.extname(source).toLowerCase()))throw Error('Choose a complete GLB or glTF car');
-    if(path.extname(source).toLowerCase()==='.gltf')source=await exports.pack(service,source,path.join(staging,'source.glb'),signal);
+    source=await exports.pack(service,source,path.join(staging,'source.glb'),signal);
     const raw=path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`);
     const layout=JSON.parse(await run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));
     const parts=[0,2,3].map(offset=>({id:`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`}));
@@ -78,7 +78,7 @@ exports.importSet=async(service,key,source,revision,owner)=>{
     const file=await boundedFile(source,manifest.parts[role],128*1024*1024),ext=path.extname(file).toLowerCase(),relative='meshes/'+role+'.rmesh',out=path.join(staging,relative);
     let images=[];
     const imageDir=path.join(staging,'images-'+role);
-    if(ext==='.glb'||ext==='.gltf'){await fs.mkdir(imageDir);const packed=ext==='.gltf'?await exports.pack(service,file,path.join(imageDir,'source.glb'),signal):file;images=JSON.parse(await run(service.tool('rage-mesh-obj'),['import-glb',packed,out,imageDir],{signal})).textures;}else if(ext==='.obj')await run(service.tool('rage-mesh-obj'),['import',file,out],{signal});else if(ext==='.rmesh')await fs.copyFile(file,out);else throw Error('Car set models must be OBJ, GLB, glTF or RRMESH');
+    if(ext==='.glb'||ext==='.gltf'){await fs.mkdir(imageDir);const packed=await exports.pack(service,file,path.join(imageDir,'source.glb'),signal);images=JSON.parse(await run(service.tool('rage-mesh-obj'),['import-glb',packed,out,imageDir],{signal})).textures;}else if(ext==='.obj')await run(service.tool('rage-mesh-obj'),['import',file,out],{signal});else if(ext==='.rmesh')await fs.copyFile(file,out);else throw Error('Car set models must be OBJ, GLB, glTF or RRMESH');
     const partKey=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
     await require('./car-material-bindings.cjs')(service,partKey,out,staging,role,signal);
     meshes.push(`"${partKey}" = "${relative}"`);

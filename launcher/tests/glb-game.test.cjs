@@ -2,7 +2,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs/promises'),os=require('node:os'),path=require('node:path'),{spawnSync}=require('node:child_process');
 const {LauncherService}=require('../main/service.cjs');
 const source=process.env.RR_EDITOR_GAME_SOURCE,disc=process.env.RR_EDITOR_GAME_DISC,game=process.env.RR_EDITOR_GAME_RELEASE;
-test('normal modern race loads glTF data URI car parts and PNGs with recovered mappings',{
+test('normal modern race loads glTF car parts and converted JPEG textures with recovered mappings',{
  skip:!source||!disc||!game,timeout:150000
 },async t=>{
  const base=path.resolve(__dirname,'../..'),root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-scenery-game-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
@@ -19,7 +19,7 @@ test('normal modern race loads glTF data URI car parts and PNGs with recovered m
  const lostJson=Buffer.from(JSON.stringify(lost)),lostPad=Buffer.alloc((lostJson.length+3)&~3,32);lostJson.copy(lostPad);const lostFile=Buffer.alloc(20+lostPad.length+bin.length);bytes.copy(lostFile,0,0,12);lostFile.writeUInt32LE(lostFile.length,8);lostFile.writeUInt32LE(lostPad.length,12);lostFile.write('JSON',16);lostPad.copy(lostFile,20);bin.copy(lostFile,20+lostPad.length);await fs.writeFile(filename,lostFile);
  lost.buffers[0].uri='model%20data.bin';await fs.writeFile(path.join(exported,'model data.bin'),bin.subarray(8));for(const [i,image]of lost.images.entries()){delete image.bufferView;delete image.mimeType;image.uri='image-'+i+'.png';await fs.writeFile(path.join(exported,image.uri),png);}const gltf=path.join(exported,'car.gltf');await fs.writeFile(gltf,JSON.stringify(lost));
  await assert.rejects(s.importCarSet(key,gltf),/Choose a complete GLB exported/); // Lost source IDs require explicit assignment.
- lost.buffers[0].uri='data:application/gltf-buffer;base64,'+bin.subarray(8).toString('base64');for(const image of lost.images)image.uri='data:image/png;base64,'+png.toString('base64');await fs.writeFile(gltf,JSON.stringify(lost));
+ const jpeg=await fs.readFile(path.join(__dirname,'fixtures/red.jpg'));lost.buffers[0].uri='data:application/gltf-buffer;base64,'+bin.subarray(8).toString('base64');for(const image of lost.images)image.uri='data:image/jpeg;base64,'+jpeg.toString('base64');await fs.writeFile(gltf,JSON.stringify(lost));
  const mapping=await s.prepareCarImport(key,gltf);const recovered=await s.completeCarImport(mapping.token,{nodes:mapping.nodes.map(n=>({node:n.node,instance:doc.nodes[n.node].extras.rr_instance})),materials:mapping.materials.map(m=>({material:m.material,word:doc.materials[m.material].extras.rr_material}))});assert.equal(recovered.changes.filter(c=>c.field==='mesh').length,3);
  const after=await s.previewWholeCar(10);assert.equal(after.indices.length,before.indices.length);
  for(let i=0;i<before.indices.length;i++)for(let c=0;c<9;c++)assert.ok(Math.abs(before.vertices[before.indices[i]*9+c]-after.vertices[after.indices[i]*9+c])<1e-5,`corner ${i} field ${c}`);

@@ -72,9 +72,13 @@ supported. Import snapshots the referenced bytes into a private GLB, so editing
 the source files after selecting them does not change a pending import.
 Missing/truncated sidecars are errors. Canonical base64 data URIs also work:
 `application/octet-stream` or `application/gltf-buffer` for buffers and
-`image/png` for images. They do not need sidecar files. JSON input, including
+`image/png` or `image/jpeg` for images. They do not need sidecar files. JSON input, including
 base64 payloads, is currently limited to 8 MiB; larger assets can use external
 BIN/PNG files (up to 128 MiB for the normalised GLB).
-Remote URIs, parent paths, symlinks, JPEG textures, animation/skins and
+JPEG textures also work as local files and embedded GLB images. The compiled
+importer converts them to PNG automatically; original JPEG files stay intact.
+Supported 8-bit JPEG images are at most 4096 × 4096 and 32 MiB. Geometry and
+material assignments use the same importer and history as PNG.
+Remote URIs, parent paths, symlinks, animation/skins and
 unsupported extensions are currently rejected.
-Use PNG textures and static GLB/glTF for this workflow. Original files stay intact.
+Use PNG/JPEG textures and static GLB/glTF for this workflow. Original files stay intact.

@@ -331,7 +331,7 @@ class LauncherService {
       try{
         let glbTextures=[];const mesh=path.join(staging,'meshes/model.rmesh');
         const extension=path.extname(file).toLowerCase(),label=path.basename(file);
-        if(extension==='.glb'||extension==='.gltf'){if(extension==='.gltf')file=await require('./car-set.cjs').pack(this,file,path.join(staging,'source.glb'),signal);glbTextures=JSON.parse(await run(this.tool('rage-mesh-obj'),['import-glb',file,mesh,path.join(staging,'textures')],{signal})).textures;}
+        if(extension==='.glb'||extension==='.gltf'){file=await require('./car-set.cjs').pack(this,file,path.join(staging,'source.glb'),signal);glbTextures=JSON.parse(await run(this.tool('rage-mesh-obj'),['import-glb',file,mesh,path.join(staging,'textures')],{signal})).textures;}
         else if(extension==='.obj')await run(this.tool('rage-mesh-obj'),['import',file,mesh],{signal});
         else if(extension==='.rmesh')await fs.copyFile(file,mesh);
         else throw Error('Choose an OBJ, GLB, glTF or RRMESH file');

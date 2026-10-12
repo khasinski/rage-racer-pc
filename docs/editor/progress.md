@@ -1347,3 +1347,42 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   scene12/timer20 PASS (~31 sec). Full npm 170 tests: 163 PASS, 7 optional skips,
   0 failures; native save-format checks PASS. Focused compiled/service suite
   7 PASS. JPEG, Blender proof and the remaining full editor scope stay open.
+
+### JPEG model textures using the already-bundled SDL codec
+
+- Normalisation now handles GLB as well as external/inline glTF; local JPEG,
+  image/jpeg data URI and JPEG buffer-view images become embedded PNGs before
+  inspection/import. All whole/part/set import entry points use this same path.
+  PNG/RRMESH semantics, scene hierarchy, full material words and source metadata
+  remain unchanged; original JPEG is read-only.
+- Uses the existing SDL MJPG→RGBA decoder and PNG writer, without SDL_Init,
+  a new dependency, an interpreter, an external converter or Psyz changes.
+  The existing mesh worker links the same SDL target as other bundled tools.
+- Bounded JPEG marker/SOF inspection checks supported 8-bit dimensions/components
+  before pixel allocation (≤4096×4096, encoded/converted PNG ≤32 MiB). Requires
+  EOI and rejects malformed/truncated segments; decoded pixels become opaque
+  RGBA. Data-URI MIME/signature mismatches are rejected. EXIF orientation/ICC
+  metadata are not retained/reinterpreted by this texture conversion.
+- Cross-platform regression fixture red.jpg is a self-created 1×1 red image;
+  its JPEG bytes are checked in, so tests/runtime do not need its authoring tool.
+  An initially invalid fixture was caught and replaced with a valid JPEG before
+  any passing claim. Native test covers local/data URI/GLB conversion, exact
+  geometry, dimensions, red RGB and alpha255, original source integrity and
+  truncated/header-only/oversized-SOF rejection without outputs.
+- Whole-car and single-part service tests: converted PNG and all meshes saved
+  with the existing single history action; undo restores previous references.
+  Existing source/binding/invalid-PNG/cancellation cases remain passing.
+- Actual PAL headless app.js/live state JPEG glTF → missing-ID mapping →
+  body/wheel preview → target texture → Import → Save & apply PASS, no errors.
+  Normal hidden modern GP loads all three mesh overrides and converted 1×1 PNGs;
+  whole preview geometry/material/UV unchanged, scene12/timer20 PASS (~31 sec).
+- Full npm: 171 JS tests, 164 PASS, 7 optional skips, 0 failures; native
+  save-format PASS. Focused native/service tests 8 PASS before final oversized
+  case; final worker rebuild/stage and native regression recorded below.
+- Blender proof, broad assemblies/LOD, physical units, full shader/unknown-extra
+  project roundtrip and remaining track/interface/media acceptance stay open.
+  No release or game-runtime implementation changed in this step.
+- Final rebuilt/staged worker: focused native/service suite 8 PASS, including
+  oversized JPEG dimension rejection. Linux POSIX declarations are explicitly
+  enabled before headers; SDL linkage uses the existing bundled target. No new
+  external/runtime image-conversion requirement was introduced.
