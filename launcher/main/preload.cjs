@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   saveAiHint:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-ai-hint',bank,index,values,revision),
   saveAiSpeed:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-ai-speed',bank,index,values,revision),
   saveStart:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-start',bank,index,values,revision),
+  saveIntro:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-intro',bank,index,values,revision),
   saveCamera:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-camera',bank,index,values,revision),
   saveEnvironment:(bank,entries,revision)=>ipcRenderer.invoke('launcher:save-environment',bank,entries,revision),
   saveTerrainCell:(bank,index,values,revision)=>ipcRenderer.invoke('launcher:save-terrain-cell',bank,index,values,revision),

@@ -7,6 +7,7 @@ static void TrackStore32(unsigned char *p,uint32_t n){for(unsigned i=0;i<4;i++)p
 #include "track_environment.h"
 #include "track_ai.h"
 #include "track_cameras.h"
+#include "track_intro.h"
 static int TrackAppend(void **bytes,size_t *size,TrackBlock *blocks,uint32_t models,Placements *placements){
  if(placements->count>=10000||*size>128u*1024u*1024u-20)return 0;
  size_t at=(size_t)(blocks[8].data-(unsigned char *)*bytes)+4+(size_t)placements->count*20;
@@ -51,6 +52,7 @@ static int TrackEditCommand(const char *source,const char *output) {
         const char *name=yyjson_get_str(field);if(strlen(name)!=yyjson_get_len(field))goto done;
         if(yyjson_get_uint(index)>UINT32_MAX)goto done;
         uint32_t at=(uint32_t)yyjson_get_uint(index);
+        if(!strncmp(name,"intro.",6)){if(!IntroEdit(&blocks[9],at,name+6,value))goto done;continue;}
         if(!strncmp(name,"camera.",7)){if(!CameraEdit(&blocks[10],at,name+7,value))goto done;continue;}
         if(!strncmp(name,"start.",6)){Road road;if(!RoadOpen(blocks[4].data,blocks[4].size,&road)||!AiStartEdit(&blocks[9],at,name+6,value,road.count))goto done;continue;}
         if(!strncmp(name,"speed.",6)){if(!AiSpeedEdit(&blocks[9],at,name+6,value))goto done;continue;}

@@ -199,6 +199,7 @@ replaceDone:
             EnvPrint(&blocks[2],&blocks[1]);
             AiPrint(&blocks[9]);
             CamerasPrint(&blocks[10]);
+            IntroPrint(&blocks[9]);
             Placements placements;
             uint32_t models=blocks[5].size>=4?SpecU32(blocks[5].data):0;
             if(!PlacementsOpen(blocks[8].data,blocks[8].size,models,&placements)){

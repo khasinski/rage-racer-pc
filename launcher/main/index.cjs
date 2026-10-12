@@ -78,6 +78,7 @@ handle('save-road-point',(bank,index,values,revision)=>service.saveRoadPoint(ban
 handle('save-ai-hint',(bank,index,values,revision)=>service.saveAiHint(bank,index,values,revision));
 handle('save-ai-speed',(bank,index,values,revision)=>service.saveAiSpeed(bank,index,values,revision));
 handle('save-start',(bank,index,values,revision)=>service.saveStart(bank,index,values,revision));
+handle('save-intro',(bank,index,values,revision)=>service.saveIntro(bank,index,values,revision));
 handle('save-camera',(bank,index,values,revision)=>service.saveCamera(bank,index,values,revision));
 handle('save-environment',(bank,entries,revision)=>service.saveEnvironment(bank,entries,revision));
 handle('save-terrain-cell',(bank,index,values,revision)=>service.saveTerrainCell(bank,index,values,revision));

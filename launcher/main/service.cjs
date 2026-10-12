@@ -240,10 +240,11 @@ class LauncherService {
   async saveAiHint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'ai');}
   async saveAiSpeed(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'speed');}
   async saveStart(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'start');}
+  async saveIntro(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'intro');}
   async saveCamera(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'camera');}
   async saveTrackEntry(bank,index,values,revision,type){
     this.requireReady();
-    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>(type==='camera'?128*1024*1024:10000)||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='env'?12:type==='road'||type==='camera'?10:6))throw Error('Invalid track object edit');
+    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>((type==='camera'||type==='intro')?128*1024*1024:10000)||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='env'?12:type==='road'||type==='camera'?10:6))throw Error('Invalid track object edit');
     const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.${type}.${index}`;
     return this.saveTrackChanges(bank,Object.entries(values).map(([field,value])=>({kind:'track',id,field,value})),revision);
   }

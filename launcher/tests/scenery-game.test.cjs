@@ -15,12 +15,14 @@ test('normal race loads edited scenery and atmosphere without an asset_000 marke
  edited=await s.saveAiSpeed(88,0,{target_0:150},edited.revision);assert.equal((await s.trackScene(88)).ai.speeds[0][0].targets[0],150);
  edited=await s.saveStart(88,0,{x:scene.ai.starts[0][0].x+1},edited.revision);assert.equal((await s.trackScene(88)).ai.starts[0][0].seed,scene.ai.starts[0][0].seed);
  const camera=scene.cameras[0][0];edited=await s.saveCamera(88,camera.id,{data_1:camera.data[1]+1},edited.revision);assert.equal((await s.trackScene(88)).cameras[0][0].data[1],camera.data[1]+1);
+ const intro=scene.intro[0][0];edited=await s.saveIntro(88,intro.id,{y:intro.y+1},edited.revision);assert.equal((await s.trackScene(88)).intro[0][0].y,intro.y+1);
  await s.saveEnvironment(88,[{type:'environment',index:0,values:{length:scene.environment.length+600,sky_row:1}},...scene.environment.cues.map((cue,index)=>({index,values:{color_0:0xcc33ff,color_2:0xcc33ff}})),...scene.environment.palettes.map((palette,index)=>({type:'palette',index,values:Object.fromEntries(Array.from({length:15},(_,i)=>['color_'+(i+1),0x00ff00]))}))],edited.revision);await s.publishMods();
  const pointer=JSON.parse(await fs.readFile(path.join(s.modsRoot,'active.json'))),build=path.join(s.modsRoot,'builds',pointer.build);await assert.rejects(fs.stat(path.join(build,'raw/asset_000.bin')),/ENOENT/);
  const bank=await fs.readFile(path.join(build,'raw/asset_088.bin'));assert.equal(bank.readInt16LE(bank.readUInt32LE(36)+132+8),0);
  assert.equal(bank.readInt16LE(bank.readUInt32LE(36)+1140+4),150);
  assert.equal(bank.readInt32LE(bank.readUInt32LE(36)+852),scene.ai.starts[0][0].x+1);assert.equal(bank.readInt16LE(bank.readUInt32LE(36)+852+10),scene.ai.starts[0][0].seed);
  assert.equal(bank.readInt32LE(bank.readUInt32LE(40)+camera.id+4),camera.data[1]+1);
+ assert.equal(bank.readInt32LE(bank.readUInt32LE(36)+intro.id+4),intro.y+1);
  const scenario=path.join(root,'race.ini');await fs.writeFile(scenario,'[race]\nmode=grand-prix\nclass=0\ncourse=0\ncar=3\n[boot]\ndirect=true\nskip_sequences=true\n');
  for(const renderer of ['classic','modern']){
   const capture=path.join(base,'build/reports/editor/atmosphere-layout-modern.ppm');await fs.mkdir(path.dirname(capture),{recursive:true});

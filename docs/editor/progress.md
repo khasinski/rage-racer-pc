@@ -1499,3 +1499,36 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   activation, not observed replay-cut framing/sky or isolated GP intro geometry.
   Those T10 gates, camera insertion/removal/preview, GP intro event path and the
   remaining editor scope stay open.
+
+### Race starting-camera authoring (real editor)
+
+- Added Race → Starting camera forms to the existing track workspace, with
+  forward/reverse keys, world X/Y/Z and expandable simulation-tick timing.
+  This edits RunRaceIntroCamera before a single race. Correction to the preceding
+  entry: this event script is not the Grand Prix announcement background camera;
+  the announcement path remains a separate investigation.
+- Compiled codec asserts the runtime event-offset/header/key layout, bounds the
+  relative script offsets and walks each direction to its terminal key using
+  runtime mode/duration validation. Physical IDs preserve shared script tails.
+  First-key indices, terminal modes/triggers, unused keys, offsets and other
+  blocks are retained. No insertion/removal or additional runtime globals.
+  Terminal transition-frame edits are rejected: advancing a terminal key could
+  enter unused records. Other transition frames retain signed16 semantics rather
+  than imposing an invented timeline order; frames outside 2..89 do not trigger
+  a transition in the current runtime. Interpolation retains signed16 deltas.
+- Connected typed project edits, effective scene, undo, native IPC and existing
+  immutable mod composition. Invalid edits produce neither output nor project
+  revision changes. Native/service/form tests cover shared forward/reverse keys,
+  byte-exact changes, invalid IDs/ranges/durations/terminal triggers, malformed
+  script offsets/headers/modes, unused keys and one-step undo.
+- Actual PAL survey: all 48 direction scripts across 24 track banks readable.
+  Headless actual app.js with live state + service: bank88 key1 Y5975→5976,
+  submit, effective scene and published raw bank all agree. No visible window,
+  source mutation or frontend errors. Temporary harness /tmp/rr-intro-ui.cjs.
+- Full npm176 JS tests:169 PASS,7 optional skips,0 failures; native save-format
+  PASS. Focused camera/starting-camera suite2 PASS after the terminal-trigger
+  guard. Isolated normal race loads the edited event bank on classic and modern,
+  scene12/timer20 PASS (~54 seconds), with exact published camera bytes checked.
+  This is activation evidence, not visual camera-path/cut fidelity verification.
+  Camera visual preview, full timeline authoring, Blender and platform gates and
+  the broader editor acceptance criteria remain open.
