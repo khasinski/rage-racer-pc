@@ -29,3 +29,26 @@ Kolejny konkretny implementacyjny krok po przeglądzie: wspólny C Catalog dla
 prawdziwego auta + całej Mythical Coast, Project deltas i end-to-end resolved
 parameter/texture loop. Potem pierwsza structured track modification przed
 rozbudowaniem reszty formularzy.
+
+## Editing a complete car with GLB
+
+In Cars, choose the car and use **Export for editing**. Open the exported
+`car.glb` in your 3D editor. It contains body and wheel meshes, wheel instances
+and embedded PNG textures. Coordinates currently use native game units, Y-up.
+
+Edit geometry, UVs, vertex colours or base-colour PNGs. Keep the exported custom
+properties (`rr_part`, `rr_instance`, `rr_source` and material `rr_material`);
+when exporting from Blender, enable **Custom Properties**. Keep both front-wheel
+instances linked to the same mesh. Compatible local transforms are supported;
+independent edits to the shared front wheels require a future runtime format.
+Export a static GLB without skins, animation or compression extensions.
+
+Use **Import edited GLB** on the same car and disc revision. Invalid input leaves
+previous edits intact. The complete import is one undo step. Use **Save & apply**
+to publish the project to the game's automatically detected mod directory.
+Geometry replacement currently targets the modern renderer. Shader graph/PBR
+property changes are not imported. If custom properties were lost, the importer
+reports the missing mapping; a mapping wizard is still pending.
+
+The exported folder also contains three OBJ models and shared PNGs. Import that
+folder through **OBJ sets and individual parts → Import OBJ car set folder**.

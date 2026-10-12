@@ -70,7 +70,7 @@ test('complete car import installs all models and textures atomically and reject
   const exported=await service.exportCarSet(key,root);
   const whole=await fs.readFile(path.join(exported,'car.glb')),jsonLength=whole.readUInt32LE(12),glb=JSON.parse(whole.subarray(20,20+jsonLength).toString());
   assert.equal(glb.meshes.length,3);assert.equal(glb.nodes.length,5);
-  assert.deepEqual(glb.extras.rr_source,{region:'NTSC-U',key});
+  assert.deepEqual(glb.extras.rr_source,{region:'NTSC-U',key,fingerprint:service.editor.project.document.source.fingerprint});
   assert.deepEqual(glb.nodes.slice(1).map(n=>n.mesh),[0,2,1,1]);
   assert.deepEqual(glb.nodes[4].scale,[-1,1,-1]);
   assert.deepEqual(glb.meshes.map(m=>m.extras.rr_part),[key,'car.player.10.part.2','car.player.10.part.3']);
@@ -91,6 +91,26 @@ test('complete car import installs all models and textures atomically and reject
   for(const role of ['body','front-wheels','rear-wheels'])assert.match(await fs.readFile(path.join(exported,exportedManifest.parts[role]),'utf8'),/usemtl rage_0/);
   const exportedProject=await service.importCarSet(key,exported);
   assert.deepEqual(exportedProject.changes,changes); // Native OBJ/PNG round trip.
+  const wholeProject=await service.importCarSet(key,path.join(exported,'car.glb'));
+  assert.deepEqual(wholeProject.changes,changes); // Complete embedded GLB round trip.
+  const edited=Buffer.from(whole),bodyPosition=glb.accessors[glb.meshes[0].primitives[0].attributes.POSITION],bodyView=glb.bufferViews[bodyPosition.bufferView],vertexAt=28+jsonLength+bodyView.byteOffset+(bodyPosition.byteOffset||0);
+  edited.writeFloatLE(7,vertexAt);const editedFile=path.join(root,'edited.glb');await fs.writeFile(editedFile,edited);
+  let editedProject=await service.importCarSet(key,editedFile);
+  assert.equal(editedProject.revision,wholeProject.revision+1);
+  const bodyChange=editedProject.changes.find(c=>c.id===key&&c.field==='mesh'),bodyBytes=await new (require('../main/project-files.cjs').ProjectFiles)(service.editor.file).read(bodyChange.value);
+  assert.equal(bodyBytes.readFloatLE(32),7);assert.equal(editedProject.changes.length,changes.length);
+  project=await service.projectHistory('undo',editedProject.revision);assert.deepEqual(project.changes,changes);
+  const rewrite=edit=>{const doc=JSON.parse(whole.subarray(20,20+jsonLength));edit(doc);const text=Buffer.from(JSON.stringify(doc)),padded=Buffer.alloc((text.length+3)&~3,32);text.copy(padded);const rest=whole.subarray(20+jsonLength),file=Buffer.alloc(20+padded.length+rest.length);whole.copy(file,0,0,12);file.writeUInt32LE(file.length,8);file.writeUInt32LE(padded.length,12);file.write('JSON',16);padded.copy(file,20);rest.copy(file,20+padded.length);return file;};
+  const nodeProperties=path.join(root,'node-properties.glb');await fs.writeFile(nodeProperties,rewrite(d=>{delete d.extras;}));assert.deepEqual((await service.importCarSet(key,nodeProperties)).changes,changes);
+  for(const edit of [d=>{d.extras.rr_source.key='car.player.12.part.0';},d=>{d.extras.rr_source.fingerprint='sha256:'+'0'.repeat(64);},d=>{delete d.nodes[1].extras.rr_part;},d=>{d.nodes[4].translation[0]+=5;},d=>{d.nodes[1].scale=[0,1,1];}]){
+   const bad=path.join(root,'invalid-car.glb');await fs.writeFile(bad,rewrite(edit));await assert.rejects(service.importCarSet(key,bad));assert.equal((await service.project()).revision,project.revision);assert.deepEqual((await service.project()).changes,changes);
+  }
+  const scaled=path.join(root,'scaled-wheels.glb');await fs.writeFile(scaled,rewrite(d=>{for(const i of [3,4])d.nodes[i].scale=d.nodes[i].scale.map(n=>n*2);}));
+  editedProject=await service.importCarSet(key,scaled);
+  const frontChange=editedProject.changes.find(c=>c.id==='car.player.10.part.2'&&c.field==='mesh'),frontBytes=await new (require('../main/project-files.cjs').ProjectFiles)(service.editor.file).read(frontChange.value);
+  assert.equal(frontBytes.readFloatLE(32+40),2);assert.equal(frontBytes.readFloatLE(32+20),0.5);
+  project=await service.projectHistory('undo',editedProject.revision);assert.deepEqual(project.changes,changes);
+  const nan=Buffer.from(whole);nan.writeFloatLE(NaN,vertexAt);const nanFile=path.join(root,'nan.glb');await fs.writeFile(nanFile,nan);await assert.rejects(service.importCarSet(key,nanFile));assert.equal((await service.project()).revision,project.revision);
   project=await service.applyProject(project.revision);
   const pointer=JSON.parse(await fs.readFile(path.join(service.modsRoot,'active.json')));
   const {run}=require('../main/service.cjs');

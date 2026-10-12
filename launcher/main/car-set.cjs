@@ -43,9 +43,10 @@ exports.exportSet=async(service,key,destination)=>{
      const mesh=[0,2,3].indexOf(instance.part-c.part);if(mesh<0)throw Error('Unknown car layout part');
      return {mesh,name:mesh===0?'body':mesh===2?'rear-wheels':`front-wheel-${i}`,position:instance.position,scale:instance.scale};
     });
-    await run(service.tool('rage-mesh-obj'),['assemble-glb',path.join(target,'car.glb')],{signal,input:JSON.stringify({source:{region:manifest.region,key},parts,instances})});
+    const project=await service.loadProject();
+    await run(service.tool('rage-mesh-obj'),['assemble-glb',path.join(target,'car.glb')],{signal,input:JSON.stringify({source:{region:manifest.region,key,fingerprint:project?.document.source.fingerprint||null},parts,instances})});
    }finally{for(const folder of folders)await fs.rm(folder,{recursive:true,force:true});}
-   await fs.writeFile(path.join(target,'README.txt'),'car.glb contains the assembled car with embedded PNG textures and separate body/wheel nodes for inspection in Blender. Native game units, Y-up. Complete GLB re-import is not supported yet.\nEdit the three OBJ files and the shared PNG textures, then Import car set on the same slot.\nKeep rage_* material names, UVs and normals. Export triangulated OBJ.\nShared PNG files are referenced by body and wheel materials; edit each shared image once.\ncar-set.json maps the files to this disc version and car slot. Other slots require material remapping.\n');
+   await fs.writeFile(path.join(target,'README.txt'),'car.glb contains the assembled car with embedded PNG textures and separate body/wheel nodes for editing in Blender. Native game units, Y-up. Keep custom properties and shared front-wheel mesh; import the GLB on the same car slot.\nEdit the three OBJ files and the shared PNG textures, then Import car set on the same slot.\nKeep rage_* material names, UVs and normals. Export triangulated OBJ.\nShared PNG files are referenced by body and wheel materials; edit each shared image once.\ncar-set.json maps the files to this disc version and car slot. Other slots require material remapping.\n');
    return target;
   }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
  }));
@@ -53,22 +54,43 @@ exports.exportSet=async(service,key,destination)=>{
 exports.importSet=async(service,key,source)=>{
  service.requireReady();return service.operation('Importing complete car',async signal=>{
   const {run}=require('./service.cjs'),c=await car(service,key,signal);
-  const manifest=JSON.parse(await fs.readFile(await boundedFile(source,'car-set.json',65536),'utf8'));
-  if(manifest.format!==1||manifest.region!==service.state.disc.region||manifest.key!==key)throw Error('Choose a car set exported for this slot and game version. Cross-slot material remapping is not supported yet.');
-  if(!manifest.parts||!manifest.textures||Array.isArray(manifest.textures)||Object.keys(manifest.textures).length>64)throw Error('Invalid car set manifest');
   const materials=await table(service,c,signal),staging=path.join(service.root,'car-set-import-'+randomUUID());await fs.mkdir(path.join(staging,'meshes'),{recursive:true});await fs.mkdir(path.join(staging,'textures'));
   try{
-   const meshes=[],textures=[];
+   const whole=(await fs.stat(source)).isFile();let manifest;
+   if(whole){
+    if(path.extname(source).toLowerCase()!=='.glb')throw Error('Choose a complete GLB car');
+    const raw=path.join(service.state.disc.data,'raw',`asset_${String(c.bank).padStart(3,'0')}.bin`);
+    const layout=JSON.parse(await run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));
+    const parts=[0,2,3].map(offset=>({id:`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`}));
+    const instances=layout.instances.map(i=>({mesh:[0,2,3].indexOf(i.part-c.part),position:i.position,scale:i.scale}));
+    const project=await service.loadProject();
+    await run(service.tool('rage-mesh-obj'),['separate-glb',source,staging],{signal,input:JSON.stringify({source:{region:service.state.disc.region,key,fingerprint:project?.document.source.fingerprint||null},parts,instances})});
+    source=staging;manifest={format:1,region:service.state.disc.region,key,parts:{body:'part-0.glb','front-wheels':'part-1.glb','rear-wheels':'part-2.glb'},textures:{}};
+   }else manifest=JSON.parse(await fs.readFile(await boundedFile(source,'car-set.json',65536),'utf8'));
+   if(manifest.format!==1||manifest.region!==service.state.disc.region||manifest.key!==key)throw Error('Choose a car set exported for this slot and game version. Cross-slot material remapping is not supported yet.');
+   if(!manifest.parts||!manifest.textures||Array.isArray(manifest.textures)||Object.keys(manifest.textures).length>64)throw Error('Invalid car set manifest');
+   const meshes=[],textures=[],embedded={};
    for(const [role,offset]of [['body',0],['front-wheels',2],['rear-wheels',3]]){
     const file=await boundedFile(source,manifest.parts[role],128*1024*1024),ext=path.extname(file).toLowerCase(),relative='meshes/'+role+'.rmesh',out=path.join(staging,relative);
-    if(ext==='.glb')await run(service.tool('rage-mesh-obj'),['import-glb',file,out],{signal});else if(ext==='.obj')await run(service.tool('rage-mesh-obj'),['import',file,out],{signal});else if(ext==='.rmesh')await fs.copyFile(file,out);else throw Error('Car set models must be OBJ, geometry-only GLB or RRMESH');
+    let images=[];
+    const imageDir=path.join(staging,'images-'+role);
+    if(ext==='.glb'){await fs.mkdir(imageDir);images=JSON.parse(await run(service.tool('rage-mesh-obj'),['import-glb',file,out,imageDir],{signal})).textures;}else if(ext==='.obj')await run(service.tool('rage-mesh-obj'),['import',file,out],{signal});else if(ext==='.rmesh')await fs.copyFile(file,out);else throw Error('Car set models must be OBJ, GLB or RRMESH');
     const partKey=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
     await require('./car-material-bindings.cjs')(service,partKey,out,staging,role,signal);
     meshes.push(`"${partKey}" = "${relative}"`);
+    if(images.length){
+     const binding=path.join(staging,'bindings-'+role+'.rmesh'),meta=JSON.parse(await service.carTool(['--set','tools.car_export='+partKey,'--set','tools.car_output='+binding],signal));await fs.rm(binding,{force:true});
+     for(const image of images){
+      const original=meta.materials.find(m=>m.source===image),material=original&&materials.find(m=>m.page===original.page&&m.clut===original.clut);if(!material)throw Error('GLB image has no matching car texture source');
+      const png=path.join(imageDir,`texture-${image}.png`),previous=embedded[material.slot]||manifest.textures[material.slot];
+      if(previous){const existing=embedded[material.slot]||await boundedFile(source,previous,32*1024*1024);if(!(await fs.readFile(existing)).equals(await fs.readFile(png)))throw Error('Different GLB images map to the same car surface');}
+      else embedded[material.slot]=png;
+     }
+    }
    }
-   for(const [slot,relative]of Object.entries(manifest.textures)){
+   for(const [slot,relative]of Object.entries({...manifest.textures,...embedded})){
     const material=materials.find(m=>String(m.slot)===slot);if(!material)throw Error('Unknown car texture slot');
-    const file=await boundedFile(source,relative,32*1024*1024),bytes=await fs.readFile(file);
+    const file=embedded[slot]||await boundedFile(source,relative,32*1024*1024),bytes=await fs.readFile(file);
     if(bytes.length<24||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10]))||!bytes.readUInt32BE(16)||!bytes.readUInt32BE(20)||bytes.readUInt32BE(16)>4096||bytes.readUInt32BE(20)>4096)throw Error('Car textures must be PNG images up to 4096 × 4096');
     const output='textures/material-'+slot+'.png',staged=path.join(staging,output);await fs.copyFile(file,staged);
     try{await run(service.tool('rage-mod-cli'),['--png',staged],{signal});}catch(e){if(signal.aborted)throw e;throw Error(`Cannot import texture ${relative}: the game could not decode this PNG.`);}

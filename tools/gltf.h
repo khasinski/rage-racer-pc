@@ -5,4 +5,5 @@ int GlbImport(const char *input, const char *output);
 int GlbExportTextures(const char *input, unsigned part, const char *output, const char *textures);
 int GlbImportTextures(const char *input, const char *output, const char *textures);
 int GlbAssemble(const char *output);
+int GlbSeparate(const char *input, const char *directory);
 #endif

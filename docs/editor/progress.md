@@ -1140,3 +1140,41 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   GLB, 5 embedded images, front pivots ±120/0/368. Both validate through cgltf
   and export via LauncherService in private temporary projects, without a
   visible game window. Blender verification and complete import remain open.
+
+### Complete-car embedded GLB import
+
+- The real car screen now offers Import edited GLB beside Export for editing.
+  OBJ set-folder import stays under advanced options; no separate tool or mock.
+- Compiled `separate-glb` validates source region/slot/archive fingerprint,
+  part and instance custom properties, active scene and supported static layout.
+  It splits roles without flattening the car. Node world transforms are mapped
+  back through the actual disc pivots; common local wheel scale/transform edits
+  are baked into the shared wheel mesh, including normal transforms.
+- Missing role IDs, duplicate/missing instances, incompatible shared-wheel edits,
+  different wheel meshes, unsupported extensions/animation and wrong source are
+  errors before project changes. Lost-property remapping wizard remains open.
+- Complete and per-part GLB set import accepts embedded PNGs, resolves source
+  IDs through original page/CLUT bindings and validates native PNG decoding.
+  Conflicting images for one shared material are rejected. Three mesh refs and
+  every image ref commit as one history operation; source and old project stay
+  unchanged on failed validation.
+- Regression: complete round trip; edited body vertex; both shared wheel scales
+  with inverse-transpose normals; one-step undo; wrong slot/fingerprint, missing
+  role metadata, incompatible wheel transforms, singular matrix and NaN geometry.
+- Actual PAL player 10/0 and rival 88/0 whole-car previews preserve every corner's
+  nine geometry/material/UV fields (14718 and 14385 corners), publish and undo.
+  Headless actual app.js basic Export → Import GLB → Save & apply PASS, no JS
+  errors (native dialogs supplied by the test bridge).
+- Upgraded opt-in normal-race GLB regression imports all three parts and edited
+  embedded PNGs. Real headless modern GP reaches scene12/timer20 and logs all
+  three runtime mesh overrides plus 1×1 texture overrides: PASS (~29 sec).
+  This is loaded-runtime evidence, not Blender or all-platform visual parity.
+- Full editor suite before final fingerprint validation: 157 PASS, 7 optional
+  skips, 0 failures; final build/test result recorded below. Blender executable
+  was not found locally; Blender round trip, external .gltf, material remapping,
+  full shader property mapping and standard physical units remain unverified.
+- Final native rebuild/stage and fingerprint checks: full suite 157 PASS / 7
+  optional skips / 0 failures; normal headless race PASS (~30 sec); actual UI
+  export/import/publish PASS. Source provenance is also stored on the Car node
+  for editors that discard document extras; final focused tests 5 PASS including
+  node-property-only provenance. No published release or source asset mutation.

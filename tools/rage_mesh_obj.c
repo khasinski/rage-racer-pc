@@ -243,6 +243,7 @@ done:
 }
 
 int main(int argc, char **argv) {
+    if(argc==4&&!strcmp(argv[1],"separate-glb"))return GlbSeparate(argv[2],argv[3])?0:1;
     if(argc==3&&!strcmp(argv[1],"assemble-glb"))return GlbAssemble(argv[2])?0:1;
     if(argc==5&&!strcmp(argv[1],"import-glb"))return GlbImportTextures(argv[2],argv[3],argv[4])?0:1;
     if(argc==4&&!strcmp(argv[1],"import-glb"))return GlbImport(argv[2],argv[3])?0:1;

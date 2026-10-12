@@ -253,15 +253,60 @@ int GlbAssemble(const char *output){
   binSize+=partSize;cgltf_free(parsed);free(bytes);yyjson_doc_free(partDoc);partDoc=NULL;
  }
  yyjson_mut_val *nodes=Array(doc,root,"nodes"),*car=Element(doc,nodes),*children=Array(doc,car,"children");Text(doc,car,"name","Car");
+ yyjson_mut_obj_add_val(doc,Object(doc,car,"extras"),"rr_source",yyjson_mut_val_mut_copy(doc,source));
  yyjson_val *instance;size_t i,count;yyjson_arr_foreach(instances,i,count,instance){
   yyjson_val *index=yyjson_obj_get(instance,"mesh"),*name=yyjson_obj_get(instance,"name"),*position=yyjson_obj_get(instance,"position"),*scale=yyjson_obj_get(instance,"scale");
   if(!yyjson_is_uint(index)||yyjson_get_uint(index)>=3||!yyjson_is_str(name)||!yyjson_get_len(name)||yyjson_get_len(name)>159||strlen(yyjson_get_str(name))!=yyjson_get_len(name)||!yyjson_is_arr(position)||yyjson_arr_size(position)!=3||!yyjson_is_arr(scale)||yyjson_arr_size(scale)!=3)goto done;
   for(unsigned c=0;c<3;c++){yyjson_val *p=yyjson_arr_get(position,c),*s=yyjson_arr_get(scale,c);if(!yyjson_is_num(p)||!yyjson_is_num(s)||!isfinite(yyjson_get_num(p))||!isfinite(yyjson_get_num(s))||yyjson_get_num(s)==0)goto done;}
-  yyjson_mut_arr_add_uint(doc,children,i+1);yyjson_mut_val *node=Element(doc,nodes);Number(doc,node,"mesh",(uint32_t)yyjson_get_uint(index));Text(doc,node,"name",yyjson_get_str(name));yyjson_mut_obj_add_val(doc,node,"translation",yyjson_val_mut_copy(doc,position));yyjson_mut_obj_add_val(doc,node,"scale",yyjson_val_mut_copy(doc,scale));Text(doc,Object(doc,node,"extras"),"rr_part",yyjson_get_str(yyjson_obj_get(yyjson_arr_get(parts,(size_t)yyjson_get_uint(index)),"id")));
+  yyjson_mut_arr_add_uint(doc,children,i+1);yyjson_mut_val *node=Element(doc,nodes);Number(doc,Object(doc,node,"extras"),"rr_instance",(uint32_t)i);Number(doc,node,"mesh",(uint32_t)yyjson_get_uint(index));Text(doc,node,"name",yyjson_get_str(name));yyjson_mut_obj_add_val(doc,node,"translation",yyjson_val_mut_copy(doc,position));yyjson_mut_obj_add_val(doc,node,"scale",yyjson_val_mut_copy(doc,scale));Text(doc,yyjson_mut_obj_get(node,"extras"),"rr_part",yyjson_get_str(yyjson_obj_get(yyjson_arr_get(parts,(size_t)yyjson_get_uint(index)),"id")));
  }
  Number(doc,Element(doc,Array(doc,root,"buffers")),"byteLength",(uint32_t)binSize);yyjson_mut_arr_add_uint(doc,Array(doc,Element(doc,Array(doc,root,"scenes")),"nodes"),0);Number(doc,root,"scene",0);
  for(unsigned group=0;group<7;group++)if(!yyjson_mut_arr_size(arrays[group]))yyjson_mut_obj_remove_str(root,names[group]);
  json=yyjson_mut_write(doc,0,&jsonSize);if(!json||jsonSize>8*1024*1024)goto done;size_t padded=(jsonSize+3)&~(size_t)3,total=28+padded+binSize;if(total>LIMIT)goto done;file=malloc(total);if(!file)goto done;Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)binSize);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,bin,binSize);
  cgltf_data *check=NULL;cgltf_options validation={0};if(cgltf_parse(&validation,file,total,&check)==cgltf_result_success&&cgltf_load_buffers(&validation,check,NULL)==cgltf_result_success&&cgltf_validate(check)==cgltf_result_success)ok=Write(output,file,total);cgltf_free(check);
  done:free(input);free(json);free(bin);free(file);yyjson_doc_free(partDoc);yyjson_doc_free(manifest);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot assemble complete car GLB; invalid part/layout or output limit\n",stderr);return ok;
+}
+
+/* Split a complete car into local meshes, preserving the shared wheel role.
+ * The caller supplies the original disc layout, never a guessed wheel pivot. */
+int GlbSeparate(const char *input,const char *directory){
+ size_t size=0,budget=LIMIT;unsigned char *bytes=Load(input,&size);cgltf_data *data=NULL;yyjson_doc *specDoc=NULL,*jsonDoc=NULL;int ok=0;char request[65537],paths[3][4096]={{0}};unsigned written=0;
+ size_t n=fread(request,1,sizeof(request),stdin);if(ferror(stdin)||n==sizeof(request))goto done;
+ specDoc=yyjson_read(request,n,0);if(!specDoc)goto done;yyjson_val *spec=yyjson_doc_get_root(specDoc),*parts=yyjson_obj_get(spec,"parts"),*instances=yyjson_obj_get(spec,"instances"),*expected=yyjson_obj_get(spec,"source");
+ if(!yyjson_is_obj(expected)||!yyjson_is_arr(parts)||yyjson_arr_size(parts)!=3||!yyjson_is_arr(instances)||yyjson_arr_size(instances)<3||yyjson_arr_size(instances)>8)goto done;
+ cgltf_options opts={0};opts.memory.alloc_func=Allocate;opts.memory.free_func=Release;opts.memory.user_data=&budget;
+ if(!bytes||cgltf_parse(&opts,bytes,size,&data)!=cgltf_result_success||data->file_type!=cgltf_file_type_glb||data->buffers_count!=1||data->buffers[0].uri||data->extensions_used_count||data->extensions_required_count||data->animations_count||data->skins_count||data->cameras_count||data->lights_count||data->nodes_count>10000||cgltf_load_buffers(&opts,data,NULL)!=cgltf_result_success||cgltf_validate(data)!=cgltf_result_success)goto done;
+ jsonDoc=yyjson_read(data->json,data->json_size,0);if(!jsonDoc)goto done;yyjson_val *root=yyjson_doc_get_root(jsonDoc),*actual=yyjson_obj_get(yyjson_obj_get(root,"extras"),"rr_source");
+ const cgltf_scene *scene=data->scene?data->scene:data->scenes_count==1?data->scenes:NULL;if(!scene)goto done;
+ /* 3D editors retain node custom properties, but can drop document extras. */
+ if(!actual)for(size_t i=0;i<data->nodes_count;i++)if(Active(scene,&data->nodes[i])){yyjson_val *node=yyjson_arr_get(yyjson_obj_get(root,"nodes"),i),*candidate=yyjson_obj_get(yyjson_obj_get(node,"extras"),"rr_source");if(candidate){if(actual)goto done;actual=candidate;}}
+ for(unsigned i=0;i<3;i++){const char *key=i==2?"fingerprint":i?"region":"key";yyjson_val *a=yyjson_obj_get(actual,key),*e=yyjson_obj_get(expected,key);if(i==2&&yyjson_is_null(a)&&yyjson_is_null(e))continue;if(!yyjson_is_str(a)||!yyjson_is_str(e)||yyjson_get_len(a)!=yyjson_get_len(e)||memcmp(yyjson_get_str(a),yyjson_get_str(e),yyjson_get_len(a))){fputs("Choose a complete GLB exported for this car slot and game version\n",stderr);goto done;}}
+ const cgltf_mesh *meshes[3]={0};float matrices[3][16];unsigned seen=0,roles=0;
+ for(size_t i=0;i<data->nodes_count;i++){
+  const cgltf_node *node=&data->nodes[i];unsigned depth=0;for(const cgltf_node *p=node;p;p=p->parent)if(++depth>64)goto done;
+  if(!node->mesh||!Active(scene,node))continue;
+  yyjson_val *description=yyjson_arr_get(yyjson_obj_get(root,"nodes"),i),*extras=yyjson_obj_get(description,"extras"),*instanceId=yyjson_obj_get(extras,"rr_instance"),*roleId=yyjson_obj_get(extras,"rr_part");
+  if(!yyjson_is_uint(instanceId)||yyjson_get_uint(instanceId)>=yyjson_arr_size(instances)||!yyjson_is_str(roleId)){fputs("Missing car part/instance mapping; retain exported custom properties\n",stderr);goto done;}
+  unsigned id=(unsigned)yyjson_get_uint(instanceId);if(seen&(1u<<id))goto done;seen|=1u<<id;
+  yyjson_val *instance=yyjson_arr_get(instances,id),*role=yyjson_obj_get(instance,"mesh"),*position=yyjson_obj_get(instance,"position"),*scale=yyjson_obj_get(instance,"scale");
+  if(!yyjson_is_uint(role)||yyjson_get_uint(role)>=3||!yyjson_is_arr(position)||yyjson_arr_size(position)!=3||!yyjson_is_arr(scale)||yyjson_arr_size(scale)!=3)goto done;
+  unsigned r=(unsigned)yyjson_get_uint(role);yyjson_val *part=yyjson_obj_get(yyjson_arr_get(parts,r),"id");if(!yyjson_is_str(part)||yyjson_get_len(part)!=yyjson_get_len(roleId)||memcmp(yyjson_get_str(part),yyjson_get_str(roleId),yyjson_get_len(part)))goto done;
+  float world[16],local[16];cgltf_node_transform_world(node,world);
+  for(unsigned c=0;c<3;c++){yyjson_val *p=yyjson_arr_get(position,c),*s=yyjson_arr_get(scale,c);double pivot=yyjson_get_num(p),axis=yyjson_get_num(s);if(!yyjson_is_num(p)||!yyjson_is_num(s)||!isfinite(pivot)||!isfinite(axis)||!axis)goto done;for(unsigned col=0;col<4;col++){local[col*4+c]=(float)((world[col*4+c]-(col==3?pivot:0))/axis);if(!isfinite(local[col*4+c]))goto done;}}
+  for(unsigned col=0;col<4;col++)local[col*4+3]=world[col*4+3];
+  if(meshes[r]){if(meshes[r]!=node->mesh){fputs("Shared front wheels must use the same mesh\n",stderr);goto done;}for(unsigned c=0;c<16;c++)if(fabsf(local[c]-matrices[r][c])>1e-5f*fmaxf(1,fabsf(matrices[r][c]))){fputs("Wheel instances have incompatible edits; edit their shared mesh or apply the same local transform\n",stderr);goto done;}}
+  else{meshes[r]=node->mesh;memcpy(matrices[r],local,sizeof(local));roles|=1u<<r;}
+ }
+ if(roles!=7||seen!=(1u<<yyjson_arr_size(instances))-1u)goto done;
+ for(unsigned r=0;r<3;r++){
+  yyjson_mut_doc *out=yyjson_mut_doc_new(NULL);if(!out)goto done;yyjson_mut_val *copy=yyjson_val_mut_copy(out,root);yyjson_mut_doc_set_root(out,copy);
+  yyjson_mut_obj_remove_str(copy,"meshes");yyjson_mut_arr_add_val(Array(out,copy,"meshes"),yyjson_val_mut_copy(out,yyjson_arr_get(yyjson_obj_get(root,"meshes"),(size_t)(meshes[r]-data->meshes))));
+  yyjson_mut_obj_remove_str(copy,"nodes");yyjson_mut_val *node=Element(out,Array(out,copy,"nodes")),*matrix=Array(out,node,"matrix");Number(out,node,"mesh",0);for(unsigned c=0;c<16;c++)yyjson_mut_arr_add_real(out,matrix,matrices[r][c]);
+  yyjson_mut_obj_remove_str(copy,"scenes");yyjson_mut_arr_add_uint(out,Array(out,Element(out,Array(out,copy,"scenes")),"nodes"),0);yyjson_mut_obj_remove_str(copy,"scene");Number(out,copy,"scene",0);
+  size_t jsonSize=0;char *json=yyjson_mut_write(out,0,&jsonSize);size_t padded=(jsonSize+3)&~(size_t)3,binSize=(data->buffers[0].size+3)&~(size_t)3,total=28+padded+binSize;unsigned char *file=json&&jsonSize<=8u*1024u*1024u&&total<=LIMIT?calloc(1,total):NULL;
+  int valid=0;if(file){Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)binSize);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,data->buffers[0].data,data->buffers[0].size);int count=snprintf(paths[r],sizeof(paths[r]),"%s/part-%u.glb",directory,r);valid=count>0&&count<(int)sizeof(paths[r])&&Write(paths[r],file,total);}
+  free(file);free(json);yyjson_mut_doc_free(out);if(!valid)goto done;written++;
+ }
+ ok=1;
+ done:if(!ok){while(written)remove(paths[--written]);fputs("Cannot split complete car GLB; project remains unchanged\n",stderr);}yyjson_doc_free(jsonDoc);yyjson_doc_free(specDoc);cgltf_free(data);free(bytes);return ok;
 }

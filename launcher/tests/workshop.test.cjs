@@ -8,7 +8,9 @@ test('car sections separate everyday actions from technical details and retain e
  assert.ok(!appearance.includes('PLAYER SLOT'));
  assert.match(appearance,/data-export-set="car.player.10.part.0"/);
  assert.match(appearance,/data-import-set="car.player.10.part.0"/);
- assert.match(appearance,/<details[^>]*><summary>Edit an individual part/);
+ assert.match(appearance,/data-import-set="car.player.10.part.0" data-format="glb"/);
+ assert.match(appearance,/<details[^>]*><summary>OBJ sets and individual parts/);
+ assert.match(appearance,/Import OBJ car set folder/);
  for(const part of parts)for(const action of ['preview','export','import'])assert.ok(appearance.includes(`data-${action}-car="${part.key}"`));
  assert.ok(!appearance.includes('data-car-spec='));
  const driving=carWorkspace(car,parts,{tab:'driving'});
