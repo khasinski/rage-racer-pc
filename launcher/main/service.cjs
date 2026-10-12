@@ -448,10 +448,11 @@ class LauncherService {
     return entries;
   }
   requireReady() {if(!this.state.disc)throw Error('Add a game image first');if(this.busy)throw Error('Wait for the current operation');}
-  async operation(label,task,cancellable=true) {
+  async operation(label,task,cancellable=true,owner) {
     if(this.busy||this.game)throw Error('Another operation or the game is running');
-    const controller=new AbortController();this.busy={label,controller,cancellable};
-    try{await this.update();return await task(controller.signal);}finally{this.busy=null;await this.update();}
+    const controller=new AbortController();let finish;
+    const done=new Promise(resolve=>{finish=resolve;});this.busy={label,controller,cancellable,owner,done};
+    try{await this.update();return await task(controller.signal);}finally{this.busy=null;try{await this.update();}finally{finish();}}
   }
   cancel() {if(this.busy?.cancellable)this.busy.controller.abort();}
   async prepare(image) {

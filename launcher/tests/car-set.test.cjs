@@ -118,6 +118,16 @@ test('complete car import installs all models and textures atomically and reject
   const cancelled=await service.prepareCarImport(key,lost);await service.cancelCarImport(cancelled.token);await assert.rejects(service.completeCarImport(cancelled.token,mapping),/expired/);
   const stale=await service.prepareCarImport(key,lost);project=await service.saveMaterial('',materialList.materials[0].id,properties,project.revision);project=await service.projectHistory('undo',project.revision);
   await assert.rejects(service.completeCarImport(stale.token,mapping),/Project changed/);assert.deepEqual((await service.project()).changes,changes);await service.cancelCarImport(stale.token);
+  for(const label of ['Mapping car parts','Importing complete car','Previewing target material']){
+   const active=await service.prepareCarImport(key,lost);let closing;
+   service.onChange=state=>{if(state.busy===label)closing=service.cancelCarImport(active.token);};
+   await assert.rejects(label==='Previewing target material'?service.carImportTexture(active.token,0):service.completeCarImport(active.token,mapping),/Operation canceled/);await closing;service.onChange=()=>{};
+   assert.equal(service.carImport,null);assert.equal(service.busy,null);assert.equal((await service.project()).revision,project.revision);assert.deepEqual((await service.project()).changes,changes);
+  }
+  const late=await service.prepareCarImport(key,lost),Files=require('../main/project-files.cjs').ProjectFiles,put=Files.prototype.put;let lateClosing;
+  Files.prototype.put=async function(...args){const value=await put.apply(this,args);if(!lateClosing)lateClosing=service.cancelCarImport(late.token);return value;};
+  try{await assert.rejects(service.completeCarImport(late.token,mapping),/Operation canceled/);}finally{Files.prototype.put=put;}
+  assert.ok(lateClosing);await lateClosing;assert.equal(service.carImport,null);assert.equal((await service.project()).revision,project.revision);assert.deepEqual((await service.project()).changes,changes);
   assert.equal((await fs.readdir(service.root)).some(n=>n.startsWith('car-map-')),false);
   for(const edit of [d=>{d.extras.rr_source.key='car.player.12.part.0';},d=>{d.extras.rr_source.fingerprint='sha256:'+'0'.repeat(64);},d=>{delete d.nodes[1].extras.rr_part;},d=>{d.nodes[4].translation[0]+=5;},d=>{d.nodes[1].scale=[0,1,1];}]){
    const bad=path.join(root,'invalid-car.glb');await fs.writeFile(bad,rewrite(edit));await assert.rejects(service.importCarSet(key,bad));assert.equal((await service.project()).revision,project.revision);assert.deepEqual((await service.project()).changes,changes);

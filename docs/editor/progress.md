@@ -1255,3 +1255,32 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   retention for unknown-extra roundtrip, complete shader mapping, physical units,
   arbitrary assemblies/LOD and single-part lost-property recovery. Track/media/
   interface acceptance scope remains part of the full goal.
+
+### Closing an active car-import operation
+
+- Fixed closing the mapping dialog while part/target-texture inspection was
+  active: the old cancel path tried to acquire a second job lock and could leave
+  the private candidate behind. Editor operations now carry an optional owner
+  and a completion promise; the import cancels only its owned controller, waits
+  for the operation (including child termination/final cleanup), then removes
+  its private staging. Unrelated editor work is not aborted.
+- The candidate is marked cancelled before waiting, blocking subsequent mapping
+  or inspection requests. Mapping and complete-car import carry the same owner;
+  cancellation is checked before the synchronous project history commit. Empty
+  or expired cancellation handles are harmless. Source files are unchanged.
+- Regression with a real running Node child checks its PID no longer exists
+  before cancellation returns, job lock is released and staging removed. Separate
+  queued-preview cancellation test covers close during initial state emission.
+  An unrelated live job keeps its signal and completes normally.
+- Native-backed car-set regression closes during mapping, complete import and
+  target texture jobs, then checks revision/changes and cleanup. A final test
+  cancels after the first immutable file reference is staged and confirms no
+  project commit occurs; retry/history data remain intact.
+- Actual PAL headless app.js/live backend-state flow: close during part preview,
+  wait for cancellation, reopen the same edited GLB, inspect parts/target texture,
+  map/import/publish PASS. No page errors or visible game window; cancelled
+  candidate and busy lock cleared, project revision unchanged after close.
+- Full npm suite: 168 tests, 161 PASS, 7 optional skips, 0 failures; native
+  save-format checks PASS. Focused cancellation + car-set tests 11 PASS; final
+  late-commit cancellation case PASS in the native-backed car-set test. No game
+  runtime or release changed. Broader editor acceptance requirements remain open.

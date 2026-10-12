@@ -122,3 +122,28 @@ test('output overflow terminates a child that ignores SIGTERM before settling',
  assert.ok(Number.isInteger(pid)&&pid>0);
  assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});
 });
+
+test('closing a car import waits for its live child and cleans staging without cancelling unrelated jobs',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-import-close-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));
+ const service=new LauncherService({root,bin:path.resolve(__dirname,'../resources/bin'),config:path.resolve(__dirname,'../resources/rage-port.ini')});await service.init();
+ const folder=path.join(root,'car-map-fixture');await fs.mkdir(folder);await fs.writeFile(path.join(folder,'source.glb'),'immutable source copy');
+ const candidate={token:'fixture',folder};service.carImport=candidate;
+ let ready,pid;const started=new Promise(resolve=>{ready=resolve;});
+ const command="process.stdout.write(String(process.pid)+'\\n');setInterval(()=>{},1000);";
+ const work=service.operation('Previewing imported car part',signal=>run(process.execPath,['-e',command],{signal,onLog:text=>{pid=Number(text.trim());ready();}}),true,candidate);
+ const rejected=assert.rejects(work,/Operation canceled/);await started;assert.ok(Number.isInteger(pid)&&pid>0);
+ await service.cancelCarImport(candidate.token);await rejected;
+ assert.throws(()=>process.kill(pid,0),{code:'ESRCH'});assert.equal(service.busy,null);assert.equal(service.carImport,null);await assert.rejects(fs.stat(folder),/ENOENT/);
+ // A dialog close belongs only to its import, not to other editor work.
+ const otherFolder=path.join(root,'car-map-other');await fs.mkdir(otherFolder);service.carImport={token:'other',folder:otherFolder};
+ let release,entered;const gate=new Promise(resolve=>{release=resolve;}),active=new Promise(resolve=>{entered=resolve;});let signal;
+ const unrelated=service.operation('Saving an unrelated document',async s=>{signal=s;entered();await gate;return 'saved';});await active;
+ await service.cancelCarImport('other');assert.equal(signal.aborted,false);assert.equal(service.busy.label,'Saving an unrelated document');release();assert.equal(await unrelated,'saved');assert.equal(service.busy,null);
+});
+
+test('closing car import before a queued preview starts is cancellation and leaves no candidate',async t=>{
+ const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-import-close-queued-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));let service,closing;
+ service=new LauncherService({root,bin:path.resolve(__dirname,'../resources/bin'),config:path.resolve(__dirname,'../resources/rage-port.ini'),onChange:state=>{if(state.busy==='Previewing imported car part')closing=service.cancelCarImport('fixture');}});await service.init();
+ const folder=path.join(root,'car-map-fixture');await fs.mkdir(folder);service.carImport={token:'fixture',folder,inspection:{nodes:[{node:1}],materials:[]}};
+ await assert.rejects(service.previewCarImport('fixture',1),/Operation canceled/);await closing;assert.equal(service.carImport,null);assert.equal(service.busy,null);await assert.rejects(fs.stat(folder),/ENOENT/);
+});

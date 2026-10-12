@@ -51,8 +51,9 @@ exports.exportSet=async(service,key,destination)=>{
   }catch(e){await fs.rm(target,{recursive:true,force:true});throw e;}
  }));
 };
-exports.importSet=async(service,key,source,revision)=>{
+exports.importSet=async(service,key,source,revision,owner)=>{
  service.requireReady();return service.operation('Importing complete car',async signal=>{
+  if(signal.aborted||owner?.cancelled)throw Error('Operation canceled');
   const {run}=require('./service.cjs'),c=await car(service,key,signal);
   if(revision!==undefined)(await service.loadProject()).checkRevision(revision);
   const materials=await table(service,c,signal),staging=path.join(service.root,'car-set-import-'+randomUUID());await fs.mkdir(path.join(staging,'meshes'),{recursive:true});await fs.mkdir(path.join(staging,'textures'));
@@ -106,12 +107,12 @@ exports.importSet=async(service,key,source,revision)=>{
     for(const [field,entries,type]of [['mesh',parsed.meshes,'rmesh'],['texture',parsed.textures,'png']]){
      for(const [id,relative]of Object.entries(entries))changes.push({kind:'car',id,field,value:await store.put(path.join(staging,relative),type)});
     }
-    return project.edit(changes,revision);
+    if(signal.aborted)throw Error('Operation canceled');return project.edit(changes,revision);
    }
    const names=JSON.parse(await run(service.tool('rage-save-cli'),['car-names'],{signal})),name=require('./car-names.cjs')(c.name,service.state.disc.region,names);
    return (await service.installModFiles(staging,signal,name+' · complete car')).id;
   }finally{await fs.rm(staging,{recursive:true,force:true});}
- });
+ },true,owner);
 };
 
 exports.prepare=async(service,key,file)=>service.operation('Inspecting car import',async signal=>{
@@ -136,20 +137,26 @@ exports.prepare=async(service,key,file)=>service.operation('Inspecting car impor
  }catch(e){await fs.rm(folder,{recursive:true,force:true});throw e;}
 });
 exports.complete=async(service,token,mapping)=>{
- const candidate=service.carImport;if(!candidate||candidate.token!==token)throw Error('Car import expired; select the file again');
+ const candidate=service.carImport;if(!candidate||candidate.cancelled||candidate.token!==token)throw Error('Car import expired; select the file again');
  const file=await service.operation('Mapping car parts',async signal=>{
+  if(signal.aborted||candidate.cancelled)throw Error('Operation canceled');
   const project=await service.loadProject();if(!project||project.revision!==candidate.revision||project.document.source.fingerprint!==candidate.source.fingerprint)throw Error('Project changed; select the car file again');
   if(!mapping||!Array.isArray(mapping.nodes)||mapping.nodes.length!==candidate.inspection.nodes.length||!Array.isArray(mapping.materials)||mapping.materials.length!==candidate.inspection.materials.length)throw Error('Assign every part and material');
   const instances=new Set(),nodes=new Set(),materials=new Set();
   for(const node of mapping.nodes){if(!Number.isInteger(node.node)||!candidate.inspection.nodes.some(n=>n.node===node.node)||nodes.has(node.node)||!Number.isInteger(node.instance)||!candidate.roles.some(r=>r.instance===node.instance)||instances.has(node.instance))throw Error('Each part needs a different role');nodes.add(node.node);instances.add(node.instance);}
   for(const material of mapping.materials){if(!Number.isInteger(material.material)||!candidate.inspection.materials.some(m=>m.material===material.material)||materials.has(material.material)||!candidate.materials.some(m=>m.word===material.word))throw Error('Choose original car materials');materials.add(material.material);}
   const output=path.join(candidate.folder,'mapped-'+randomUUID()+'.glb');await require('./service.cjs').run(service.tool('rage-mesh-obj'),['map-glb',path.join(candidate.folder,'source.glb'),output],{signal,input:JSON.stringify({source:candidate.source,nodes:mapping.nodes.map(n=>({...n,part:candidate.roles.find(r=>r.instance===n.instance).part})),materials:mapping.materials})});return output;
- });
- try{const result=await exports.importSet(service,candidate.key,file,candidate.revision);service.carImport=null;await fs.rm(candidate.folder,{recursive:true,force:true});return result;}finally{await fs.rm(file,{force:true});}
+ },true,candidate);
+ try{if(candidate.cancelled)throw Error('Operation canceled');const result=await exports.importSet(service,candidate.key,file,candidate.revision,candidate);if(service.carImport===candidate)service.carImport=null;await fs.rm(candidate.folder,{recursive:true,force:true});return result;}finally{await fs.rm(file,{force:true});}
 };
-exports.cancel=async(service,token)=>{if(service.carImport?.token!==token)return true;return service.operation('Cancelling car import',async()=>{if(service.carImport?.token===token){await fs.rm(service.carImport.folder,{recursive:true,force:true});service.carImport=null;}return true;});};
-exports.preview=async(service,token,node)=>service.operation('Previewing imported car part',async signal=>{
- const candidate=service.carImport;if(!candidate||candidate.token!==token||!Number.isInteger(node)||!candidate.inspection.nodes.some(n=>n.node===node))throw Error('Choose a part in the current car import');
+exports.cancel=async(service,token)=>{
+ const candidate=service.carImport;if(!candidate||candidate.token!==token)return true;candidate.cancelled=true;
+ const job=service.busy;if(job?.owner===candidate){job.controller.abort();await job.done;}
+ if(service.carImport===candidate)service.carImport=null;await fs.rm(candidate.folder,{recursive:true,force:true});return true;
+};
+exports.preview=async(service,token,node)=>{const candidate=service.carImport;return service.operation('Previewing imported car part',async signal=>{
+ if(signal.aborted||candidate?.cancelled)throw Error('Operation canceled');
+ if(!candidate||candidate.cancelled||candidate.token!==token||!Number.isInteger(node)||!candidate.inspection.nodes.some(n=>n.node===node))throw Error('Choose a part in the current car import');
  if(candidate.inspection.materials.length>64)throw Error('Part preview supports at most 64 materials; reduce unused material variants in the 3D editor');
  candidate.previews??=new Map();if(candidate.previews.has(node))return candidate.previews.get(node);
  const {run}=require('./service.cjs'),folder=path.join(candidate.folder,'preview-'+node);await fs.mkdir(folder);
@@ -160,9 +167,10 @@ exports.preview=async(service,token,node)=>service.operation('Previewing importe
   for(const source of info.textures){const png=path.join(folder,'texture-'+source+'.png');await run(service.tool('rage-mod-cli'),['--png',png],{signal});geometry.textures[source]={png:(await fs.readFile(png)).toString('base64')};}
   geometry.previewName=candidate.inspection.nodes.find(n=>n.node===node).name;geometry.previewNote='Imported geometry, vertex colours and embedded textures. Material assignments have not been applied yet. Lighting is simplified for inspection.';candidate.previews.set(node,geometry);return geometry;
  }finally{await fs.rm(folder,{recursive:true,force:true});}
-});
-exports.texture=async(service,token,word)=>service.operation('Previewing target material',async signal=>{
- const candidate=service.carImport,material=candidate?.materials.find(m=>m.word===word);if(!candidate||candidate.token!==token||!material)throw Error('Choose a material in the current car import');
+},true,candidate);};
+exports.texture=async(service,token,word)=>{const candidate=service.carImport;return service.operation('Previewing target material',async signal=>{
+ if(signal.aborted||candidate?.cancelled)throw Error('Operation canceled');
+ const material=candidate?.materials.find(m=>m.word===word);if(!candidate||candidate.cancelled||candidate.token!==token||!material)throw Error('Choose a material in the current car import');
  (await service.loadProject()).checkRevision(candidate.revision);candidate.textures??=new Map();const id=word&65535,key=material.part+':'+id;if(candidate.textures.has(key))return {...candidate.textures.get(key),label:material.label};
  const result={label:material.label,note:'Target car texture, including current project and selected mod replacements.'};if(id===65535||id>>>6===1){result.color=id===65535?'#28292e':'#314459';candidate.textures.set(key,result);return result;}
  const folder=path.join(candidate.folder,'material-'+word);await fs.mkdir(folder);
@@ -174,4 +182,4 @@ exports.texture=async(service,token,word)=>service.operation('Previewing target 
   const png=path.join(folder,'target.png');await fs.writeFile(png,Buffer.from(result.png,'base64'));await require('./service.cjs').run(service.tool('rage-mod-cli'),['--png',png],{signal});
   candidate.textures.set(key,result);return result;
  });}finally{await fs.rm(folder,{recursive:true,force:true});}
-});
+},true,candidate);};
