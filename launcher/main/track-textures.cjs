@@ -22,12 +22,12 @@ module.exports=async function trackTextures(service,bank,banks,metadata,director
  const images=[];for(let i=0;i<requests.length;i++)images.push({png:(await fs.readFile(path.join(folder,`texture-${i}.png`))).toString('base64')});
  let manifest={textures:{},materials:{}};
  if(sourceFiles.includes('mod.toml'))manifest=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(sourceRoot,'mod.toml')],{signal}));
- const properties={...manifest.materials,...Object.fromEntries((service.editor?.project.snapshot().changes||[]).filter(c=>c.field==='material').map(c=>[c.id,c.value]))};
+ const projectProperties=Object.fromEntries((service.editor?.project.snapshot().changes||[]).filter(c=>c.field==='material').map(c=>[c.id,c.value]));
  for(const b of bindings){
   const relative=manifest.textures[b.id+'.variant.0']??manifest.textures[b.id];
   const texture=relative?{png:(await fs.readFile(path.join(sourceRoot,relative))).toString('base64')}:images[b.request];
   const change=service.editor?.project.snapshot().changes.find(c=>c.kind==='track'&&c.id===b.id&&c.field==='texture');
   banks[b.name].geometry.textures[b.source]=change?{png:(await new (require('./project-files.cjs').ProjectFiles)(service.editor.file).read(change.value)).toString('base64')}:texture;
-  banks[b.name].geometry.materials[b.source]={id:b.id,properties:properties[b.id+'.variant.0']??properties[b.id]};
+  banks[b.name].geometry.materials[b.source]={id:b.id,properties:projectProperties[b.id+'.variant.0']??projectProperties[b.id]??manifest.materials[b.id+'.variant.0']??manifest.materials[b.id]};
  }
 };

@@ -1605,3 +1605,35 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Final full npm180 JS tests:173 PASS,7 optional skips,0 failures; native
   save-format PASS. Shared usage collection scans each bank model once rather
   than once per surface; focused surface/build regression9 PASS after that change.
+
+### Track surface material properties
+
+- Existing Color & finish material form is now reachable from each textured
+  track surface, retaining shared Used by scope. No duplicate property editor.
+  Surface data supplies effective material values, or explicit neutral override
+  defaults (inherit/auto, roughness1, metallic0, white/opaque, no emission).
+  Reset material removes only the project material override, independently of
+  its PNG. The texture reset remains separate. Existing preview shader reads
+  these same stored tint/finish/opacity/emission values.
+- Fixed saveMaterial's unconditional car classification: track IDs now create
+  track deltas. Editing a legacy car-kind track material removes that old entry
+  in the same undo transaction; reset handles both kinds. Existing car behavior
+  and compiled material validation are retained. Dialog includes both kinds in
+  project overlays and clears its dirty flag after successful save.
+- Corrected material precedence alongside textures: project base track material
+  beats exact package variants in preview and build; explicit project variants
+  still win. Reset reveals package values. Compiled manifest/build regression
+  checks distinct variant0/2 original values, project replacement, unrelated
+  textures, correct kind, legacy duplicate removal and reset/source preservation.
+- Actual PAL headless app.js/live-state/service form: roughness0.8, metallic0.2,
+  red0.5 → Save → effective surface + 3D preview properties → published native
+  manifest → Reset → Undo PASS. Selected-package variant0 scenario also PASS,
+  checking exact-variant build replacement and original package value on reset.
+  Initial variant harness collided library and applied roots; private fixture
+  roots were separated, no application ownership guard was bypassed.
+- Expanded isolated race activation gate includes the edited material and PNG,
+  classic/modern scene12/timer20 PASS (~54seconds). This does not claim visual
+  PBR parity or classic material-property support. Full npm180 JS tests:173 PASS,
+  7 optional skips,0 failures; native save-format PASS. Final focused surface/build
+  suite9 PASS after legacy migration handling. Untextured surface authoring and
+  broader editor/platform/Blender acceptance gates remain open.

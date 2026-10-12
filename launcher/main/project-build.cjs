@@ -78,12 +78,12 @@ async function apply(service){
     const previous=JSON.parse(await run(service.tool('rage-mod-cli'),[manifest]));
     await require('./track-meshes.cjs').validateBuild(service,{...previous.meshes,...models},staging,files);
     if(Object.keys(models).length||Object.keys(textures).length||Object.keys(materials).length||Object.keys(audio).length){
-      const resolvedTextures={...previous.textures,...textures};
-      // A project track-surface replacement applies to every authored variant.
-      for(const [id,file]of Object.entries(textures))if(/^track\.(big|mid|hi|oval)[1-6]\.(course|terrain)\.material\.\d+$/.test(id))for(const key of Object.keys(resolvedTextures))if(key.startsWith(id+'.variant.')&&!Object.hasOwn(textures,key))resolvedTextures[key]=file;
+      const resolvedTextures={...previous.textures,...textures},resolvedMaterials={...previous.materials,...materials};
+      // A project track-surface override applies to every package variant.
+      for(const [overrides,resolved]of [[textures,resolvedTextures],[materials,resolvedMaterials]])for(const [id,file]of Object.entries(overrides))if(/^track\.(big|mid|hi|oval)[1-6]\.(course|terrain)\.material\.\d+$/.test(id))for(const key of Object.keys(resolved))if(key.startsWith(id+'.variant.')&&!Object.hasOwn(overrides,key))resolved[key]=file;
       await fs.rm(manifest);
       await run(service.tool('rage-mod-cli'),['--write-profile-stdin',manifest],{
-        input:Buffer.from(JSON.stringify({textures:resolvedTextures,materials:{...previous.materials,...materials},meshes:{...previous.meshes,...models},audio:{...previous.audio,...audio}}))});
+        input:Buffer.from(JSON.stringify({textures:resolvedTextures,materials:resolvedMaterials,meshes:{...previous.meshes,...models},audio:{...previous.audio,...audio}}))});
     }
     await run(service.tool('rage-mod-cli'),[manifest]);
     const manifestHash=sha(await fs.readFile(manifest));

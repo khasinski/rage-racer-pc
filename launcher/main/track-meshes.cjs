@@ -166,7 +166,7 @@ async function withSurfaces(service,id,part,work){
 async function textures(service,id,part){return withSurfaces(service,id,part,(surfaces,geometry,{view})=>{
  const project=service.editor.project.snapshot();return {id,part,revision:project.revision,surfaces:surfaces.filter(s=>geometry.textures[s.source]).map((s,n)=>{
   const key=id+'.material.'+s.source,change=project.changes.find(c=>c.kind==='track'&&c.id===key&&c.field==='texture'),png=geometry.textures[s.source].png,bytes=Buffer.from(png,'base64');
-  return {...s,id:key,label:'Surface '+(n+1),png,width:bytes.readUInt32BE(16),height:bytes.readUInt32BE(20),overridden:Boolean(change),origin:change?'project':view.manifest.textures?.[key]||view.manifest.textures?.[key+'.variant.0']?'selected packages':'disc'};
+  return {...s,id:key,label:'Surface '+(n+1),png,width:bytes.readUInt32BE(16),height:bytes.readUInt32BE(20),properties:geometry.materials[s.source]?.properties||'inherit auto 1 0 1 1 1 1 0 0 0',materialOverridden:project.changes.some(c=>['car','track'].includes(c.kind)&&c.id===key&&c.field==='material'),overridden:Boolean(change),origin:change?'project':view.manifest.textures?.[key]||view.manifest.textures?.[key+'.variant.0']?'selected packages':'disc'};
  })};
 });}
 async function importTexture(service,id,part,source,input,revision){return withSurfaces(service,id,part,async(surfaces,geometry,{directory},signal)=>{

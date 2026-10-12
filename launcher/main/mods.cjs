@@ -62,7 +62,9 @@ function installMethods(Service){
     await run(this.tool('rage-mod-cli'),['--set-material','',temp,key,properties],{signal});
     const checked=JSON.parse(await run(this.tool('rage-mod-cli'),[temp],{signal}));
     if(signal.aborted)throw Error('Operation canceled');
-    return project.edit([{kind:'car',id:key,field:'material',value:checked.materials[key]}],revision);
+    const kind=key.startsWith('track.')?'track':'car',changes=[{kind,id:key,field:'material',value:checked.materials[key]}];
+    if(kind==='track'&&project.snapshot().changes.some(c=>c.kind==='car'&&c.id===key&&c.field==='material'))changes.push({kind:'car',id:key,field:'material',value:null});
+    return project.edit(changes,revision);
    }
    if(!mod)throw Error('Open a source project before editing materials');
    const source=mod.files.includes('mod.toml')?path.join(this.root,'mods',id,'mod.toml'):'';
