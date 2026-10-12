@@ -110,3 +110,16 @@ internal track progress / 16; pitch uses 4096 units per turn. Keep authored orde
 retail data includes local progress reversals and tables using all 48 slots.
 Save to project, Undo and Save & apply work like other track edits. Sentinel -1
 and unused slots are preserved; adding/removing keys is not connected yet.
+
+## Starting placements
+
+In Tracks, expand **Race · Starting placements** and choose Forward/Reverse,
+then Player or a rival. X/Z define the starting world position; height comes
+from the road. Keep the position on the driveable route or the game falls back
+to the road point selected under **Road reference & progress seed**.
+
+Save to project, Undo and Save & apply work normally. Inactive slots are named
+explicitly and stay inactive when moved. The original seed flag is preserved:
+-1 disables a slot, while active values also select initial progress traversal.
+Changing activity/progress seed is not exposed until model/session validation
+supports it safely, especially for Class 6's missing rivals.

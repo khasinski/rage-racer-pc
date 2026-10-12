@@ -1443,3 +1443,31 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Full npm173 JS tests:166 PASS,7 optional skips,0 failures; native save-format
   PASS. Dedicated hint+pace codec/service/form tests2 PASS. Cameras, start grids,
   key insertion/removal, full-lap T09 and broader editor requirements remain open.
+
+### Player/rival starting-placement authoring
+
+- Added named Race → Starting placements → Forward/Reverse → Player/Rival forms.
+  X/Z are basic fields; road reference and read-only progress/activity seed are
+  advanced. Inactive rows are explicit. Height uses runtime road contact; an
+  off-route position triggers the original road-point fallback, stated in UI.
+- C codec covers fixed 2×12×12-byte TrackRivalStart records at offset852, with
+  runtime layout assertions. Signed 32-bit X/Z and bounded signed16 road indices;
+  no seed/activity write API. Edits retain all other fields and bytes. Flattened
+  start IDs use the same typed delta/compose/build/undo path as other track data.
+- Runtime review: start.activeFlag is also passed to SeedCarLapProgress; it is
+  not merely a boolean. Keeping it unchanged avoids activating Class6 slots that
+  have no model. The player start entry is included, not mistaken for rival1.
+- Native/service/form regression: exact changed bytes including INT32 extremes,
+  forward/reverse IDs, out-of-road/negative point and row overflow rejection,
+  explicit rejection of seed/active writes, inactive row move stays -1, undo and
+  source integrity. UI exposes no mutable seed field.
+- Actual PAL Class6 bank128: inactive rival slot5 position edit/publish/undo
+  preserves every one of the 24 source flags PASS. Actual headless app.js/live
+  state Player X46828→46829 → effective scene/same seed → publish PASS, no errors.
+- Existing hidden normal-race gate checks exact starting X+1 and unchanged seed
+  bytes in the built bank, loads bank88 on classic and modern without invalid
+  pack diagnostics and reaches scene12/timer20 PASS (~54 sec). This is activation
+  evidence, not a full-lap or every grid-placement geometry verification.
+- Full npm174 JS tests:167 PASS,7 optional skips,0 failures; native save-format
+  PASS. Hint/pace/start native/service/form suite3 PASS. Activity/seed authoring,
+  full-lap AI, cameras and wider editor acceptance requirements remain open.

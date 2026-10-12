@@ -239,6 +239,7 @@ class LauncherService {
   async saveTerrainCell(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'cell');}
   async saveAiHint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'ai');}
   async saveAiSpeed(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'speed');}
+  async saveStart(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'start');}
   async saveTrackEntry(bank,index,values,revision,type){
     this.requireReady();
     if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>10000||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='env'?12:type==='road'?10:6))throw Error('Invalid track object edit');
