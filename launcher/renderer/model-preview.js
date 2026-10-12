@@ -2,7 +2,8 @@
 import {pickScene,groundDrag} from './scene-pick.mjs';
 const activePreviews=new WeakMap();
 export async function mountModelPreview(dialog,data,options={}){
- const stale=()=>options.previousPreview&&(!dialog.open||activePreviews.get(dialog)!==options.previousPreview);
+ const owner=options.embedded?dialog.closest('dialog'):dialog;
+ const stale=()=>options.embedded&&(!dialog.isConnected||!owner?.open)||options.previousPreview&&(!dialog.open||activePreviews.get(dialog)!==options.previousPreview);
  const images=new Map();
  for(const [source,texture]of Object.entries(data.textures||{}))if(texture.png){const img=new Image();img.src='data:image/png;base64,'+texture.png;try{await img.decode();}catch{if(stale())return;throw Error('Could not decode the mod texture PNG');}images.set(Number(source),img);}
  if(stale())return;
@@ -10,9 +11,11 @@ export async function mountModelPreview(dialog,data,options={}){
  dialog.innerHTML='<h2>Model preview</h2><p class="muted">Drag to rotate · Scroll to zoom · Arrow keys to rotate</p><div class="row wrap" aria-label="Model views"><button type="button" data-model-view="front">Front</button><button type="button" data-model-view="side">Side</button><button type="button" data-model-view="rear">Rear</button><button type="button" data-model-view="top">Top</button></div><canvas id="model-preview" tabindex="0" aria-label="Interactive textured model preview" style="width:100%;height:420px;touch-action:none;background:#10151e"></canvas><p class="muted">Textures come from your game image and the selected mod. Lighting is simplified for inspection.</p><footer><label>Background <select id="model-background"><option value="dark">Dark</option><option value="light">Light</option></select></label><label><input type="checkbox" id="model-wire"> Wireframe</label><button type="button" id="model-reset">Reset view</button><button type="button" data-action="close">Close</button></footer>';
  if(data.worldScene){dialog.querySelector('h2').textContent='Track geometry preview';const notes=dialog.querySelectorAll('p.muted');notes[notes.length-1].textContent='Terrain and placed objects from the current project. Textures use the original course palette. Click an object or terrain cell to edit its model. Environment changes are not connected yet.';}
  if(data.previewName){dialog.querySelector('h2').textContent=data.previewName;const notes=dialog.querySelectorAll('p.muted');notes[notes.length-1].textContent='Current project geometry and textures. This model may be shared by several track objects or cells.';}
+ if(data.previewNote){const notes=dialog.querySelectorAll('p.muted');notes[notes.length-1].textContent=data.previewNote;}
  if(data.wholeCar)dialog.querySelector('h2').textContent='Car preview';
  if(data.modName){const note=document.createElement('p');note.className='muted';note.textContent=data.modName+' · Geometry, materials and supported texture overrides from this mod are included. Other assets use the base disc.';dialog.querySelector('h2').after(note);}
  const canvas=dialog.querySelector('canvas'),gl=canvas.getContext('webgl');
+ if(options.embedded){canvas.style.height='260px';dialog.querySelector('[data-action="close"]')?.remove();}
  if(!gl)throw Error('WebGL is unavailable. Model preview requires graphics acceleration.');
  const shaders=[];
  function shader(type,source){const s=gl.createShader(type);shaders.push(s);gl.shaderSource(s,source);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s;}
@@ -61,7 +64,7 @@ export async function mountModelPreview(dialog,data,options={}){
  dialog.querySelector('#model-background').onchange=e=>{background=e.target.value==='light'?[.78,.8,.83]:[.063,.082,.118];draw();};
  dialog.querySelector('#model-wire').onchange=e=>{wire=e.target.checked;draw();};dialog.querySelector('#model-reset').onclick=()=>{yaw=-.65;pitch=-.35;zoom=.75;draw();};
  const observer=new ResizeObserver(draw);observer.observe(canvas);
- const dispose=()=>{observer.disconnect();textureHandles.forEach(t=>gl.deleteTexture(t));buffers.forEach(b=>gl.deleteBuffer(b));shaders.forEach(s=>gl.deleteShader(s));gl.deleteProgram(program);gl.getExtension('WEBGL_lose_context')?.loseContext();dialog.removeEventListener('close',dispose);activePreviews.delete(dialog);};
- activePreviews.set(dialog,dispose);dialog.addEventListener('close',dispose,{once:true});
- dialog.showModal();draw();canvas.focus();
+ const dispose=()=>{observer.disconnect();textureHandles.forEach(t=>gl.deleteTexture(t));buffers.forEach(b=>gl.deleteBuffer(b));shaders.forEach(s=>gl.deleteShader(s));gl.deleteProgram(program);gl.getExtension('WEBGL_lose_context')?.loseContext();owner.removeEventListener('close',dispose);activePreviews.delete(dialog);};
+ activePreviews.set(dialog,dispose);owner.addEventListener('close',dispose,{once:true});
+ if(!options.embedded){dialog.showModal();canvas.focus();}draw();
 }

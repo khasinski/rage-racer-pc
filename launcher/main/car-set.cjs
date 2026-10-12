@@ -130,7 +130,7 @@ exports.prepare=async(service,key,file)=>service.operation('Inspecting car impor
    const glb=path.join(folder,'original.glb');await run(service.tool('rage-mesh-obj'),['export-glb',original,'0',glb],{signal});
    const stats=JSON.parse(await run(service.tool('rage-mesh-obj'),['inspect-glb',glb],{signal}));for(const {word}of stats.materials){if(!available.has(word))available.set(word,new Set());available.get(word).add(label);}await fs.rm(original,{force:true});await fs.rm(glb,{force:true});
   }
-  const materials=[...available].map(([word,parts],i)=>({word,label:`Original material ${i+1} · ${[...parts].join(', ')}`}));
+  const materials=[...available].map(([word,parts],i)=>({word,label:`Material ${i+1} · ${(word&65535)===65535?'inner surface':(word&65535)>>>6===1?'glass':'texture '+((word&65535)%64+1)} · ${[...parts].join(', ')}`,part:`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+({body:0,'front wheels':2,'rear wheels':3})[[...parts][0]]}`}));
   const token=randomUUID();service.carImport={token,folder,key,revision:project.revision,source:{...project.document.source,key},roles,materials,inspection};
   return {token,key,name:c.name,region:service.state.disc.region,revision:project.revision,nodes:inspection.nodes,materials:inspection.materials,roles,choices:materials};
  }catch(e){await fs.rm(folder,{recursive:true,force:true});throw e;}
@@ -148,3 +148,30 @@ exports.complete=async(service,token,mapping)=>{
  try{const result=await exports.importSet(service,candidate.key,file,candidate.revision);service.carImport=null;await fs.rm(candidate.folder,{recursive:true,force:true});return result;}finally{await fs.rm(file,{force:true});}
 };
 exports.cancel=async(service,token)=>{if(service.carImport?.token!==token)return true;return service.operation('Cancelling car import',async()=>{if(service.carImport?.token===token){await fs.rm(service.carImport.folder,{recursive:true,force:true});service.carImport=null;}return true;});};
+exports.preview=async(service,token,node)=>service.operation('Previewing imported car part',async signal=>{
+ const candidate=service.carImport;if(!candidate||candidate.token!==token||!Number.isInteger(node)||!candidate.inspection.nodes.some(n=>n.node===node))throw Error('Choose a part in the current car import');
+ if(candidate.inspection.materials.length>64)throw Error('Part preview supports at most 64 materials; reduce unused material variants in the 3D editor');
+ candidate.previews??=new Map();if(candidate.previews.has(node))return candidate.previews.get(node);
+ const {run}=require('./service.cjs'),folder=path.join(candidate.folder,'preview-'+node);await fs.mkdir(folder);
+ try{
+  const glb=path.join(folder,'part.glb'),mesh=path.join(folder,'part.rmesh');
+  await run(service.tool('rage-mesh-obj'),['map-glb',path.join(candidate.folder,'source.glb'),glb],{signal,input:JSON.stringify({source:candidate.source,nodes:[],materials:candidate.inspection.materials.map((m,i)=>({material:m.material,word:i})),preview_node:node})});
+  const info=JSON.parse(await run(service.tool('rage-mesh-obj'),['import-glb',glb,mesh,folder],{signal})),geometry=JSON.parse(await run(service.tool('rage-mod-cli'),['--preview',mesh],{signal,maxOutput:16*1024*1024}));geometry.textures={};
+  for(const source of info.textures){const png=path.join(folder,'texture-'+source+'.png');await run(service.tool('rage-mod-cli'),['--png',png],{signal});geometry.textures[source]={png:(await fs.readFile(png)).toString('base64')};}
+  geometry.previewName=candidate.inspection.nodes.find(n=>n.node===node).name;geometry.previewNote='Imported geometry, vertex colours and embedded textures. Material assignments have not been applied yet. Lighting is simplified for inspection.';candidate.previews.set(node,geometry);return geometry;
+ }finally{await fs.rm(folder,{recursive:true,force:true});}
+});
+exports.texture=async(service,token,word)=>service.operation('Previewing target material',async signal=>{
+ const candidate=service.carImport,material=candidate?.materials.find(m=>m.word===word);if(!candidate||candidate.token!==token||!material)throw Error('Choose a material in the current car import');
+ (await service.loadProject()).checkRevision(candidate.revision);candidate.textures??=new Map();const id=word&65535,key=material.part+':'+id;if(candidate.textures.has(key))return {...candidate.textures.get(key),label:material.label};
+ const result={label:material.label,note:'Target car texture, including current project and selected mod replacements.'};if(id===65535||id>>>6===1){result.color=id===65535?'#28292e':'#314459';candidate.textures.set(key,result);return result;}
+ const folder=path.join(candidate.folder,'material-'+word);await fs.mkdir(folder);
+ try{return await require('./car-view.cjs').withView(service,signal,undefined,async view=>{
+  const meta=JSON.parse(await service.carTool(['--set','tools.car_export='+material.part,'--set','tools.car_output='+path.join(folder,'source.rmesh')],signal));
+  const source=id%64,appearance=await require('./preview-materials.cjs')(service,material.part,meta,view,signal);
+  if(appearance[source]?.texture)result.png=appearance[source].texture.png;
+  else{const textures=await require('./preview-textures.cjs')(service,material.part,{vertices:[0,0,0,0,0,0,word,0,0]},{...meta,materials:meta.materials.filter(m=>m.source===source)},folder,signal,'png');if(!textures[source])throw Error('Original material has no texture binding');result.png=(await fs.readFile(path.join(folder,textures[source]))).toString('base64');}
+  const png=path.join(folder,'target.png');await fs.writeFile(png,Buffer.from(result.png,'base64'));await require('./service.cjs').run(service.tool('rage-mod-cli'),['--png',png],{signal});
+  candidate.textures.set(key,result);return result;
+ });}finally{await fs.rm(folder,{recursive:true,force:true});}
+});

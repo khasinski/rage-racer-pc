@@ -337,6 +337,14 @@ int GlbMapping(const char *input,const char *output){
  yyjson_arr_foreach(materials,i,count,entry){yyjson_val *id=yyjson_obj_get(entry,"material"),*word=yyjson_obj_get(entry,"word");if(!yyjson_is_uint(id)||yyjson_get_uint(id)>=data->materials_count||!yyjson_is_uint(word)||yyjson_get_uint(word)>UINT32_MAX)goto done;for(size_t j=0;j<i;j++)if(yyjson_get_uint(yyjson_obj_get(yyjson_arr_get(materials,j),"material"))==yyjson_get_uint(id))goto done;
   yyjson_mut_val *material=yyjson_mut_arr_get(yyjson_mut_obj_get(root,"materials"),(size_t)yyjson_get_uint(id)),*e=yyjson_mut_obj_get(material,"extras");if(!e)e=Object(doc,material,"extras");yyjson_mut_obj_remove_str(e,"rr_material");Number(doc,e,"rr_material",(uint32_t)yyjson_get_uint(word));
  }
+ yyjson_val *preview=yyjson_obj_get(spec,"preview_node");
+ if(preview){
+  if(!yyjson_is_uint(preview)||yyjson_get_uint(preview)>=data->nodes_count)goto done;const cgltf_node *selected=&data->nodes[yyjson_get_uint(preview)];if(!selected->mesh||!Active(scene,selected))goto done;
+  float transform[16];cgltf_node_transform_world(selected,transform);for(unsigned c=0;c<16;c++)if(!isfinite(transform[c]))goto done;
+  yyjson_mut_obj_remove_str(root,"meshes");yyjson_mut_arr_add_val(Array(doc,root,"meshes"),yyjson_val_mut_copy(doc,yyjson_arr_get(yyjson_obj_get(yyjson_doc_get_root(original),"meshes"),(size_t)(selected->mesh-data->meshes))));
+  yyjson_mut_obj_remove_str(root,"nodes");yyjson_mut_val *node=Element(doc,Array(doc,root,"nodes")),*matrix=Array(doc,node,"matrix");Number(doc,node,"mesh",0);for(unsigned c=0;c<16;c++)yyjson_mut_arr_add_real(doc,matrix,transform[c]);
+  yyjson_mut_obj_remove_str(root,"scenes");yyjson_mut_arr_add_uint(doc,Array(doc,Element(doc,Array(doc,root,"scenes")),"nodes"),0);yyjson_mut_obj_remove_str(root,"scene");Number(doc,root,"scene",0);
+ }
  size_t jsonSize=0;json=yyjson_mut_write(doc,0,&jsonSize);size_t padded=(jsonSize+3)&~(size_t)3,binSize=(data->buffers[0].size+3)&~(size_t)3,total=28+padded+binSize;if(!json||jsonSize>8u*1024u*1024u||total>LIMIT)goto done;file=calloc(1,total);if(!file)goto done;
  Put32(file,0x46546c67);Put32(file+4,2);Put32(file+8,(uint32_t)total);Put32(file+12,(uint32_t)padded);Put32(file+16,0x4e4f534a);memcpy(file+20,json,jsonSize);memset(file+20+jsonSize,' ',padded-jsonSize);Put32(file+20+padded,(uint32_t)binSize);Put32(file+24+padded,0x004e4942);memcpy(file+28+padded,data->buffers[0].data,data->buffers[0].size);ok=Write(output,file,total);
  done:free(json);free(file);free(bytes);cgltf_free(data);yyjson_doc_free(original);yyjson_doc_free(request);yyjson_mut_doc_free(doc);if(!ok)fputs("Cannot inspect/map static car GLB; input or mapping is invalid\n",stderr);return ok;

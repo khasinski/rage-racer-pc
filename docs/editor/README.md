@@ -1,8 +1,9 @@
-# Rage Racer Editor — decyzje do wdrożenia
+# Rage Racer Editor — plan i wdrożenie
 
-Ta runda jest analizą i planem. Docelowy produkt ma być **jedną aplikacją**,
-opartą na istniejącym `launcher/`, z project-based editing wszystkich rozpoznanych
-rodzin zasobów. Nie powstał kolejny działający editor ani kolejny backend gry.
+Edytor rozwijamy jako **jedną aplikację** w istniejącym `launcher/`, z edycją
+zasobów w projekcie i zapisem dla prawdziwej gry. Plan obejmuje wszystkie
+rozpoznane rodziny zasobów; nie wszystkie wymagania są już wdrożone.
+[Stan wdrożenia i dowody testów](progress.md) opisują działające funkcje i braki.
 
 - [Pełny plan](plan.md): UX, data hierarchy, source catalog, projekt i zapis,
   runtime integration, auta/tory/audio/menu/save'y, kolejność i koszty.
@@ -25,10 +26,9 @@ Najważniejsze decyzje:
 6. Popularne model exchange GLB/glTF + existing OBJ/MTL, PNG, PCM/WAV; importer
    zajmuje się bindingami/material IDs, użytkownik nie naprawia `rage_N`.
 
-Kolejny konkretny implementacyjny krok po przeglądzie: wspólny C Catalog dla
-prawdziwego auta + całej Mythical Coast, Project deltas i end-to-end resolved
-parameter/texture loop. Potem pierwsza structured track modification przed
-rozbudowaniem reszty formularzy.
+Kolejne prace wynikają z braków w macierzy odbioru i aktualnym stanie wdrożenia.
+Gotowość wymaga rzeczywistych zmian w grze oraz testów odpowiednich dla każdej
+rodziny zasobów.
 
 ## Editing a complete car with GLB
 
@@ -54,6 +54,13 @@ original car materials for the imported materials. The selected target car is
 shown in the dialog. Confirm with **Import mapped car** or cancel without
 changing the project. Both front wheels must share one mesh. A stale dialog is
 rejected if the project changed after you selected the file.
+
+Use **View part** to inspect imported geometry and embedded textures in 3D
+without losing the assignments. Drag to rotate, scroll to zoom or choose a
+front/side/rear/top view. This inspection shows the imported part before game
+material assignments are applied. Choose a target material and use **View target
+texture** to inspect its actual car texture; glass and untextured inner surfaces
+show a colour swatch. Changing the choice clears the previous thumbnail.
 
 The exported folder also contains three OBJ models and shared PNGs. Import that
 folder through **OBJ sets and individual parts → Import OBJ car set folder**.

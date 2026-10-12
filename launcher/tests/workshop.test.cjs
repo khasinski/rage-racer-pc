@@ -28,4 +28,6 @@ test('lost car mappings show named required assignments and escape imported name
  assert.match(html,/data-import-node="2"/);assert.match(html,/data-import-material="3"/);
  assert.match(html,/&lt;part&gt;/);assert.match(html,/&lt;paint&gt;/);
  assert.equal((html.match(/select required/g)||[]).length,2);assert.match(html,/Choose…/);assert.match(html,/Import mapped car/);
+ assert.match(html,/data-preview-import="2"/);assert.match(html,/data-import-preview/);
+ assert.match(html,/data-target-material="3"/);assert.match(html,/data-target-swatch="3" hidden/);
 });

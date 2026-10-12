@@ -319,6 +319,8 @@ class LauncherService {
   async prepareCarImport(key,file){this.requireReady();return require('./car-set.cjs').prepare(this,key,file);}
   async completeCarImport(token,mapping){return require('./car-set.cjs').complete(this,token,mapping);}
   async cancelCarImport(token){return require('./car-set.cjs').cancel(this,token);}
+  async previewCarImport(token,node){return require('./car-set.cjs').preview(this,token,node);}
+  async carImportTexture(token,word){return require('./car-set.cjs').texture(this,token,word);}
   async importCar(key,file) {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     return this.operation('Importing car model',async signal=>{

@@ -1217,3 +1217,41 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   Blender proof, all-platform parity, full shader/property/unknown-extras project
   roundtrip and standard physical unit conversion remain open. Full goal stays
   active; the broader car/track/interface/media editor is not declared complete.
+
+### Actual part inspection and target-texture thumbnails in import mapping
+
+- Mapping form now offers View part for every active imported node, with embedded
+  3D orbit/zoom/front/side/rear/top/wireframe controls. The existing WebGL preview
+  mounts inside the form; role/material selections remain unchanged. Closing the
+  dialog disposes its embedded GPU resources. It does not open another window.
+- Compiled GLB metadata worker can select a node into a private inspection GLB,
+  retaining its world matrix and the original BIN. Synthetic per-material source
+  slots let the existing strict GLB→RRMESH/PNG importer inspect a file whose game
+  material IDs were lost. Finite geometry/normals/images remain validated; no JS
+  binary parser or alternative renderer was added. This view precedes the chosen
+  game-material assignments and says so explicitly.
+- Target choices distinguish texture number, glass/inner surface and owning part
+  while retaining the complete native material word. View target texture uses the
+  existing disc palette/texture decoder plus current project/selected package
+  overrides. Native PNG validation runs before display. Glass and untextured
+  surfaces display colour swatches. Cache deduplicates variants with the same
+  part/surface; changing selection clears stale images, and late results cannot
+  overwrite a newer selection.
+- Service regression: original and mirrored imported nodes, exact embedded PNG,
+  cached preview, valid target image, invalid node/material rejection, unchanged
+  project revision after every inspection. Form tests retain all required
+  assignments and check preview/thumbnail controls. Existing import/undo/failure
+  regression still passes after inspecting the candidate.
+- Actual PAL headless app.js test: Export → remove metadata → set Body role →
+  inspect body and front wheel → inspect actual target PNG → assign all roles/
+  materials → Import → Save & apply PASS, zero page errors. Repeated with live
+  backend state notifications: PASS; selected role and form survive updates.
+  Raster captures inspected: /tmp/rr-import-body-preview.png and
+  /tmp/rr-import-target-texture.png. They are test artifacts, not bundled assets.
+- Full npm: 166 JS tests, 159 PASS, 7 optional skips, 0 failures; native save-format
+  checks PASS. Focused native/service/form suite 7 PASS. No game runtime changed
+  in this step; the existing recovered-GLB normal-race gate remains applicable.
+- Remaining interchange gaps include Blender proof, external .gltf, source-file
+  retention for unknown-extra roundtrip, complete shader mapping, physical units,
+  arbitrary assemblies/LOD and single-part lost-property recovery. Track/media/
+  interface acceptance scope remains part of the full goal.

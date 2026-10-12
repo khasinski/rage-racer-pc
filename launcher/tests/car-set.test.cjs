@@ -104,6 +104,12 @@ test('complete car import installs all models and textures atomically and reject
   const nodeProperties=path.join(root,'node-properties.glb');await fs.writeFile(nodeProperties,rewrite(d=>{delete d.extras;}));assert.deepEqual((await service.importCarSet(key,nodeProperties)).changes,changes);
   const lost=path.join(root,'lost-properties.glb'),lostBytes=rewrite(d=>{delete d.extras;for(const n of d.nodes)delete n.extras;for(const m of d.meshes)delete m.extras;for(const m of d.materials){delete m.extras;m.name='Edited material';}});await fs.writeFile(lost,lostBytes);
   const pending=await service.prepareCarImport(key,lost);assert.equal(pending.nodes.length,4);assert.equal(pending.roles.length,4);assert.equal((await service.project()).revision,project.revision);
+  const candidatePreview=await service.previewCarImport(pending.token,1);assert.equal(candidatePreview.indices.length,3);assert.equal(candidatePreview.vertices[9],1);assert.equal(candidatePreview.textures[0].png,png.toString('base64'));
+  const mirroredPreview=await service.previewCarImport(pending.token,4);assert.ok(mirroredPreview.vertices.some((v,i)=>i%9===0&&v===-1));
+  assert.deepEqual(await service.previewCarImport(pending.token,1),candidatePreview);assert.equal((await service.project()).revision,project.revision);
+  await assert.rejects(service.previewCarImport(pending.token,999),/Choose a part/);
+  const targetTexture=await service.carImportTexture(pending.token,0);assert.equal(targetTexture.png,png.toString('base64'));assert.equal((await service.project()).revision,project.revision);
+  await assert.rejects(service.carImportTexture(pending.token,999999),/Choose a material/);
   const mapping={nodes:pending.nodes.map(n=>({node:n.node,instance:glb.nodes[n.node].extras.rr_instance})),materials:pending.materials.map(m=>({material:m.material,word:0}))};
   await assert.rejects(service.completeCarImport(pending.token,{...mapping,nodes:mapping.nodes.map(n=>({...n,instance:0}))}),/different role/);
   await assert.rejects(service.completeCarImport(pending.token,{...mapping,materials:mapping.materials.map(m=>({...m,word:999999}))}),/original car materials/);

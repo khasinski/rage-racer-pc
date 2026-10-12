@@ -85,6 +85,8 @@ handle('import-car-set',async(key,format)=>{
 });
 handle('complete-car-import',(token,mapping)=>service.completeCarImport(token,mapping));
 handle('cancel-car-import',token=>service.cancelCarImport(token));
+handle('preview-car-import',(token,node)=>service.previewCarImport(token,node));
+handle('car-import-texture',(token,word)=>service.carImportTexture(token,word));
 handle('preview-whole-car',(bank,body,rival,modId)=>service.previewWholeCar(bank,body,rival,modId));
 handle('car-spec',bank=>service.carSpec(bank));
 handle('save-car-spec',(bank,edits,revision)=>service.saveCarSpec(bank,edits,revision));
