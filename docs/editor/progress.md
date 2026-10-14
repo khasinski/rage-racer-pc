@@ -1896,3 +1896,29 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
 - Full launcher200 tests:183 PASS,17 optional skips,0 failures before final help
   text update; focused workshop/export tests check the final renderer text.
   Existing car-set/config tests5 PASS. Broader acceptance requirements remain open.
+
+### Raw car parameter and transmission package resolution
+
+- Shared resolver (`launcher/main/car-base.cjs`) compares selected raw car
+  specification (`raw/asset_011.bin`, etc.) and model transmission availability
+  (`raw/asset_010.bin`, etc.) against the original extracted disc banks, merging
+  only actual raw package deltas onto the regional built-in `cars.toml` base.
+- Both `car-profile.cjs` (editor parameter inspection and reset baseline) and
+  `project-build.cjs` (`Save & apply` profile compilation) consume this resolved
+  base. Built-in profile defaults no longer overwrite raw package parameter or
+  MT-only edits when `<active-build>/cars.toml` is compiled and loaded at runtime.
+- Per-element array provenance is preserved: editing one element of a car array
+  (`torque_curve`, `shift_points`, `gear_ratio`, etc.) marks only changed indices
+  as `project` while unedited indices retain `selected packages` or
+  `built-in profile` origin, and resetting a project override restores the
+  selected raw package value before falling back to the built-in profile when
+  the package is disabled.
+- Corrupted raw specification or transmission banks in selected packages are
+  rejected before modifying project state or the active build pointer.
+- Verification: `launcher/tests/car-base.test.cjs` covers synthetic and actual
+  PAL raw specification/transmission overrides, array origin preservation,
+  corrupt bank rejection, reset/toggle precedence, source immutability, and
+  isolated headless native race execution (`scene 12`, `manual=0` without mod vs
+  `manual=1` with published active build via `ModAssetsCarProfile()`): 2/2 PASS.
+  Full launcher suite: 202 tests, 184 PASS, 18 optional skips, 0 failures.
+

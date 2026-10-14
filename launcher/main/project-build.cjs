@@ -34,8 +34,9 @@ async function apply(service){
     const frozenBase=path.join(staging,'base.toml');
     if((await fs.stat(base)).size>1024*1024)throw Error('Base car profile exceeds size limit');
     await fs.copyFile(base,frozenBase);
-    const {cars}=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-profile',frozenBase]));
+    const {cars,changes:rawChanges}=await require('./car-base.cjs')(service,{root:staging,files},undefined,frozenBase);
     const groups=new Map(),models={},textures={},materials={},audio={};
+    for(const [id,fields]of rawChanges)groups.set(id,{car:cars.find(c=>c.id===id),fields:new Map([...fields].map(([key,v])=>[key,value(v)]))});
     await require('./track-edits.cjs').apply(service,snapshot.changes,staging,files);
     Object.assign(audio,await require('./audio.cjs').apply(service,snapshot.changes,staging,files));
     for(const c of snapshot.changes){
@@ -60,12 +61,12 @@ async function apply(service){
       }
       const car=cars.find(car=>car.id===c.id);
       if(!car||['id','model','grade','variant','fields'].includes(c.field)||!/^[a-z_]+$/.test(c.field))throw Error('Unknown editable car field: '+c.id+' / '+c.field);
-      if(!groups.has(c.id))groups.set(c.id,{car,fields:[]});
-      groups.get(c.id).fields.push(`${c.field} = ${value(c.value)}`);
+      if(!groups.has(c.id))groups.set(c.id,{car,fields:new Map()});
+      groups.get(c.id).fields.set(c.field,value(c.value));
     }
     const overlay=path.join(staging,'delta.toml'),profile=path.join(staging,'cars.toml');
     if(groups.size){
-      await fs.writeFile(overlay,[...groups.values()].map(({car,fields})=>`[[cars]]\nid = "${car.id}"\nmodel = ${car.model}\ngrade = ${car.grade}\n${fields.join('\n')}\n`).join('\n'));
+      await fs.writeFile(overlay,[...groups.values()].map(({car,fields})=>`[[cars]]\nid = "${car.id}"\nmodel = ${car.model}\ngrade = ${car.grade}\n${[...fields].map(([key,v])=>key+' = '+v).join('\n')}\n`).join('\n'));
       await run(service.tool('rage-mod-cli'),['--compose-car-profile',frozenBase,overlay,profile]);
       await fs.rm(overlay);
     }else await fs.copyFile(frozenBase,profile);
