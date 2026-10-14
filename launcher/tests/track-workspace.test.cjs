@@ -70,14 +70,14 @@ test('placed object GLB and OBJ actions address shared source model and remain s
  assert.match(html,/data-preview-track-part="track.big1.course" data-part="7"/);
  assert.match(html,/data-export-track-part="track.big1.course" data-part="7" data-format="glb"/);assert.match(html,/data-export-track-part="track.big1.course" data-part="7" data-format="obj"/);
  assert.match(html,/data-import-track-part="track.big1.course" data-part="7" data-revision="5"/);
- assert.match(html,/shared by every object/);assert.match(html,/OBJ export includes PNG textures/);
+ assert.match(html,/shared by every object/);assert.match(html,/repeated exports add a number/);assert.match(html,/OBJ export includes PNG textures/);
 });
 test('terrain cell editor addresses empty cells and separates assignments from shared model edits',async()=>{
  const {terrainCellEditor}=await import('../renderer/tracks.mjs'),cells=Array(1024).fill(1023);cells[259]=0x7c01;
  const scene={revision:8,terrain:{models:3,cells}},html=terrainCellEditor(scene,88,259);
  assert.match(html,/data-cell="259"/);assert.match(html,/id="terrain-cell-form"[^>]*data-index="259"[^>]*data-revision="8"/);
  assert.match(html,/data-terrain-model data-original="1"/);assert.match(html,/data-preview-track-part="track.big1.terrain"[^>]*data-part="1"/);
- assert.match(html,/X 7168, Z 48128/);assert.match(html,/Visibility settings are preserved/);
+ assert.match(html,/X 7168, Z 48128/);assert.match(html,/Visibility settings are preserved/);assert.match(html,/repeated exports add a number/);
  const empty=terrainCellEditor(scene,88,0);assert.match(empty,/value="1023" selected>Empty cell/);assert.match(empty,/data-terrain-model-action[^>]*hidden/);
  assert.equal(terrainCellEditor({},88),'');assert.match(terrainCellEditor(scene,88,2000),/data-cell="0"/);
 });

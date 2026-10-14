@@ -1922,3 +1922,17 @@ platformowych acceptance gates nadal wymagają implementacji z pełnego planu.
   `manual=1` with published active build via `ModAssetsCarProfile()`): 2/2 PASS.
   Full launcher suite: 202 tests, 184 PASS, 18 optional skips, 0 failures.
 
+### Named repeatable track model exports
+
+- Placed-object (`course`) and terrain-cell (`terrain`) model exports now share
+  the same atomic directory reservation (`launcher/main/export-folder.cjs`) as
+  car exports: `Track - <course name> - Class <1..6> - <Course|Terrain> model <N>`,
+  followed by `(2)`, `(3)` on repeat exports.
+- Anonymous `track-model-<uuid>` export folders are removed from the public flow;
+  the toast notification reports the exact exported folder path (`Exported to ...`)
+  and placed-object / terrain-cell help copy explains numbered versions and
+  preservation of earlier files.
+- Verification: `launcher/tests/export-folder.test.cjs` and
+  `launcher/tests/track-workspace.test.cjs` (12/12 PASS, including actual PAL
+  Mythical Coast course model repeated GLB export, preservation of external edits
+  in the first export, and re-import of the second export).

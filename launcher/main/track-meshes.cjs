@@ -96,10 +96,11 @@ async function importPart(service,id,part,input,revision){
 }
 async function exportPart(service,id,part,destination,format='obj'){
  if(!['obj','glb'].includes(format))throw Error('Choose OBJ or GLB export');
- service.requireReady();slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
+ service.requireReady();const {bank,name}=slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
+ const course=['Mythical Coast','Over Pass City','Lakeside Gate','The Extreme Oval'][((bank-88)/2)%4],grade=Math.floor((bank-88)/8)+1;
  return service.operation('Exporting track model '+format.toUpperCase(),signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
   await model(service,id,file,view.root,view.files,signal,metadata.meshes);
-  const {randomUUID}=require('node:crypto'),{run}=require('./service.cjs'),folder=path.join(destination,'track-model-'+randomUUID());await fs.mkdir(folder);
+  const {run}=require('./service.cjs'),folder=await require('./export-folder.cjs')(destination,`${course} - Class ${grade} - ${name==='course'?'Course':'Terrain'} model ${part}`,'Track');
   try{if(format==='obj')await run(service.tool('rage-mesh-obj'),['export',file,String(part),path.join(folder,'model.obj')],{signal});
    const geometry=await texturedPart(service,id,part,{file,directory,metadata,view},signal);
    const textures={};for(const [source,texture]of Object.entries(geometry.textures)){const relative='texture-'+source+'.png';await fs.writeFile(path.join(folder,relative),Buffer.from(texture.png,'base64'));textures[source]=relative;}
