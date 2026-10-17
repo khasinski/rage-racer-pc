@@ -122,7 +122,7 @@ int main(int argc, char **argv) {
     {
         char *config;
         if (!ReadFile(argv[1], "rage-port.ini", &config)) return 1;
-        ok &= RequireText("rage-port.ini", config, "ray_tracing = full");
+        ok &= RequireText("rage-port.ini", config, "ray_tracing = off");
         ok &= RequireText("rage-port.ini", config, "EXPERIMENTAL");
         free(config);
     }

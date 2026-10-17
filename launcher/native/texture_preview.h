@@ -39,6 +39,10 @@ static int TexturePreviewWindow(int argc,char **argv,unsigned windowW,unsigned w
             if(!PreviewChain(vram,data,(size_t)size,0)){free(data);return 1;}
             free(data);continue;
         }
+        if(offset==-5){
+            if(size<20||!PreviewChain(vram,data,(size_t)size,Read32(data+12))){free(data);return 1;}
+            free(data);continue;
+        }
         if(offset==-3){
             unsigned block;if(size<20){free(data);return 1;}
             for(block=0;block<5;block++){

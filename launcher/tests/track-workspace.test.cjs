@@ -10,6 +10,9 @@ test('track workspace identifies source, supports point selection and distinguis
   assert.match(html,/not the visible asphalt mesh/);assert.match(html,/Save point to project/);assert.ok(!html.includes('NaN'));
   const degenerate=trackWorkspace([track],88,{road:{points:[point],arcs:[]}},0);
   assert.ok(!degenerate.includes('NaN'));assert.ok(!degenerate.includes('Infinity'));
+  for(const tab of ['road','scenery','atmosphere','race','all'])assert.match(html,new RegExp(`data-track-tab="${tab}"`));
+  assert.match(html,/data-track-stage="2d"/);assert.match(html,/data-track-stage="3d"/);
+  assert.match(html,/id="track-inline-preview"/);
 });
 test('track object form separates transforms from advanced flags and displays degrees',async()=>{
  const {trackWorkspace}=await import('../renderer/tracks.mjs');
@@ -78,6 +81,7 @@ test('terrain cell editor addresses empty cells and separates assignments from s
  assert.match(html,/data-cell="259"/);assert.match(html,/id="terrain-cell-form"[^>]*data-index="259"[^>]*data-revision="8"/);
  assert.match(html,/data-terrain-model data-original="1"/);assert.match(html,/data-preview-track-part="track.big1.terrain"[^>]*data-part="1"/);
  assert.match(html,/X 7168, Z 48128/);assert.match(html,/Visibility settings are preserved/);assert.match(html,/repeated exports add a number/);
+ assert.match(html,/class="terrain-grid-map"/);assert.match(html,/data-select-terrain-cell="259"/);
  const empty=terrainCellEditor(scene,88,0);assert.match(empty,/value="1023" selected>Empty cell/);assert.match(empty,/data-terrain-model-action[^>]*hidden/);
  assert.equal(terrainCellEditor({},88),'');assert.match(terrainCellEditor(scene,88,2000),/data-cell="0"/);
 });
@@ -86,4 +90,52 @@ test('scenery controls choose course models, address stable object IDs and also 
  const scene={revision:9,courseModels:2,road:{points:[point],arcs:[]},objects:[{model:1,x:0,y:0,z:0,yaw:0,flags:0}]};
  const html=trackWorkspace([track],88,scene);assert.match(html,/value="1" selected>Course model 2/);assert.match(html,/data-preview-add-model="track.big1.course"/);assert.match(html,/data-duplicate-track-object="0"/);assert.match(html,/data-remove-track-object="0"/);assert.match(html,/Add at road point 1/);assert.match(html,/Remove keeps object IDs stable/);
  const empty=trackWorkspace([track],88,{...scene,objects:[]});assert.match(empty,/id="track-add-object"/);assert.ok(!empty.includes('data-remove-track-object'));
+});
+test('road editor renders local neighbor context, cross-section comparison, route I/O, layers and reshapes route with auto-calibrated geometry',async()=>{
+ const {trackWorkspace,deformRoadPoints,shapeRoadSection,diffRoadDraft,build3dTrackView}=await import('../renderer/tracks.mjs');
+ const {buildRouteObj,diffRoadAndArcs}=require('../main/track-route.cjs');
+ const basePoints=Array.from({length:12},(_,i)=>({x:i*1000,y:i*10,z:0,angle:1024,pitch:0,crossSlope:0,leftWidth:60,rightWidth:60,length:100,arc:0}));
+ const deformed=deformRoadPoints(basePoints,basePoints,5,{dx:0,dz:500,dy:40},2);
+ assert.equal(deformed[5].z,500);
+ assert.equal(deformed[5].y,basePoints[5].y+40);
+ assert.ok(deformed[4].z>0&&deformed[4].z<500);
+ assert.ok(deformed[6].z>0&&deformed[6].z<500);
+ assert.equal(deformed[0].z,0);
+ assert.notEqual(deformed[4].angle,basePoints[4].angle);
+ assert.ok(deformed[4].length>basePoints[4].length);
+ const widened=shapeRoadSection(basePoints,deformed,5,2,'width',20);
+ assert.equal(widened[5].leftWidth,80);
+ const diff=diffRoadDraft({points:basePoints,arcs:[]},{points:widened,arcs:[]});
+ assert.equal(diff.pointCount,6);
+ const html=trackWorkspace([{name:'Coast',bank:88,grade:1}],88,{revision:3,road:{points:basePoints,arcs:[]},objects:[]},5,0,{roadRadius:2,roadDraft:{points:widened,arcs:[]}});
+ assert.match(html,/class="local-road-map"/);
+ assert.match(html,/class="cross-section-svg"/);
+ assert.match(html,/Element in Neighbor Context/);
+ assert.match(html,/data-export-route="json"/);
+ assert.match(html,/data-export-route="obj"/);
+ assert.match(html,/data-import-route="88"/);
+ assert.match(html,/data-save-road-draft="88"/);
+ assert.match(html,/data-layer-preset="road-only"/);
+ assert.match(html,/data-layer-preset="isolated"/);
+ assert.match(html,/data-layer-preset="full-3d"/);
+ assert.match(html,/data-toggle-layer="road"/);
+ assert.match(html,/data-toggle-layer="terrain"/);
+ assert.match(html,/data-toggle-layer="course"/);
+ assert.match(html,/data-road-tool="move"/);
+ const rawPreview={
+  vertices:[0,0,0,0,1,0,0,0,0, 100,0,0,0,1,0,0,0,0, 0,0,100,0,1,0,0,0,0],
+  colors:[255,255,255,255, 255,255,255,255, 255,255,255,255],
+  indices:[0,1,2],
+  entities:[{bank:'terrain',cell:0,firstIndex:0,indexCount:3},{bank:'course',object:0,firstIndex:0,indexCount:3}]
+ };
+ const sceneObj={road:{points:basePoints,arcs:[]},objects:[{model:0,x:5000,y:0,z:0}]};
+ const roadOnly3d=build3dTrackView(rawPreview,sceneObj,{points:basePoints,arcs:[]},5,2,{road:true,terrain:false,course:false,isolate:false});
+ assert.ok(roadOnly3d.data.entities.every(e=>e.bank==='road'));
+ assert.equal(roadOnly3d.data.entities.length,12);
+ const full3d=build3dTrackView(rawPreview,sceneObj,{points:basePoints,arcs:[]},5,2,{road:true,terrain:true,course:true,isolate:false});
+ assert.equal(full3d.data.entities.length,14);
+ const obj=buildRouteObj({points:basePoints,arcs:[{x:100,z:200}]},'track.big1',88);
+ assert.match(obj,/o road_centerline/);
+ assert.match(obj,/o road_ribbon/);
+ assert.equal(diffRoadAndArcs({points:basePoints,arcs:[]},widened,[]).length,6);
 });

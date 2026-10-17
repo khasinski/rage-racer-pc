@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.6.8-alpha-raytracer
+        default: nightly
   push:
     tags:
       - "*"
@@ -21,6 +21,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
       - name: Install SDL build dependencies
         run: |
           sudo apt-get update
@@ -38,6 +43,12 @@ jobs:
         run: >-
           ctest --test-dir build/release --output-on-failure
           -L '^(unit|functional)$' --parallel 4
+      - name: Build standalone editor package
+        working-directory: launcher
+        run: |
+          npm ci
+          RAGE_LAUNCHER_BUILD_DIR=../build/release npm run build:native
+          npm run package
       - name: Package
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
@@ -59,15 +70,29 @@ jobs:
             echo "Python file found in release archive" >&2
             exit 1
           fi
-          sha256sum "dist/${package}.zip"
+
+          editor_package="Rage-Racer-Editor-${VERSION}-linux-x86_64"
+          mkdir -p "dist/${editor_package}"
+          cp -a "launcher/out/Rage Racer Editor-linux-x64/." "dist/${editor_package}/"
+          cp README.md LICENSE.md "dist/${editor_package}/"
+          (cd dist && zip -qr "${editor_package}.zip" "${editor_package}")
+          test -x "dist/${editor_package}/rage-launcher"
+          for deb in launcher/out/*.deb; do
+            if [ -f "$deb" ]; then
+              cp "$deb" "dist/Rage-Racer-Editor-${VERSION}-linux-amd64.deb"
+            fi
+          done
+          sha256sum "dist/${package}.zip" "dist/${editor_package}.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: Rage-Racer-${{ inputs.version || github.ref_name }}-linux-x86_64
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/*.deb
           if-no-files-found: error
       - name: Attach to the release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ github.ref_name }}
-        run: gh release upload "$VERSION" dist/*.zip --clobber
+          VERSION: ${{ inputs.version || github.ref_name }}
+        run: gh release upload "$VERSION" dist/*.zip dist/*.deb --clobber

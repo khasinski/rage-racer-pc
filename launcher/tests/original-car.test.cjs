@@ -4,9 +4,10 @@ const source=process.env.RR_EDITOR_GAME_SOURCE,disc=process.env.RR_EDITOR_GAME_D
 test('original player and rival meshes preserve bank bindings through GLB import and improved-model setting changes',{skip:!source||!disc,timeout:60000},async t=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rr-original-car-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const base=path.resolve(__dirname,'../..');
  const s=new LauncherService({root,bin:path.join(base,'launcher/resources/bin'),modsRoot:path.join(root,'mods'),config:path.join(base,'launcher/resources/rage-port.ini')});await s.init();s.requireReady=()=>{};s.state.disc={archive:path.join(source,'RAGE.BIN'),path:disc,region:'PAL',data:path.join(source,'data')};await s.project();
+ const authored=(await s.cars()).authored;
  for(const key of ['car.player.10.part.0','car.rival.88.part.15']){
   await s.saveSettings({'modern.authored_cars':'1'});const improved=await s.previewCar(key);
-  await s.saveSettings({'modern.authored_cars':'0'});const original=await s.previewCar(key);assert.notDeepEqual(original.vertices,improved.vertices);assert.ok(original.vertices.some((v,i)=>i%9===6&&(v&0x2000000)!==0));
+  await s.saveSettings({'modern.authored_cars':'0'});const original=await s.previewCar(key);if(authored)assert.notDeepEqual(original.vertices,improved.vertices);else assert.deepEqual(original.vertices,improved.vertices);assert.ok(original.vertices.some((v,i)=>i%9===6&&(v&0x2000000)!==0));
   const folder=await s.exportCar(key,root,'glb');await s.importCar(key,path.join(folder,'model.glb'));const imported=await s.previewCar(key);assert.deepEqual(imported.vertices,original.vertices);assert.deepEqual(imported.indices,original.indices);
   await s.saveSettings({'modern.authored_cars':'1'});const switched=await s.previewCar(key);assert.deepEqual(switched.vertices,original.vertices);assert.deepEqual(switched.indices,original.indices);assert.deepEqual(switched.textures,imported.textures);
  }

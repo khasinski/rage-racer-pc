@@ -14,6 +14,7 @@ s32 g_FadeStep;
 s32 g_SceneTimer;
 s32 g_GrandPrixClass;
 s16 g_GrandPrixMode;
+RaceSession g_RaceSession;
 s32 g_EnvScriptClock;
 
 static s32 s_EnvironmentSeek;
@@ -55,7 +56,7 @@ static void TestWrappedGrandPrixReplay(void) {
     g_Replay.wrapped = 1;
     g_Replay.write = 101;
     g_Replay.count = 200;
-    g_GrandPrixMode = 2;
+    g_GrandPrixMode = g_RaceSession.kind == RACE_SESSION_CUSTOM ? 0 : 2;
 
     BeginReplay();
 
@@ -130,6 +131,9 @@ static void TestEnvironmentRewindBounds(void) {
 int main(void) {
     TestLinearTimeAttackReplay();
     TestWrappedGrandPrixReplay();
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    TestWrappedGrandPrixReplay();
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
     TestWrappedCursorAtEndRestartsFromZero();
     TestFinalClassKeepsEnvironmentPosition();
     TestInvalidAndShortReplayBounds();

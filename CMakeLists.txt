@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(rage_racer_port VERSION 0.6.8 LANGUAGES C)
+project(rage_racer_port VERSION 0.6.9 LANGUAGES C)
 
-set(RAGE_RACER_RELEASE_VERSION "0.6.8-alpha-raytracer")
+set(RAGE_RACER_RELEASE_VERSION "nightly")
 
 # Native game, runtime, tools, and tests use the same portable C17 dialect.
 # Vendored projects select their own lower standard where required.
@@ -383,6 +383,7 @@ if(RAGE_BUILD_PORT)
         src/port/speed_display.c
         src/port/mod_assets.c
         src/port/menu_images.c
+        src/port/menu_label_font.c
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c
@@ -528,6 +529,16 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-mod-cli PRIVATE
         src src/port/include include external/psyz/psyz/include)
     target_link_libraries(rage-mod-cli PRIVATE rage-render-world rage-mod-package rage-json rage-content rage-car-catalog SDL3::SDL3)
+    add_executable(rage-studio-mcp launcher/native/studio_mcp.c src/port/platform_paths.c)
+    target_compile_definitions(rage-studio-mcp PRIVATE __psyz=1)
+    target_include_directories(rage-studio-mcp PRIVATE
+        src src/port/include include external/psyz/psyz/include)
+    target_link_libraries(rage-studio-mcp PRIVATE rage-json rage-content rage-car-catalog SDL3::SDL3)
+    if(WIN32)
+        target_link_libraries(rage-studio-mcp PRIVATE ws2_32)
+    else()
+        target_link_libraries(rage-studio-mcp PRIVATE m)
+    endif()
     add_executable(rage-frame-replay
         tools/rage_frame_replay.c
         src/port/platform_paths.c
@@ -573,7 +584,7 @@ if(RAGE_BUILD_PORT)
     add_dependencies(rage-render-stage rage-authored-cars)
     add_dependencies(rage-frame-replay rage-authored-cars)
     target_link_libraries(rage-render-stage PRIVATE
-        rage-render-world rage-ray SDL3::SDL3 miniz rage-json)
+        rage-content rage-render-world rage-ray SDL3::SDL3 miniz rage-json)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-render-stage PRIVATE
             ${RAGE_STRICT_WARNING_OPTIONS})

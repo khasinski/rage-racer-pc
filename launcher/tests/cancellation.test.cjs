@@ -147,3 +147,8 @@ test('closing car import before a queued preview starts is cancellation and leav
  const folder=path.join(root,'car-map-fixture');await fs.mkdir(folder);service.carImport={token:'fixture',folder,inspection:{nodes:[{node:1}],materials:[]}};
  await assert.rejects(service.previewCarImport('fixture',1),/Operation canceled/);await closing;assert.equal(service.carImport,null);assert.equal(service.busy,null);await assert.rejects(fs.stat(folder),/ENOENT/);
 });
+
+test('automatic preview cancellation cannot abort a specification or project operation',()=>{
+ const {LauncherService}=require('../main/service.cjs'),s=new LauncherService({root:'/unused'}),controller=new AbortController();s.busy={label:'Reading resolved car parameters',cancellable:true,controller};s.cancel('preview');assert.equal(controller.signal.aborted,false);s.cancel();assert.equal(controller.signal.aborted,true);
+ const preview=new AbortController();s.busy={label:'Loading car preview',cancellable:true,controller:preview};s.cancel('preview');assert.equal(preview.signal.aborted,true);
+});

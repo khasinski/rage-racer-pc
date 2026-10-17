@@ -44,7 +44,7 @@ test('complete car import installs all models and textures atomically and reject
   const before=await service.project(),count=service.state.mods.length;
   let project=await service.importCarSet(key,source);
   assert.equal(service.state.mods.length,count);assert.equal(project.revision,before.revision+1);
-  assert.equal(project.changes.length,4);assert.equal(project.changes.filter(c=>c.field==='mesh').length,3);
+  assert.equal(project.changes.length,7);assert.equal(project.changes.filter(c=>c.field==='base_mesh').length,3);assert.equal(project.changes.filter(c=>c.field==='mesh').length,3);
   assert.equal(project.changes.find(c=>c.field==='texture').id,'car.0.material.0');
   const changes=project.changes;
   const appearance=await require('../main/preview-materials.cjs')(service,key,{materials:[{source:0,page:11,clut:22}]},null,new AbortController().signal);
@@ -156,7 +156,8 @@ test('complete car import installs all models and textures atomically and reject
   const pointer=JSON.parse(await fs.readFile(path.join(service.modsRoot,'active.json')));
   const {run}=require('../main/service.cjs');
   const applied=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(service.modsRoot,'builds',pointer.build,'mod.toml')]));
-  assert.equal(Object.keys(applied.meshes).length,3);assert.ok(applied.textures['car.0.material.0'].startsWith('textures/project/'));
+  assert.deepEqual(Object.keys(applied.meshes).sort(),[key,...Array.from({length:20},(_,i)=>'car.player.10.part.'+(i+2))].sort());
+  for(let part=4;part<=21;part++)assert.equal(applied.meshes['car.player.10.part.'+part],applied.meshes['car.player.10.part.'+(part%2?3:2)]);assert.ok(applied.textures['car.0.material.0'].startsWith('textures/project/'));
   await fs.writeFile(path.join(source,'image.png'),png.subarray(0,33));
   await assert.rejects(service.importCarSet(key,source),/Cannot import texture/);
   assert.deepEqual((await service.project()).changes,changes);

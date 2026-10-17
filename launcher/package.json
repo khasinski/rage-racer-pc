@@ -7,6 +7,9 @@
   "main": "main/index.cjs",
   "scripts": {
     "start": "node scripts/start.cjs",
+    "start:car": "node scripts/start.cjs --studio=car",
+    "start:track": "node scripts/start.cjs --studio=track",
+    "mcp": "node scripts/mcp-server.cjs",
     "build:native": "node scripts/build-native.cjs",
     "package": "node scripts/package.cjs",
     "test": "node scripts/test-native.cjs && node --test tests/*.test.cjs"

@@ -22,6 +22,7 @@ s32 g_AnimTimer;
 s32 g_SceneTimer;
 s32 g_SeriesCleared;
 s16 g_GrandPrixMode;
+RaceSession g_RaceSession;
 s32 g_IsEnvironmentMode4;
 
 static s32 s_AppliedCursor;
@@ -154,7 +155,7 @@ static void TestFirstTimeAttackFrame(void) {
 
 static void TestGrandPrixResultCueAndCar(void) {
     ResetState();
-    g_GrandPrixMode = 1;
+    g_GrandPrixMode = g_RaceSession.kind == RACE_SESSION_CUSTOM ? 0 : 1;
     g_Replay.count = 100;
     g_SceneTimer = 59;
 
@@ -217,6 +218,9 @@ static void TestEmptyReplayKeepsCurrentCarState(void) {
 int main(void) {
     TestFirstTimeAttackFrame();
     TestGrandPrixResultCueAndCar();
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    TestGrandPrixResultCueAndCar();
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
     TestReplayBadgeVisibility();
     TestSceneCountersStayUsable();
     TestFadeExitStopsReplayFrame();

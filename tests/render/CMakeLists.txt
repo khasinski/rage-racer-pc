@@ -109,7 +109,8 @@ if(TARGET rage-frame-replay)
         -DFIXTURE=$<TARGET_FILE:environment_fixture>
         -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_environment_index.cmake)
-    set_tests_properties(environment_provider PROPERTIES LABELS gpu TIMEOUT 240)
+    set_tests_properties(environment_provider PROPERTIES LABELS gpu TIMEOUT 240
+        SKIP_REGULAR_EXPRESSION "SKIP: environment provider requires")
 endif()
 
 if(TARGET rage-racer-smoke AND UNIX AND NOT APPLE)
@@ -2030,11 +2031,25 @@ endif()
 
 add_executable(menu_images_tests menu_images_tests.c
     ${PROJECT_SOURCE_DIR}/src/port/menu_images.c
+    ${PROJECT_SOURCE_DIR}/src/port/menu_label_font.c
     ${PROJECT_SOURCE_DIR}/src/port/modern/modern_png.c
     ${PROJECT_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_labels.c)
 target_include_directories(menu_images_tests PRIVATE ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/src/port ${PROJECT_SOURCE_DIR}/src/port/include
     ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/external/psyz/psyz/include)
 target_link_libraries(menu_images_tests PRIVATE SDL3::SDL3 rage-render-world rage-content)
+target_compile_definitions(menu_images_tests PRIVATE __psyz=1)
 add_test(NAME menu_images COMMAND menu_images_tests ${CMAKE_CURRENT_BINARY_DIR}/menu-images-fixture)
 set_tests_properties(menu_images PROPERTIES LABELS unit TIMEOUT 30)
+
+add_executable(menu_label_font_tests menu_label_font_tests.c
+    ${PROJECT_SOURCE_DIR}/src/port/menu_label_font.c
+    ${PROJECT_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_labels.c)
+target_include_directories(menu_label_font_tests PRIVATE ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/src/port ${PROJECT_SOURCE_DIR}/src/port/include
+    ${PROJECT_SOURCE_DIR}/include ${PROJECT_SOURCE_DIR}/external/psyz/psyz/include)
+target_link_libraries(menu_label_font_tests PRIVATE rage-content)
+target_compile_definitions(menu_label_font_tests PRIVATE __psyz=1)
+target_compile_options(menu_label_font_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME menu_label_font COMMAND menu_label_font_tests)
+set_tests_properties(menu_label_font PROPERTIES LABELS unit TIMEOUT 30)

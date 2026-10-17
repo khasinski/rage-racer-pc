@@ -1423,3 +1423,12 @@ add_executable(custom_race_tests
 target_include_directories(custom_race_tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(custom_race_tests PRIVATE __psyz=1)
 add_test(NAME custom_race COMMAND custom_race_tests)
+
+if(TARGET rage-racer-smoke)
+    add_test(NAME custom_replay COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_custom_replay.cmake)
+    set_tests_properties(custom_replay PROPERTIES LABELS e2e TIMEOUT 260
+        RUN_SERIAL TRUE SKIP_REGULAR_EXPRESSION "SKIP: custom replay requires")
+endif()

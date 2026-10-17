@@ -27,6 +27,7 @@ PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 Replay g_Replay;
 s16 g_GrandPrixMode;
+RaceSession g_RaceSession;
 
 static void RecordCall(ReplayCarCall call, const GameCarRuntime *car,
                        s32 value) {
@@ -105,7 +106,7 @@ static void TestSeedGrandPrixCarsForAnyNonzeroMode(void) {
     GameCarRuntime *rival = &g_Cars[0];
 
     s_CallCount = 0;
-    g_GrandPrixMode = 2;
+    g_GrandPrixMode = g_RaceSession.kind == RACE_SESSION_CUSTOM ? 0 : 2;
     g_Replay.count = 100;
     g_Replay.read = 9;
     player->trackPointIndex = 3;
@@ -173,6 +174,9 @@ static void TestUpdateTimeAttackCarWithoutRival(void) {
 int main(void) {
     TestSeedTimeAttackCar();
     TestSeedGrandPrixCarsForAnyNonzeroMode();
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    TestSeedGrandPrixCarsForAnyNonzeroMode();
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
     TestSeedWithoutRecordedFrames();
     TestUpdateCarsAndRequestPlayerTexture();
     TestUpdateTimeAttackCarWithoutRival();

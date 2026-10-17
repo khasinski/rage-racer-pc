@@ -6,7 +6,7 @@ on:
       version:
         description: Release version used in the archive name
         required: true
-        default: 0.6.8-alpha-raytracer
+        default: nightly
   push:
     tags:
       - "*"
@@ -21,6 +21,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: launcher/package-lock.json
       - name: Configure
         run: cmake -S . -B build/release -DCMAKE_BUILD_TYPE=Release -DRAGE_EMBED_AUTHORED_CARS=OFF
       - name: Build
@@ -32,6 +37,12 @@ jobs:
         run: >-
           ctest --test-dir build/release --output-on-failure
           -L '^(unit|functional)$' --parallel 4
+      - name: Build standalone editor package
+        working-directory: launcher
+        run: |
+          npm ci
+          RAGE_LAUNCHER_BUILD_DIR=../build/release npm run build:native
+          npm run package
       - name: Stage bundle resources
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
@@ -48,19 +59,38 @@ jobs:
           CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
           NOTARY_KEY: ${{ secrets.MACOS_NOTARY_KEY }}
           NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_ISSUER_ID || secrets.MACOS_NOTARY_ISSUER_ID }}
           TEAM_ID: ${{ secrets.MACOS_TEAM_ID }}
         run: |
           set -euo pipefail
           app="build/release/Rage Racer.app"
-          # The linker ad-hoc signs the executable, and that signature expects a
-          # sealed resource directory. Staging files into Contents/Resources
-          # without re-signing leaves the bundle inconsistent, which Gatekeeper
-          # reports as a damaged download. Either branch below re-signs.
+          editor_app="launcher/out/Rage Racer Editor-darwin-arm64/Rage Racer Editor.app"
+          ent="packaging/macos/editor-entitlements.plist"
+          sign_editor() {
+            local id="$1"
+            shift
+            for bin in "$editor_app"/Contents/Resources/resources/bin/rage-*; do
+              codesign --force "$@" --sign "$id" "$bin"
+            done
+            for dylib in "$editor_app"/Contents/Frameworks/"Electron Framework.framework"/Versions/A/Libraries/*.dylib; do
+              codesign --force "$@" --sign "$id" "$dylib"
+            done
+            codesign --force "$@" --entitlements "$ent" --sign "$id" "$editor_app/Contents/Frameworks/Electron Framework.framework/Versions/A/Helpers/chrome_crashpad_handler"
+            codesign --force "$@" --sign "$id" "$editor_app/Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt"
+            for fw in "$editor_app"/Contents/Frameworks/*.framework; do
+              codesign --force "$@" --sign "$id" "$fw"
+            done
+            for helper in "$editor_app"/Contents/Frameworks/*.app; do
+              codesign --force "$@" --entitlements "$ent" --sign "$id" "$helper"
+            done
+            codesign --force "$@" --entitlements "$ent" --sign "$id" "$editor_app"
+            codesign --verify --deep --strict --verbose=2 "$editor_app"
+          }
           if [ -z "${CERT_P12:-}" ]; then
             echo "No Developer ID configured; signing ad-hoc (not notarized)."
             codesign --force --deep --sign - "$app"
             codesign --verify --deep --strict "$app"
+            sign_editor "-" --options runtime
             exit 0
           fi
           keychain="$RUNNER_TEMP/signing.keychain-db"
@@ -72,34 +102,35 @@ jobs:
           printf '%s' "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
           security import "$RUNNER_TEMP/cert.p12" -k "$keychain" \
             -P "$CERT_PASSWORD" -T /usr/bin/codesign -f pkcs12
-          # Without this codesign would block on an interactive keychain prompt.
           security set-key-partition-list -S apple-tool:,apple:,codesign: \
             -s -k "$keychain_password" "$keychain" > /dev/null
           identity="$(security find-identity -v -p codesigning "$keychain" \
             | awk 'NR==1 {print $2}')"
-          # Notarization requires the hardened runtime and a secure timestamp.
           codesign --force --deep --options runtime --timestamp \
             --sign "$identity" "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
+          sign_editor "$identity" --options runtime --timestamp
           printf '%s' "$NOTARY_KEY" | base64 --decode > "$RUNNER_TEMP/notary.p8"
           ditto -c -k --sequesterRsrc --keepParent "$app" \
             "$RUNNER_TEMP/notarize.zip"
           xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
             --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" \
             --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait
-          # Staple the ticket into the bundle so it validates without a network
-          # round trip; the archive built below then carries it.
           xcrun stapler staple "$app"
           xcrun stapler validate "$app"
+          ditto -c -k --sequesterRsrc --keepParent "$editor_app" \
+            "$RUNNER_TEMP/notarize-editor.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize-editor.zip" \
+            --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait
+          xcrun stapler staple "$editor_app"
+          xcrun stapler validate "$editor_app"
           rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/notary.p8"
       - name: Archive
         env:
           VERSION: ${{ inputs.version || github.ref_name }}
         run: |
           package="Rage-Racer-${VERSION}-macos-arm64"
-          # The copies inside the bundle are sealed by the signature and cannot
-          # be edited without breaking it, so lay the editable ones beside the
-          # app, the way the Linux archive does.
           mkdir -p "dist/${package}"
           ditto "build/release/Rage Racer.app" "dist/${package}/Rage Racer.app"
           cp README.md LICENSE.md rage-port.ini race-scenario.ini cars.toml cars.ntscj.toml \
@@ -117,20 +148,30 @@ jobs:
             echo "Python file found in release archive" >&2
             exit 1
           fi
-          # The archived copy must still validate, ditto included.
           rm -rf "$RUNNER_TEMP/verify" && mkdir -p "$RUNNER_TEMP/verify"
           ditto -x -k "dist/${package}.zip" "$RUNNER_TEMP/verify"
           codesign --verify --deep --strict \
             "$RUNNER_TEMP/verify/${package}/Rage Racer.app"
-          shasum -a 256 "dist/${package}.zip"
+
+          editor_package="Rage-Racer-Editor-${VERSION}-macos-arm64"
+          mkdir -p "dist/${editor_package}"
+          ditto "launcher/out/Rage Racer Editor-darwin-arm64/Rage Racer Editor.app" \
+            "dist/${editor_package}/Rage Racer Editor.app"
+          cp README.md LICENSE.md "dist/${editor_package}/"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "dist/${editor_package}" "dist/${editor_package}.zip"
+          ditto -x -k "dist/${editor_package}.zip" "$RUNNER_TEMP/verify"
+          codesign --verify --deep --strict \
+            "$RUNNER_TEMP/verify/${editor_package}/Rage Racer Editor.app"
+          shasum -a 256 "dist/${package}.zip" "dist/${editor_package}.zip"
       - uses: actions/upload-artifact@v4
         with:
           name: Rage-Racer-${{ inputs.version || github.ref_name }}-macos-arm64
           path: dist/*.zip
           if-no-files-found: error
       - name: Attach to the release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ github.ref_name }}
+          VERSION: ${{ inputs.version || github.ref_name }}
         run: gh release upload "$VERSION" dist/*.zip --clobber

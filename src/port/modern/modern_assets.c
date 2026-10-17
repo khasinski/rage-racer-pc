@@ -7,6 +7,7 @@
 #include "port/native_asset_importer.h"
 #include "port/native_mesh_writer.h"
 #include "port/mod_assets.h"
+#include "port/archive_index.h"
 #include "port/platform_paths.h"
 #include "port/runtime_config.h"
 #include "port/sky_panorama_layout.h"
@@ -27,7 +28,7 @@
 /* One entry per bank's first definition. More than one car may share a bank;
  * all matching replacements are assembled before the result is cached. */
 static RageRuntimeCachedMesh
-    s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT ? RAGE_AUTHORED_CAR_COUNT : 1];
+    s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT + RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
 /* CPU copies move source-image work to the completed logic frame. GPU upload
  * still needs a command buffer, but a first draw never has to reopen a disc
  * file, decode an override, apply paint, or rebuild the material definition. */
@@ -159,12 +160,18 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         instance->assetSet != RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) return base;
     for (first = 0; first != RAGE_AUTHORED_CAR_COUNT; first++)
         if (AuthoredCarMatches(&s_authoredCars[first], instance)) break;
-    if (first == RAGE_AUTHORED_CAR_COUNT) return base;
-    entry = &s_authoredCarMesh[first];
+    int nativeOnly = first == RAGE_AUTHORED_CAR_COUNT;
+    if (nativeOnly && instance->assetKey >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return base;
+    if (nativeOnly && (!s_modReady || !s_modManifest->meshCount)) return base;
+    if (nativeOnly) authored = 0;
+    entry = &s_authoredCarMesh[nativeOnly ? RAGE_AUTHORED_CAR_COUNT + instance->assetKey : first];
     if (entry->ownedBytes) return entry;
     working = base->mesh;
-    for (i = first; i != RAGE_AUTHORED_CAR_COUNT; i++) {
-        const AuthoredCarReplacement *car = &s_authoredCars[i];
+    for (i = nativeOnly ? 0 : first;
+         i < (nativeOnly ? base->mesh.meshCount : RAGE_AUTHORED_CAR_COUNT); i++) {
+        AuthoredCarReplacement original = {.name="Original", .assetKey=instance->assetKey,
+            .assetSet=instance->assetSet, .submesh=(uint16_t)i};
+        const AuthoredCarReplacement *car = nativeOnly ? &original : &s_authoredCars[i];
         RageRuntimeMesh body, next;
         uint32_t map[RAGE_CAR_SURFACE_SOURCE_STRIDE * RAGE_CAR_SURFACE_COUNT];
         size_t j, size;
@@ -638,6 +645,12 @@ const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
         if (AuthoredCarMatches(&s_authoredCars[i], instance) &&
             s_authoredCarMesh[i].ownedBytes != NULL)
             return &s_authoredCarMesh[i].mesh;
+    }
+    if (instance->assetKey < RAGE_ARCHIVE_INDEX_ENTRY_COUNT &&
+        (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
+         instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
+        const RageRuntimeCachedMesh *original = &s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT + instance->assetKey];
+        if (original->ownedBytes) return &original->mesh;
     }
     const RageRuntimeCachedMesh *cached = ResolveBaseMesh(instance,1);
     return cached != NULL ? &cached->mesh : NULL;

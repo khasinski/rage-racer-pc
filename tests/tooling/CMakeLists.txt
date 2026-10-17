@@ -1,9 +1,21 @@
-add_test(NAME asset_gltf_export
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_gltf.py)
-set_tests_properties(asset_gltf_export PROPERTIES LABELS tooling)
-add_test(NAME asset_sky_export
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_sky.py)
-set_tests_properties(asset_sky_export PROPERTIES LABELS tooling)
+# Keep coverage for the legacy Asset Browser when its optional interpreter is
+# available. Windows' Store alias is an executable, not a Python interpreter.
+find_program(RAGE_LEGACY_PYTHON NAMES python3 python)
+if(RAGE_LEGACY_PYTHON)
+    execute_process(COMMAND "${RAGE_LEGACY_PYTHON}" -c "import sys; sys.exit(0)"
+        RESULT_VARIABLE legacy_python_result OUTPUT_QUIET ERROR_QUIET TIMEOUT 10)
+endif()
+foreach(kind gltf sky)
+    if(RAGE_LEGACY_PYTHON AND legacy_python_result STREQUAL "0")
+        add_test(NAME asset_${kind}_export COMMAND "${RAGE_LEGACY_PYTHON}"
+            ${CMAKE_SOURCE_DIR}/tools/assetbrowser/test_${kind}.py)
+    else()
+        add_test(NAME asset_${kind}_export COMMAND ${CMAKE_COMMAND} -E echo
+            "SKIP: legacy Asset Browser interpreter unavailable")
+    endif()
+    set_tests_properties(asset_${kind}_export PROPERTIES LABELS tooling
+        SKIP_REGULAR_EXPRESSION "SKIP: legacy Asset Browser interpreter unavailable")
+endforeach()
 
 if(TARGET rage-gte-replay)
     add_test(NAME gte_replay_usage COMMAND rage-gte-replay)

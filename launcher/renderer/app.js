@@ -1,248 +1,686 @@
-import {carWorkspace,workshopTabs,carImportForm} from './car-workshop.mjs';
-import {trackWorkspace,terrainCellEditor,surfaceDialog} from './tracks.mjs';
-import {interfaceWorkspace} from './interface.mjs';
-import {audioWorkspace,initAudioPreview} from './audio.mjs';
-import {projectWorkspace} from './project.mjs';
-import {displayedShiftSpeed,storedShiftSpeed} from './car-speed.mjs';
-import {parseTimeClipboard} from './time-input.mjs';
-import {modCarBanks,modCarTargets,carModChanges} from './mod-car-targets.mjs';
 import {bindingName} from './key-binding.mjs';
-import {duplicatePackageIds,packageIdOf,requirementLabel,requirementNote,requirementStatus} from './mod-dependencies.mjs';
-import {mountModelPreview} from './model-preview.js';
 import {mountLogo} from './logo.js';
-const $=s=>document.querySelector(s);
-const api=window.launcher;
-const schema=await (await fetch('./settings.json')).json();
-const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let state, page='home',tab='video',draft={},dirty=false,modalDirty=false,save=null,saveList=[],edits={},assets=[],carParts=[],filter='',toastTimer;
-let trackList=[],trackBank=88,trackScene=null,trackPoint=0,trackObject=0;
-let project=null,titleImagesData=null,audioData=null;
-function audioPage(){return audioWorkspace(audioData);}
-function interfacePage(){return interfaceWorkspace(titleImagesData);}
-function projects(){return projectWorkspace(project,state.mods);}
-function showTerrainCell(cell){const panel=document.querySelector('#terrain-cell-editor');if(!panel)return;const model=panel.querySelector('[data-terrain-model]');if(model.value!==model.dataset.original){toast('Save this cell before selecting another');return;}panel.outerHTML=terrainCellEditor(trackScene,trackBank,cell);}
-function tracks(){return trackWorkspace(trackList,trackBank,trackScene,trackPoint,trackObject);}
-async function request(name,...args){const response=await api[name](...args);if(!response.ok)throw Error(response.error);return response.value;}
-function toast(text){$('#toast').textContent=text;$('#toast').hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').hidden=true,5000);}
-function error(e){const dialog=$('#dialog');if(dialog.open&&dialog.querySelector('form')){let alert=dialog.querySelector('[data-form-error]');if(!alert){alert=document.createElement('p');alert.dataset.formError='';alert.className='banner error';alert.setAttribute('role','alert');alert.tabIndex=-1;dialog.querySelector('form').prepend(alert);}alert.textContent=e.message||String(e);alert.focus();return;}$('#dialog').innerHTML=`<h2>Could not complete the operation</h2><p>${esc(e.message||e)}</p><footer><button data-action="close">Close</button></footer>`;if(!$('#dialog').open)$('#dialog').showModal();}
-function title(kicker,heading,description,action=''){return `<div class="row between wrap"><div><div class="eyebrow">${esc(kicker)}</div><h1>${esc(heading)}</h1><p class="muted">${esc(description)}</p></div>${action}</div>`;}
-function source(){return `<div class="hero">${title('Game source',state.ready?'Your copy of Rage Racer':'Start with your copy of the game',state.ready?'Game content follows the loaded disc version.':'Select a legally obtained disc image. The launcher prepares the asset library automatically.')}<div class="card">${state.disc?`<h2>${esc(state.disc.region)}</h2><p class="path">${esc(state.disc.path)}</p><div class="detail">Car names and prologue: <b>${state.disc.region==='NTSC-J'?'Japanese release':'International release'}</b></div>`:'<h2>CUE, CHD or Track 01 BIN</h2><p class="muted">Settings and mod tools become available once the game data is ready. The save editor also works without a disc.</p>'}<button class="primary" data-action="choose-game" ${state.busy||state.running||!state.toolsReady?'disabled':''}>${state.disc?'Change disc image':'Choose disc image'}</button></div>${!state.toolsReady?'<div class="banner error">This installation is missing its native game tools. Install a complete launcher build.</div>':''}${state.disc&&!state.ready?'<div class="banner warn">The selected image or prepared data is no longer available. Select the image again.</div>':''}</div>`;}
-function home(){const active=state.mods.filter(m=>m.enabled);return title('Your game','Rage Racer',`${state.disc.region} · My setup`,`<button class="primary" data-action="play" ${state.running||state.busy||(!state.disc.archive&&state.conflicts.length)?'disabled':''}>${state.running?'Game running':'▷ Play'}</button>`)+`<div class="launch-summary row between"><span><span class="status-dot">●</span> Game data ready · Modern renderer · Play uses the last applied project</span><div class="row"><button data-action="logs">View logs</button><button data-page="source">Game source</button></div></div>${state.conflicts.length?'<div class="banner warn">Selected packages conflict. Choose priorities before applying the project.</div>':''}<div class="dashboard"><section class="card"><div class="eyebrow">Game saves</div><h2>Continue your progress</h2><p class="muted">Browse local saves or open a memory card.</p><button data-page="saves">Open save editor</button></section><section class="card"><div class="eyebrow">Selected packages</div><div class="metric">${active.length||'No'} mods</div><p class="muted">${esc(active.map(m=>m.name).join(', ')||'Original game assets')}</p><button data-page="mods">Manage mods</button></section><section class="card"><div class="eyebrow">Display</div><div class="metric">${esc(state.settings['video.aspect'])} / ${esc(state.settings['video.internal_scale'])}×</div><p class="muted">${esc(state.settings['video.fps'])} · ${esc(state.settings['video.post'])}</p><button data-page="settings">Adjust settings</button></section></div>`;}
-function setting(f){const id='setting-'+f.key,value=draft[f.key];let control='';if(f.type==='bool')control=`<input id="${id}" data-setting="${f.key}" type="checkbox" ${value?'checked':''}>`;else if(f.type==='select')control=`<select id="${id}" data-setting="${f.key}">${f.options.map(([v,n])=>`<option value="${esc(v)}" ${value===v?'selected':''}>${esc(n)}</option>`).join('')}</select>`;else if(f.type==='key')control=`<button id="${id}" type="button" data-bind="${f.key}" aria-label="Bind ${esc(f.label)}">${esc(value)}</button>`;else control=`<input id="${id}" data-setting="${f.key}" type="${f.type==='number'?'number':'text'}" value="${esc(value)}" ${f.type==='number'?`min="${f.min}" max="${f.max}" step="any"`:'maxlength="40"'} required>`;return `<div class="setting"><div><label for="${id}">${esc(f.label)}</label><p>${esc(f.help)}</p></div>${control}</div>`;}
-function bindingNotes(){
- const groups=new Map();for(const f of schema.filter(f=>f.type==='key')){const value=String(draft[f.key]||'').toLowerCase();if(!value)continue;if(!groups.has(value))groups.set(value,[]);groups.get(value).push(f);}
- const shared=[...groups.values()].filter(fields=>fields.length>1);
- return shared.length?`<div class="banner warn" data-binding-notes><strong>Shared keys</strong><p>Each key below activates all of its assigned buttons.</p>${shared.map(fields=>`<p><b>${esc(draft[fields[0].key])}</b>: ${fields.map(f=>esc(f.label)).join(', ')}</p>`).join('')}</div>`:'';
-}
-function settings(){const tabs={video:'Display',hud:'HUD and camera',input:'Controls',advanced:'Advanced'};return title('Configuration','Game settings','Changes apply the next time you launch the game.')+`<nav class="tabs">${Object.entries(tabs).map(([id,label])=>`<button data-tab="${id}" class="${tab===id?'active':''}">${label}</button>`).join('')}</nav><form id="settings-form"><div class="settings-layout"><section class="card"><h2>${tabs[tab]}</h2>${tab==='input'?bindingNotes():''}${schema.filter(f=>f.group===tab).map(setting).join('')}<div class="sticky-actions"><span id="dirty" class="muted">${dirty?'Unsaved changes':'Saved'}</span><div class="row"><button type="button" data-action="defaults">Restore defaults</button><button class="primary" type="submit" ${state.running?'disabled title="Close the game before saving settings"':''}>Save settings</button></div></div></section><section class="card side-info"><h2>About these settings</h2><p class="muted">Your settings are stored in your user profile. The original game image stays unchanged.</p><div class="detail"><strong>Disc version</strong><p>${esc(state.disc.region)}. Car names and prologue are selected automatically.</p></div><p class="muted">The modern renderer generates its native assets automatically as they are needed.</p></section></div></form>`;}
-function saves(){if(!save)return title('Progress','Save editor','Edit a copy while preserving the original.', '<div class="row"><button class="primary" data-action="open-save">Open save or card</button><label>New save region <select id="new-save-region"><option>PAL</option><option>NTSC-U</option><option>NTSC-J</option></select></label><button data-action="new-save">Create new save</button></div>')+`<section class="card save-list"><h2>Your local saves</h2>${saveList.length?saveList.map(s=>`<button data-save="${esc(s.id)}"><strong>${esc(s.team||'Unnamed team')}</strong><br><small>${s.money.toLocaleString('en-US')} credits</small></button>`).join(''):'<p class="muted">No local saves found. Open an existing save or memory card to begin.</p>'}</section>`;
- if(save.card)return title('Memory card',save.name,'Choose the Rage Racer save to edit.')+`<section class="card save-list">${save.entries.map(e=>`<button data-card="${e.index}">${esc(e.team)} <small>${esc(e.name)}</small></button>`).join('')||'<p>No Rage Racer saves on this card.</p>'}</section>`;
- return title('Save editor',save.name,'Changes are written to a separate copy.', '<button data-action="other-save">Choose another save</button>')+`${!save.checksumsValid?'<div class="banner warn">The original has checksum errors. Saving a copy will recalculate them.</div>':''}<form id="save-form"><section class="card"><button type="button" data-action="edit-logo">Edit team logo</button> <label for="team">Team name</label><input id="team" data-team maxlength="7" value="${esc(edits.team??save.team)}"><div class="toolbar"><input id="field-search" type="search" placeholder="Filter by car name, credits, lap, driver…" aria-label="Filter save fields" value="${esc(filter)}"></div><div class="save-fields">${save.fields.map(field).join('')}</div><div class="sticky-actions"><span id="dirty" class="muted">${dirty?'Unsaved changes':'Original preserved'}</span><button type="submit" class="primary" ${state.running?'disabled':''}>Save a copy</button></div></section></form>`;
-}
-// Menu swatches from g_PaintColorTable in src/port/host_state_menu.c.
-const paintColors=["#989878","#002040","#a08010","#909090","#985020","#303840","#107028","#803020","#405080","#882020","#243058","#a03838","#181818","#884878","#283020","#988848","#608090","#586848"];
-function field(f){const value=edits[f.key]??f.value;const cars=save.carNames?.[(save.region==='Unknown'?state.disc?.region:save.region)==='NTSC-J'?'japanese':'international']||[];const labels={padMappingIndex:'Controller / Button preset',negconMappingIndex:'neGcon / Button preset',negconSteerNeutral:'neGcon / Steering centre',negconSteerPlay:'neGcon / Steering dead zone',negconNeutralI:'neGcon / I button neutral',negconNeutralII:'neGcon / II button neutral',negconNeutralL:'neGcon / L button neutral',negconMaxTwist:'neGcon / Maximum twist',bgmSelection:'Audio / Music selection',bgmVolume:'Audio / Music volume',sfxVolume:'Audio / Sound effects volume',extraGrandPrixUnlocked:'Progress / Extra Grand Prix'};const label=labels[f.key]||f.key.replace(/Car (\d{2})/g,(_,index)=>cars[Number(index)]||'Car '+index);const name=esc(label);const key=esc(f.key);const numeric=Number(value);let control;const choice=f.key==='extraGrandPrixUnlocked'?['Locked','Unlocked']:f.key.endsWith(' / Transmission')?['Automatic','Manual']:f.key.endsWith(' / Owned')?['Not owned','Owned']:f.key.endsWith(' / Car')?cars:null;
- if(/ \/ Paint [12]$/.test(f.key))control=`<fieldset class="paint-palette"><legend>${name}</legend>${numeric<0||numeric>=paintColors.length?`<small>Unknown color (${esc(value)}) — preserved until changed</small>`:''}<div>${paintColors.map((color,i)=>`<label title="Color ${i}"><input type="radio" name="paint-${key}" data-field="${key}" value="${i}" aria-label="${name}: color ${i}" ${numeric===i?'checked':''}><span style="background:${color}">${i}</span></label>`).join('')}</div></fieldset>`;
- else if(f.text)control=`<input aria-label="${name}" data-field="${key}" type="text" maxlength="${f.maxLength}" value="${esc(value)}">`;
- else if(choice?.length)control=`<select aria-label="${name}" data-field="${key}">${(!Number.isInteger(numeric)||numeric<0||numeric>=choice.length)?`<option value="${esc(value)}" selected>Unknown value (${esc(value)}) — preserved</option>`:''}${choice.map((label,i)=>`<option value="${i}" ${numeric===i?'selected':''}>${esc(label)}</option>`).join('')}</select>`;
- else
- if(f.time&&numeric>=0)control=`<div class="time-segments"><input aria-label="${name}: minutes" data-time="${key}" data-part="m" type="number" min="0" max="35791" value="${Math.floor(numeric/60000)}" required><span>:</span><input aria-label="${name}: seconds" data-time="${key}" data-part="s" type="number" min="0" max="59" value="${Math.floor(numeric/1000)%60}" required><span>.</span><input aria-label="${name}: milliseconds" data-time="${key}" data-part="ms" type="number" min="0" max="999" value="${numeric%1000}" required></div>`;
- else control=`<input aria-label="${name}" data-field="${key}" type="number" min="${f.min}" max="${f.max}" step="1" value="${esc(value)}" required>`;
- return `<div class="save-field" data-search="${esc((label+' '+f.key).toLowerCase())}" ${filter&&!(label+' '+f.key).toLowerCase().includes(filter.toLowerCase())?'hidden':''}><div>${name}${f.time?'<small> · min : sec . ms</small>':''}${f.time&&numeric<0?'<small> · special stored value</small>':''}</div>${control}</div>`;
-}
-function modCarPreviews(mod){return Object.keys(mod.manifest.meshes||{}).flatMap(key=>{
- const match=/^car\.(player|rival)\.(\d+)\.part\.(\d+)$/.exec(key);if(!match)return [];
- const rival=match[1]==='rival',part=Number(match[3]);if(rival?part%5!==0:part!==0)return [];
- return [`<button data-whole-car="${match[2]}" data-whole-body="${part}" data-whole-rival="${rival}" data-whole-mod="${esc(mod.id)}">Preview car · ${match[2]}${rival?' / '+part:''}</button>`];
-}).join('');}
-const openModModels=new Set();
-function modModels(mod){
- const keys=Object.keys(mod.manifest.meshes||{});if(!keys.length)return '';
- const groups=new Map();
- for(const key of keys){const match=/^car\.(player|rival)\.(\d+)\.part\.(\d+)$/.exec(key);const group=match?match[1]+' · Bank '+match[2]:'Other models';if(!groups.has(group))groups.set(group,[]);groups.get(group).push(key);}
- return `<details class="mod-models" data-mod-models="${esc(mod.id)}" ${openModModels.has(mod.id)?'open':''}><summary>Models · ${keys.length} replaced parts</summary><div class="mod-model-list">${[...groups].map(([name,parts])=>`<section><h4>${esc(name)}</h4><div class="row wrap">${modCarPreviews({...mod,manifest:{meshes:Object.fromEntries(parts.map(key=>[key,true]))}})}</div><div class="row wrap">${parts.sort((a,b)=>Number(a.split('.').at(-1))-Number(b.split('.').at(-1))).map(key=>`<button data-preview-car="${esc(key)}" data-preview-mod="${esc(mod.id)}">Preview part ${esc(key.split('.').at(-1))}</button>`).join('')}</div></section>`).join('')}</div></details>`;
-}
-document.addEventListener('toggle',e=>{const id=e.target.dataset?.modModels;if(id&&e.target.isConnected){if(e.target.open)openModModels.add(id);else openModModels.delete(id);}},true);
-function mods(){const duplicates=duplicatePackageIds(state.mods);return title('Library','My mods','Import a folder containing raw overrides, textures or a mod.toml manifest.','<div class="row wrap"><button data-action="import-mod">Import mod folder</button><button class="primary" data-action="publish-mods">Save & apply project</button></div>')+`${state.overlaps?.length?`<section class="card" style="margin-bottom:20px"><h2>Override priorities</h2><p class="muted">Choose a provider for each overlap. Other changes from both packages stay selected.</p>${state.overlaps.map(c=>`<div class="setting"><label for="priority-${esc(c.key)}">${esc(c.key)}<p>${c.winner?'Priority saved':'Choose a provider before applying'}</p></label><select id="priority-${esc(c.key)}" data-conflict="${esc(c.key)}" ${state.running?'disabled':''}><option value="" ${!c.winner?'selected':''} disabled>Choose provider…</option>${c.candidates.map(m=>`<option value="${esc(m.id)}" ${c.winner===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></div>`).join('')}</section>`:''}<section class="card">${state.mods.map(m=>`<div class="mod"><input type="checkbox" data-mod="${esc(m.id)}" aria-label="Select ${esc(m.name)} for this project" ${m.enabled?'checked':''} ${state.running?'disabled':''}><div class="thumb">◇</div><div class="mod-details"><h3>${esc(m.name)}</h3>${m.requires?.length?`<p class="muted">Requires: ${m.requires.map(d=>esc(requirementLabel(d))+' · '+esc(requirementNote(requirementStatus(m,d,state.mods)))).join(", ")}</p>`:""}${duplicates.has(packageIdOf(m))?`<p class="muted">Duplicate package ID ${esc(packageIdOf(m))}: another installed mod uses it, so only one copy can be enabled at a time.</p>`:""}<small>${m.files.length} files · ${esc(m.region)}${m.version?` · Version ${esc(m.version)}`:""}${m.author?` · By ${esc(m.author)}`:""}</small>${m.description?`<details class="mod-description-details"><summary>Description</summary><p class="mod-description">${esc(m.description)}</p></details>`:""}</div><div class="row wrap">${modCarBanks(m).size?`<button data-appearance-mod="${esc(m.id)}">Preview appearance</button>`:''}<button data-mod-details="${esc(m.id)}">Details</button><button data-material-mod="${esc(m.id)}">Materials</button><button data-export-mod="${esc(m.id)}">Export</button><button data-remove-mod="${esc(m.id)}">Remove</button></div>${modModels(m)}</div>`).join('')||'<div class="empty"><h2>No mods installed</h2><p class="muted">Import a mod folder to inspect and enable its changes.</p></div>'}</section>`;}
-let carSection='player',selectedCar='',rivalClass=1,rivalCourse=0;
-let workshopTab='appearance';
-function cars(){
- const bodies=carParts.filter(c=>c.rival?c.part%5===0:c.part===0).filter(c=>c.rival===(carSection==='rival')&&(!c.rival||c.bank===88+(rivalClass-1)*8+rivalCourse*2)).sort((a,b)=>a.bank-b.bank||a.part-b.part);
- const car=bodies.find(c=>c.key===selectedCar)||bodies[0];
- if(!car)return title('Workshop','Car models','No cars found.');
- selectedCar=car.key;
- const parts=carParts.filter(c=>c.bank===car.bank&&c.rival===car.rival&&(!car.rival||c.part>=car.part&&c.part<car.part+5));
- return title('Workshop','Car models','Choose a car. Edit its appearance, driving parameters or mod files.')+
- '<div class="row car-sections" role="group" aria-label="Car category">'+['player','rival'].map(k=>'<button data-car-section="'+k+'" aria-pressed="'+(carSection===k)+'" class="'+(carSection===k?'primary':'')+'">'+(k==='player'?'Player cars':'Rival cars')+'</button>').join('')+'</div>'+
- (carSection==='rival'?'<div class="row car-sections"><label>Race class <select data-rival-filter="class">'+Array.from({length:6},(_,i)=>'<option value="'+(i+1)+'" '+(rivalClass===i+1?'selected':'')+'>Class '+(i+1)+'</option>').join('')+'</select></label><label>Course <select data-rival-filter="course">'+['Grand Valley','Over Pass','Lakeside Gate','Extreme Oval'].map((n,i)=>'<option value="'+i+'" '+(rivalCourse===i?'selected':'')+'>'+n+'</option>').join('')+'</select></label></div>':'')+
- '<div class="car-workshop"><nav class="card car-slots" aria-label="Choose a car">'+bodies.map(c=>'<button data-select-car="'+c.key+'" aria-current="'+(c.key===car.key)+'"><strong>'+esc(c.name)+'</strong></button>').join('')+'</nav>'+carWorkspace(car,parts,{tab:workshopTab,changes:carInstalledChanges(car)})+'</div>';
+
+const $ = s => document.querySelector(s);
+const api = window.launcher;
+const schema = await (await fetch('./settings.json')).json();
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+}[c]));
+
+// Menu swatches from g_PaintColorTable in src/port/host_state_menu.c
+const paintColors = [
+  '#989878', '#002040', '#a08010', '#909090', '#985020', '#303840',
+  '#107028', '#803020', '#405080', '#882020', '#243058', '#a03838',
+  '#181818', '#884878', '#283020', '#988848', '#608090', '#586848'
+];
+
+let state = null;
+let page = new URLSearchParams(window.location.search).get('page') === 'saves' ? 'saves' : 'settings'; // 'settings' | 'saves'
+let draft = {};
+
+let save = null;
+let saveList = [];
+let selectedSaveId = '';
+let edits = {};
+let saveDirty = false;
+let modalDirty = false;
+let garageMode = 'Grand Prix'; // 'Grand Prix' | 'Extra Grand Prix' | 'Time Attack'
+let newSaveRegion = 'PAL';
+let toastTimer;
+
+async function request(name, ...args) {
+  const response = await api[name](...args);
+  if (!response.ok) throw Error(response.error);
+  return response.value;
 }
 
-function carInstalledChanges(car){
- const related=state.mods.map(mod=>({mod,...carModChanges(mod,car)})).filter(m=>m.affected);
- return '<section class="car-installed"><h3>Installed changes</h3>'+(!related.length?'<p class="muted">No installed mods target this car yet.</p>':'<p class="muted">The main preview uses selected packages and project edits. Preview mod compares one package. Resolve overlaps in Projects & mods.</p>'+related.map(({mod,preview,raw})=>`<div class="setting"><label><input type="checkbox" data-mod="${esc(mod.id)}" ${mod.enabled?'checked':''} ${state.running||mod.region!==state.disc.region?'disabled':''}> ${esc(mod.name)}<p>${mod.enabled?'Selected for project':'Not selected'}${mod.region!==state.disc.region?' · Different game version':''}${raw?' · Raw model or driving-data changes':''}</p></label><div>${preview&&mod.region===state.disc.region?`<button data-whole-car="${car.bank}" data-whole-body="${car.part}" data-whole-rival="${car.rival}" data-whole-mod="${esc(mod.id)}">Preview mod</button>`:''}${raw?'<small>Raw car geometry and textures are included in the current preview; driving changes affect the game.</small>':''}</div></div>`).join(''))+'</section>';
+function toast(text) {
+  const el = $('#toast');
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.hidden = true; }, 3200);
 }
 
-function library(){return title('Workshop','Asset library','Raw entries extracted from your disc. Export an entry for external editing.')+`<section class="card"><p class="muted">These are archive entries, not necessarily individual models. Keep replacements in a mod folder under raw/ using the same file name.</p><div class="table-scroll"><table class="asset-table"><thead><tr><th>Entry</th><th>Size</th><th></th></tr></thead><tbody>${assets.filter(a=>a.present!==false).map(a=>`<tr><td>asset_${String(a.index).padStart(3,'0')}.bin</td><td>${a.size.toLocaleString('en-US')} bytes</td><td><button data-export-asset="${a.index}">Export</button> <button data-replace-asset="${a.index}">Import replacement</button></td></tr>`).join('')}</tbody></table></div></section>`;}
-function render(){
- if(!state)return;const unlocked=state.ready&&!state.busy;
- $('#status').textContent=state.running?'Game running':state.busy||(!state.ready?'No game loaded':state.disc.region);
- $('#nav').querySelectorAll('[data-page]').forEach(b=>{b.classList.toggle('active',b.dataset.page===page);b.disabled=b.dataset.page==='saves'?Boolean(state.busy)||!state.toolsReady:(!unlocked&&!['home','source'].includes(b.dataset.page));});
- $('#main').innerHTML=(state.busy?`<div class="busy"><span><i class="spinner"></i>${esc(state.busy)}</span><button data-action="cancel" ${state.canCancel?'':'disabled'}>Cancel</button></div>`:'')+(state.error?`<div class="banner error">${esc(state.error)} <button data-action="logs">View logs</button></div>`:'')+((!state.ready&&page!=='saves')||page==='source'?source():({home,settings,saves,mods,assets:library,cars,tracks,projects,interface:interfacePage,audio:audioPage}[page])());
- initAudioPreview($('#main'));
+function showError(e) {
+  const dialog = $('#dialog');
+  if (!dialog) return;
+  dialog.innerHTML = `
+    <h2>Operation failed</h2>
+    <p>${esc(e.message || e)}</p>
+    <footer><button type="button" data-action="close">Close</button></footer>`;
+  if (!dialog.open) dialog.showModal();
 }
-document.addEventListener('change',e=>{if(e.target.dataset.importMaterial!==undefined){const host=e.target.closest('form').querySelector('[data-target-swatch="'+e.target.dataset.importMaterial+'"]');host.hidden=true;host.innerHTML='';}if(e.target.dataset.rivalFilter){if(e.target.dataset.rivalFilter==='class')rivalClass=Number(e.target.value);else rivalCourse=Number(e.target.value);selectedCar='';render();}});
-async function navigate(next){if(next===page)return;if(dirty){$('#dialog').innerHTML=`<h2>Discard unsaved changes?</h2><p>Your edits have not been saved.</p><footer><button data-action="close">Keep editing</button><button data-discard="${next}">Discard and continue</button></footer>`;$('#dialog').showModal();return;}await enter(next);}
-async function enter(next){if(!state.ready&&!['home','source','saves'].includes(next))return;page=next;if(page==='settings')draft={...state.settings};if(page==='saves'&&!save)saveList=await request('saves');if(page==='cars')carParts=(await request('cars')).parts;if(page==='assets')assets=(await request('assets')).entries;if(page==='projects')project=await request('project');if(page==='audio')audioData=await request('audio');if(page==='interface')titleImagesData=await request('titleImages');if(page==='tracks'){trackList=(await request('tracks')).tracks;trackScene=await request('trackScene',trackBank);}render();}
-document.addEventListener('change',e=>{
- if(e.target.matches('[data-terrain-row],[data-terrain-column]')){const panel=e.target.closest('#terrain-cell-editor'),model=panel.querySelector('[data-terrain-model]');if(model.value!==model.dataset.original){const cell=Number(panel.dataset.cell);panel.querySelector('[data-terrain-row]').value=String(cell>>5);panel.querySelector('[data-terrain-column]').value=String(cell&31);toast('Save this cell before selecting another');return;}showTerrainCell(Number(panel.querySelector('[data-terrain-row]').value)*32+Number(panel.querySelector('[data-terrain-column]').value));return;}
- if(e.target.matches('[data-terrain-model]')){const model=Number(e.target.value);for(const button of e.target.closest('form').querySelectorAll('[data-terrain-model-action]')){button.dataset.part=String(model);button.hidden=model===1023;}return;}
- if(dirty&&page==='tracks'&&e.target.matches('[data-track-object],[data-track-select]')){e.target.value=String(e.target.matches('[data-track-object]')?trackObject:trackBank);toast('Save or discard track edits first');return;}
- if(e.target.matches('[data-track-object]')){trackObject=Number(e.target.value);render();return;}if(e.target.matches('[data-track-select]'))perform(async()=>{trackBank=Number(e.target.value);trackPoint=0;trackObject=0;trackScene=null;trackScene=await request('trackScene',trackBank);render();});});
-document.addEventListener('click',e=>{const point=e.target.closest('[data-track-point]');if(point){if(dirty&&page==='tracks'){toast('Save or discard track edits first');return;}trackPoint=Number(point.dataset.trackPoint);render();}});
-document.addEventListener('keydown',e=>{if(e.target.matches('[data-track-point]')&&['Enter',' '].includes(e.key)){e.preventDefault();if(page==='tracks'&&otherTrackEdits(e.target)){toast('Save or discard the other track form first');return;}if(dirty&&page==='tracks'){toast('Save or discard track edits first');return;}trackPoint=Number(e.target.dataset.trackPoint);render();}});
-async function perform(task){try{await task();}catch(e){if(e.message==='Operation canceled')toast('Operation canceled. Your previous game data is unchanged.');else error(e);}}
-document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.type==='reset')return;if(!b.type||b.type==='submit'){if(b.closest('form')&&!b.dataset.action&&!b.dataset.tab)return;}e.preventDefault();perform(async()=>{
- if(dirty&&page==='tracks'&&!b.closest('#environment-form,.ai-hint-form')&&!b.closest('#dialog')&&!b.dataset.page){e.preventDefault();toast('Save or discard track edits first');return;}
- if(b.dataset.projectHistory){project=await request('projectHistory',b.dataset.projectHistory,project.revision);render();return;}
- if(b.dataset.projectPackage){const selected=structuredClone(project.selection);selected.packages=selected.packages.filter(id=>id!==b.dataset.projectPackage);project=await request('editProjectSelection',selected,project.revision);render();return;}
- if(b.dataset.projectPriority){const selected=structuredClone(project.selection);delete selected.resolutions[b.dataset.projectPriority];project=await request('editProjectSelection',selected,project.revision);render();return;}
- if(b.dataset.action==='clear-project-packages'){project=await request('editProjectSelection',{packages:[],resolutions:{}},project.revision);render();return;}
- if(b.dataset.action==='save-project'){project=await request('saveProject',project.revision);render();toast('Project saved. Game content has not been changed.');return;}
- if(b.dataset.action==='apply-project'){project=await request('applyProject',project.revision);render();toast('Project applied for the next game launch');return;}
- if(b.dataset.action==='logs'){const logs=await request('logs');$('#dialog').innerHTML='<h2>Game logs</h2><p class="muted">Recent output from the last game sessions. Logs can contain local file paths.</p>'+logs.map(log=>`<h3>${esc(log.name)}</h3>${log.truncated?'<p class="muted">Showing the last 64 KiB.</p>':''}<pre class="log-output" tabindex="0">${esc(log.missing?'No log yet. Launch the game to create it.':log.text||'The log is empty.')}</pre>`).join('')+'<footer><button data-action="close">Close</button></footer>';$('#dialog').showModal();return;}
- if(b.dataset.bind){const key=b.dataset.bind;$('#dialog').innerHTML='<h2>Choose a key</h2><p>Press a keyboard key. Bindings use physical key positions.</p><p class="muted" data-key-hint>Press Escape to cancel.</p><footer><button data-action="close">Cancel</button></footer>';const dialog=$('#dialog');const capture=e=>{if(e.key==='Escape')return;e.preventDefault();e.stopPropagation();const name=bindingName(e.code);if(!name){dialog.querySelector('[data-key-hint]').textContent='This key is not supported. Choose another key.';return;}draft[key]=name;dirty=true;dialog.close();render();};dialog.addEventListener('keydown',capture);dialog.addEventListener('close',()=>dialog.removeEventListener('keydown',capture),{once:true});dialog.showModal();return;}
- if(b.dataset.workshopTab&&Object.hasOwn(workshopTabs,b.dataset.workshopTab)){workshopTab=b.dataset.workshopTab;render();return;}
- if(b.dataset.carSection){carSection=b.dataset.carSection;selectedCar='';render();return;}
- if(b.dataset.selectCar){selectedCar=b.dataset.selectCar;render();return;}
- if(b.dataset.exportSet){const folder=await request('exportCarSet',b.dataset.exportSet);if(folder)toast('Exported to '+folder);return;}
- if(b.dataset.importSet){const result=await request('importCarSet',b.dataset.importSet,b.dataset.format);if(result?.mapping){const dialog=$('#dialog'),token=result.mapping.token;dialog.innerHTML=carImportForm(result.mapping);dialog.addEventListener('close',()=>{request('cancelCarImport',token).catch(()=>{});},{once:true});dialog.showModal();}else if(result)toast('Car set imported into the project. Save & apply to use it in game.');return;}
- if(b.dataset.previewImport!==undefined){const form=b.closest('#car-import-form'),host=form.querySelector('[data-import-preview]');await mountModelPreview(host,await request('previewCarImport',form.dataset.token,Number(b.dataset.previewImport)),{embedded:true});return;}
- if(b.dataset.targetMaterial!==undefined){const form=b.closest('#car-import-form'),select=form.querySelector('[data-import-material="'+b.dataset.targetMaterial+'"]');if(!select.value){toast('Choose a target material first');return;}const value=select.value,data=await request('carImportTexture',form.dataset.token,Number(value));if(!form.isConnected||select.value!==value)return;const host=form.querySelector('[data-target-swatch="'+b.dataset.targetMaterial+'"]');host.hidden=false;host.innerHTML=(data.png?'<img style="width:96px;height:96px;object-fit:contain;image-rendering:pixelated" alt="'+esc(data.label)+'" src="data:image/png;base64,'+data.png+'">':'<span aria-label="'+esc(data.label)+'" style="display:inline-block;width:96px;height:96px;background:'+data.color+'"></span>')+'<small>'+esc(data.note)+'</small>';return;}
- if(b.dataset.page)return navigate(b.dataset.page);
- if(b.dataset.discard){dirty=false;edits={};draft={...state.settings};$('#dialog').close();return enter(b.dataset.discard);}
- if(b.dataset.tab){if(!$('#settings-form').reportValidity())return;tab=b.dataset.tab;render();return;}
- if(b.dataset.trackTextures){const data=await request('trackTextures',b.dataset.trackTextures,Number(b.dataset.part));$('#dialog').innerHTML=surfaceDialog(data);$('#dialog').showModal();return;}
- if(b.dataset.importTrackTexture!==undefined||b.dataset.exportTrackTexture!==undefined||b.dataset.resetTrackTexture!==undefined){const host=b.closest('[data-track-surfaces]'),id=host.dataset.trackSurfaces,part=Number(host.dataset.part),car=host.dataset.surfaceKind==='car',value=b.dataset.importTrackTexture??b.dataset.exportTrackTexture??b.dataset.resetTrackTexture,source=car?value:Number(value),args=car?[id,source]:[id,part,source];if(b.dataset.exportTrackTexture!==undefined){if(await request(car?'exportCarTexture':'exportTrackTexture',...args))toast('Effective surface PNG exported');return;}const result=await request(b.dataset.importTrackTexture!==undefined?(car?'importCarTexture':'importTrackTexture'):(car?'resetCarTexture':'resetTrackTexture'),...args,Number(host.dataset.revision));if(result){project=result;if(!car)trackScene=await request('trackScene',trackBank);render();$('#dialog').innerHTML=surfaceDialog(await request(car?'carMaterials':'trackTextures',id,...(car?[]:[part])));toast('Surface saved to project; Save & apply to use it in game');}return;}
- if(b.dataset.previewAddModel){await mountModelPreview($('#dialog'),await request('previewTrackPart',b.dataset.previewAddModel,Number($('#track-add-object [name="model"]').value)));return;}
- if(b.dataset.previewTrackPart){$('#dialog').close();await mountModelPreview($('#dialog'),await request('previewTrackPart',b.dataset.previewTrackPart,Number(b.dataset.part)));return;}
- if((b.dataset.exportAudio||b.dataset.importAudio||b.dataset.resetAudio)&&[...document.querySelectorAll('[data-audio-edit] [data-original]')].some(i=>i.value!==i.dataset.original)){toast('Save audio edits to your project first');return;}
- if(b.dataset.exportAudio){if(await request('exportAudio',b.dataset.exportAudio))toast('Effective music WAV exported');return;}
- if(b.dataset.importAudio){const result=await request('importAudio',b.dataset.importAudio,Number(b.dataset.revision));if(result){project=result;audioData=await request('audio');render();toast('Music saved to project; Save & apply to use it in game');}return;}
- if(b.dataset.resetAudio){project=await request('resetAudio',b.dataset.resetAudio,Number(b.dataset.revision));audioData=await request('audio');render();toast('Project music reset');return;}
- if(b.dataset.exportTitleImage){if(await request('exportTitleImage',b.dataset.exportTitleImage))toast('Title menu PNG exported');return;}
- if(b.dataset.importTitleImage){const result=await request('importTitleImage',b.dataset.importTitleImage,Number(b.dataset.revision));if(result){project=result;titleImagesData=await request('titleImages');render();toast('Menu image saved to project; Save & apply to use it in game');}return;}
- if(b.dataset.resetTitleImage){project=await request('resetTitleImage',b.dataset.resetTitleImage,Number(b.dataset.revision));titleImagesData=await request('titleImages');render();toast('Project menu image reset');return;}
- if(b.dataset.exportTrackPart){const folder=await request('exportTrackPart',b.dataset.exportTrackPart,Number(b.dataset.part),b.dataset.format||'obj');if(folder)toast('Exported to '+folder);return;}
- if(b.dataset.importTrackPart){const result=await request('importTrackPart',b.dataset.importTrackPart,Number(b.dataset.part),Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);$('#dialog').close();render();toast('Track model saved to project; Save & apply to use it in game');}return;}
- if(b.dataset.exportTrackMesh){if(await request('exportTrackMesh',b.dataset.exportTrackMesh))toast('Current track model bank exported');return;}
- if(b.dataset.importTrackMesh){const result=await request('importTrackMesh',b.dataset.importTrackMesh,Number(b.dataset.revision));if(result){project=result;trackScene=await request('trackScene',trackBank);render();toast('Track model saved to project; Save & apply to use it in game');}return;}
- if(b.dataset.duplicateTrackObject!==undefined||b.dataset.removeTrackObject!==undefined){if([...document.querySelectorAll('#track-object-form [data-original]')].some(i=>i.value!==i.dataset.original)){toast('Save the object form first');return;}const duplicate=b.dataset.duplicateTrackObject!==undefined;project=await request(duplicate?'duplicateTrackObject':'removeTrackObject',trackBank,Number(duplicate?b.dataset.duplicateTrackObject:b.dataset.removeTrackObject),trackScene.revision);trackScene=await request('trackScene',trackBank);if(duplicate)trackObject=trackScene.objects.length-1;render();toast(duplicate?'Scenery duplicated in project':'Scenery removed from project');return;}
- if(b.dataset.trackPreview){if([...document.querySelectorAll('[data-original]')].some(input=>input.value!==input.dataset.original)){toast('Save the edited form before opening the track preview');return;}await mountModelPreview($('#dialog'),await request('trackPreview',Number(b.dataset.trackPreview)),{onMoveEntity:async(entity,delta)=>{const object=trackScene.objects[entity.object];project=await request('saveTrackObject',trackBank,entity.object,{x:object.x+delta.x,z:object.z-delta.z},trackScene.revision);trackScene=await request('trackScene',trackBank);render();const preview=await request('trackPreview',trackBank);toast('Object moved in project; Save & apply to use it in game');return preview;},onSelectEntity:entity=>{
-  $('#dialog').close();
-  if(entity.bank==='course'&&Number.isInteger(entity.object)){trackObject=entity.object;render();document.querySelector('#track-object-form')?.scrollIntoView({block:'nearest'});return;}
-  if(entity.bank==='terrain'&&Number.isInteger(entity.cell)){showTerrainCell(entity.cell);document.querySelector('#terrain-cell-editor')?.scrollIntoView({block:'nearest'});}
- }});return;}
- if(b.dataset.save!==undefined){save=await request('openSave',b.dataset.save);edits={};render();return;}
- if(b.dataset.card!==undefined){save=await request('cardEntry',Number(b.dataset.card));edits={};render();return;}
- if(b.dataset.carSpec!==undefined){const bank=Number(b.dataset.carSpec);carSpecDialog(bank,await request('carSpec',bank));return;}
- if(b.dataset.modDetails){const mod=state.mods.find(m=>m.id===b.dataset.modDetails);$('#dialog').innerHTML='<h2>Mod details</h2><p class="muted">Package ID: '+esc(mod.packageId||mod.id)+'</p><form id="mod-details-form" data-mod="'+esc(mod.id)+'">'+[['name','Name',200],['author','Author',120],['version','Version',80],['description','Description',1200]].map(([key,label,max])=>'<div class="setting"><label for="mod-detail-'+key+'">'+label+'</label>'+(key==='description'?'<textarea id="mod-detail-'+key+'" data-detail="'+key+'" maxlength="'+max+'" rows="5">'+esc(mod[key]||'')+'</textarea>':'<input id="mod-detail-'+key+'" data-detail="'+key+'" maxlength="'+max+'" '+(key==='name'?'required':'')+' value="'+esc(mod[key]||'')+'">')+'</div>').join('')+'<footer><button type="button" data-action="close">Cancel</button><button class="primary" type="submit">Save details</button></footer></form>';$('#dialog').showModal();return;}
- if(b.dataset.appearanceMod){const mod=state.mods.find(m=>m.id===b.dataset.appearanceMod);const catalog=await request('cars');const targets=modCarTargets(mod,catalog.parts);$('#dialog').innerHTML=`<h2>Preview appearance</h2><p class="muted">Choose a car from the model banks this mod changes. Some materials may only be used by certain parts.</p><div class="save-list mod-model-list">${targets.map(c=>`<button data-whole-car="${c.bank}" data-whole-body="${c.part}" data-whole-rival="${c.rival}" data-whole-mod="${esc(mod.id)}">${esc(c.name)} <small>· ${c.rival?'Rival':'Player'} · Bank ${c.bank}</small></button>`).join('')||'<p>No supported car models found for these materials.</p>'}</div><footer><button data-action="close">Close</button></footer>`;$('#dialog').showModal();return;}
- if(b.dataset.wholeCar!==undefined){const args=[Number(b.dataset.wholeCar),Number(b.dataset.wholeBody||0),b.dataset.wholeRival==='true'];const modified=await request('previewWholeCar',...args,b.dataset.wholeMod);const options=b.dataset.wholeMod?{comparison:{modified,original:await request('previewWholeCar',...args)},mode:'modified'}:{};await mountModelPreview($('#dialog'),modified,options);return;}
- if(b.dataset.previewCar){await mountModelPreview($('#dialog'),await request('previewCar',b.dataset.previewCar,b.dataset.previewMod));return;}
- if(b.dataset.carMaterials){$('#dialog').innerHTML=surfaceDialog(await request('carMaterials',b.dataset.carMaterials));$('#dialog').showModal();return;}
- if(b.dataset.resetTrackMaterial){const host=b.closest('[data-track-surfaces]'),id=host.dataset.trackSurfaces,part=Number(host.dataset.part);project=await request('editProject',['track','car'].flatMap(kind=>[b.dataset.resetTrackMaterial,b.dataset.resetTrackMaterial+'.variant.0'].map(id=>({kind,id,field:'material',value:null}))),Number(host.dataset.revision));$('#dialog').innerHTML=surfaceDialog(await request(host.dataset.surfaceKind==='car'?'carMaterials':'trackTextures',id,...(host.dataset.surfaceKind==='car'?[]:[part])));toast('Project material reset');return;}
- if(b.dataset.projectMaterial){materialDialog('',b.dataset.projectMaterial,{materials:{[b.dataset.projectMaterial]:b.dataset.materialValue},native:b.dataset.materialInherited==='true'});return;}
- if(b.dataset.importCar){if(await request('importCar',b.dataset.importCar))toast('Model imported into the project. Save & apply to use it in game.');return;}
- if(b.dataset.exportCar){const folder=await request('exportCar',b.dataset.exportCar,b.dataset.format||'obj');if(folder)toast('Exported to '+folder);return;}
- if(b.dataset.exportAsset!==undefined){if(await request('exportAsset',Number(b.dataset.exportAsset)))toast('Asset exported');return;}
- if(b.dataset.replaceAsset!==undefined){if(await request('replaceAsset',Number(b.dataset.replaceAsset)))toast('Replacement imported. Select it in My mods, then Save & apply.');return;}
- if(b.dataset.editMaterial!==undefined){materialDialog(b.dataset.modId,b.dataset.editMaterial||null);return;}
- if(b.dataset.materialMod){materialDialog(b.dataset.materialMod);return;}
- if(b.dataset.removeMod)return request('removeMod',b.dataset.removeMod);
- if(b.dataset.exportMod){if(await request('exportMod',b.dataset.exportMod))toast('Mod folder exported');return;}
- const a=b.dataset.action;
- if(a==='close')$('#dialog').close();
- if(a==='edit-logo'){
-  const logo={pixels:edits['logo.pixels']??save.logo.pixels,colors:save.logo.colors.map((c,i)=>{const v=edits['logo.color.'+i];return v?{rgb:'#'+v.slice(0,6),transparent:v[6]==='1'}:{...c};})};
-  mountLogo($('#dialog'),logo,result=>{if(result.pixels!==logo.pixels)edits['logo.pixels']=result.pixels;result.colors.forEach((c,i)=>{if(c.rgb!==logo.colors[i].rgb||c.transparent!==logo.colors[i].transparent)edits['logo.color.'+i]=c.rgb.slice(1)+(c.transparent?'1':'0');});dirty=Object.keys(edits).length>0;$('#dialog').close();render();},()=>$('#dialog').close(),changed=>{modalDirty=changed;});$('#dialog').showModal();
- }
 
- if(a==='choose-game')await request('chooseGame');
- if(a==='cancel')await request('cancel');
- if(a==='play')await request('play');
- if(a==='defaults'){draft=Object.fromEntries(schema.map(f=>[f.key,f.default]));dirty=true;render();}
- if(a==='new-save'){const data=await request('newSave',$('#new-save-region').value);if(data){save=data;edits={};dirty=false;render();}}
- if(a==='open-save'){const data=await request('openSave');if(data){save=data;edits={};dirty=false;render();}}
- if(a==='other-save'){if(dirty){toast('Save your copy or leave this page to discard edits first.');return;}save=null;saveList=await request('saves');render();}
- if(a==='publish-mods'){if([...document.querySelectorAll('[data-original]')].some(input=>input.value!==input.dataset.original)){toast('Save the edited form to your project before applying it');return;}const directory=await request('publishMods');toast('Saved for the game: '+directory);}
- if(a==='import-mod')await request('importMod');
- });});
-$('#dialog').addEventListener('close',()=>{modalDirty=false;});
-document.addEventListener('paste',e=>{
- if(!e.target.dataset.time)return;
- const text=e.clipboardData?.getData('text/plain')??'';
- // Leave a plain numeric paste to the focused segment's native input behavior.
- if(!text.includes(':'))return;
- e.preventDefault();
- const time=parseTimeClipboard(text);
- if(!time){toast('Use minutes:seconds.milliseconds, for example 01:40.765, within the save format limit.');return;}
- const row=e.target.closest('.time-segments');
- for(const input of row.querySelectorAll('input'))input.value=String(time[input.dataset.part]);
- e.target.dispatchEvent(new Event('input',{bubbles:true}));
+function getFieldObj(key) {
+  return save?.fields?.find(f => f.key === key) || null;
+}
+
+function getSaveVal(key) {
+  if (Object.hasOwn(edits, key)) return edits[key];
+  const f = getFieldObj(key);
+  return f ? f.value : '';
+}
+
+function getCarNamesList() {
+  if (!save) return [];
+  const reg = (save.region === 'Unknown' ? state?.disc?.region : save.region) === 'NTSC-J'
+    ? 'japanese'
+    : 'international';
+  return save.carNames?.[reg] || [];
+}
+
+function renderTeamLogoSvg() {
+  if (!save?.logo) return '';
+  const pixels = String(edits['logo.pixels'] ?? save.logo.pixels ?? '');
+  const colors = save.logo.colors.map((c, i) => {
+    const v = edits['logo.color.' + i];
+    return v ? {rgb: '#' + v.slice(0, 6), transparent: v[6] === '1'} : {...c};
+  });
+  let rects = '';
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const idx = parseInt(pixels[y * 16 + x] || '0', 16);
+      const col = colors[idx];
+      if (!col || col.transparent) continue;
+      rects += `<rect x="${x}" y="${y}" width="1" height="1" fill="${esc(col.rgb)}"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 16 16" width="44" height="44" style="background:#07090d;border:1px solid var(--studio-border);border-radius:6px;image-rendering:pixelated;flex-shrink:0">${rects}</svg>`;
+}
+
+function renderRowSetting(key, customLabel) {
+  const f = schema.find(x => x.key === key);
+  if (!f) return '';
+  const id = 'setting-' + f.key;
+  const value = draft[f.key];
+  let control = '';
+
+  if (f.type === 'bool') {
+    control = `<input id="${id}" data-setting="${esc(f.key)}" type="checkbox" ${value ? 'checked' : ''} style="width:17px;height:17px;accent-color:var(--accent);cursor:pointer">`;
+  } else if (f.type === 'select') {
+    control = `
+      <select id="${id}" data-setting="${esc(f.key)}" style="width:175px;padding:6px 8px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-size:12px">
+        ${f.options.map(([v, n]) => `<option value="${esc(v)}" ${String(value) === String(v) ? 'selected' : ''}>${esc(n)}</option>`).join('')}
+      </select>`;
+  } else {
+    control = `
+      <input id="${id}" data-setting="${esc(f.key)}" type="number" min="${f.min}" max="${f.max}" step="${f.step || 'any'}" value="${esc(value)}"
+        style="width:90px;padding:6px 8px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-family:var(--mono);font-size:12px;text-align:right">`;
+  }
+
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+      <label for="${id}" style="font-size:13px;color:var(--text);cursor:pointer">${esc(customLabel || f.label)}</label>
+      ${control}
+    </div>`;
+}
+
+function renderSettingsView() {
+  const keyGroups = [
+    ['Steering / D-Pad', [
+      ['input.up', 'Up'],
+      ['input.down', 'Down'],
+      ['input.left', 'Left'],
+      ['input.right', 'Right']
+    ]],
+    ['Race Actions', [
+      ['input.square', 'Accelerate (□)'],
+      ['input.cross', 'Brake (✕)'],
+      ['input.circle', ' Circle (○)'],
+      ['input.triangle', 'View / Triangle (△)']
+    ]],
+    ['Gears & System', [
+      ['input.l1', 'Shift Down (L1)'],
+      ['input.r1', 'Shift Up (R1)'],
+      ['input.l2', 'L2'],
+      ['input.r2', 'R2'],
+      ['input.start', 'Start / Pause'],
+      ['input.select', 'Select']
+    ]]
+  ];
+
+  return `
+    <div style="max-width:1040px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px">
+      <!-- Disc Source Bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 16px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+        <div style="display:flex;align-items:center;gap:12px;min-width:0">
+          <span class="studio-dot ${state?.ready ? '' : 'warn'}"></span>
+          <div style="min-width:0">
+            <div style="font-weight:700;font-size:13px">
+              ${state?.disc ? `Disc Image (${esc(state.disc.region)})` : 'No Rage Racer Disc Loaded'}
+            </div>
+            <div class="muted" style="font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+              ${state?.disc ? esc(state.disc.path) : 'Choose your legally obtained CUE, CHD, or Track 01 BIN image.'}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button type="button" class="studio-btn" data-action="choose-game" ${state?.busy || state?.running ? 'disabled' : ''}>
+            📀 ${state?.disc ? 'Change Disc…' : 'Choose Disc…'}
+          </button>
+          <button type="button" class="studio-btn" data-action="defaults">↺ Reset Defaults</button>
+        </div>
+      </div>
+
+      <!-- Two-Column Clean Settings Grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start">
+        <!-- Left Column: Graphics, HUD & Camera -->
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <section style="padding:18px 20px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+            <h3 style="margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Display &amp; Graphics</h3>
+            ${renderRowSetting('video.aspect', 'Aspect Ratio')}
+            ${renderRowSetting('video.internal_scale', 'Resolution Scale (0.5× – 16×)')}
+            ${renderRowSetting('video.fps', 'Frame Rate')}
+            ${renderRowSetting('video.post', 'Anti-Aliasing')}
+            ${renderRowSetting('video.texture_filter', 'Texture Filtering')}
+            ${renderRowSetting('video.grading', 'Color Grading')}
+            ${renderRowSetting('modern.authored_cars', '3D Car Models')}
+            ${renderRowSetting('modern.ray_tracing', 'Ray Tracing (experimental)')}
+          </section>
+
+          <section style="padding:18px 20px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+            <h3 style="margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">HUD &amp; Camera</h3>
+            ${renderRowSetting('hud.anchor', 'Widescreen HUD Position')}
+            ${renderRowSetting('hud.show_lap_times', 'Show Lap Times')}
+            ${renderRowSetting('hud.show_time_limit', 'Show Time Limit')}
+            ${renderRowSetting('camera.chase_height', 'Chase Camera Height')}
+            ${renderRowSetting('camera.chase_distance', 'Chase Camera Distance')}
+            ${renderRowSetting('camera.chase_pitch', 'Chase Camera Pitch (°)')}
+          </section>
+        </div>
+
+        <!-- Right Column: Controller & Keyboard -->
+        <section style="padding:18px 20px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+          <h3 style="margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Controller &amp; Keyboard</h3>
+          ${renderRowSetting('input.analog', 'Analog Gamepad Sticks & Triggers')}
+          ${renderRowSetting('input.wheel', 'Steering Wheel Support')}
+          ${renderRowSetting('input.steering_linearity', 'Steering Linearity (-2 to 2)')}
+
+          ${keyGroups.map(([groupTitle, items]) => `
+            <div style="margin-top:14px">
+              <div class="eyebrow" style="margin-bottom:6px">${esc(groupTitle)}</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+                ${items.map(([key, label]) => `
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,0.02);border:1px solid var(--studio-border);border-radius:6px">
+                    <span style="font-size:12px">${esc(label)}</span>
+                    <button type="button" class="studio-btn" data-bind="${esc(key)}" style="min-width:72px;justify-content:center;font-family:var(--mono);font-weight:700;padding:3px 8px">
+                      ${esc(draft[key] ?? '')}
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </section>
+      </div>
+    </div>`;
+}
+
+function renderColorSelect(key) {
+  const current = Number(getSaveVal(key));
+  const hex = paintColors[current] || '#333';
+  return `
+    <div style="display:inline-flex;align-items:center;gap:6px">
+      <span style="width:14px;height:14px;border-radius:3px;background:${hex};border:1px solid rgba(255,255,255,0.35);display:inline-block"></span>
+      <select data-field="${esc(key)}" style="padding:4px 6px;border-radius:5px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-size:12px;font-family:var(--mono)">
+        ${paintColors.map((_, i) => `<option value="${i}" ${current === i ? 'selected' : ''}>Color #${i + 1}</option>`).join('')}
+      </select>
+    </div>`;
+}
+
+function renderSavesView() {
+  const cars = getCarNamesList();
+  const extraUnlocked = Number(getSaveVal('extraGrandPrixUnlocked')) === 1;
+
+  return `
+    <div style="max-width:1040px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:18px">
+      <!-- Top Save File Selector Bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:12px;color:var(--muted);text-transform:uppercase">Save File:</span>
+          ${saveList.length ? `
+            <select id="save-file-select" style="min-width:220px;padding:6px 10px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-weight:600;font-size:12px">
+              ${saveList.map(s => `<option value="${esc(s.id)}" ${String(selectedSaveId) === String(s.id) ? 'selected' : ''}>${esc(s.team || 'UNNAMED')} · ${Number(s.money || 0).toLocaleString('en-US')} GP</option>`).join('')}
+            </select>
+          ` : ''}
+          <button type="button" class="studio-btn" data-action="open-save">📂 Open File / Memory Card…</button>
+          <div style="display:inline-flex;align-items:center;gap:4px">
+            <select id="new-save-region" style="padding:6px 8px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-size:12px">
+              ${['PAL', 'NTSC-U', 'NTSC-J'].map(r => `<option value="${r}" ${newSaveRegion === r ? 'selected' : ''}>${r}</option>`).join('')}
+            </select>
+            <button type="button" class="studio-btn" data-action="new-save">➕ New Save</button>
+          </div>
+        </div>
+
+        ${save && !save.card ? `
+          <button type="button" class="studio-btn primary" data-action="save-copy" ${state?.running ? 'disabled' : ''}>
+            💾 Save Changes${saveDirty ? ' *' : ''}
+          </button>
+        ` : ''}
+      </div>
+
+      ${save?.card ? `
+        <section style="padding:18px 20px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+          <h3 style="margin:0 0 10px;font-size:14px">Select a Memory Card Slot (${esc(save.name)})</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+            ${save.entries.map(e => `
+              <button type="button" class="studio-btn" data-card="${e.index}" style="justify-content:space-between;padding:10px 12px">
+                <b>Slot #${e.index + 1} · ${esc(e.team)}</b>
+                <span class="muted">${esc(e.name)}</span>
+              </button>
+            `).join('') || '<p class="muted">No Rage Racer saves found on this card.</p>'}
+          </div>
+        </section>
+      ` : !save ? `
+        <div style="padding:40px;text-align:center;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+          <p class="muted" style="margin:0 0 12px">No save loaded. Click <b>Open File / Memory Card…</b> or <b>New Save</b> above.</p>
+        </div>
+      ` : `
+        <!-- 1. Team, Credits & Career Progression (Single Clean Card) -->
+        <section style="padding:20px 22px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div style="display:flex;align-items:center;gap:14px">
+              ${renderTeamLogoSvg()}
+              <div>
+                <label for="team-name-input" class="eyebrow" style="display:block;margin-bottom:4px">Team Name &amp; Emblem</label>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input id="team-name-input" data-team maxlength="7" value="${esc(edits.team ?? save.team ?? '')}"
+                    style="width:120px;padding:6px 10px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-family:var(--mono);font-weight:700;font-size:14px">
+                  <button type="button" class="studio-btn" data-action="edit-logo" title="Edit 16×16 Team Emblem">🎨 Edit Emblem…</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <button type="button" class="studio-btn" data-cheat="max-money">💰 Max Credits</button>
+              <button type="button" class="studio-btn" data-cheat="unlock-all">🏆 Unlock All Classes &amp; Modes</button>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px">
+            <label style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+              <span class="muted">Grand Prix Credits (GP)</span>
+              <input data-field="Grand Prix / Credits" type="number" min="0" max="999999999" value="${esc(getSaveVal('Grand Prix / Credits'))}"
+                style="width:100%;padding:7px 10px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-family:var(--mono);font-weight:700">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+              <span class="muted">Grand Prix Class (1–5)</span>
+              <input data-field="Grand Prix / Class" type="number" min="0" max="5" value="${esc(getSaveVal('Grand Prix / Class'))}"
+                style="width:100%;padding:7px 10px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-family:var(--mono)">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+              <span class="muted">Extra GP Credits</span>
+              <input data-field="Extra Grand Prix / Credits" type="number" min="0" max="999999999" value="${esc(getSaveVal('Extra Grand Prix / Credits'))}"
+                style="width:100%;padding:7px 10px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-family:var(--mono);font-weight:700">
+            </label>
+            <label style="display:flex;flex-direction:column;gap:6px;font-size:12px">
+              <span class="muted">Extra GP Mirror Mode</span>
+              <select data-field="extraGrandPrixUnlocked" style="width:100%;padding:7px 10px;border-radius:6px;background:#090b10;color:var(--text);border:1px solid var(--studio-border)">
+                <option value="0" ${!extraUnlocked ? 'selected' : ''}>Locked</option>
+                <option value="1" ${extraUnlocked ? 'selected' : ''}>Unlocked</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <!-- 2. Garage Table (All 13 Cars in One Clean Table) -->
+        <section style="padding:20px 22px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <h3 style="margin:0;font-size:14px;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted)">Garage Cars</h3>
+              <div class="studio-seg">
+                ${['Grand Prix', 'Extra Grand Prix', 'Time Attack'].map(m => `
+                  <button type="button" class="${garageMode === m ? 'active' : ''}" data-garage-mode="${esc(m)}">${esc(m)}</button>
+                `).join('')}
+              </div>
+            </div>
+            <button type="button" class="studio-btn" data-cheat="own-all">🚗 Mark All 13 Cars Owned</button>
+          </div>
+
+          <table class="asset-table" style="width:100%;font-size:13px">
+            <thead>
+              <tr>
+                <th style="width:50px">#</th>
+                <th>Car</th>
+                <th>Owned</th>
+                <th>Grade</th>
+                <th>Tires</th>
+                <th>Gearbox</th>
+                <th>Body Paint</th>
+                <th>Stripe Paint</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from({length: 13}, (_, c) => {
+                const pad = String(c).padStart(2, '0');
+                const prefix = `${garageMode} / Car ${pad}`;
+                if (!getFieldObj(`${prefix} / Owned`)) return '';
+                const owned = Number(getSaveVal(`${prefix} / Owned`)) === 1;
+                const trans = Number(getSaveVal(`${prefix} / Transmission`));
+                return `
+                  <tr>
+                    <td class="muted" style="font-family:var(--mono)">#${pad}</td>
+                    <td><strong>${esc(cars[c] || `Car ${pad}`)}</strong></td>
+                    <td>
+                      <input type="checkbox" data-owned-field="${esc(prefix + ' / Owned')}" ${owned ? 'checked' : ''}
+                        style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+                    </td>
+                    <td>
+                      <input data-field="${esc(prefix + ' / Grade')}" type="number" min="0" max="5" value="${esc(getSaveVal(`${prefix} / Grade`))}"
+                        style="width:62px;padding:5px 8px;border-radius:5px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-family:var(--mono)">
+                    </td>
+                    <td>
+                      <input data-field="${esc(prefix + ' / Tires')}" type="number" min="0" max="5" value="${esc(getSaveVal(`${prefix} / Tires`))}"
+                        style="width:62px;padding:5px 8px;border-radius:5px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-family:var(--mono)">
+                    </td>
+                    <td>
+                      <select data-field="${esc(prefix + ' / Transmission')}" style="padding:5px 8px;border-radius:5px;background:#090b10;color:var(--text);border:1px solid var(--studio-border);font-size:12px">
+                        <option value="0" ${trans === 0 ? 'selected' : ''}>AT</option>
+                        <option value="1" ${trans === 1 ? 'selected' : ''}>MT</option>
+                      </select>
+                    </td>
+                    <td>${renderColorSelect(`${prefix} / Paint 1`)}</td>
+                    <td>${renderColorSelect(`${prefix} / Paint 2`)}</td>
+                  </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </section>
+      `}
+    </div>`;
+}
+
+function render() {
+  const root = $('#studio-app');
+  if (!root || !state) return;
+
+  root.innerHTML = `
+    <header class="studio-menubar">
+      <div class="studio-menubar-left">
+        <div class="studio-seg">
+          <button type="button" data-open-studio="car">🚗 Car Editor</button>
+          <button type="button" data-open-studio="track">🗺️ Track Editor</button>
+          <button type="button" class="${page === 'saves' ? 'active' : ''}" data-page="saves">💾 Save Editor</button>
+          <button type="button" class="${page === 'settings' ? 'active' : ''}" data-page="settings">⚙️ Game Settings</button>
+        </div>
+      </div>
+
+      <div class="studio-menubar-right">
+        <button type="button" class="studio-btn primary" data-action="play" ${!state.ready || state.running || state.busy ? 'disabled' : ''}>
+          ${state.running ? 'Game Running…' : '▷ Play Game'}
+        </button>
+      </div>
+    </header>
+
+    <div style="flex:1;min-height:0;overflow-y:auto">
+      ${page === 'saves' ? renderSavesView() : renderSettingsView()}
+    </div>
+
+    <footer class="studio-statusbar">
+      <span>${state.ready ? `Ready · Disc (${esc(state.disc?.region || '')})` : 'No disc loaded'}</span>
+      <span>${page === 'saves' ? (saveDirty ? 'Unsaved save file edits' : 'Save Editor') : 'Settings auto-saved'}</span>
+    </footer>`;
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  e.preventDefault();
+
+  (async () => {
+    try {
+      if (b.dataset.action === 'close') { $('#dialog').close(); return; }
+      if (b.dataset.openStudio) { await request('openStudio', b.dataset.openStudio); return; }
+      if (b.dataset.page) {
+        page = b.dataset.page;
+        if (page === 'saves') {
+          if (!saveList.length) saveList = await request('saves');
+          if (!save && saveList.length) {
+            selectedSaveId = String(saveList[0].id);
+            save = await request('openSave', saveList[0].id);
+            edits = {};
+            saveDirty = false;
+          }
+        }
+        render();
+        return;
+      }
+      if (b.dataset.action === 'defaults') {
+        draft = Object.fromEntries(schema.map(f => [f.key, f.default]));
+        state = await request('settings', draft);
+        render();
+        toast('Restored default game settings');
+        return;
+      }
+      if (b.dataset.bind) {
+        const key = b.dataset.bind;
+        const dialog = $('#dialog');
+        dialog.innerHTML = `
+          <h2>Press a key for ${esc(key.replace('input.', '').toUpperCase())}</h2>
+          <p class="muted" data-key-hint>Press any keyboard key, or Escape to cancel.</p>
+          <footer><button type="button" data-action="close">Cancel</button></footer>`;
+        const capture = async ev => {
+          if (ev.key === 'Escape') return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          const name = bindingName(ev.code);
+          if (!name) {
+            dialog.querySelector('[data-key-hint]').textContent = 'Unsupported key — try another key.';
+            return;
+          }
+          draft[key] = name;
+          dialog.close();
+          state = await request('settings', draft);
+          render();
+          toast(`Bound ${key.replace('input.', '').toUpperCase()} to ${name}`);
+        };
+        dialog.addEventListener('keydown', capture);
+        dialog.addEventListener('close', () => dialog.removeEventListener('keydown', capture), {once: true});
+        dialog.showModal();
+        return;
+      }
+      if (b.dataset.action === 'choose-game') {
+        await request('chooseGame');
+        return;
+      }
+      if (b.dataset.action === 'play') {
+        await request('play');
+        return;
+      }
+
+      // Save Editor actions
+      if (b.dataset.card !== undefined) {
+        save = await request('cardEntry', Number(b.dataset.card));
+        edits = {};
+        saveDirty = false;
+        render();
+        return;
+      }
+      if (b.dataset.action === 'open-save') {
+        const data = await request('openSave');
+        if (data) {
+          selectedSaveId = '';
+          save = data;
+          edits = {};
+          saveDirty = false;
+          saveList = await request('saves');
+          render();
+        }
+        return;
+      }
+      if (b.dataset.action === 'new-save') {
+        const regionSel = $('#new-save-region');
+        if (regionSel) newSaveRegion = regionSel.value;
+        const data = await request('newSave', newSaveRegion);
+        if (data) {
+          save = data;
+          edits = {};
+          saveDirty = false;
+          saveList = await request('saves');
+          selectedSaveId = saveList.length ? String(saveList[saveList.length - 1].id) : '';
+          render();
+          toast(`Created new ${newSaveRegion} save`);
+        }
+        return;
+      }
+      if (b.dataset.action === 'save-copy') {
+        if (!save) return;
+        const data = await request('saveCopy', edits);
+        if (data) {
+          save = data;
+          edits = {};
+          saveDirty = false;
+          saveList = await request('saves');
+          render();
+          toast('Save updated with valid PS1 checksums');
+        }
+        return;
+      }
+      if (b.dataset.garageMode) {
+        garageMode = b.dataset.garageMode;
+        render();
+        return;
+      }
+      if (b.dataset.cheat) {
+        if (!save) return;
+        if (b.dataset.cheat === 'max-money') {
+          edits['Grand Prix / Credits'] = 99999999;
+          edits['Extra Grand Prix / Credits'] = 99999999;
+          saveDirty = true;
+          render();
+          toast('Credits set to 99,999,999 GP');
+        } else if (b.dataset.cheat === 'unlock-all') {
+          edits['extraGrandPrixUnlocked'] = 1;
+          edits['Grand Prix / Class'] = 5;
+          edits['Grand Prix / Highest class'] = 5;
+          edits['Extra Grand Prix / Class'] = 5;
+          edits['Extra Grand Prix / Highest class'] = 5;
+          for (const mode of ['Grand Prix', 'Extra Grand Prix', 'Time Attack']) {
+            for (let c = 0; c < 13; c++) {
+              const key = `${mode} / Car ${String(c).padStart(2, '0')} / Owned`;
+              if (getFieldObj(key)) edits[key] = 1;
+            }
+          }
+          saveDirty = true;
+          render();
+          toast('Unlocked Extra GP, Class 5 & all 13 cars');
+        } else if (b.dataset.cheat === 'own-all') {
+          for (let c = 0; c < 13; c++) {
+            const key = `${garageMode} / Car ${String(c).padStart(2, '0')} / Owned`;
+            if (getFieldObj(key)) edits[key] = 1;
+          }
+          saveDirty = true;
+          render();
+          toast(`All 13 cars unlocked in ${garageMode}`);
+        }
+        return;
+      }
+      if (b.dataset.action === 'edit-logo') {
+        if (!save?.logo) return;
+        const logo = {
+          pixels: edits['logo.pixels'] ?? save.logo.pixels,
+          colors: save.logo.colors.map((c, i) => {
+            const v = edits['logo.color.' + i];
+            return v ? {rgb: '#' + v.slice(0, 6), transparent: v[6] === '1'} : {...c};
+          })
+        };
+        mountLogo(
+          $('#dialog'),
+          logo,
+          result => {
+            if (result.pixels !== logo.pixels) edits['logo.pixels'] = result.pixels;
+            result.colors.forEach((c, i) => {
+              if (c.rgb !== logo.colors[i].rgb || c.transparent !== logo.colors[i].transparent) {
+                edits['logo.color.' + i] = c.rgb.slice(1) + (c.transparent ? '1' : '0');
+              }
+            });
+            saveDirty = Object.keys(edits).length > 0;
+            $('#dialog').close();
+            render();
+          },
+          () => $('#dialog').close(),
+          changed => { modalDirty = changed; }
+        );
+        $('#dialog').showModal();
+        return;
+      }
+    } catch (err) {
+      showError(err);
+    }
+  })();
 });
-function otherTrackEdits(form){return [...document.querySelectorAll('#environment-form [data-original],#track-object-form [data-original],#road-point-form [data-original],#road-arc-form [data-original],#terrain-cell-form [data-original],.ai-hint-form [data-original]')].some(i=>i.closest('form')!==form&&i.value!==i.dataset.original);}
-function envLimits(form){const length=form.querySelector('[data-env-type="environment"][data-env-field="length"]');if(length)for(const input of form.querySelectorAll('[data-env-field="time"]'))input.max=String(Math.max(0,Number(length.value)-1));}
-document.addEventListener('input',e=>{
- const trackForm=e.target.closest('#environment-form,#track-object-form,#road-point-form,#road-arc-form,#terrain-cell-form,.ai-hint-form');
- if(trackForm&&e.target.dataset.original!==undefined&&otherTrackEdits(trackForm)){e.target.value=e.target.dataset.original;toast('Save or discard the other track form first');return;}
 
- if(e.target.matches('[data-env-type="environment"][data-env-field="length"]'))envLimits(e.target.closest('form'));
- if(e.target.closest('.ai-hint-form'))dirty=[...document.querySelectorAll('.ai-hint-form [data-original]')].some(i=>i.value!==i.dataset.original);
- if(e.target.closest('#environment-form'))dirty=[...e.target.closest('form').querySelectorAll('[data-original]')].some(i=>i.value!==i.dataset.original);
- if(e.target.closest('[data-audio-edit]'))dirty=[...e.target.closest('form').querySelectorAll('[data-original]')].some(i=>i.value!==i.dataset.original);
- if(e.target.closest('#material-form, #car-spec-form, #mod-details-form, #track-object-form, #road-point-form, #road-arc-form, #terrain-cell-form'))modalDirty=true;
- if(e.target.dataset.setting){draft[e.target.dataset.setting]=e.target.type==='checkbox'?e.target.checked:e.target.value;dirty=true;}
- if(e.target.hasAttribute('data-team')){edits.team=e.target.value;dirty=true;}
- if(e.target.dataset.field){edits[e.target.dataset.field]=e.target.value;dirty=true;}
- if(e.target.dataset.time){const row=e.target.closest('.time-segments');const parts=[...row.querySelectorAll('input')];const value=Number(parts[0].value)*60000+Number(parts[1].value)*1000+Number(parts[2].value);parts[0].setCustomValidity(value>2147483647?'Time exceeds the save format limit':'');if(parts.every(p=>p.validity.valid&&p.value!==''))edits[e.target.dataset.time]=value;dirty=true;}
- if(e.target.id==='field-search'){filter=e.target.value;document.querySelectorAll('.save-field').forEach(f=>f.hidden=!f.dataset.search.includes(filter.toLowerCase()));}
- if(dirty&&$('#dirty'))$('#dirty').textContent='Unsaved changes';
+document.addEventListener('change', e => {
+  (async () => {
+    try {
+      if (e.target.dataset.setting) {
+        const key = e.target.dataset.setting;
+        draft[key] = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+        state = await request('settings', draft);
+        toast('Setting saved');
+        return;
+      }
+      if (e.target.id === 'save-file-select') {
+        selectedSaveId = String(e.target.value);
+        save = await request('openSave', selectedSaveId);
+        edits = {};
+        saveDirty = false;
+        render();
+        return;
+      }
+      if (e.target.id === 'new-save-region') {
+        newSaveRegion = e.target.value;
+        return;
+      }
+      if (e.target.dataset.ownedField) {
+        edits[e.target.dataset.ownedField] = e.target.checked ? 1 : 0;
+        saveDirty = true;
+        render();
+        return;
+      }
+      if (e.target.dataset.field) {
+        edits[e.target.dataset.field] = e.target.value;
+        saveDirty = true;
+        render();
+      }
+    } catch (err) {
+      showError(err);
+    }
+  })();
 });
-document.addEventListener('change',e=>{if(e.target.dataset.conflict)perform(async()=>{await request('resolveConflict',e.target.dataset.conflict,e.target.value);});if(e.target.dataset.mod)perform(async()=>{await request('toggleMod',e.target.dataset.mod,e.target.checked);});});
-document.addEventListener('reset',e=>{if(e.target.matches('[data-audio-edit],#environment-form'))dirty=false;if(e.target.id==='environment-form')setTimeout(()=>envLimits(e.target),0);});
-document.addEventListener('submit',e=>{e.preventDefault();if(dirty&&page==='tracks'&&e.target.id!=='environment-form'&&!e.target.matches('.ai-hint-form')){toast('Save or discard track edits first');return;}e.target.querySelector('[data-form-error]')?.remove();perform(async()=>{
- if(e.target.matches('.ai-hint-form')){const form=e.target,values=Object.fromEntries([...form.querySelectorAll('[data-ai-field]')].filter(i=>i.value!==i.dataset.original).map(i=>[i.dataset.aiField,Number(i.value)]));if(Object.keys(values).length)project=await request(form.dataset.intro?'saveIntro':form.dataset.camera?'saveCamera':form.dataset.start?'saveStart':form.dataset.speed?'saveAiSpeed':'saveAiHint',Number(form.dataset.bank),Number(form.dataset.index),values,Number(form.dataset.revision));dirty=false;trackScene=await request('trackScene',trackBank);render();toast(form.dataset.intro?'Starting camera saved to project; Save & apply to use it in game':form.dataset.camera?'Camera saved to project; Save & apply to use it in game':form.dataset.start?'Starting position saved to project; Save & apply to use it in game':form.dataset.speed?'Pace key saved to project; Save & apply to use it in game':'Racing line saved to project; Save & apply to use it in game');return;}
- if(e.target.id==='car-import-form'){const form=e.target;if(!form.reportValidity())return;project=await request('completeCarImport',form.dataset.token,{nodes:[...form.querySelectorAll('[data-import-node]')].map(n=>({node:Number(n.dataset.importNode),instance:Number(n.value)})),materials:[...form.querySelectorAll('[data-import-material]')].map(m=>({material:Number(m.dataset.importMaterial),word:Number(m.value)}))});$('#dialog').close();render();toast('Car imported into the project. Save & apply to use it in game.');return;}
- if(e.target.id==='environment-form'){const grouped=new Map();for(const input of e.target.querySelectorAll('[data-env-field]')){if(input.value===input.dataset.original)continue;const index=Number(input.dataset.envIndex),type=input.dataset.envType||'env',key=type+':'+index;if(!grouped.has(key))grouped.set(key,{type,index,values:{}});grouped.get(key).values[input.dataset.envField]=input.type==='color'?parseInt(input.value.slice(1),16):Number(input.value);}if(grouped.size)project=await request('saveEnvironment',Number(e.target.dataset.bank),[...grouped.values()],Number(e.target.dataset.revision));dirty=false;trackScene=await request('trackScene',trackBank);render();toast('Atmosphere saved to project; Save & apply to use it in game');return;}
- if(e.target.id==='track-add-object'){if([...document.querySelectorAll('#track-object-form [data-original]')].some(i=>i.value!==i.dataset.original)){toast('Save the object form first');return;}project=await request('addTrackObject',Number(e.target.dataset.bank),Number(e.target.elements.model.value),Number(e.target.dataset.point),Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);trackObject=trackScene.objects.length-1;render();toast('Scenery added to project; Save & apply to use it in game');return;}
- if(e.target.dataset.audioEdit){const values=Object.fromEntries([...e.target.querySelectorAll('input[name]')].map(i=>[i.name,i.name==='gain'?Number(i.value):Math.round(Number(i.value)*44100)]));project=await request('editAudio',e.target.dataset.audioEdit,values,Number(e.target.dataset.revision));dirty=false;audioData=await request('audio');render();toast('Audio edits saved to project; Save & apply to use them in game');return;}
- if(e.target.id==='terrain-cell-form'){const cell=Number(e.target.dataset.index),model=e.target.querySelector('[data-terrain-model]');if(model.value!==model.dataset.original)project=await request('saveTerrainCell',Number(e.target.dataset.bank),cell,{model:Number(model.value)},Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);modalDirty=false;render();showTerrainCell(cell);toast('Terrain cell saved to project; game unchanged until Save & apply');return;}
- if(e.target.id==='road-arc-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-arc-field]')].filter(i=>i.value!==i.dataset.original).map(i=>[i.dataset.arcField,Number(i.value)]));if(Object.keys(values).length)project=await request('saveRoadArc',Number(e.target.dataset.bank),Number(e.target.dataset.index),values,Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);modalDirty=false;render();toast('Curve center saved to project; game unchanged until Save & apply');return;}
- if(e.target.id==='road-point-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-road-field]')].filter(i=>i.value!==i.dataset.original).map(i=>[i.dataset.roadField,Number(i.value)]));if(Object.keys(values).length)project=await request('saveRoadPoint',Number(e.target.dataset.bank),Number(e.target.dataset.index),values,Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);modalDirty=false;render();toast('Road point saved to project; game unchanged until Save & apply');return;}
- if(e.target.id==='track-object-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-object-field]')].filter(i=>i.value!==i.dataset.original).map(i=>[i.dataset.objectField,i.dataset.objectField==='yaw'?Math.round(Number(i.value)*4096/360):Number(i.value)]));if(Object.keys(values).length)project=await request('saveTrackObject',Number(e.target.dataset.bank),Number(e.target.dataset.index),values,Number(e.target.dataset.revision));trackScene=await request('trackScene',trackBank);modalDirty=false;render();toast('Object saved to project; game unchanged until Save & apply');return;}
- if(e.target.id==='mod-details-form'){const values=Object.fromEntries([...e.target.querySelectorAll('[data-detail]')].map(i=>[i.dataset.detail,i.value]));await request('saveModDetails',e.target.dataset.mod,values);$('#dialog').close();toast('Mod details saved');return;}
- if(e.target.id==='car-spec-form'){const edits=Object.fromEntries([...e.target.querySelectorAll('[data-spec]')].filter(i=>i.value!==(i.dataset.original??i.defaultValue)).map(i=>[i.dataset.spec,i.dataset.text!==undefined?i.value:i.dataset.speed?storedShiftSpeed(Number(i.value)):Number(i.value)]));if(Object.keys(edits).length){project=await request('saveCarSpec',Number(e.target.dataset.bank),edits,Number(e.target.dataset.revision));e.target.dataset.revision=String(project.revision);}project=await request(e.submitter?.hasAttribute('data-project-only')?'saveProject':'applyProject',Number(e.target.dataset.revision));modalDirty=false;$('#dialog').close();carParts=(await request('cars')).parts;render();toast(e.submitter?.hasAttribute('data-project-only')?'Project saved; game unchanged':'Car parameters applied for the next launch from this editor');return;}
- if(e.target.id==='material-form'){const target=$('#material-key');if(!target.readOnly&&Object.hasOwn(state.mods.find(m=>m.id===e.target.dataset.mod).manifest.materials,target.value))throw Error('This material already exists. Close this form and choose it from the material list.');const values=[...e.target.querySelectorAll('[data-property]')].sort((a,b)=>Number(a.dataset.property)-Number(b.dataset.property)).map(i=>i.value);const saved=await request('saveMaterial',e.target.dataset.mod,$('#material-key').value,values.join(' '),Number(e.target.dataset.revision));if(project)project=saved;modalDirty=false;$('#dialog').close();toast(project?'Material saved to the project; Save & apply to use it in game':'Material saved to the mod');return;}
- if(e.target.id==='settings-form'){state=await request('settings',draft);dirty=false;render();toast('Settings saved');}
- if(e.target.id==='save-form'){const data=await request('saveCopy',edits);if(data){dirty=false;edits={};save=null;saveList=await request('saves');render();toast('Separate copy saved with updated checksums');}}
- });});
-window.addEventListener('beforeunload',e=>{if(dirty||modalDirty||project?.dirty){e.preventDefault();e.returnValue='';}});
-api.onState(value=>{state=value;project=value.project;if(!dirty)draft={...value.settings};if(!dirty||value.busy&&page!=='tracks')render();else $('#status').textContent=value.busy||value.disc?.region||'No game loaded';});
-await perform(async()=>{state=await request('snapshot');project=state.project;draft={...state.settings};render();});
 
-function materialDialog(id,selected,provided){const mod=provided?{manifest:provided}:state.mods.find(m=>m.id===id);const materials={...mod.manifest.materials,...Object.fromEntries((project?.changes||[]).filter(c=>['car','track'].includes(c.kind)&&c.field==='material').map(c=>[c.id,c.value]))};const keys=Object.keys(materials);
- if(selected===undefined&&keys.length){$('#dialog').innerHTML=`<h2>Materials</h2><p class="muted">Choose a material to edit its stored values.</p><div class="material-list">${keys.map(key=>`<button type="button" data-edit-material="${esc(key)}" data-mod-id="${esc(id)}">${esc(key)}</button>`).join('')}</div><footer><button type="button" data-action="close">Close</button><button type="button" data-edit-material="" data-mod-id="${esc(id)}">Add material</button></footer>`;$('#dialog').showModal();return;}
- const key=selected||'car.0.material.0';const values=(materials[key]||'lit opaque 0.35 0 1 1 1 1 0 0 0').split(/\s+/);const labels=['Shading','Transparency','Roughness','Metallic','Red','Green','Blue','Opacity','Emission red','Emission green','Emission blue'];const control=i=>`<div class="setting"><label for="property-${i}">${labels[i]}</label>${i<2?`<select id="property-${i}" data-property="${i}">${(i===0?['inherit','lit','unlit']:['auto','opaque','mask','blend']).map(v=>`<option ${values[i]===v?'selected':''}>${v}</option>`).join('')}</select>`:`<input id="property-${i}" data-property="${i}" type="number" min="0" max="1" step="any" value="${esc(values[i])}" required>`}</div>`;$('#dialog').innerHTML=`<h2>Edit material</h2><p class="muted">Roughness: 0 = smooth, 1 = rough. Metallic: 0 = non-metal, 1 = metal. Color channels tint the texture (1 keeps the original channel). Opacity: 0 = invisible, 1 = solid. ${provided?.native?'These are starting values for a new override. Reset restores the game’s original material appearance. ':''}Save the change to your project, then Save & apply to test it in the game.</p><form id="material-form" data-mod="${esc(id)}" data-revision="${project?.revision??0}">${provided?'<details class="car-advanced"><summary>Technical identity</summary>':''}<label for="material-key">Material ID</label><input id="material-key" value="${esc(key)}" pattern="[a-z0-9.-]+" required ${selected?'readonly':''}>${provided?'</details>':''}${[2,3,4,5,6,7].map(control).join('')}<details class="car-advanced"><summary>Advanced lighting & transparency</summary><p class="muted">Shading controls whether scene lighting affects this surface. Transparency chooses how opacity is rendered. Emission adds light to the material color; it does not create a headlight beam.</p>${[0,1,8,9,10].map(control).join('')}</details><footer><button type="button" data-action="close">Cancel</button><button class="primary" type="submit">Save material</button></footer></form>`;$('#dialog').showModal();}
+document.addEventListener('input', e => {
+  if (e.target.hasAttribute('data-team')) {
+    edits.team = e.target.value;
+    saveDirty = true;
+    return;
+  }
+  if (e.target.dataset.field) {
+    edits[e.target.dataset.field] = e.target.value;
+    saveDirty = true;
+  }
+});
 
+api.onState(value => {
+  state = value;
+  if (value.settings) draft = {...value.settings};
+  render();
+});
 
-function carSpecDialog(bank,data){
- const handling={steeringGripResponse:['Steering grip response','Internal grip response scale used by the drivetrain.'],steerResponse:['AI steering response','Divisor for AI heading correction. Larger values reduce the correction.'],referenceTurnRadius:['Reference turn radius','Baseline radius used to scale grip on curves.'],negconSteeringAssistScale:['neGcon steering assist','Per-thousand steering assistance scale for neGcon control.'],speedDragDivisor:['Speed drag divisor','Divisor for speed-squared drag. Larger values reduce drag.'],baseSteeringGrip:['Base steering grip','Internal base grip budget. Very small values may be replaced by the game fallback.']};
- const labels={...handling,name:['Car name','Name shown by the game. Maximum 31 UTF-8 bytes; #, quotes and backslashes are not supported.'],manufacturer:['Manufacturer','Brand used by the game, including manufacturer-specific shop dialogue.'],className:['Class label','Text shown with this car; this is separate from its unlock level.'],price:['Price','Purchase price in credits.'],upgradePrice:['Upgrade price','Cost of the next upgrade in credits.'],unlockClass:['Unlock level','Progression requirement: 0 makes this car immediately available.'],revLimit:['Rev limit','Engine RPM ceiling.'],redline:['Redline','Engine RPM at the redline warning.'],topGear:['Forward gears','Highest gear available to this car.'],automaticAccelerationScale:['Automatic acceleration scale','Per thousand: 1000 = 100%.']};
- const curves={torqueCurve:['Torque samples','Original engine torque samples in internal units.'],torqueBand:['Torque RPM boundaries','RPM boundaries used to interpolate the torque samples.'],torqueLossValue:['Torque loss samples','Original loss curve values in internal units.'],torqueLossRpm:['Torque loss RPM boundaries','RPM boundaries used to interpolate the loss curve.'],gearLoad:['Gear load','Engine-load divisors, in original array order.'],gearRatio:['Gear ratios','RPM divisors, in original array order; this is not a conventional ratio display.'],torqueScale:['Gear torque scale','Original per-gear torque scaling values.']};
- const car=carParts.find(p=>p.bank===bank&&!p.rival&&p.part===0);
- const input=f=>{if(f.type==='text')return '<input id="spec-'+f.key+'" aria-label="'+f.key+'" data-spec="'+f.key+'" data-text data-original="'+esc(f.value)+'" type="text" maxlength="'+f.maxLength+'" value="'+esc(f.value)+'" required>';const speed=/^(downshift|upshift)/.test(f.key),value=speed?displayedShiftSpeed(f.value):f.value,min=speed?displayedShiftSpeed(f.min):f.min,max=speed?displayedShiftSpeed(f.max):f.max;return '<input id="spec-'+f.key+'" aria-label="'+f.key+'" data-spec="'+f.key+'" data-original="'+value+'" '+(speed?'data-speed="true" ':'')+'type="number" min="'+min+'" max="'+max+'" step="'+(speed?'0.01':'1')+'" value="'+value+'" required>';};
- const manual=data.fields.find(f=>f.key==='manualOnly');
- $('#dialog').innerHTML='<h2>Driving & transmission</h2><p>Slot '+((bank-10)/2)+' · '+esc(car?.name)+'</p><p class="muted">Values combine your disc, the bundled car profile, selected packages and project overrides.</p><form id="car-spec-form" data-bank="'+bank+'" data-revision="'+data.revision+'">'+data.fields.filter(f=>f.type==='text').map(f=>'<div class="setting"><label for="spec-'+f.key+'">'+labels[f.key][0]+'<p>'+labels[f.key][1]+'</p></label>'+input(f)+'</div>').join('')+'<div class="setting"><label for="spec-manualOnly">Transmission availability<p>MT-only removes the automatic option in the game.</p></label><select id="spec-manualOnly" data-spec="manualOnly" data-original="'+manual.value+'"><option value="0" '+(!manual.value?'selected':'')+'>AT and MT</option><option value="1" '+(manual.value?'selected':'')+'>MT only</option></select></div>'+data.fields.filter(f=>['topGear','price','upgradePrice','unlockClass'].includes(f.key)).map(f=>'<div class="setting"><label for="spec-'+f.key+'">'+labels[f.key][0]+'<p>'+labels[f.key][1]+'</p></label>'+input(f)+'</div>').join('')+'<details class="car-advanced"><summary>Advanced engine & automatic shifting</summary>'+data.fields.filter(f=>f.type!=='text'&&labels[f.key]&&!handling[f.key]&&!['topGear','price','upgradePrice','unlockClass'].includes(f.key)).map(f=>'<div class="setting"><label for="spec-'+f.key+'">'+labels[f.key][0]+'<p>'+labels[f.key][1]+'</p></label>'+input(f)+'</div>').join('')+'<h3>Automatic shift points</h3><p class="muted">Speeds match the in-game speedometer. These settings are used when AT is available. Values for unused gears are kept.</p><table class="asset-table"><thead><tr><th>Gear</th><th>Shift down below</th><th>Shift up above</th></tr></thead><tbody>'+Array.from({length:6},(_,i)=>'<tr><th>'+(i+1)+'</th><td>'+input(data.fields.find(f=>f.key==='downshift'+(i+1)))+'</td><td>'+input(data.fields.find(f=>f.key==='upshift'+(i+1)))+'</td></tr>').join('')+'</tbody></table></details><details class="car-advanced"><summary>Advanced handling & drag</summary>'+data.fields.filter(f=>handling[f.key]).map(f=>'<div class="setting"><label for="spec-'+f.key+'">'+labels[f.key][0]+'<p>'+labels[f.key][1]+'</p></label>'+input(f)+'</div>').join('')+'</details><details class="car-advanced"><summary>Advanced engine curves & gearing</summary><p class="muted">These are the original internal arrays. Editing one sample preserves the other samples. Keep the original ordering and check your changes in the game.</p>'+Object.entries(curves).map(([prefix,[title,note]])=>'<details><summary>'+title+'</summary><p class="muted">'+note+'</p><table class="asset-table"><thead><tr><th>Original index</th><th>Value</th></tr></thead><tbody>'+data.fields.filter(f=>f.key.startsWith(prefix)&&/^\d+$/.test(f.key.slice(prefix.length))).map(f=>'<tr><th>'+f.key.slice(prefix.length)+'</th><td>'+input(f)+'</td></tr>').join('')+'</tbody></table></details>').join('')+'</details><footer><button type="button" data-action="close">Cancel</button><button type="submit" data-project-only>Save project only</button><button class="primary" type="submit">Save & apply</button></footer></form>';
- $('#dialog').classList.add('car-parameters-dialog');$('#dialog').addEventListener('close',()=>$('#dialog').classList.remove('car-parameters-dialog'),{once:true});$('#dialog').showModal();
-}
+(async () => {
+  try {
+    state = await request('snapshot');
+    draft = {...(state.settings || {})};
+    saveList = await request('saves').catch(() => []);
+    if (saveList.length) {
+      selectedSaveId = String(saveList[0].id);
+      save = await request('openSave', saveList[0].id).catch(() => null);
+    }
+    render();
+  } catch (err) {
+    showError(err);
+  }
+})();

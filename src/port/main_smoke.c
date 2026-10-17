@@ -497,7 +497,8 @@ static void ReportFinalState(void) {
            "rpm=%d jitter=%d terrain_second=%llu terrain_child_reject=%llu "
            "terrain_child_second=%llu model_backface=%llu fog_near=%d "
            "env_mode4=%d spot_lights=%u player_body=%d mirror_y=%d "
-           "steer=%d course_mirror=%d retire_camera=%d capture_faces=%d\n",
+           "steer=%d course_mirror=%d retire_camera=%d capture_faces=%d "
+           "session=%d model=%d\n",
            g_FrameCounter, g_SceneId, MenuFrontend()->state,
            g_PlayerCar.x, g_PlayerCar.z, g_PlayerCar.speed,
            g_PlayerCar.drive.acceleratorInput.value, g_PadHeld,
@@ -515,7 +516,8 @@ static void ReportFinalState(void) {
            SmokePlayerBodyState(ModernNativeGpuPreparedWorld()),
            g_MirrorPanelY,
            g_PlayerCar.drive.steerPos, g_MirrorMode,
-           RetireCameraActive(), CaptureCurrent()->faceCount);
+           RetireCameraActive(), CaptureCurrent()->faceCount,
+           g_RaceSession.kind, g_RaceSession.model);
 }
 
 int main(int argc, char **argv) {

@@ -6,9 +6,9 @@ async function withSurfaces(service,key,work,usage=false){
   const root=await fs.mkdtemp(path.join(service.root,'car-surfaces-'));
   try{
    const folder=await service.exportCarData(key,root,signal,'png',view),metadata=JSON.parse(await fs.readFile(path.join(folder,'materials.json'),'utf8'));
-   const [,kind,bank]=key.split('.'),{run}=require('./service.cjs'),table=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-material-usage',kind,require('./car-view.cjs').rawSource(service,bank,view),bank],{signal}));
+   const [,kind,bank]=key.split('.'),{run}=require('./service.cjs'),table=await require('./car-view.cjs').carMaterials(service,'--car-material-usage',kind,bank,view,signal);
    const stats=JSON.parse(await run(service.tool('rage-mod-cli'),['--mesh',path.join(folder,'model.rmesh')],{signal})),used=new Set(stats.materials.filter(word=>word!==65535).map(word=>word%64));
-   const catalog=usage?JSON.parse(await service.carTool(['--set','tools.car_catalog=true'],signal)):null;
+   const catalog=usage?await require('./car-catalog.cjs')(service,signal):null;
    const prefix='car.'+kind+'.'+bank+'.part.',replacements=new Set([key]);
    if(catalog)for(const part of catalog.parts)if(part.key.startsWith(prefix))replacements.add(part.key);
    if(usage)for(const candidate of Object.keys(view.manifest.meshes||{}))if(candidate.startsWith(prefix))replacements.add(candidate);

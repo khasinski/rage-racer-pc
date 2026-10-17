@@ -35,7 +35,8 @@ foreach(event created destroyed)
 endforeach()
 # Desktop runs exercise real swapchain policy as well as renderer lifetime.
 # Offscreen CI has no swapchain and retains the geometry/lifecycle checks above.
-if(log MATCHES "modern display pacing driver=(wayland|x11|windows|cocoa)")
+if(NOT "$ENV{PSYZ_HEADLESS}" STREQUAL "1" AND
+   log MATCHES "modern display pacing driver=(wayland|x11|windows|cocoa)")
     string(REGEX MATCHALL "presentation mode=vsync host_display_sync=1 logic_driver_vsync=0" synced "${log}")
     list(LENGTH synced count)
     if(count LESS 1)

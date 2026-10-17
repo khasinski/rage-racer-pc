@@ -1,6 +1,6 @@
 const fs=require('node:fs/promises'),path=require('node:path');
 module.exports=async function textures(service,key,geometry,metadata,staging,signal,format='rgba',view){
- const {run}=require('./service.cjs');const [,kind,bankText]=key.split('.'),bank=Number(bankText),data=service.state.disc.data;
+ const {run}=require('./service.cjs');const [,kind,bankText]=key.split('.'),bank=require('./car-view.cjs').resolveBank(service,Number(bankText)),data=service.state.disc.data;
  const folder=path.join(data,'textures'),uploads=[],raw=asset=>require('./car-view.cjs').rawSource(service,asset,view);
  if(!metadata.materials.length)return {};
  const entries=(await fs.readdir(folder)).filter(n=>n.endsWith('.json')).sort();
@@ -19,6 +19,13 @@ module.exports=async function textures(service,key,geometry,metadata,staging,sig
  if(kind==='rival')uploads.push(raw(bank-1),'-3','0','0','1','1');
  const used=new Set();for(let i=6;i<geometry.vertices.length;i+=9)used.add((geometry.vertices[i]&0xffff)%64);
  const result={};
- for(const material of metadata.materials){if(!used.has(material.source))continue;const file=path.join(staging,'texture-'+material.source+'.'+format);await run(service.tool('rage-mod-cli'),['--texture',String(material.page),String(material.clut),file,...uploads],{signal});const bytes=await fs.readFile(file);if(format!=='png'&&bytes.length!==256*256*4+(format==='tga'?18:0))throw Error('Incomplete texture preview');result[material.source]=format!=='rgba'?path.basename(file):bytes.toString('base64');}
+ for(const material of metadata.materials){
+  if(!used.has(material.source))continue;
+  const file=path.join(staging,'texture-'+material.source+'.'+format);
+  await run(service.tool('rage-mod-cli'),['--texture',String(material.page),String(material.clut),file,...uploads],{signal});
+  const bytes=await fs.readFile(file);
+  if(format!=='png'&&bytes.length!==256*256*4+(format==='tga'?18:0))throw Error('Incomplete texture preview');
+  result[material.source]=format!=='rgba'?path.basename(file):bytes.toString('base64');
+ }
  return result;
 };

@@ -193,7 +193,7 @@ class LauncherService {
   async trackScene(bank,preview=false) {
     this.requireReady();
     if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid track');
-    return this.operation('Reading track scene',async signal=>{
+    return this.operation(preview?'Loading track preview':'Reading track scene',async signal=>{
       await this.loadProject();
       const snapshot=this.editor?.project.snapshot(),selection=snapshot?.selection;
       let directory='';
@@ -233,10 +233,14 @@ class LauncherService {
   async saveTrackObject(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'object');}
   async saveRoadPoint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'road');}
   async saveRoadArc(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'arc');}
+  async saveRoadBatch(bank,entries,revision){return require('./track-route.cjs').saveRoadBatch(this,bank,entries,revision);}
+  async exportTrackRoute(bank,destination){return require('./track-route.cjs').exportTrackRoute(this,bank,destination);}
+  async importTrackRoute(bank,sourceFile,revision){return require('./track-route.cjs').importTrackRoute(this,bank,sourceFile,revision);}
   async saveTerrainCell(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'cell');}
   async saveAiHint(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'ai');}
   async saveAiSpeed(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'speed');}
   async saveStart(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'start');}
+  async saveStartSlot(bank,index,values,revision){return this.saveStart(bank,index,values,revision);}
   async saveIntro(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'intro');}
   async saveCamera(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'camera');}
   async saveTrackEntry(bank,index,values,revision,type){
@@ -250,6 +254,20 @@ class LauncherService {
     const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
     const changes=[];for(const entry of entries){if(!['env','palette','environment'].includes(entry.type??'env')||!Number.isInteger(entry.index)||entry.index<0||!entry.values||Array.isArray(entry.values)||typeof entry.values!=='object'||Object.keys(entry.values).length>((entry.type??'env')==='palette'?16:12))throw Error('Invalid environment cue');for(const [field,value]of Object.entries(entry.values))changes.push({kind:'track',id:prefix+(entry.type??'env')+'.'+entry.index,field,value});}
     if(!changes.length||changes.length>10000)throw Error('Invalid environment edits');return this.saveTrackChanges(bank,changes,revision);
+  }
+  async saveTrackBatch(bank,entries,revision){
+    this.requireReady();
+    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Array.isArray(entries)||!entries.length||entries.length>10000)throw Error('Invalid track batch edits');
+    const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+    const changes=[];
+    for(const entry of entries){
+      const t=entry?.type==='ai-hint'?'ai':entry?.type;
+      if(!entry||!['cell','ai','speed','start','camera','intro','object'].includes(t)||!Number.isInteger(entry.index)||entry.index<0||!entry.values||typeof entry.values!=='object'||Array.isArray(entry.values))throw Error('Invalid track batch entry');
+      const id=prefix+t+'.'+entry.index;
+      for(const [field,value] of Object.entries(entry.values))changes.push({kind:'track',id,field,value});
+    }
+    if(!changes.length||changes.length>10000)throw Error('Invalid track batch edits');
+    return this.saveTrackChanges(bank,changes,revision);
   }
   async saveTrackChanges(bank,changes,revision){
     return this.operation('Editing track',async signal=>{
@@ -270,12 +288,27 @@ class LauncherService {
       }finally{if(directory)await fs.rm(directory,{recursive:true,force:true});}
     });
   }
+  resolvePlayerBank(bank) {
+    if(Number.isInteger(bank)&&bank>=200&&bank<=998&&bank%2===0){
+      const donor=Number(this.editor?.project.snapshot().changes.find(c=>c.kind==='car'&&c.id===`custom_car_${bank}`&&c.field==='donor_bank')?.value)||10;
+      return donor>=10&&donor<=72&&donor%2===0?donor:10;
+    }
+    return bank;
+  }
+  resolvePlayerKey(key) {
+    const m=typeof key==='string'&&/^car\.player\.(\d+)\.part\.(\d+)$/.exec(key);
+    if(m&&Number(m[1])>=200){
+      return `car.player.${this.resolvePlayerBank(Number(m[1]))}.part.${m[2]}`;
+    }
+    return key;
+  }
   carSpecFile(bank) {
     if(!Number.isInteger(bank)||bank<10||bank>72||bank%2)throw Error('Invalid player car bank');
     return path.join(this.state.disc.data,'raw',`asset_${String(bank+1).padStart(3,'0')}.bin`);
   }
   async carSpec(bank) {return require('./car-profile.cjs').read(this,bank);}
   async saveCarSpec(bank,edits,revision) {return require('./car-profile.cjs').edit(this,bank,edits,revision);}
+  async createNewCar(options,revision) {return require('./car-profile.cjs').createNew(this,options,revision);}
   async exportCar(key,destination,modelFormat='obj') {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     if(!['obj','glb'].includes(modelFormat))throw Error('Choose OBJ or GLB geometry');
@@ -326,11 +359,11 @@ class LauncherService {
   async completeCarImport(token,mapping){return require('./car-set.cjs').complete(this,token,mapping);}
   async cancelCarImport(token){return require('./car-set.cjs').cancel(this,token);}
   async previewCarImport(token,node){return require('./car-set.cjs').preview(this,token,node);}
-  async carImportTexture(token,word){return require('./car-set.cjs').texture(this,token,word);}
+  async carImportTexture(token,word){return require('./car-set.cjs').carImportTexture?require('./car-set.cjs').carImportTexture(this,token,word):require('./car-set.cjs').texture(this,token,word);}
   async importCar(key,file) {
     this.requireReady();if(typeof key!=='string'||!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key)||key.length>95)throw Error('Invalid car part');
     return this.operation('Importing car model',async signal=>{
-      const catalog=JSON.parse(await this.carTool(['--set','tools.car_catalog=true'],signal));
+      const catalog=await require('./car-catalog.cjs')(this,signal);
       const part=catalog.parts.find(p=>p.key===key);if(!part)throw Error('Unknown car part');
       const staging=path.join(this.root,'car-import-'+randomUUID());
       await fs.mkdir(path.join(staging,'meshes'),{recursive:true});await fs.mkdir(path.join(staging,'textures'),{recursive:true});
@@ -347,14 +380,15 @@ class LauncherService {
           const bindings=JSON.parse(await run(this.tool('rage-mod-cli'),['--mesh',mesh],{signal})).bankBindings;
           const meta=await require('./car-view.cjs').exportPart(this,key,path.join(staging,'bindings.rmesh'),undefined,signal,bindings);
           await fs.rm(path.join(staging,'bindings.rmesh'),{force:true});
-          const table=await require('./car-view.cjs').withView(this,signal,undefined,async view=>JSON.parse(await run(this.tool('rage-mod-cli'),['--car-materials',part.rival?'rival':'player',require('./car-view.cjs').rawSource(this,part.bank,view),String(part.bank)],{signal})));
+          const table=await require('./car-view.cjs').withView(this,signal,undefined,async view=>require('./car-view.cjs').carMaterials(this,'--car-materials',part.rival?'rival':'player',part.bank,view,signal));
           for(const source of glbTextures){const original=meta.materials.find(m=>m.source===source),slot=original&&table.materials.find(m=>m.page===original.page&&m.clut===original.clut);if(!slot)throw Error('GLB image has no matching car texture source');const image=path.join(staging,'textures',`texture-${source}.png`);await run(this.tool('rage-mod-cli'),['--png',image],{signal});const previous=textureChanges.find(t=>t.id===slot.id);if(previous){if(!(await fs.readFile(previous.file)).equals(await fs.readFile(image)))throw Error('Different GLB images map to the same car surface; resolve the material mapping');}else textureChanges.push({id:slot.id,file:image});}
         }
         await this.loadProject();
         if(this.editor){
           const project=this.editor.project,revision=project.revision;
           const reference=await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).put(mesh);
-          const store=new (require('./project-files.cjs').ProjectFiles)(this.editor.file),changes=[{kind:'car',id:key,field:'mesh',value:reference}];for(const texture of textureChanges)changes.push({kind:'car',id:texture.id,field:'texture',value:await store.put(texture.file,'png')});return project.edit(changes,revision);
+          const bodyKey=`car.${part.rival?'rival':'player'}.${part.bank}.part.${part.rival?Math.floor(part.part/5)*5:0}`;
+          const store=new (require('./project-files.cjs').ProjectFiles)(this.editor.file),changes=[{kind:'car',id:key,field:'mesh',value:reference},{kind:'car',id:key,field:'base_mesh',value:reference},{kind:'car',id:bodyKey,field:'fitment',value:null}];for(const texture of textureChanges)changes.push({kind:'car',id:texture.id,field:'texture',value:await store.put(texture.file,'png')});return project.edit(changes,revision);
         }
         await fs.writeFile(path.join(staging,'mod.toml'),`[mod]\nid = "car-replacement"\n[meshes]\n"${key}" = "meshes/model.rmesh"\n`);
         if(textureChanges.length)await fs.appendFile(path.join(staging,'mod.toml'),'[textures]\n'+textureChanges.map(t=>`"${t.id}" = "textures/${path.basename(t.file)}"`).join('\n')+'\n');
@@ -393,23 +427,217 @@ class LauncherService {
   }
   async previewWholeCar(bank,body=0,rival=false,modId) {
     this.requireReady();
+    const isCustomSlot=!rival&&Number.isInteger(bank)&&bank>=200&&bank<=998&&bank%2===0;
     if(typeof rival!=='boolean'||!Number.isInteger(body)||body<0||body>30||body%5)throw Error('Invalid car variant');
     if(rival){if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid rival bank');}
-    else{this.carSpecFile(bank);if(body!==0)throw Error('Invalid player body');}
+    else{this.carSpecFile(isCustomSlot?this.resolvePlayerBank(bank):bank);if(body!==0)throw Error('Invalid player body');}
     const mod=modId===undefined?null:this.state.mods.find(m=>m.id===modId);
     if(modId!==undefined&&!mod)throw Error('Unknown mod');
     return this.operation('Loading car preview',signal=>require('./car-view.cjs').withView(this,signal,modId===undefined?undefined:mod,async view=>{
       const file=require('./car-view.cjs').rawSource(this,bank,view);
       const layout=JSON.parse(await run(this.tool('rage-mod-cli'),rival?['--rival-layout',file,String(body)]:['--car-layout',file],{signal}));
+      const bodyPart=layout.instances[0]?.part??body;
+      const bodyKey=`car.${rival?'rival':'player'}.${bank}.part.${bodyPart}`;
+      const fitArr=modId===undefined?this.editor?.project.snapshot().changes.find(c=>c.kind==='car'&&c.id===bodyKey&&c.field==='fitment')?.value:null;
+      const fit=Array.isArray(fitArr)&&fitArr.length===11?{
+        frontWidth:fitArr[0],frontY:fitArr[1],frontZ:fitArr[2],frontScale:fitArr[3],
+        rearWidth:fitArr[4],rearY:fitArr[5],rearZ:fitArr[6],rearScale:fitArr[7],
+        bodyY:fitArr[8],bodyZ:fitArr[9],bodyScale:fitArr[10]
+      }:{frontWidth:0,frontY:0,frontZ:0,frontScale:100,rearWidth:0,rearY:0,rearZ:0,rearScale:100,bodyY:0,bodyZ:0,bodyScale:100};
+      for(const inst of layout.instances){
+        if(inst.part===bodyPart||inst.part===bodyPart+3){
+          inst.position[1]+=fit.rearY;
+          inst.position[2]+=fit.rearZ;
+        }else if(inst.part===bodyPart+2){
+          inst.position[1]+=fit.frontY;
+          inst.position[2]+=fit.frontZ;
+        }
+      }
       const parts=new Map();
       for(const {part}of layout.instances)if(!parts.has(part)){
         const key=`car.${rival?'rival':'player'}.${bank}.part.${part}`;
         parts.set(part,await this.previewCarData(key,mod?.manifest.meshes?.[key]?modId:undefined,signal,modId,view));
       }
       const geometry=require('./assemble-preview.cjs')(layout,parts);
+      geometry.fitment=fit;
+      geometry.partRanges=[];
+      let vCursor=0;
+      for(const inst of layout.instances){
+        const count=(parts.get(inst.part)?.vertices.length||0)/9;
+        const role=inst.part===bodyPart?'body':inst.part===bodyPart+3?'rear':'front';
+        geometry.partRanges.push({role,startVertex:vCursor,vertexCount:count,position:inst.position,scale:inst.scale});
+        vCursor+=count;
+      }
       if(mod)geometry.modName=mod.name;
       return geometry;
     }));
+  }
+  async saveCarFitment(bank,body=0,rival=false,fitment={},revision) {
+    this.requireReady();
+    const isCustomSlot=!rival&&Number.isInteger(bank)&&bank>=200&&bank<=998&&bank%2===0;
+    if(typeof rival!=='boolean'||!Number.isInteger(body)||body<0||body>30||body%5)throw Error('Invalid car variant');
+    if(rival){if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid rival bank');}
+    else{this.carSpecFile(isCustomSlot?this.resolvePlayerBank(bank):bank);if(body!==0)throw Error('Invalid player body');}
+    const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,Math.round(Number.isFinite(Number(v))?Number(v):0)));
+    const frontWidth=clamp(fitment.frontWidth,-1200,1200);
+    const frontY=clamp(fitment.frontY,-900,900);
+    const frontZ=clamp(fitment.frontZ,-1500,1500);
+    const frontScalePct=clamp(fitment.frontScale??100,25,300);
+    const rearWidth=clamp(fitment.rearWidth,-1200,1200);
+    const rearY=clamp(fitment.rearY,-900,900);
+    const rearZ=clamp(fitment.rearZ,-1500,1500);
+    const rearScalePct=clamp(fitment.rearScale??100,25,300);
+    const bodyY=clamp(fitment.bodyY,-900,900);
+    const bodyZ=clamp(fitment.bodyZ,-1500,1500);
+    const bodyScalePct=clamp(fitment.bodyScale??100,25,300);
+    const bodyScale=bodyScalePct/100,frontScale=frontScalePct/100,rearScale=rearScalePct/100;
+    const touchBody=Boolean((bodyY-rearY)||(bodyZ-rearZ)||bodyScalePct!==100);
+    const touchFront=Boolean(frontWidth||frontScalePct!==100);
+    const touchRear=Boolean(rearWidth||rearScalePct!==100);
+    const anyFitment=Boolean(frontWidth||frontY||frontZ||frontScalePct!==100||rearWidth||rearY||rearZ||rearScalePct!==100||bodyY||bodyZ||bodyScalePct!==100);
+    return this.operation('Applying wheel & body fitment',async signal=>require('./car-view.cjs').withView(this,signal,undefined,async view=>{
+      await this.loadProject();
+      const project=this.editor.project;project.checkRevision(revision);
+      const staging=path.join(this.root,'car-fitment-'+randomUUID());
+      await fs.mkdir(staging,{recursive:true});
+      try{
+        const store=new (require('./project-files.cjs').ProjectFiles)(this.editor.file);
+        const bodyKey=`car.${rival?'rival':'player'}.${bank}.part.${body}`;
+        const fitValue=anyFitment?[frontWidth,frontY,frontZ,frontScalePct,rearWidth,rearY,rearZ,rearScalePct,bodyY,bodyZ,bodyScalePct]:null;
+        const changes=[{
+          kind:'car',
+          id:bodyKey,
+          field:'fitment',
+          value:fitValue
+        }];
+        const tasks=[
+          {offset:0,role:'body',touch:touchBody},
+          {offset:2,role:'front',touch:touchFront},
+          {offset:3,role:'rear',touch:touchRear}
+        ];
+        for(const {offset,role,touch} of tasks){
+          const key=`car.${rival?'rival':'player'}.${bank}.part.${body+offset}`;
+          const baseChange=project.document.changes.find(c=>c.kind==='car'&&c.id===key&&c.field==='base_mesh');
+          if(!touch){
+            changes.push({kind:'car',id:key,field:'mesh',value:baseChange?baseChange.value:null});
+            continue;
+          }
+          const file=path.join(staging,`part-${offset}.rmesh`);
+          await require('./car-view.cjs').exportPart(this,key,file,view,signal);
+          if(baseChange)await fs.writeFile(file,await store.read(baseChange.value));
+          const bytes=require('./car-view.cjs').applyFitment(Buffer.from(await fs.readFile(file)),role,fitValue);
+          await fs.writeFile(file,bytes);
+          await run(this.tool('rage-mod-cli'),['--mesh',file],{signal});
+          const ref=await store.put(file,'rmesh');
+          changes.push({kind:'car',id:key,field:'mesh',value:ref});
+        }
+        return project.edit(changes,revision);
+      }finally{await fs.rm(staging,{recursive:true,force:true});}
+    }));
+  }
+  async deleteCustomCar(bank,revision) {
+    this.requireReady();
+    if(!Number.isInteger(bank)||bank<200||bank>998||bank%2!==0)throw Error('Only custom car slots can be deleted');
+    return this.operation('Deleting custom car slot',async()=>{
+      await this.loadProject();
+      if(!this.editor)throw Error('Open a source project first');
+      const project=this.editor.project;
+      if(revision!==undefined)project.checkRevision(revision);
+      const snapshot=project.snapshot();
+      const recordId=`custom_car_${bank}`;
+      const partPrefix=`car.player.${bank}.part.`;
+      const matPrefix=`car.${(bank-10)/2}.material.`;
+      const resets=[];
+      for(const c of snapshot.changes){
+        if(c.kind==='car'&&(c.id===recordId||c.id.startsWith(partPrefix)||c.id.startsWith(matPrefix))){
+          resets.push({kind:c.kind,id:c.id,field:c.field,value:null});
+        }
+      }
+      if(!resets.length)throw Error('Custom car slot not found');
+      project.edit(resets,project.revision);
+      if(!this.game){
+        return await require('./project-build.cjs').apply(this);
+      }
+      await project.save(this.editor.file);
+      return project.snapshot();
+    });
+  }
+  async restoreOriginalCar(bank,body=0,rival=false,revision) {
+    this.requireReady();
+    if(typeof rival!=='boolean'||!Number.isInteger(body)||body<0||body>30||body%5)throw Error('Invalid car variant');
+    if(rival){if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid rival bank');}
+    else{this.carSpecFile(bank);if(body!==0)throw Error('Invalid player body');}
+    return this.operation('Restoring original car from disc',async signal=>{
+      await this.loadProject();
+      if(!this.editor)throw Error('Open a source project first');
+      const project=this.editor.project;
+      if(revision!==undefined)project.checkRevision(revision);
+      const snapshot=project.snapshot();
+      const resets=[];
+      if(rival){
+        const partSet=new Set([0,1,2,3,4].map(o=>`car.rival.${bank}.part.${body+o}`));
+        const rawFile=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
+        const usage=JSON.parse(await run(this.tool('rage-mod-cli'),['--car-material-usage','rival',rawFile,String(bank)],{signal}));
+        const matIds=new Set();
+        for(const slot of usage.materials||[]){
+          if(Array.isArray(slot.models)&&slot.models.some(m=>m>=body&&m<body+5)){
+            matIds.add(slot.id);
+            matIds.add(slot.id+'.variant.0');
+          }
+        }
+        for(const c of snapshot.changes){
+          if((c.kind==='car'&&partSet.has(c.id))||matIds.has(c.id)){
+            resets.push({kind:c.kind,id:c.id,field:c.field,value:null});
+          }
+        }
+      }else{
+        const {cars}=await require('./car-base.cjs')(this,{root:this.state.disc.data,files:[]},signal);
+        const carRecord=cars.find(c=>c.variant===(bank-10)/2);
+        const recordId=carRecord?.id;
+        const partPrefix=`car.player.${bank}.part.`;
+        const matPrefix=`car.${(bank-10)/2}.material.`;
+        const legacyMatPrefix=`car.${bank}.material.`;
+        for(const c of snapshot.changes){
+          if(c.kind==='car'&&(c.id.startsWith(partPrefix)||c.id.startsWith(matPrefix)||c.id.startsWith(legacyMatPrefix)||(recordId&&c.id===recordId))){
+            resets.push({kind:c.kind,id:c.id,field:c.field,value:null});
+          }
+        }
+      }
+      if(resets.length){
+        project.edit(resets,project.revision);
+      }
+      if(!this.game){
+        return await require('./project-build.cjs').apply(this);
+      }
+      await project.save(this.editor.file);
+      return project.snapshot();
+    });
+  }
+  async restoreOriginalTrack(bank,revision) {
+    this.requireReady();
+    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid track');
+    return this.operation('Restoring original track from disc',async()=>{
+      await this.loadProject();
+      if(!this.editor)throw Error('Open a source project first');
+      const project=this.editor.project;
+      if(revision!==undefined)project.checkRevision(revision);
+      const snapshot=project.snapshot();
+      const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+      const resets=[];
+      for(const c of snapshot.changes){
+        if(c.id.startsWith(prefix)&&!c.id.startsWith(prefix+'model-bank-1.')){
+          resets.push({kind:c.kind,id:c.id,field:c.field,value:null});
+        }
+      }
+      if(resets.length){
+        project.edit(resets,project.revision);
+      }
+      if(!this.game){
+        return await require('./project-build.cjs').apply(this);
+      }
+      await project.save(this.editor.file);
+      return project.snapshot();
+    });
   }
   async init() {
     await fs.mkdir(this.root,{recursive:true});
@@ -441,14 +669,19 @@ class LauncherService {
     }
     return entries;
   }
-  requireReady() {if(!this.state.disc)throw Error('Add a game image first');if(this.busy)throw Error('Wait for the current operation');}
+  requireReady() {if(!this.state.disc)throw Error('Add a game image first');if(this.busy&&!this.busy.preview)throw Error('Wait for the current operation');}
   async operation(label,task,cancellable=true,owner) {
+    const isPreview=l=>l==='Loading car preview'||l==='Loading model preview'||l==='Loading track preview'||l==='Previewing track model';
+    if(this.busy?.preview&&!isPreview(label)){
+      this.cancel();await this.busy.done.catch(()=>{});
+    }
     if(this.busy||this.game)throw Error('Another operation or the game is running');
     const controller=new AbortController();let finish;
-    const done=new Promise(resolve=>{finish=resolve;});this.busy={label,controller,cancellable,owner,done};
+    const preview=isPreview(label);
+    const done=new Promise(resolve=>{finish=resolve;});this.busy={label,controller,cancellable,owner,done,preview};
     try{await this.update();return await task(controller.signal);}finally{this.busy=null;try{await this.update();}finally{finish();}}
   }
-  cancel() {if(this.busy?.cancellable)this.busy.controller.abort();}
+  cancel(scope) {if(scope==='preview'&&!/preview/i.test(this.busy?.label||''))return;if(this.busy?.cancellable)this.busy.controller.abort();}
   async prepare(image) {
     if(!['.cue','.bin','.chd'].includes(path.extname(image).toLowerCase()))throw Error('Select CUE, CHD or Track 01 BIN');
     return this.operation('Reading disc image',async signal=>{
@@ -504,7 +737,7 @@ class LauncherService {
     }catch(e){this.projectError='Project activation failed: '+e.message;modDirectory='';}
     return patchIni(text,{...this.state.settings,'video.renderer':'modern','disc.image':this.state.disc.path,'disc.choose':false,'mods.directory':modDirectory,'cars.profile':'','audio.menu_music':path.join(this.state.disc.data,'menu_music.wav'),'content.car_names':style,'content.prologue':style,'diagnostics.log':path.join(this.root,'game.log')});
   }
-  async launch() {
+  async launch(raceOptions) {
     this.requireReady();
     return this.operation('Starting game', async signal => {
       if(!(await this.snapshot()).ready)throw Error('The source image is unavailable. Select it again.');
@@ -515,11 +748,72 @@ class LauncherService {
       const config=path.join(this.root,'rage-port.ini');
       let log;
       try {
+        const isRival=Boolean(raceOptions?.rival);
+        const rawCarBank=Number(raceOptions?.carBank)||10;
+        const customCarBank=(!isRival&&rawCarBank>=200&&rawCarBank<=998&&rawCarBank%2===0)?rawCarBank:undefined;
+        if(this.state.disc.archive&&this.editor?.project&&(customCarBank||this.activeCustomCarBank)){
+          await require('./project-build.cjs').apply(this,customCarBank);
+          this.activeCustomCarBank=customCarBank||null;
+        }
         // configuration() requires an idle service; the launch operation already
         // owns the job lock, so use the explicit internal writer here.
         await atomic(config,await this.configuration(active,true));
         log=await fs.open(path.join(this.root,'game-process.log'),'a');
-        const child=spawn(this.tool('rage-racer'),['--config',config,'--set','video.renderer=modern'],{cwd:this.root,windowsHide:true,shell:false});
+        const launchArgs=['--config',config,'--set','video.renderer=modern'];
+        if(raceOptions&&typeof raceOptions==='object'){
+          const kFirstVariant=[0,4,7,9,14,18,21,23,26,28,29,30,31];
+          const kUnlockBase=[1,2,3,0,1,2,3,2,3,4,5,5,5];
+          const kNamedBodyCars=[
+            [[3,3,3,3],[3,3,3,3],[3,3,3,3],[3,6,2,9]],
+            [[3,4,0,3],[3,4,0,3],[3,4,0,3],[3,5,1,7]],
+            [[3,5,1,7],[3,5,1,7],[3,5,1,7],[3,5,1,7]],
+            [[3,6,2,8],[3,6,2,8],[3,6,2,8],[3,6,2,8]],
+            [[3,6,2,9],[3,6,2,9],[3,6,2,9],[3,6,2,9]],
+            [[11,11,10,12],[11,11,10,12],[11,11,10,12],[11,11,10,12]]
+          ];
+          const isRival=Boolean(raceOptions.rival);
+          const rawCarBank=Number(raceOptions.carBank)||10;
+          const trackBank=isRival&&rawCarBank>=88&&rawCarBank<=134&&rawCarBank%2===0
+            ?rawCarBank
+            :(Number(raceOptions.trackBank)||88);
+          let classIndex=Math.max(0,Math.min(5,Math.floor((trackBank-88)/8)));
+          const course=Math.max(0,Math.min(3,Math.floor(((trackBank-88)/2)%4)));
+          if(course===3&&classIndex<2)classIndex=2;
+          let carIndex=0,variant=0,rivalBody=-1;
+          if(isRival){
+            const rawBody=Number(raceOptions.rivalBody);
+            rivalBody=Number.isFinite(rawBody)?Math.max(0,Math.min(30,Math.floor(rawBody/5)*5)):0;
+            const rivalSlot=Math.floor(rivalBody/5);
+            carIndex=rivalSlot<3?(kNamedBodyCars[classIndex]?.[course]?.[rivalSlot]??3):3;
+            const first=kFirstVariant[carIndex]??0;
+            const end=carIndex+1<kFirstVariant.length?kFirstVariant[carIndex+1]:32;
+            variant=Math.max(0,Math.min(end-first-1,classIndex-(kUnlockBase[carIndex]??0)));
+          }else{
+            const effectiveCarBank=rawCarBank>=200?this.resolvePlayerBank(rawCarBank):(rawCarBank>=10&&rawCarBank<=72?rawCarBank:10);
+            const slot=Math.max(0,Math.min(31,Math.floor((effectiveCarBank-10)/2)));
+            for(let i=0;i<kFirstVariant.length;i++)if(kFirstVariant[i]<=slot)carIndex=i;
+            variant=slot-kFirstVariant[carIndex];
+          }
+          const mode=raceOptions.mode==='grand-prix'?'grand-prix':'time-attack';
+          launchArgs.push(
+            '--set','race.enabled=true',
+            '--set','boot.direct=true',
+            '--set','boot.skip_sequences=true',
+            '--set',`race.mode=${mode}`,
+            '--set','race.series=grand-prix',
+            '--set',`race.class=${classIndex}`,
+            '--set',`race.course=${course}`,
+            '--set',`race.car=${carIndex}`,
+            '--set',`race.variant=${variant}`
+          );
+          if(rivalBody>=0){
+            launchArgs.push('--set',`race.rival_body=${rivalBody}`);
+          }
+          if(Number.isInteger(raceOptions.trackPoint)&&raceOptions.trackPoint>=0){
+            launchArgs.push('--set',`start.player_track_point=${raceOptions.trackPoint}`);
+          }
+        }
+        const child=spawn(this.tool('rage-racer'),launchArgs,{cwd:this.root,windowsHide:true,shell:false});
         child.stdout.on('data',d=>log.write(d).catch(()=>{}));
         child.stderr.on('data',d=>log.write(d).catch(()=>{}));
         await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});

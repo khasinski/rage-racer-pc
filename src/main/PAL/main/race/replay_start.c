@@ -51,7 +51,7 @@ void BeginReplay(void) {
 
     if (g_Replay.wrapped != 0) {
         g_Replay.count = ClampReplayFrameCount(
-            g_Replay.count, g_GrandPrixMode);
+            g_Replay.count, RaceHasRivals());
         g_Replay.read = WrappedReplayStartCursor(
             g_Replay.write, g_Replay.count);
     } else {
@@ -61,12 +61,12 @@ void BeginReplay(void) {
             g_Replay.write > REPLAY_SUBFRAMES_PER_SAMPLE
                 ? g_Replay.write - REPLAY_SUBFRAMES_PER_SAMPLE
                 : 0,
-            g_GrandPrixMode);
+            RaceHasRivals());
     }
 
     if (g_GrandPrixClass != GRAND_PRIX_FINAL_CLASS_INDEX) {
         SeekEnvironmentScript(ReplayEnvironmentRewindTarget(
-            g_EnvScriptClock, g_GrandPrixMode));
+            g_EnvScriptClock, RaceHasRivals()));
     }
 
     SeedReplayCars();

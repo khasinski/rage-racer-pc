@@ -35,7 +35,7 @@ void UpdateReplayScene(void) {
     g_AnimTimer = (s32)((u32)g_AnimTimer + 1u);
     g_SceneTimer = NextReplaySceneTimer(g_SceneTimer,
                                         g_Replay.count);
-    resultCue = ReplayResultCue(g_SceneTimer, g_GrandPrixMode,
+    resultCue = ReplayResultCue(g_SceneTimer, RaceHasRivals(),
                                 g_SeriesCleared,
                                 g_PlayerCar.drive.racePosition);
     if (resultCue >= 0) {
@@ -57,7 +57,7 @@ void UpdateReplayScene(void) {
                  AsRivalCar(&g_PlayerCar));
     g_RenderState.geometry.envMode4 = g_IsEnvironmentMode4;
     DrawTerrainCellsWide(&g_Camera.view);
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         DrawCars();
     }
     DrawCourseObjects();

@@ -31,13 +31,15 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E env ${common_environment}
     OUTPUT_VARIABLE direct_output ERROR_VARIABLE direct_error)
 set(direct_log "${direct_output}${direct_error}")
 if(NOT direct_result EQUAL 0)
-    message(FATAL_ERROR "Scenario legacy direct setting route failed (${direct_result}):\n${direct_log}")
+    message(FATAL_ERROR "Scenario direct boot route failed (${direct_result}):\n${direct_log}")
 endif()
-foreach(required "boot.direct is ignored; scenarios use the normal race launch path"
-                 "scenario launch selection applied" "smoke synchronized stop")
+foreach(required "scenario boot=direct"
+                 "scenario launch selection applied"
+                 "scenario direct boot entered the race"
+                 "smoke synchronized stop")
     string(FIND "${direct_log}" "${required}" found)
     if(found EQUAL -1)
-        message(FATAL_ERROR "Scenario legacy direct setting route missed ${required}:\n${direct_log}")
+        message(FATAL_ERROR "Scenario direct boot route missed ${required}:\n${direct_log}")
     endif()
 endforeach()
-message(STATUS "Scenario validation and normal launch routes passed")
+message(STATUS "Scenario validation and menu/direct launch routes passed")

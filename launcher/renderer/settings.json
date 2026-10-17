@@ -14,7 +14,7 @@
     "group": "video",
     "key": "modern.authored_cars",
     "label": "Car model source",
-    "help": "Choose built-in improved geometry or original disc geometry for modern rendering and editor previews/exports. Selected raw geometry changes and explicit mod models take priority in either mode. Classic rendering uses disc models.",
+    "help": "Use optional built-in improved geometry when included in the build, or original disc geometry. Source-only builds use original disc models. Selected raw geometry changes and explicit mod models take priority in either mode. Classic rendering uses disc models.",
     "type": "select",
     "default": "1",
     "options": [
@@ -426,5 +426,31 @@
     "help": "PlayStation button binding",
     "type": "key",
     "default": "2"
+  },
+  {
+    "group": "video",
+    "key": "modern.ray_tracing",
+    "label": "Experimental ray tracing",
+    "help": "Optional sun shadows and reflections. May reduce performance or show rendering artifacts; disabled by default.",
+    "type": "select",
+    "default": "off",
+    "options": [
+      [
+        "off",
+        "Off"
+      ],
+      [
+        "shadows",
+        "Shadows"
+      ],
+      [
+        "reflections",
+        "Reflections"
+      ],
+      [
+        "full",
+        "Shadows and reflections"
+      ]
+    ]
   }
 ]

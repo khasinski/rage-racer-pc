@@ -13,7 +13,7 @@ if(NOT EXISTS "${disc}" OR IS_DIRECTORY "${disc}")
     return()
 endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
-    RAGE_PORT_SMOKE_FRAMES=3500 RAGE_PORT_SMOKE_FINISH_FRAME=2000
+    RAGE_PORT_SMOKE_FRAMES=7000 RAGE_PORT_SMOKE_FINISH_FRAME=2000
     RAGE_PORT_SMOKE_AUTO_CONFIRM_FRAME=3000
     RAGE_PORT_INPUT_SCRIPT=400:START,500:START,650:CROSS,950:CROSS,1100:CROSS,1200:CROSS,1700-2400:CROSS
     "${GAME}" --set "disc.image=${disc}" WORKING_DIRECTORY "${SOURCE}" TIMEOUT 210
@@ -48,7 +48,12 @@ set(first_replay_track "${CMAKE_MATCH_0}")
 if(last_before_track LESS_EQUAL 2 OR NOT first_replay_track EQUAL 12)
     message(FATAL_ERROR "Race CD-DA did not switch to replay track: before=${last_before_track}, replay=${first_replay_track}")
 endif()
-if(NOT log MATCHES "stopped at frame 3500, scene (8|10|11|12),")
+string(REGEX MATCHALL "smoke state frame=[0-9]+ scene=12 " race_entries "${log}")
+list(LENGTH race_entries race_count)
+if(race_count LESS 2)
+    message(FATAL_ERROR "Grand Prix did not load a second live race")
+endif()
+if(NOT log MATCHES "stopped at frame 7000, scene (8|10|11|12),")
     message(FATAL_ERROR "Grand Prix did not advance from results to next round")
 endif()
 foreach(failure "primitive buffer exhausted" "ERROR: AddressSanitizer")

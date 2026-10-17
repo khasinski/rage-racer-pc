@@ -12,12 +12,18 @@ module.exports=function assembleTrack(banks){
     const at=index*9,v=geometry.vertices.slice(at,at+9);if(v.length!==9)throw Error('Invalid track preview index');
     const x=v[0]*0.25,z=v[2]*0.25,nx=v[3],nz=v[5];
     v[0]=c*x-s*z+instance.position[0];v[1]=v[1]*0.25+instance.position[1];v[2]=s*x+c*z+instance.position[2];
+    if(name==='terrain'){
+     const sx=Math.round(v[0]/2048)*2048,sz=Math.round(v[2]/2048)*2048;
+     if(Math.abs(v[0]-sx)<=0.5)v[0]=sx;
+     if(Math.abs(v[2]-sz)<=0.5)v[2]=sz;
+    }
     v[3]=c*nx-s*nz;v[5]=s*nx+c*nz;
-    const word=v[6]>>>0,id=word&65535,key=name+':'+id;
+    const word=v[6]>>>0,id=word&65535,p1=Boolean(instance.page&&geometry.texturesPage1?.[id]),key=name+':'+id+(p1?':p1':'');
     if(id!==65535){
      if(!materials.has(key)){
       const target=materials.size;materials.set(key,target);
-      if(geometry.textures?.[id])out.textures[target]=geometry.textures[id];
+      const tex=p1?geometry.texturesPage1[id]:geometry.textures?.[id];
+      if(tex)out.textures[target]=tex;
       if(geometry.materials?.[id])out.materials[target]=geometry.materials[id];
      }
      v[6]=((word&0xffff0000)|materials.get(key))>>>0;

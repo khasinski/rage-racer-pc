@@ -9,7 +9,7 @@ function value(v){
   if(typeof v==='string'&&!/[\x00-\x1f"\\#]/.test(v))return '"'+v+'"';
   throw Error('This value cannot be represented by the car profile format');
 }
-async function apply(service){
+async function apply(service,activeCustomBank){
   const {run,atomic,source}=require('./service.cjs');
   const editor=service.editor,snapshot=editor.project.snapshot();
   if(!sameSource(snapshot.source,await source(service.state.disc)))throw Error('Source archive changed; reopen the project');
@@ -39,9 +39,69 @@ async function apply(service){
     for(const [id,fields]of rawChanges)groups.set(id,{car:cars.find(c=>c.id===id),fields:new Map([...fields].map(([key,v])=>[key,value(v)]))});
     await require('./track-edits.cjs').apply(service,snapshot.changes,staging,files);
     Object.assign(audio,await require('./audio.cjs').apply(service,snapshot.changes,staging,files));
-    for(const c of snapshot.changes){
+    const isCustomChange=c=>{
+      if(c.kind!=='car')return false;
+      if(c.id.startsWith('custom_car_'))return true;
+      const pm=/^car\.player\.(\d+)\.part\./.exec(c.id);
+      if(pm&&Number(pm[1])>=200)return true;
+      const mm=/^car\.(\d+)\.material\./.exec(c.id);
+      if(mm&&Number(mm[1])>=32)return true;
+      return false;
+    };
+    let effectiveChanges=snapshot.changes.filter(c=>!isCustomChange(c));
+    if(Number.isInteger(activeCustomBank)&&activeCustomBank>=200&&activeCustomBank%2===0){
+      const rawDonor=Number(snapshot.changes.find(x=>x.kind==='car'&&x.id===`custom_car_${activeCustomBank}`&&x.field==='donor_bank')?.value)||10;
+      const donorBank=rawDonor>=10&&rawDonor<=72&&rawDonor%2===0?rawDonor:10;
+      const donorSlot=(donorBank-10)/2,customSlot=(activeCustomBank-10)/2;
+      const donorCar=cars.find(c=>c.variant===donorSlot);
+      const donorPartPrefix=`car.player.${donorBank}.part.`,donorMatPrefix=`car.${donorSlot}.material.`;
+      effectiveChanges=effectiveChanges.filter(c=>!(c.kind==='car'&&(c.id===donorCar?.id||c.id.startsWith(donorPartPrefix)||c.id.startsWith(donorMatPrefix))));
+      const customPartPrefix=`car.player.${activeCustomBank}.part.`,customMatPrefix=`car.${customSlot}.material.`;
+      for(const c of snapshot.changes){
+        if(c.kind!=='car')continue;
+        if(c.id===`custom_car_${activeCustomBank}`&&c.field!=='donor_bank'&&donorCar){
+          effectiveChanges.push({kind:'car',id:donorCar.id,field:c.field,value:c.value});
+        }else if(c.id.startsWith(customPartPrefix)){
+          effectiveChanges.push({kind:'car',id:donorPartPrefix+c.id.slice(customPartPrefix.length),field:c.field,value:c.value});
+        }else if(c.id.startsWith(customMatPrefix)){
+          effectiveChanges.push({kind:'car',id:donorMatPrefix+c.id.slice(customMatPrefix.length),field:c.field,value:c.value});
+        }
+      }
+    }
+    for(const c of effectiveChanges){
       if(c.kind==='track'&&!['mesh','texture','material'].includes(c.field))continue;
       if(c.kind==='audio')continue;
+      if(c.kind==='car'&&c.field==='base_mesh')continue;
+      if(c.kind==='car'&&c.field==='fitment'){
+        const m=/^car\.(player|rival)\.(\d+)\.part\.(\d+)$/.exec(c.id);
+        if(!m||!Array.isArray(c.value)||c.value.length!==11)continue;
+        const [,frontY,frontZ,,,,rearY,rearZ]=c.value;
+        const dy=frontY-rearY,dz=frontZ-rearZ;
+        if(dy||dz||rearY){
+          const bank=Number(m[2]);
+          const relative=`raw/asset_${String(bank).padStart(3,'0')}.bin`,target=path.join(staging,relative);
+          const src=files.includes(relative)?target:path.join(service.state.disc.data,relative);
+          const rawBytes=await fs.readFile(src);
+          const clamp16=v=>Math.max(-32768,Math.min(32767,Math.round(v)));
+          let pos=-1;
+          if(m[1]==='player'&&rawBytes.length>=40){
+            pos=0;
+          }else if(m[1]==='rival'&&rawBytes.length>=44){
+            const modelIdx=[0,1,2,3,4,6,8][Math.floor(Number(m[3])/5)];
+            const off0=rawBytes.readUInt32LE(0);
+            if(modelIdx!==undefined&&off0>=44&&off0+12+(modelIdx+1)*8<=rawBytes.length)pos=off0+12+modelIdx*8;
+          }
+          if(pos>=0){
+            rawBytes.writeInt16LE(clamp16(rawBytes.readInt16LE(pos+2)-dy/4),pos+2);
+            rawBytes.writeInt16LE(clamp16(rawBytes.readInt16LE(pos+4)-dz/4),pos+4);
+            rawBytes.writeInt16LE(clamp16(rawBytes.readInt16LE(pos+6)-rearY/4),pos+6);
+            await fs.mkdir(path.dirname(target),{recursive:true});
+            await fs.writeFile(target,rawBytes);
+            if(!files.includes(relative))files.push(relative);
+          }
+        }
+        continue;
+      }
       if(c.kind!=='car'&&!(c.kind==='track'&&['mesh','texture','material'].includes(c.field))&&!(c.kind==='interface'&&c.field==='texture'))throw Error(`Building ${c.kind} edits is not connected yet; no changes were applied`);
       if(c.field==='material'){
         materials[c.id]=c.value;continue; // Native profile writer validates both ID and values.
@@ -80,11 +140,23 @@ async function apply(service){
     await require('./track-meshes.cjs').validateBuild(service,{...previous.meshes,...models},staging,files);
     if(Object.keys(models).length||Object.keys(textures).length||Object.keys(materials).length||Object.keys(audio).length){
       const resolvedTextures={...previous.textures,...textures},resolvedMaterials={...previous.materials,...materials};
+      const resolvedMeshes={...previous.meshes,...models};
+      // Player car banks use even wheel submeshes (2,4..20) for front wheels and odd (3,5..21) for rear wheels across LODs/rotation phases.
+      for(const [key,val]of Object.entries(resolvedMeshes)){
+        const m=/^car\.player\.(\d+)\.part\.(2|3)$/.exec(key);
+        if(m){
+          const bank=m[1],baseWheel=Number(m[2]);
+          for(let w=baseWheel+2;w<=21;w+=2){
+            const wKey=`car.player.${bank}.part.${w}`;
+            if(!Object.hasOwn(models,wKey))resolvedMeshes[wKey]=val;
+          }
+        }
+      }
       // A project track-surface override applies to every package variant.
       for(const [overrides,resolved]of [[textures,resolvedTextures],[materials,resolvedMaterials]])for(const [id,file]of Object.entries(overrides))if(/^(car\.\d+|track\.(big|mid|hi|oval)[1-6]\.(course|terrain|model-bank-1))\.material\.\d+$/.test(id))for(const key of Object.keys(resolved))if(key.startsWith(id+'.variant.')&&!Object.hasOwn(overrides,key))resolved[key]=file;
       await fs.rm(manifest);
       await run(service.tool('rage-mod-cli'),['--write-profile-stdin',manifest],{
-        input:Buffer.from(JSON.stringify({textures:resolvedTextures,materials:resolvedMaterials,meshes:{...previous.meshes,...models},audio:{...previous.audio,...audio}}))});
+        input:Buffer.from(JSON.stringify({textures:resolvedTextures,materials:resolvedMaterials,meshes:resolvedMeshes,audio:{...previous.audio,...audio}}))});
     }
     await run(service.tool('rage-mod-cli'),[manifest]);
     const manifestHash=sha(await fs.readFile(manifest));

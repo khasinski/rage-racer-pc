@@ -916,10 +916,29 @@ void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
     uint32_t asset;
     uint32_t wheelBase;
     Vec3 environmentLight;
+    int rivalBody;
 
     s32 assetIndex;
 
     if (!s_initialized || object == NULL || g_CarModelAsset == NULL) return;
+    environmentLight = GameTrackLightForCar(object);
+    rivalBody = RuntimeConfigInt("race.rival_body", -1, -1, 30);
+    if (rivalBody >= 0 && rivalBody % 5 == 0 && g_TrackRenderTable != NULL) {
+        static const int kRivalModelIndex[] = {0, 1, 2, 3, 4, 6, 8};
+        int car = kRivalModelIndex[rivalBody / 5];
+        const s16 *lod = g_CarModelBankTable[car];
+        GameRenderWorldSubmitCarAssembly(object, RAGE_PLAYER_CAR_ENTITY,
+            TrackDataAssetKey(),
+            RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1,
+            (uint32_t)lod[0], (uint32_t)lod[0] + 2u, (uint32_t)lod[0] + 3u,
+            (uint8_t)lod[1],
+            g_TrackRenderTable->models[car].horizon,
+            g_TrackRenderTable->models[car].axis0,
+            (s16)g_TrackRenderTable->models[car].axis1,
+            (s16)g_TrackRenderTable->models[car].axis2,
+            object->steeringAngle / 12, environmentLight, lampsOnly, mirror_pass);
+        return;
+    }
     /* Key the mesh by the car actually installed in the slot being drawn.
      * The player's selection and grade move before the new model finishes
      * loading, and a mesh imported under the new key from the old bank would
@@ -932,7 +951,6 @@ void GameRenderWorldSubmitPlayerCar(const GameCarRuntime *object,
             g_PlayerCarIndex, g_CarTable[g_PlayerCarIndex].modelVariant);
     }
     asset = (uint32_t)(10 + assetIndex * 2);
-    environmentLight = GameTrackLightForCar(object);
     wheelBase = (uint32_t)object->renderDepth * 2u;
     if ((object->wheelRotation & 0x1000) != 0) wheelBase += 10u;
     if (wheelBase + 3u >= 22u) wheelBase = 0;
@@ -964,6 +982,7 @@ void GameRenderWorldPublishRaceCars(void) {
     for (source = 0; source < world->instanceCount; source++) {
         const RenderMeshInstance *instance = &world->instances[source];
         if (instance->pass == RAGE_RENDER_PASS_MAIN &&
+            instance->entity != RAGE_PLAYER_CAR_ENTITY &&
             instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1) {
             continue;
         }

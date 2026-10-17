@@ -59,10 +59,11 @@ function installMethods(Service){
    if(this.editor){
     const project=this.editor.project;
     project.checkRevision(revision);
-    await run(this.tool('rage-mod-cli'),['--set-material','',temp,key,properties],{signal});
+    const validKey=key.replace(/^car\.(\d+)\.material\./,(m,n)=>Number(n)>=32?'car.0.material.':m);
+    await run(this.tool('rage-mod-cli'),['--set-material','',temp,validKey,properties],{signal});
     const checked=JSON.parse(await run(this.tool('rage-mod-cli'),[temp],{signal}));
     if(signal.aborted)throw Error('Operation canceled');
-    const kind=key.startsWith('track.')?'track':'car',changes=[{kind,id:key,field:'material',value:checked.materials[key]}];
+    const kind=key.startsWith('track.')?'track':'car',changes=[{kind,id:key,field:'material',value:checked.materials[validKey]}];
     if(kind==='track'&&project.snapshot().changes.some(c=>c.kind==='car'&&c.id===key&&c.field==='material'))changes.push({kind:'car',id:key,field:'material',value:null});
     return project.edit(changes,revision);
    }

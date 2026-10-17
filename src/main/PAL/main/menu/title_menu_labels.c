@@ -1,6 +1,7 @@
 #include "game/menu_internal.h"
 #include "game/prim.h"
 #include "menu_images.h"
+#include "menu_label_font.h"
 #include "content/title_image.h"
 #include <string.h>
 
@@ -14,6 +15,38 @@ static u8 ColorComponent(u16 color, s32 shift) {
     return ((color >> shift) & 0x1F) << 3;
 }
 
+/* AddPrim prepends, so the bar is queued after the ink and ends up behind it. */
+static u8 *EmitFontLabel(GameOrderingTableEntry *ot, u8 *packet,
+                         s32 x, s32 y, s32 visibleHeight,
+                         const uint8_t *pixels) {
+    const uint8_t *bar = pixels + 2 * 3;
+    s32 row;
+
+    for (row = 0; row < visibleHeight; row++) {
+        const uint8_t *line = pixels + row * MENU_LABEL_WIDTH * 3;
+        s32 column = 0;
+
+        while (column < MENU_LABEL_WIDTH) {
+            const uint8_t *pixel = line + column * 3;
+            s32 start = column;
+            int plate = pixel[0] == bar[0] && pixel[1] == bar[1] &&
+                        pixel[2] == bar[2];
+
+            column++;
+            while (column < MENU_LABEL_WIDTH &&
+                   memcmp(pixel, line + column * 3, 3) == 0) {
+                column++;
+            }
+            if (plate) continue;
+            packet = AddTilePrim(ot, packet, x + start, y + row,
+                                 column - start, 1,
+                                 pixel[0], pixel[1], pixel[2]);
+        }
+    }
+    return AddTilePrim(ot, packet, x, y, MENU_LABEL_WIDTH, visibleHeight,
+                       bar[0], bar[1], bar[2]);
+}
+
 u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
                        TitleMenuItem item, s32 x, s32 y,
                        s32 visibleHeight, s32 selected) {
@@ -25,8 +58,10 @@ u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
     if (visibleHeight > CUSTOM_MENU_TEXTURE_HEIGHT)
         visibleHeight = CUSTOM_MENU_TEXTURE_HEIGHT;
 
-    const u8 *image=MenuImage(item,selected);
-    if(image){
+    const u8 *image = MenuImage(item, selected);
+    const uint8_t *fontPixels;
+
+    if (image) {
         for(row=0;row<visibleHeight;row++)for(s32 column=0;column<CUSTOM_MENU_TEXTURE_WIDTH;){
             const u8 *pixel=image+(row*CUSTOM_MENU_TEXTURE_WIDTH+column)*4;
             s32 start=column++;
@@ -34,6 +69,11 @@ u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
             if(pixel[3]>=128)packet=AddTilePrim(ot,packet,x+start,y+row,column-start,1,pixel[0],pixel[1],pixel[2]);
         }
         return packet;
+    }
+
+    fontPixels = MenuLabelFontPixels(item, selected);
+    if (fontPixels != NULL) {
+        return EmitFontLabel(ot, packet, x, y, visibleHeight, fontPixels);
     }
 
     for (row = 0; row < visibleHeight; row++) {

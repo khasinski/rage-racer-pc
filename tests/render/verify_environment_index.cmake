@@ -33,6 +33,11 @@ foreach(mode missing empty directory malformed valid)
         WORKING_DIRECTORY "${assets}" RESULT_VARIABLE result TIMEOUT 45
         OUTPUT_FILE "${assets}/game.log" ERROR_FILE "${assets}/game.log")
     file(READ "${assets}/game.log" log)
+    if(mode STREQUAL "missing" AND NOT result STREQUAL "0" AND
+       log MATCHES "No supported SDL_GPU backend found|No available video device")
+        message("SKIP: environment provider requires an SDL GPU backend")
+        return()
+    endif()
     if(mode STREQUAL "missing" OR mode STREQUAL "empty" OR mode STREQUAL "valid")
         if(NOT result STREQUAL "0" OR NOT EXISTS "${assets}/frame.ppm")
             message(FATAL_ERROR "${mode} index rejected: ${result}; ${log}")

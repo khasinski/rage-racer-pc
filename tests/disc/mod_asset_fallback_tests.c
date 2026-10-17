@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
     configuredDirectory = root;
     snprintf(manifestPath, sizeof(manifestPath), "%s/mod.toml", root);
     if(argc==2 && strcmp(argv[1],"active")==0){
-        char builds[1024],build[1024],profile[1100],pointer[1100],buildManifest[1100];
+        char builds[1024],build[1064],profile[1100],pointer[1100],buildManifest[1100];
         char profileHash[65],manifestHash[65],payloadHash[65],assetHash[65],json[1024];
         char buildRaw[1100],payload[1100],buildAsset[1200],entries[256];
         const char *id="00000000-0000-4000-8000-000000000001";

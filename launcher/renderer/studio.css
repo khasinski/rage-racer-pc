@@ -1,0 +1,1202 @@
+/* Photoshop / Blender Dark Studio Layout for Rage Car Studio & Rage Track Studio */
+:root {
+  --studio-bg: #0d0f12;
+  --studio-panel: #16191f;
+  --studio-panel-alt: #1b1f27;
+  --studio-surface: #12151b;
+  --studio-input: #1c2029;
+  --studio-border: #262b35;
+  --studio-border-strong: #374151;
+  --studio-text: #f1f5f9;
+  --studio-muted: #94a3b8;
+  --studio-accent: #ef4444;
+  --studio-accent-hover: #f97316;
+  --studio-blue: #38bdf8;
+  --studio-purple: #c084fc;
+  --studio-green: #22c55e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body.studio-body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--studio-bg);
+  color: var(--studio-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 12.5px;
+  user-select: none;
+}
+
+/* Reset base.css global tag rules inside Studio */
+body.studio-body aside {
+  border-right: 0;
+  padding: 0;
+  gap: 0;
+}
+
+body.studio-body aside.studio-tooldock button {
+  text-align: center;
+  padding: 0;
+  border-radius: 4px;
+}
+
+body.studio-body dialog {
+  max-width: min(920px, 95vw);
+  width: auto;
+  background: #16191f;
+  color: var(--studio-text);
+  border: 1px solid #374151;
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+
+.studio-shell {
+  display: grid;
+  grid-template-rows: 46px minmax(0, 1fr) 28px;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Segmented Navigation Pill Group */
+.studio-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  background: #0b0d12;
+  border: 1px solid #28303e;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+
+.studio-seg > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 5px 11px !important;
+  border: 1px solid transparent !important;
+  border-radius: 5px !important;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.studio-seg > button:hover:not(:disabled) {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.studio-seg > button.active {
+  background: linear-gradient(180deg, #273042 0%, #1c2331 100%);
+  border-color: #475569 !important;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.studio-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.45);
+}
+
+.studio-dot.warn {
+  background: #f59e0b;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
+}
+
+/* 1. Top Menu Bar */
+.studio-menubar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  background: var(--studio-panel);
+  border-bottom: 1px solid var(--studio-border);
+  height: 46px;
+  z-index: 200;
+  gap: 10px;
+  min-width: 0;
+}
+
+.studio-menubar-left,
+.studio-menubar-center,
+.studio-menubar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+
+.studio-menubar-center {
+  flex: 1 1 auto;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.studio-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  background: #231619;
+  border: 1px solid var(--studio-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Dropdown menus in top bar */
+.studio-menu {
+  position: relative;
+}
+
+.studio-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 5px 9px;
+  border-radius: 4px;
+  color: #cbd5e1;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+
+.studio-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.studio-menu[open] > summary,
+.studio-menu > summary:hover {
+  background: #282e3b;
+  color: #fff;
+}
+
+.studio-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 250px;
+  background: #1c2029;
+  border: 1px solid #3f4756;
+  border-radius: 6px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.72);
+  padding: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 600;
+}
+
+.studio-menu-dropdown button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  padding: 7px 10px;
+  color: #e2e8f0;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.studio-menu-dropdown button:hover:not(:disabled) {
+  background: var(--studio-accent);
+  color: #fff;
+}
+
+.studio-menu-dropdown button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.studio-menu-dropdown hr {
+  border: 0;
+  border-top: 1px solid #2e3440;
+  margin: 4px 2px;
+}
+
+.studio-doc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #1d222c;
+  border: 1px solid #334155;
+  color: #f8fafc;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.studio-doc-pill:hover {
+  border-color: var(--studio-blue);
+  background: #232a36;
+}
+
+.studio-doc-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.studio-doc-dot.dirty {
+  background: #f59e0b;
+}
+
+body.studio-body .studio-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 9px;
+  border-radius: 4px;
+  background: #202531;
+  border: 1px solid #363e4d;
+  color: #e2e8f0;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+body.studio-body .studio-btn:hover:not(:disabled) {
+  background: #2b3242;
+  border-color: #4b5563;
+  color: #fff;
+}
+
+body.studio-body .studio-btn:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+body.studio-body .studio-btn.primary {
+  background: linear-gradient(90deg, #ef4444, #f97316);
+  border-color: #f97316;
+  color: #fff;
+  font-weight: 700;
+}
+
+body.studio-body .studio-btn.primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+body.studio-body .studio-btn.active {
+  background: #2d1b20;
+  border-color: var(--studio-accent);
+  color: #fff;
+}
+
+/* 2. Center Workspace Grid (Full Viewport + Right Accordion, plus optional Left Part Dock in Car Studio) */
+.studio-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.studio-workspace.inspector-collapsed {
+  grid-template-columns: minmax(0, 1fr) 0px;
+}
+
+.studio-workspace.has-partdock {
+  grid-template-columns: 204px minmax(0, 1fr) 412px;
+}
+
+.studio-workspace.has-partdock.inspector-collapsed {
+  grid-template-columns: 204px minmax(0, 1fr) 0px;
+}
+
+/* Left Vertical Tool Dock (Photoshop style) */
+body.studio-body aside.studio-tooldock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 6px;
+  background: var(--studio-panel);
+  border-right: 1px solid var(--studio-border);
+  z-index: 40;
+  overflow-y: auto;
+}
+
+body.studio-body aside.studio-tooldock.studio-partdock {
+  align-items: stretch;
+  padding: 14px 10px;
+  gap: 6px;
+}
+
+.studio-partdock-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #64748b;
+  padding: 6px 8px 4px;
+}
+
+body.studio-body aside.studio-tooldock .studio-tool-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #94a3b8;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.12s;
+}
+
+body.studio-body aside.studio-tooldock.studio-partdock .studio-tool-btn {
+  width: 100%;
+  height: auto;
+  min-height: 34px;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.studio-body aside.studio-tooldock .studio-tool-btn:hover:not(:disabled) {
+  background: #232834;
+  color: #f8fafc;
+}
+
+body.studio-body aside.studio-tooldock .studio-tool-btn.active {
+  background: #2d1a1e;
+  border-color: var(--studio-accent);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+}
+
+.studio-tool-sep {
+  width: 26px;
+  height: 1px;
+  background: var(--studio-border);
+  margin: 4px 0;
+  flex-shrink: 0;
+}
+
+body.studio-body aside.studio-tooldock.studio-partdock .studio-tool-sep {
+  width: 100%;
+  margin: 6px 0;
+}
+
+/* Center Full-Screen Viewport — Non-overlapping Flex Column (Top Bar + Stage + Optional Bottom Bar) */
+.studio-viewport {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 45%, #1d2430 0%, #11151d 68%, #0a0c10 100%);
+}
+
+/* Non-overlapping Top Viewport Bar */
+.studio-hud-top {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #141820;
+  border-bottom: 1px solid var(--studio-border);
+  min-height: 42px;
+  min-width: 0;
+  flex-wrap: wrap;
+  z-index: 20;
+}
+
+.studio-hud-top-left,
+.studio-hud-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Center Stage Host (WebGL 3D Canvas or 2D SVG Map) */
+.studio-stage-canvas {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+}
+
+/* Floating translucent HUD overlays inside .studio-stage-canvas (no window-in-a-window bars) */
+.studio-stage-canvas > .preview-header {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  right: 12px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0;
+  margin: 0 !important;
+  background: transparent;
+  border: 0;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.studio-stage-canvas > .preview-header > div:first-child {
+  pointer-events: auto;
+  background: rgba(15, 19, 26, 0.78);
+  backdrop-filter: blur(8px);
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid rgba(56, 65, 82, 0.78);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.studio-stage-canvas > .preview-header > div:last-child,
+.studio-stage-canvas > .preview-header > .action-row {
+  pointer-events: auto;
+  background: rgba(15, 19, 26, 0.84);
+  backdrop-filter: blur(8px);
+  padding: 4px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(56, 65, 82, 0.85);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.studio-stage-canvas > .preview-header h2 {
+  font-size: 12px;
+  margin: 0;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.studio-stage-canvas > .preview-header .preview-hint {
+  display: none;
+}
+
+.studio-stage-canvas > .preview-header button:not([data-model-paint]),
+.studio-stage-canvas > .preview-footer button {
+  padding: 4px 9px !important;
+  font-size: 11px !important;
+  font-weight: 600;
+  border-radius: 5px !important;
+  background: #1e2430;
+  border: 1px solid #363e4d;
+  color: #e2e8f0;
+  transition: background 0.12s, border-color 0.12s;
+}
+
+.studio-stage-canvas > .preview-header button:not([data-model-paint]):hover,
+.studio-stage-canvas > .preview-footer button:hover {
+  background: #2b3242;
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+.studio-stage-canvas > .preview-header button:not([data-model-paint]).active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #fff;
+}
+
+.studio-stage-canvas > canvas {
+  flex: 1 1 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  display: block;
+  border: 0 !important;
+  border-radius: 0 !important;
+  outline: none;
+}
+
+.studio-stage-canvas > .preview-footer {
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  margin: 0 !important;
+  background: rgba(15, 19, 26, 0.86);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(56, 65, 82, 0.85);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  font-size: 11px;
+}
+
+.studio-stage-canvas > .preview-footer p {
+  margin: 0 !important;
+  line-height: 1.35;
+}
+
+.studio-stage-canvas > .preview-footer footer {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Full-screen interactive 2D Track SVG Map */
+.studio-stage-canvas svg.studio-track-svg {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block;
+  cursor: grab;
+  user-select: none;
+}
+
+.studio-stage-canvas svg.studio-track-svg:active {
+  cursor: grabbing;
+}
+
+/* Non-overlapping Bottom Viewport Bar */
+.studio-hud-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #141820;
+  border-top: 1px solid var(--studio-border);
+  min-width: 0;
+  z-index: 20;
+}
+
+.studio-layer-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+body.studio-body .studio-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: #1e2430;
+  border: 1px solid #364152;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+body.studio-body .studio-chip:hover {
+  border-color: #64748b;
+  color: #fff;
+}
+
+body.studio-body .studio-chip.active {
+  background: rgba(239, 68, 68, 0.24);
+  border-color: var(--studio-accent);
+  color: #fff;
+}
+
+body.studio-body .studio-chip.layer-on {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: var(--studio-blue);
+  color: #e0f2fe;
+}
+
+/* Draggable Scenery Prefab Cards in Track Studio Bottom Bar */
+.scenery-prefab-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+  max-width: 100%;
+}
+
+.scenery-prefab-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  background: #1e2330;
+  border: 1px solid #4c1d95;
+  color: #e9d5ff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: grab;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.scenery-prefab-chip:hover {
+  background: #2e1065;
+  border-color: var(--studio-purple);
+  color: #fff;
+}
+
+/* 3. Right Accordion Inspector Panel */
+body.studio-body aside.studio-inspector {
+  background: var(--studio-panel);
+  border-left: 1px solid var(--studio-border);
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.studio-inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--studio-panel-alt);
+  border-bottom: 1px solid var(--studio-border);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.studio-accordion-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+details.studio-accordion {
+  background: var(--studio-surface);
+  border: 1px solid var(--studio-border);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+details.studio-accordion[open] {
+  border-color: #364152;
+}
+
+details.studio-accordion > summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #1e232e;
+  color: #f1f5f9;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  gap: 8px;
+}
+
+details.studio-accordion > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.studio-accordion > summary:hover {
+  background: #252b38;
+}
+
+.studio-accordion-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: #cbd5e1;
+  white-space: nowrap;
+}
+
+.studio-accordion-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  user-select: text;
+  min-width: 0;
+}
+
+/* Wheel & Body Fitment Slider Controls */
+.studio-fitment-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #0e1117;
+  border: 1px solid #252c38;
+  border-radius: 7px;
+}
+
+.studio-fitment-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #38bdf8;
+}
+
+.studio-fitment-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.studio-fitment-row + .studio-fitment-row {
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding-top: 6px;
+}
+
+.studio-fitment-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.studio-fitment-row label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.25;
+  flex: 1;
+  min-width: 0;
+}
+
+.studio-fitment-row-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.studio-fitment-row input[type="range"] {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  accent-color: #38bdf8;
+  cursor: pointer;
+  height: 18px;
+}
+
+body.studio-body .studio-fitment-row input[type="number"] {
+  width: 64px !important;
+  min-width: 64px !important;
+  padding: 3px 6px;
+  font-size: 11.5px;
+  text-align: right;
+  background: var(--studio-input);
+  border: 1px solid #334155;
+  border-radius: 4px;
+  color: #f8fafc;
+}
+
+/* Compact fields inside Accordion (override base.css fixed input widths) */
+.studio-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.studio-grid-3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.studio-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.studio-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--studio-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.studio-body .studio-field input,
+body.studio-body .studio-field input[type="number"],
+body.studio-body .studio-field input[type="text"],
+body.studio-body .studio-field select {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  padding: 6px 9px;
+  border-radius: 5px;
+  background: var(--studio-input);
+  border: 1px solid #334155;
+  color: #f8fafc;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+body.studio-body .studio-field input:focus,
+body.studio-body .studio-field select:focus {
+  outline: none;
+  border-color: var(--studio-blue);
+}
+
+/* Compact tables inside Accordion */
+body.studio-body .compact-table input[type="number"],
+body.studio-body .compact-table input[type="text"] {
+  width: 100% !important;
+  min-width: 48px !important;
+  padding: 4px 6px;
+  font-size: 11.5px;
+}
+
+/* 32x32 Mini Terrain Tile Matrix inside Terrain Accordion */
+.studio-terrain-matrix {
+  display: grid;
+  grid-template-columns: repeat(32, 1fr);
+  gap: 1px;
+  background: #0b0d12;
+  padding: 3px;
+  border: 1px solid #262b35;
+  border-radius: 5px;
+  aspect-ratio: 1 / 1;
+  width: 100%;
+  max-width: 290px;
+  margin: 0 auto;
+}
+
+body.studio-body aside.studio-inspector .studio-terrain-matrix button {
+  width: 100%;
+  height: 100%;
+  min-height: 6px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 1px;
+  background: #161a23;
+  cursor: pointer;
+}
+
+body.studio-body aside.studio-inspector .studio-terrain-matrix button.has-mesh {
+  background: #15803d;
+}
+
+body.studio-body aside.studio-inspector .studio-terrain-matrix button.active {
+  background: #38bdf8 !important;
+  box-shadow: 0 0 0 1.5px #fff;
+  z-index: 2;
+}
+
+/* 4. Bottom Status Bar */
+.studio-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  background: #111318;
+  border-top: 1px solid var(--studio-border);
+  color: var(--studio-muted);
+  font-size: 11px;
+  height: 26px;
+  white-space: nowrap;
+  overflow: hidden;
+  gap: 12px;
+}
+
+/* Car / Track Browser Modal Grid */
+.studio-browser-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 8px;
+  max-height: 54vh;
+  overflow-y: auto;
+  margin: 12px 0;
+  padding-right: 4px;
+}
+
+body.studio-body .studio-browser-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #1a1f29;
+  border: 1px solid #2e3646;
+  color: #f1f5f9;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+body.studio-body .studio-browser-card:hover {
+  background: #232a38;
+  border-color: var(--studio-blue);
+}
+
+body.studio-body .studio-browser-card.active {
+  background: #2b191e;
+  border-color: var(--studio-accent);
+}
+
+body.studio-body .studio-browser-card small {
+  color: var(--studio-muted);
+  font-size: 10.5px;
+}
+
+/* Direct Race Launch Group in Top Bar */
+.studio-race-launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 5px;
+  border-radius: 6px;
+  background: rgba(21, 128, 61, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.45);
+}
+
+.studio-race-launcher select {
+  background: #11161d;
+  color: #f1f5f9;
+  border: 1px solid #2e473b;
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  height: 24px;
+}
+
+body.studio-body button.studio-race-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: #16a34a;
+  border: 1px solid #22c55e;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+body.studio-body button.studio-race-btn:hover:not(:disabled) {
+  background: #15803d;
+  border-color: #4ade80;
+}
+
+/* Right Inspector Scenery Models Library Grid */
+.studio-scenery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.studio-scenery-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 5px 7px;
+  border-radius: 5px;
+  background: #161a23;
+  border: 1px solid #283040;
+  color: #e2e8f0;
+  font-size: 11px;
+  cursor: grab;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.studio-scenery-card:hover {
+  background: #1f2533;
+  border-color: #c084fc;
+}
+
+.studio-scenery-card.active {
+  background: rgba(192, 132, 252, 0.18);
+  border-color: #c084fc;
+}
+
+/* Scrubbable Numeric Labels (Blender / Unreal Engine horizontal drag-to-scrub) */
+.studio-field label.studio-scrub-label,
+.studio-fitment-row label.studio-scrub-label {
+  cursor: ew-resize;
+  user-select: none;
+  transition: color 0.12s;
+}
+
+.studio-field label.studio-scrub-label:hover,
+.studio-fitment-row label.studio-scrub-label:hover {
+  color: #38bdf8;
+}
+
+/* Interactive Torque Curve SVG handles */
+.studio-torque-svg circle[data-torque-node] {
+  cursor: ns-resize;
+  transition: r 0.1s, fill 0.1s;
+}
+
+.studio-torque-svg circle[data-torque-node]:hover,
+.studio-torque-svg circle[data-torque-node].dragging {
+  r: 5.5px;
+  fill: #38bdf8;
+  stroke: #ffffff;
+  stroke-width: 1.5px;
+}
+
+/* Clickable Statusbar Project Edits Pill */
+.studio-status-edits-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #7dd3fc;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.studio-status-edits-btn:hover {
+  background: rgba(56, 189, 248, 0.28);
+  border-color: #38bdf8;
+  color: #ffffff;
+}
+
+/* Command Palette (Ctrl+K) & Project Outliner List */
+.studio-palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 52vh;
+  overflow-y: auto;
+  margin-top: 10px;
+  padding-right: 4px;
+}
+
+body.studio-body .studio-palette-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #171c26;
+  border: 1px solid #283142;
+  color: #f1f5f9;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+body.studio-body .studio-palette-item:hover,
+body.studio-body .studio-palette-item.selected {
+  background: #202838;
+  border-color: #38bdf8;
+}
+
+.studio-outliner-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 7px;
+  background: #161b24;
+  border: 1px solid #2b3446;
+}
+
+.studio-outliner-card + .studio-outliner-card {
+  margin-top: 8px;
+}

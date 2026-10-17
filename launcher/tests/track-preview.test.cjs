@@ -17,3 +17,11 @@ test('track materials preserve full source IDs and keep bank textures distinct',
  assert.deepEqual(out.materials,{0:{id:'course'},1:{id:'terrain'}});
  assert.equal(out.vertices[6],0);assert.equal(out.vertices[33],1);
 });
+test('track preview selects section page 1 textures per instance and snaps terrain cell boundaries',()=>{
+ const geometry={ranges:[[0,3]],vertices:[4095,0,0,0,1,0,42,0,0,0,0,0,0,1,0,42,1,0,0,0,-4095,0,1,0,42,0,1],colors:Array(12).fill(128),indices:[0,1,2],textures:{42:{png:'page0'}},texturesPage1:{42:{png:'page1'}},materials:{42:{id:'mat42'}}};
+ const out=assemble({terrain:{geometry,instances:[{mesh:0,position:[1024,0,-1024],yaw:0,cell:1,page:0},{mesh:0,position:[1024,0,-1024],yaw:0,cell:2,page:1}]}});
+ assert.deepEqual(out.textures,{0:{png:'page0'},1:{png:'page1'}});
+ assert.equal(out.vertices[6],0);assert.equal(out.vertices[33],1);
+ assert.equal(out.vertices[0],2048);assert.equal(out.vertices[20],-2048);
+});
+

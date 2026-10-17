@@ -4,7 +4,7 @@ async function car(service,key,signal){
  const catalog=await require('./car-catalog.cjs')(service,signal);
  const body=catalog.parts.find(p=>p.key===key&&(p.rival?p.part%5===0:p.part===0));if(!body)throw Error('Choose a complete car');return body;
 }
-async function table(service,c,signal,view){const {run}=require('./service.cjs');return require('./car-view.cjs').withView(service,signal,view,async selected=>JSON.parse(await run(service.tool('rage-mod-cli'),['--car-materials',c.rival?'rival':'player',require('./car-view.cjs').rawSource(service,c.bank,selected),String(c.bank)],{signal})).materials);}
+async function table(service,c,signal,view){return require('./car-view.cjs').withView(service,signal,view,async selected=>(await require('./car-view.cjs').carMaterials(service,'--car-materials',c.rival?'rival':'player',c.bank,selected,signal)).materials);}
 async function layout(service,c,signal,view){return require('./car-view.cjs').withView(service,signal,view,async selected=>{const raw=require('./car-view.cjs').rawSource(service,c.bank,selected);return JSON.parse(await require('./service.cjs').run(service.tool('rage-mod-cli'),c.rival?['--rival-layout',raw,String(c.part)]:['--car-layout',raw],{signal}));});}
 async function boundedFile(root,relative,max){
  if(typeof relative!=='string'||!relative||relative.includes('\\')||relative.split('/').some(p=>!p||p==='.'||p==='..')||path.isAbsolute(relative))throw Error('Invalid car set file path');
@@ -68,18 +68,20 @@ exports.importSet=async(service,key,source,revision,owner)=>{
     const parts=[0,2,3].map(offset=>({id:`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`}));
     const instances=placement.instances.map(i=>({mesh:[0,2,3].indexOf(i.part-c.part),position:i.position,scale:i.scale}));
     const project=await service.loadProject();
-    await run(service.tool('rage-mesh-obj'),['separate-glb',source,staging],{signal,input:JSON.stringify({source:{region:service.state.disc.region,key,fingerprint:project?.document.source.fingerprint||null},parts,instances})});
+    const expectedSource={region:service.state.disc.region,key,fingerprint:project?.document.source.fingerprint||null};
+    await run(service.tool('rage-mesh-obj'),['separate-glb',source,staging],{signal,input:JSON.stringify({source:expectedSource,parts,instances})});
     source=staging;manifest={format:1,region:service.state.disc.region,key,parts:{body:'part-0.glb','front-wheels':'part-1.glb','rear-wheels':'part-2.glb'},textures:{}};
    }else manifest=JSON.parse(await fs.readFile(await boundedFile(source,'car-set.json',65536),'utf8'));
-   if(manifest.format!==1||manifest.region!==service.state.disc.region||manifest.key!==key)throw Error('Choose a car set exported for this slot and game version. Cross-slot material remapping is not supported yet.');
+   if(manifest.format!==1||manifest.region!==service.state.disc.region||typeof manifest.key!=='string')throw Error('Choose a valid car set exported for this game version.');
+   if(service.resolvePlayerKey(manifest.key)!==service.resolvePlayerKey(key))throw Error('Car set was exported for a different car slot');
    if(!manifest.parts||!manifest.textures||Array.isArray(manifest.textures)||Object.keys(manifest.textures).length>64)throw Error('Invalid car set manifest');
    const meshes=[],textures=[],embedded={};
    for(const [role,offset]of [['body',0],['front-wheels',2],['rear-wheels',3]]){
     const file=await boundedFile(source,manifest.parts[role],128*1024*1024),ext=path.extname(file).toLowerCase(),relative='meshes/'+role+'.rmesh',out=path.join(staging,relative);
+    const partKey=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
     let images=[];
     const imageDir=path.join(staging,'images-'+role);
     if(ext==='.glb'||ext==='.gltf'){await fs.mkdir(imageDir);const packed=await exports.pack(service,file,path.join(imageDir,'source.glb'),signal);images=JSON.parse(await run(service.tool('rage-mesh-obj'),['import-glb',packed,out,imageDir],{signal})).textures;}else if(ext==='.obj')await run(service.tool('rage-mesh-obj'),['import',file,out],{signal});else if(ext==='.rmesh')await fs.copyFile(file,out);else throw Error('Car set models must be OBJ, GLB, glTF or RRMESH');
-    const partKey=`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+offset}`;
     await require('./car-material-bindings.cjs')(service,partKey,out,staging,role,signal);
     meshes.push(`"${partKey}" = "${relative}"`);
     if(images.length){
@@ -101,17 +103,23 @@ exports.importSet=async(service,key,source,revision,owner)=>{
     try{await run(service.tool('rage-mod-cli'),['--png',staged],{signal});}catch(e){if(signal.aborted)throw e;throw Error(`Cannot import texture ${relative}: the game could not decode this PNG.`);}
     textures.push(`"${material.id}" = "${output}"`);
    }
-   await fs.writeFile(path.join(staging,'mod.toml'),'[meshes]\n'+meshes.join('\n')+'\n[textures]\n'+textures.join('\n')+'\n');
+   const meshEntries=[],textureEntries=[];
+   for(const line of meshes){const m=/^"([^"]+)" = "([^"]+)"$/.exec(line);if(m)meshEntries.push([m[1],m[2]]);}
+   for(const line of textures){const m=/^"([^"]+)" = "([^"]+)"$/.exec(line);if(m)textureEntries.push([m[1],m[2]]);}
    await service.loadProject();
    if(service.editor){
     const project=service.editor.project,revision=project.revision;
-    const parsed=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(staging,'mod.toml')],{signal}));
-    const store=new (require('./project-files.cjs').ProjectFiles)(service.editor.file),changes=[];
-    for(const [field,entries,type]of [['mesh',parsed.meshes,'rmesh'],['texture',parsed.textures,'png']]){
-     for(const [id,relative]of Object.entries(entries))changes.push({kind:'car',id,field,value:await store.put(path.join(staging,relative),type)});
+    const store=new (require('./project-files.cjs').ProjectFiles)(service.editor.file),changes=[{kind:'car',id:key,field:'fitment',value:null}];
+    for(const [field,entries,type]of [['mesh',meshEntries,'rmesh'],['texture',textureEntries,'png']]){
+     for(const [id,relative]of entries){
+      const ref=await store.put(path.join(staging,relative),type);
+      changes.push({kind:'car',id,field,value:ref});
+      if(field==='mesh')changes.push({kind:'car',id,field:'base_mesh',value:ref});
+     }
     }
     if(signal.aborted)throw Error('Operation canceled');return project.edit(changes,revision);
    }
+   await fs.writeFile(path.join(staging,'mod.toml'),'[meshes]\n'+meshes.join('\n')+'\n[textures]\n'+textures.join('\n')+'\n');
    const names=JSON.parse(await run(service.tool('rage-save-cli'),['car-names'],{signal})),name=require('./car-names.cjs')(c.name,service.state.disc.region,names);
    return (await service.installModFiles(staging,signal,name+' · complete car')).id;
   }finally{await fs.rm(staging,{recursive:true,force:true});}
@@ -135,6 +143,33 @@ exports.prepare=async(service,key,file)=>service.operation('Inspecting car impor
    const stats=JSON.parse(await run(service.tool('rage-mesh-obj'),['inspect-glb',glb],{signal}));for(const {word}of stats.materials){if(!available.has(word))available.set(word,new Set());available.get(word).add(label);}await fs.rm(original,{force:true});await fs.rm(glb,{force:true});
   }
   const materials=[...available].map(([word,parts],i)=>({word,label:`Material ${i+1} · ${(word&65535)===65535?'inner surface':(word&65535)>>>6===1?'glass':'texture '+((word&65535)%64+1)} · ${[...parts].join(', ')}`,part:`car.${c.rival?'rival':'player'}.${c.bank}.part.${c.part+({body:0,'front wheels':2,'rear wheels':3})[[...parts][0]]}`}));
+  // Smart auto-matching for cross-slot GLB imports so dropdowns are pre-populated:
+  const usedInstances=new Set();
+  for(const node of inspection.nodes){
+   if(Number.isInteger(node.instance)&&roles.some(r=>r.instance===node.instance)&&!usedInstances.has(node.instance)){
+    usedInstances.add(node.instance);continue;
+   }
+   const nm=String(node.name||'').toLowerCase();
+   const matchRole=roles.find(r=>!usedInstances.has(r.instance)&&(
+    (nm.includes('body')&&r.label==='Body')||
+    (nm.includes('rear')&&r.label==='Rear wheels')||
+    (nm.includes('front')&&r.label.startsWith('Front'))
+   ))||roles.find(r=>!usedInstances.has(r.instance));
+   if(matchRole){node.instance=matchRole.instance;usedInstances.add(matchRole.instance);}
+  }
+  const innerChoice=materials.find(m=>(m.word&65535)===65535);
+  const glassChoice=materials.find(m=>((m.word&65535)!==65535)&&((m.word&65535)>>>6)===1);
+  const texChoices=materials.filter(m=>((m.word&65535)!==65535)&&((m.word&65535)>>>6)!==1);
+  let texIdx=0;
+  for(const mat of inspection.materials){
+   if(Number.isInteger(mat.word)&&available.has(mat.word))continue;
+   const low=Number.isInteger(mat.word)?(mat.word&65535):-1;
+   const nm=String(mat.name||'').toLowerCase();
+   if((low===65535||nm.includes('65535')||nm.includes('inner'))&&innerChoice)mat.word=innerChoice.word;
+   else if(((low!==-1&&(low>>>6)===1)||nm.includes('glass')||nm.includes('window'))&&glassChoice)mat.word=glassChoice.word;
+   else if(texChoices.length)mat.word=texChoices[texIdx++%texChoices.length].word;
+   else if(materials.length)mat.word=materials[0].word;
+  }
   const token=randomUUID();service.carImport={token,folder,key,revision:project.revision,source:{...project.document.source,key},roles,materials,inspection};
   return {token,key,name:c.name,region:service.state.disc.region,revision:project.revision,nodes:inspection.nodes,materials:inspection.materials,roles,choices:materials};
  }catch(e){await fs.rm(folder,{recursive:true,force:true});throw e;}

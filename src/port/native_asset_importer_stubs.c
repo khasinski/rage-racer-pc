@@ -81,3 +81,11 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
     (void)image;
     return 0;
 }
+
+int NativeAssetImporterMaterialKey(const RenderMeshInstance *instance,
+                                   uint32_t material, struct RageImportedTextureKey *key) {
+    (void)instance;
+    (void)material;
+    (void)key;
+    return 0;
+}

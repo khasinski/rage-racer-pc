@@ -10,9 +10,7 @@ module.exports=async function(service,key,metadata,mod,signal){
  const index=(bank-88)/2;
  const prefix=kind==='player'?`car.${(bank-10)/2}.material.`:`track.${['big','mid','hi','oval'][index%4]}${Math.floor(index/4)+1}.model-bank-1.material.`;
  if(![...Object.keys(properties),...Object.keys(textures),...Object.keys(projectTextures)].some(id=>id.startsWith(prefix)))return {};
- const {run}=require('./service.cjs');
- const file=require('./car-view.cjs').rawSource(service,bankText,mod);
- const table=JSON.parse(await run(service.tool('rage-mod-cli'),['--car-materials',kind,file,bankText],{signal}));
+ const table=await require('./car-view.cjs').carMaterials(service,'--car-materials',kind,bankText,mod,signal);
  const result={};
  for(const material of metadata.materials){
   const slot=table.materials.find(m=>m.page===material.page&&m.clut===material.clut);if(!slot)continue;

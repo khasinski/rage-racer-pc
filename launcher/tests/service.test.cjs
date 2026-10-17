@@ -26,7 +26,7 @@ test('mesh mods validate, preserve material edits, resolve conflicts and export'
   const output=await service.composeMods();
   const manifest=JSON.parse(await run(service.tool('rage-mod-cli'),[path.join(output,'mod.toml')]));
   assert.deepEqual(await fs.readFile(path.join(output,manifest.meshes[key])),await fs.readFile(path.join(root,'second/meshes/body.rmesh')));
-  service.carTool=async()=>JSON.stringify({materials:[]});
+  service.carTool=async args=>JSON.stringify(args.includes('tools.car_catalog=true')?{parts:[{key}]}:{materials:[]});
   service.state.disc.data=root;await fs.mkdir(path.join(root,'textures'));
   const preview=await service.previewCar(key,second.id);
   assert.equal(preview.vertices.length,27);

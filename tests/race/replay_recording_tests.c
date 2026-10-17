@@ -12,6 +12,7 @@
 GameWorkBuffer g_ReplayFrameBuffer;
 Replay g_Replay;
 s16 g_GrandPrixMode;
+RaceSession g_RaceSession;
 PlayerCarRuntime g_PlayerCar;
 GameCarRuntime g_Cars[RACE_CAR_SLOT_COUNT];
 
@@ -71,7 +72,7 @@ static void TestGrandPrixRecording(void) {
     g_Cars[4] = MakeCar(600, 9);
     g_Cars[4].activeFlag = 1;
     g_Cars[4].aiEnabled = 1;
-    g_GrandPrixMode = 1;
+    g_GrandPrixMode = g_RaceSession.kind == RACE_SESSION_CUSTOM ? 0 : 1;
     g_Replay.write = 1;
     g_Replay.count = GRAND_PRIX_REPLAY_SUBFRAME_COUNT;
     RecordReplayFrame();
@@ -241,6 +242,9 @@ int main(void) {
     TestRecordedBrakeLights(0, 0);
     TestReplayBufferReset();
     TestGrandPrixRecording();
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    TestGrandPrixRecording();
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
     TestTimeAttackRecording();
     TestRecordingCursorWrap();
     TestInvalidRecordingBoundsAreIgnored();

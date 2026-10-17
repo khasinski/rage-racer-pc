@@ -28,7 +28,7 @@ void SeedReplayCars(void) {
 
     SeedReplayCarTrackState(player);
 
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         for (i = 0; i < REPLAY_RIVAL_COUNT; i++) {
             if (g_Cars[i].activeFlag != -1 && g_Cars[i].aiEnabled == 1) {
                 SeedReplayCarTrackState(&g_Cars[i]);
@@ -43,7 +43,7 @@ void UpdateReplayCars(void) {
 
     AdvanceReplayCarTrackState(player);
 
-    if (g_GrandPrixMode != 0) {
+    if (RaceHasRivals()) {
         for (i = 0; i < REPLAY_RIVAL_COUNT; i++) {
             if (g_Cars[i].activeFlag != -1 && g_Cars[i].aiEnabled == 1) {
                 AdvanceReplayCarTrackState(&g_Cars[i]);

@@ -10,6 +10,7 @@
 GameWorkBuffer g_ReplayFrameBuffer;
 Replay g_Replay;
 s16 g_GrandPrixMode;
+RaceSession g_RaceSession;
 
 static void TestGrandPrixFrames(void) {
     GameCarRuntime player = {0};
@@ -17,7 +18,7 @@ static void TestGrandPrixFrames(void) {
     ReplayGrandPrixFrame *first = &g_ReplayFrameBuffer.grandPrixReplay[0];
     ReplayGrandPrixFrame *second = &g_ReplayFrameBuffer.grandPrixReplay[1];
 
-    g_GrandPrixMode = 1;
+    g_GrandPrixMode = g_RaceSession.kind == RACE_SESSION_CUSTOM ? 0 : 1;
     g_Replay.playerModel = 12;
     g_Replay.rivalModel = 34;
     first->player.modelIndex = 12;
@@ -290,6 +291,9 @@ static void TestInvalidFramesAreIgnored(void) {
 
 int main(void) {
     TestGrandPrixFrames();
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    TestGrandPrixFrames();
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
     TestTimeAttackFrames();
     TestInterpolationUsesDefinedMachineWrapping();
     TestInvalidFramesAreIgnored();

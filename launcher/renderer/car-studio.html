@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Rage Racer Studio</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="launcher.css">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="studio.css?v=12">
+</head>
+<body class="studio-body">
+<div id="studio-app" class="studio-shell"></div>
+<dialog id="dialog"></dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+<script src="browser-bridge.js?v=15"></script>
+<script type="module" src="car-studio.js?v=15"></script>
+</body>
+</html>

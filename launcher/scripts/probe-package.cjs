@@ -46,7 +46,7 @@ const {spawn,execFileSync}=require('node:child_process');
    if(!result?.snapshot.ok||result.snapshot.value.ready!==Boolean(disc)||!result.snapshot.value.toolsReady||(!disc&&!result.locked)||result.lang!=='en')throw Error('Invalid packaged first-run state: '+JSON.stringify(result));
    console.log('Packaged first-run UI passed on '+platform+'/'+process.arch);
    if(!disc){
-    const opened=await call('Runtime.evaluate',{expression:`(async()=>{const button=document.querySelector('#nav [data-page="saves"]');if(!button||button.disabled)return false;button.click();for(let i=0;i<100;i++){if(document.querySelector('[data-action="new-save"]'))return Boolean(document.querySelector('[data-action="open-save"]')&&document.querySelector('#new-save-region'));await new Promise(r=>setTimeout(r,50));}return false;})()`,awaitPromise:true,returnByValue:true});
+    const opened=await call('Runtime.evaluate',{expression:`(async()=>{const button=document.querySelector('[data-page="saves"]');if(!button||button.disabled)return false;button.click();for(let i=0;i<100;i++){if(document.querySelector('[data-action="new-save"]'))return Boolean(document.querySelector('[data-action="open-save"]')&&document.querySelector('#new-save-region'));await new Promise(r=>setTimeout(r,50));}return false;})()`,awaitPromise:true,returnByValue:true});
     if(opened.exceptionDetails||opened.result?.value!==true)throw Error('Save editor unavailable without a disc: '+JSON.stringify(opened));
     console.log('Packaged save editor opens without a disc');
    }
