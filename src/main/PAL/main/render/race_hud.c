@@ -1,4 +1,5 @@
 #include "game/prim.h"
+#include "game/car.h"
 #include "game/race.h"
 #include "game/player_car_internal.h"
 #include "game/race_hud_internal.h"
@@ -27,6 +28,9 @@ enum {
     SPLIT_AHEAD_CLUT = 0x7810,
     SPLIT_BEHIND_SIGN_U = 0x78,
     SPLIT_BEHIND_CLUT = 0x780F,
+    DUEL_TOTAL_LABEL = 5,
+    DUEL_TOTAL_DIGIT_U = 0xF8,
+    DUEL_TOTAL_DIGIT_V = 0x18,
 };
 
 static s32 RaceHudLabelVisible(s32 grandPrixMode, s32 label) {
@@ -143,6 +147,21 @@ void DrawRacePosition(void) {
                RACE_POSITION_DIGIT_WIDTH;
     tens->clut = color;
     ones->clut = color;
+    if (g_DuelRaceActive && g_GrandPrixMode != 0) {
+        SPRT *total = RENDER_PRIM_CURSOR_AS(SPRT);
+
+        SetSprt(total);
+        SetShadeTex(total, 1);
+        total->x0 = (s16)HudAnchorX(62);
+        total->y0 = 46;
+        total->w = 8;
+        total->h = 16;
+        total->u0 = DUEL_TOTAL_DIGIT_U;
+        total->v0 = DUEL_TOTAL_DIGIT_V;
+        total->clut = frame->layout.raceHud.labels[DUEL_TOTAL_LABEL].clut;
+        AddPrim(GamePrimaryOrderingTable(0), total);
+        g_RenderState.draw.packetCursor = (DrawPacket *)(total + 1);
+    }
 }
 
 void DrawSplitIndicator(s32 sectorIndex, s32 direction) {
