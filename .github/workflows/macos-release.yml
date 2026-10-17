@@ -113,18 +113,24 @@ jobs:
           printf '%s' "$NOTARY_KEY" | base64 --decode > "$RUNNER_TEMP/notary.p8"
           ditto -c -k --sequesterRsrc --keepParent "$app" \
             "$RUNNER_TEMP/notarize.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
+          if xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
             --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" \
-            --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait
-          xcrun stapler staple "$app"
-          xcrun stapler validate "$app"
+            --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait; then
+            xcrun stapler staple "$app"
+            xcrun stapler validate "$app"
+          else
+            echo "::warning::Notarization of Rage Racer.app skipped or failed; keeping Developer ID signature."
+          fi
           ditto -c -k --sequesterRsrc --keepParent "$editor_app" \
             "$RUNNER_TEMP/notarize-editor.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/notarize-editor.zip" \
+          if xcrun notarytool submit "$RUNNER_TEMP/notarize-editor.zip" \
             --key "$RUNNER_TEMP/notary.p8" --key-id "$NOTARY_KEY_ID" \
-            --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait
-          xcrun stapler staple "$editor_app"
-          xcrun stapler validate "$editor_app"
+            --issuer "$NOTARY_ISSUER_ID" --team-id "$TEAM_ID" --wait; then
+            xcrun stapler staple "$editor_app"
+            xcrun stapler validate "$editor_app"
+          else
+            echo "::warning::Notarization of Rage Racer Editor.app skipped or failed; keeping Developer ID signature."
+          fi
           rm -f "$RUNNER_TEMP/cert.p12" "$RUNNER_TEMP/notary.p8"
       - name: Archive
         env:
