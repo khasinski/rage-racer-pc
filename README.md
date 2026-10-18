@@ -1,8 +1,14 @@
 # Rage Racer PC
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20Server-5865F2?logo=discord&logoColor=white)](https://discord.gg/hbGvPbFguk)
+
 Native Windows, Linux and macOS port of *Rage Racer* (PAL / Europe,
 `SCES-006.50`). It contains the complete game, platform packaging and runtime
 compatibility layer.
+
+## Discord
+
+Join the [Rage Racer PC Discord server](https://discord.gg/hbGvPbFguk) for release updates, modding discussion, and bug reports.
 
 ## Running a release
 
