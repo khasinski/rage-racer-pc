@@ -29,7 +29,11 @@ int main(void) {
     char raw[32];
     for (unsigned i=0;i<1000;++i) {
         snprintf(raw,sizeof(raw),"raw/asset_%03u.bin",i);
-        assert(ModFileClassify(raw)==(i<135?RAGE_MOD_FILE_RAW:RAGE_MOD_FILE_INVALID));
+        assert(ModFileClassify(raw)==(i<199?RAGE_MOD_FILE_RAW:RAGE_MOD_FILE_INVALID));
+    }
+    for (unsigned i=0;i<100;++i) {
+        snprintf(raw,sizeof(raw),"raw/course_%02u.txt",i);
+        assert(ModFileClassify(raw)==(i>=1&&i<=32?RAGE_MOD_FILE_RAW:RAGE_MOD_FILE_INVALID));
     }
     const char *bad[]={"","/textures/a.png","textures/../a.png","textures//a.png",
         "textures/./a.png","textures/a.png/","textures\\a.png","textures/C:a.png",

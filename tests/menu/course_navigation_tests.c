@@ -101,6 +101,23 @@ int main(void) {
     Check("custom class 2 course 2 still has a next", CanSelectNextCourse(), 1);
     g_GrandPrixClass = 2;
     Check("custom class 3 reaches the oval", SelectableCourseStep(2, 1), 3);
+
+    /* Installed extra courses appear after retail 0..7 in normal (8..39)
+     * and reverse (40..71) order when their extraCourseMask bits are set. */
+    g_RaceSession.extraCourseMask = (1u << 0) | (1u << 5);
+    Check("custom steps from 7 to first extra normal course 8",
+          SelectableCourseStep(7, 1), 8);
+    Check("custom steps from 8 to second installed extra normal course 13",
+          SelectableCourseStep(8, 1), 13);
+    Check("custom steps from 13 to first extra reverse course 40",
+          SelectableCourseStep(13, 1), 40);
+    Check("custom steps from 40 backwards to 13",
+          SelectableCourseStep(40, -1), 13);
+    Check("custom steps from 40 to second extra reverse course 45",
+          SelectableCourseStep(40, 1), 45);
+    Check("custom has no course past last installed extra reverse course 45",
+          SelectableCourseStep(45, 1), -1);
+    g_RaceSession.extraCourseMask = 0;
     g_RaceSession.kind = RACE_SESSION_STANDARD;
 
     g_GrandPrixMode = 1;

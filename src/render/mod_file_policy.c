@@ -47,7 +47,13 @@ RageModFileKind ModFileClassify(const char *path) {
             if (path[i] < '0' || path[i] > '9') return RAGE_MOD_FILE_INVALID;
             index = index*10 + (unsigned)(path[i]-'0');
         }
-        return index < 135 ? RAGE_MOD_FILE_RAW : RAGE_MOD_FILE_INVALID;
+        return index < 199 ? RAGE_MOD_FILE_RAW : RAGE_MOD_FILE_INVALID;
+    }
+    if (size == 17 && !memcmp(path,"raw/course_",11) && !strcmp(path+13,".txt")) {
+        if (path[11] < '0' || path[11] > '9' || path[12] < '0' || path[12] > '9')
+            return RAGE_MOD_FILE_INVALID;
+        unsigned slot = (unsigned)(path[11]-'0')*10u + (unsigned)(path[12]-'0');
+        return slot >= 1 && slot <= 32 ? RAGE_MOD_FILE_RAW : RAGE_MOD_FILE_INVALID;
     }
     size_t prefix;
     RageModFileKind kind;

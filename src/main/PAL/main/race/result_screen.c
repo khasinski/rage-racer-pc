@@ -36,8 +36,12 @@ static void DrawResultBackdrop(void) {
     u8 *next;
 
     DrawProportionalText(0xDC, 0x1C, "RESULT", 0x7812);
-    DrawText8x8Trans(0x60, courseNameY, g_CourseNames[SeriesCourseIndex()],
-                     0x78CC);
+    DrawText8x8Trans(
+        0x60, courseNameY,
+        CourseSlot(g_CourseIndex) >= EXTRA_COURSE_SLOT_BASE
+            ? ExtraCourseName(CourseSlot(g_CourseIndex))
+            : g_CourseNames[SeriesCourseIndex()],
+        0x78CC);
 
     next = AddTilePrim(ot, RENDER_PRIM_CURSOR_AS(u8), 0, 0,
                        0x140, 0x30, 0x85, 0x15, 0xE);

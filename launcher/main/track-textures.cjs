@@ -38,7 +38,7 @@ function assignSectionPages(trackBuf,banks){
 module.exports=async function trackTextures(service,bank,banks,metadata,directory,files,signal,view){
  const sourceRoot=view?.root||directory,sourceFiles=view?.files||files;
  const {run}=require('./service.cjs'),requests=[],unique=new Map(),requestsP1=[],uniqueP1=new Map(),bindings=[];
- const track=['big','mid','hi','oval'][((bank-88)/2)%4]+(Math.floor((bank-88)/8)+1);
+ const track=bank>=136?`custom${(bank-136)/2+1}`:['big','mid','hi','oval'][((bank-88)/2)%4]+(Math.floor((bank-88)/8)+1);
  const raw=asset=>{const relative=`raw/asset_${String(asset).padStart(3,'0')}.bin`;return path.join(sourceFiles.includes(relative)?sourceRoot:service.state.disc.data,relative);};
  const [texBuf,trackBuf]=await Promise.all([fs.readFile(raw(bank-1)).catch(()=>null),fs.readFile(raw(bank)).catch(()=>null)]);
  const b3=scanTexBlock(texBuf,3),b4=scanTexBlock(texBuf,4);

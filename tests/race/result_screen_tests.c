@@ -16,6 +16,7 @@ s16 g_GrandPrixSeries;
 s32 g_GrandPrixClass;
 s32 g_GrandPrixRound;
 s32 g_ClassResultPlace;
+RaceSession g_RaceSession;
 char *g_CourseNames[COURSE_SLOT_COUNT] = {
     "COURSE 0", "COURSE 1", "COURSE 2", "COURSE 3",
 };

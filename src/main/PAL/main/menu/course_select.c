@@ -86,7 +86,15 @@ s32 DrawCourseSelectScreen(s32 *progress, s32 step) {
         ot, 0x68, coordinateY, 0x1A, 0xC,
         0x46, 0xDC, fade, fade, fade, 0x244, 0, 1, 0x3A);
 
-    if (GetCourseLabelSprites(course, &courseLabel)) {
+    if (CourseSlot(g_CourseIndex) >= EXTRA_COURSE_SLOT_BASE) {
+        s32 slot = CourseSlot(g_CourseIndex);
+        GameDrawText8x8Shaded(0x50, 0xE2 - slide,
+                              ExtraCourseName(slot),
+                              0x78CC, fade);
+        GameDrawText8x8Shaded(0x50, 0x10A - slide,
+                              ExtraCourseLength(slot),
+                              0x78CC, fade);
+    } else if (GetCourseLabelSprites(course, &courseLabel)) {
         coordinateY = 0xE0 - slide;
         DrawSprite(ot, 0x4C, coordinateY, 8, 0x10,
                    courseLabel.prefixTextureU, 0x18, fade, fade, fade,

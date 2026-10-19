@@ -48,7 +48,8 @@ function recalculatePointGeometry(basePoints, nextPoints) {
 }
 
 function trackPrefix(bank) {
-  if (!Number.isInteger(bank) || bank < 88 || bank > 134 || bank % 2) throw Error('Invalid track bank');
+  if (!Number.isInteger(bank) || bank < 88 || bank > 198 || bank % 2) throw Error('Invalid track bank');
+  if (bank >= 136) return `track.custom${(bank - 136) / 2 + 1}`;
   return `track.${['big', 'mid', 'hi', 'oval'][((bank - 88) / 2) % 4]}${Math.floor((bank - 88) / 8) + 1}`;
 }
 

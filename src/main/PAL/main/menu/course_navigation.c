@@ -36,7 +36,7 @@ static CourseSelectionRange CurrentCourseSelectionRange(void) {
 
     if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
         range.first = STANDARD_SERIES_FIRST_COURSE;
-        range.last = EXTRA_SERIES_LAST_COURSE_UNLOCKED;
+        range.last = CUSTOM_PHYSICAL_COURSE_COUNT - 1;
         return range;
     }
     if (g_GrandPrixMode) {
@@ -57,6 +57,10 @@ static CourseSelectionRange CurrentCourseSelectionRange(void) {
  * data from class 3 up: below that the disc holds no track for the slot and
  * the race falls back to the first course with a broken grid. */
 static s32 CourseIsSelectable(s32 course) {
+    if (course >= EXTRA_COURSE_SLOT_BASE) {
+        return g_RaceSession.kind == RACE_SESSION_CUSTOM &&
+               ExtraCourseSlotInstalled(CourseSlot(course));
+    }
     if (g_RaceSession.kind == RACE_SESSION_CUSTOM &&
         g_GrandPrixClass < COURSE_UNLOCK_CLASS &&
         CourseSlot(course) == COURSE_LONG_SLOT) {

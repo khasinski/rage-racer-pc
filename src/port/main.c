@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
         return ExportRawCar(RuntimeConfigGet("tools.car_raw"),RuntimeConfigInt("tools.car_bank",10,0,255),RuntimeConfigEnabled("tools.car_rival"),RuntimeConfigInt("tools.car_part",0,0,255),RuntimeConfigGet("tools.car_output"))?EXIT_SUCCESS:EXIT_FAILURE;
     if(RuntimeConfigGet("tools.track_export"))
         return ExportTrack(RuntimeConfigGet("tools.track_export"),
-            RuntimeConfigInt("tools.track_bank",88,88,134),RuntimeConfigGet("tools.track_output"))?EXIT_SUCCESS:EXIT_FAILURE;
+            RuntimeConfigInt("tools.track_bank",88,88,198),RuntimeConfigGet("tools.track_output"))?EXIT_SUCCESS:EXIT_FAILURE;
     if (!DiagnosticLogOpen(logPath, sizeof(logPath))) {
         fprintf(stderr, "rage-port: could not open diagnostic log\n");
     }

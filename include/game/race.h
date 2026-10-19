@@ -36,9 +36,38 @@ typedef struct RaceSession {
     s32 classIndex;
     s32 model;
     CarEntry cars[GAME_CAR_COUNT];
+    u32 extraCourseMask;
+    char extraCourseNames[EXTRA_COURSE_SLOT_COUNT][32];
+    char extraCourseLengths[EXTRA_COURSE_SLOT_COUNT][16];
 } RaceSession;
 
 extern RaceSession g_RaceSession;
+
+static inline int ExtraCourseSlotInstalled(s32 courseSlot) {
+    u32 extraIndex = (u32)(courseSlot - EXTRA_COURSE_SLOT_BASE);
+    if (extraIndex >= EXTRA_COURSE_SLOT_COUNT) {
+        return 0;
+    }
+    return (int)((g_RaceSession.extraCourseMask >> extraIndex) & 1u);
+}
+
+static inline const char *ExtraCourseName(s32 courseSlot) {
+    u32 extraIndex = (u32)(courseSlot - EXTRA_COURSE_SLOT_BASE);
+    if (extraIndex >= EXTRA_COURSE_SLOT_COUNT ||
+        g_RaceSession.extraCourseNames[extraIndex][0] == '\0') {
+        return "CUSTOM COURSE";
+    }
+    return g_RaceSession.extraCourseNames[extraIndex];
+}
+
+static inline const char *ExtraCourseLength(s32 courseSlot) {
+    u32 extraIndex = (u32)(courseSlot - EXTRA_COURSE_SLOT_BASE);
+    if (extraIndex >= EXTRA_COURSE_SLOT_COUNT ||
+        g_RaceSession.extraCourseLengths[extraIndex][0] == '\0') {
+        return "CUSTOM";
+    }
+    return g_RaceSession.extraCourseLengths[extraIndex];
+}
 
 int CustomRaceUsesRivalModel(void);
 s32 CustomRaceRivalModelForSelection(s32 selection);

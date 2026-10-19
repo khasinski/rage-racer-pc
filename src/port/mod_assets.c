@@ -33,10 +33,17 @@ static int s_manifestReady;
 static int s_legacyLayout;
 static int s_initialized;
 static char s_region[16],s_source[72],s_carProfile[1024];
-static struct { unsigned char loaded,geometry,announced,patched; } s_assets[RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
-void ModAssetSetGeometryChanged(unsigned index,int changed){if(index<RAGE_ARCHIVE_INDEX_ENTRY_COUNT)s_assets[index].geometry=(unsigned char)(changed!=0);}
-int ModAssetGeometryChanged(unsigned index){return index<RAGE_ARCHIVE_INDEX_ENTRY_COUNT&&s_assets[index].geometry;}
-int ModAssetWasReplaced(unsigned index){return index<RAGE_ARCHIVE_INDEX_ENTRY_COUNT&&s_assets[index].loaded;}
+static struct {
+    unsigned char loaded, geometry, announced, patched, existsChecked, exists;
+} s_assets[RAGE_MOD_ASSET_ENTRY_COUNT];
+static struct {
+    unsigned char checked;
+    char name[32];
+    char length[16];
+} s_courseLabels[RAGE_EXTRA_TRACK_SLOT_COUNT];
+void ModAssetSetGeometryChanged(unsigned index,int changed){if(index<RAGE_MOD_ASSET_ENTRY_COUNT)s_assets[index].geometry=(unsigned char)(changed!=0);}
+int ModAssetGeometryChanged(unsigned index){return index<RAGE_MOD_ASSET_ENTRY_COUNT&&s_assets[index].geometry;}
+int ModAssetWasReplaced(unsigned index){return index<RAGE_MOD_ASSET_ENTRY_COUNT&&s_assets[index].loaded;}
 
 void ModAssetsShutdown(void) {
     s_generation++;
@@ -44,6 +51,7 @@ void ModAssetsShutdown(void) {
     memset(s_directoryStorage, 0, sizeof(s_directoryStorage));
     memset(&s_manifest, 0, sizeof(s_manifest));
     memset(s_assets, 0, sizeof(s_assets));
+    memset(s_courseLabels, 0, sizeof(s_courseLabels));
     s_manifestReady = 0;
     s_legacyLayout = 0;
     s_initialized = 0;
@@ -198,7 +206,7 @@ static FILE *ModOpen(int index, long *size) {
     int written;
 
     if (s_directory == NULL || (!s_legacyLayout && !s_manifestReady) ||
-        (unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT || size == NULL) {
+        (unsigned)index >= RAGE_MOD_ASSET_ENTRY_COUNT || size == NULL) {
         return NULL;
     }
     written = snprintf(path, sizeof(path), "%s/raw/asset_%03d.bin",
@@ -218,6 +226,89 @@ static FILE *ModOpen(int index, long *size) {
     return file;
 }
 
+int ModAssetExists(int index) {
+    long size = 0;
+    FILE *file;
+
+    if ((unsigned)index >= RAGE_MOD_ASSET_ENTRY_COUNT) return 0;
+    ModAssetsInit();
+    if (s_assets[index].existsChecked) return s_assets[index].exists;
+    s_assets[index].existsChecked = 1;
+    file = ModOpen(index, &size);
+    if (file == NULL) {
+        s_assets[index].exists = 0;
+        return 0;
+    }
+    fclose(file);
+    s_assets[index].exists = (unsigned char)(size > 0 && (size & 3) == 0);
+    return s_assets[index].exists;
+}
+
+static void TrimTrailingNewline(char *line) {
+    size_t len = strlen(line);
+    while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
+        line[--len] = '\0';
+    }
+}
+
+void ModAssetCourseLabel(int extraCourseIndex, char *nameOut,
+                         size_t nameCapacity, char *lengthOut,
+                         size_t lengthCapacity) {
+    if ((unsigned)extraCourseIndex >= RAGE_EXTRA_TRACK_SLOT_COUNT) {
+        if (nameOut && nameCapacity) nameOut[0] = '\0';
+        if (lengthOut && lengthCapacity) lengthOut[0] = '\0';
+        return;
+    }
+    ModAssetsInit();
+    if (!s_courseLabels[extraCourseIndex].checked) {
+        char path[1024];
+        FILE *file = NULL;
+        s_courseLabels[extraCourseIndex].checked = 1;
+        snprintf(s_courseLabels[extraCourseIndex].name,
+                 sizeof(s_courseLabels[extraCourseIndex].name),
+                 "CUSTOM %d", extraCourseIndex + 1);
+        snprintf(s_courseLabels[extraCourseIndex].length,
+                 sizeof(s_courseLabels[extraCourseIndex].length),
+                 "CUSTOM");
+        if (s_directory != NULL && (s_legacyLayout || s_manifestReady)) {
+            int written = snprintf(path, sizeof(path),
+                                   "%s/raw/course_%02d.txt",
+                                   s_directory, extraCourseIndex + 1);
+            if (written > 0 && (size_t)written < sizeof(path)) {
+                file = fopen(path, "rb");
+            }
+        }
+        if (file != NULL) {
+            char line[64];
+            if (fgets(line, sizeof(line), file) != NULL) {
+                TrimTrailingNewline(line);
+                if (line[0] != '\0') {
+                    snprintf(s_courseLabels[extraCourseIndex].name,
+                             sizeof(s_courseLabels[extraCourseIndex].name),
+                             "%s", line);
+                }
+            }
+            if (fgets(line, sizeof(line), file) != NULL) {
+                TrimTrailingNewline(line);
+                if (line[0] != '\0') {
+                    snprintf(s_courseLabels[extraCourseIndex].length,
+                             sizeof(s_courseLabels[extraCourseIndex].length),
+                             "%s", line);
+                }
+            }
+            fclose(file);
+        }
+    }
+    if (nameOut && nameCapacity) {
+        snprintf(nameOut, nameCapacity, "%s",
+                 s_courseLabels[extraCourseIndex].name);
+    }
+    if (lengthOut && lengthCapacity) {
+        snprintf(lengthOut, lengthCapacity, "%s",
+                 s_courseLabels[extraCourseIndex].length);
+    }
+}
+
 int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     long size;
     FILE *file;
@@ -227,7 +318,7 @@ int ModAssetLoad(int index, void *destination, unsigned int originalSize) {
     int closeFailed;
 
     if (destination == NULL ||
-        (unsigned)index >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return 0;
+        (unsigned)index >= RAGE_MOD_ASSET_ENTRY_COUNT) return 0;
     ModAssetsInit();
     s_assets[index].loaded=0;s_assets[index].geometry=0;
     file = ModOpen(index, &size);

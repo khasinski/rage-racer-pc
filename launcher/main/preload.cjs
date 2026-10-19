@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('launcher',Object.freeze({
   resetTitleImage:(id,revision)=>ipcRenderer.invoke('launcher:reset-title-image',id,revision),
   cars:()=>ipcRenderer.invoke('launcher:cars'),
   tracks:()=>ipcRenderer.invoke('launcher:tracks'),
+  importR4Tracks:file=>ipcRenderer.invoke('launcher:import-r4-tracks',file),
   trackTextures:(id,part)=>ipcRenderer.invoke('launcher:track-textures',id,part),
   importTrackTexture:(id,part,source,revision)=>ipcRenderer.invoke('launcher:import-track-texture',id,part,source,revision),
   exportTrackTexture:(id,part,source)=>ipcRenderer.invoke('launcher:export-track-texture',id,part,source),

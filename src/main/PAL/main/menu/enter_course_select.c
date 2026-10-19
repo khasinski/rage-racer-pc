@@ -14,8 +14,10 @@ enum {
 };
 
 static void ResetCourseSelectShowroom(CourseSelectScreen *screen) {
-    s32 course = AddClampedMenuValue(
-        g_CourseIndex, 0, 0, PHYSICAL_COURSE_COUNT - 1);
+    s32 maxCourse = g_RaceSession.kind == RACE_SESSION_CUSTOM
+                        ? CUSTOM_PHYSICAL_COURSE_COUNT - 1
+                        : PHYSICAL_COURSE_COUNT - 1;
+    s32 course = AddClampedMenuValue(g_CourseIndex, 0, 0, maxCourse);
 
     g_CourseIndex = course;
     g_MenuViewOffset = COURSE_SELECT_INITIAL_VIEW_OFFSET;
@@ -28,7 +30,7 @@ static void ResetCourseSelectShowroom(CourseSelectScreen *screen) {
     screen->cardSpinTarget = 0;
     screen->cardPendingGrade =
         g_CourseProgress != NULL
-            ? g_CourseProgress->bestPlace[CourseSlot(course)]
+            ? g_CourseProgress->bestPlace[SeriesCourseIndexFor(course)]
             : 0;
     MenuWidgetState()->timeAttackStep = CourseSeries(course) != 0 ? 1 : -1;
 }

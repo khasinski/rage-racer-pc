@@ -165,6 +165,14 @@ class LauncherService {
     this.editor.project.checkRevision(revision);
     return this.operation('Building and applying project',async()=>{const result=await require('./project-build.cjs').apply(this);this.projectError=null;return result;},false);
   }
+  trackPrefix(bank) {
+    if(!Number.isInteger(bank)||bank<88||bank>198||bank%2)throw Error('Invalid track');
+    if(bank>=136)return `track.custom${(bank-136)/2+1}.`;
+    return `track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+  }
+  async importR4Tracks(file) {
+    return require('./r4-import.cjs').importR4Tracks(this,file);
+  }
   async tracks() {
     this.requireReady();
     return this.operation('Reading original tracks',async signal=>{
@@ -176,6 +184,27 @@ class LauncherService {
         const pack=JSON.parse(await run(this.tool('rage-mod-cli'),['--track-pack',file],{signal}));
         tracks.push({id:`track/${['mythical-coast','over-pass-city','lakeside-gate','extreme-oval'][course]}/class/${grade}`,
           name:names[course],grade,bank,origin:'disc',available:course!==3||grade>=3,
+          directions:['forward','reverse'],blocks:pack.blocks});
+      }
+      await this.loadProject();
+      const snapshot=this.editor?.project.snapshot(),selection=snapshot?.selection||this.modSelection();
+      const activeMods=selection?.packages?.length?this.modsForSelection(selection):this.state.mods.filter(m=>m.enabled);
+      for(let slot=1;slot<=32;slot++){
+        const bank=136+(slot-1)*2;
+        const rawTrack=`raw/asset_${String(bank).padStart(3,'0')}.bin`;
+        const rawName=`raw/course_${String(slot).padStart(2,'0')}.txt`;
+        const winnerId=selection?.resolutions?.[rawTrack]?.winner;
+        const mod=(winnerId&&activeMods.find(m=>m.id===winnerId&&m.files?.includes(rawTrack)))||[...activeMods].reverse().find(m=>m.files?.includes(rawTrack));
+        const modRoot=mod?path.join(this.root,'mods',mod.id):this.state.disc.data;
+        const file=path.join(modRoot,rawTrack);
+        const exists=mod?true:await fs.stat(file).then(s=>s.isFile()).catch(()=>false);
+        if(!exists)continue;
+        const pack=JSON.parse(await run(this.tool('rage-mod-cli'),['--track-pack',file],{signal}));
+        const nameMod=activeMods.find(m=>m.id===mod?.id&&m.files?.includes(rawName))||[...activeMods].reverse().find(m=>m.files?.includes(rawName));
+        const nameRoot=nameMod?path.join(this.root,'mods',nameMod.id):modRoot;
+        const label=(await fs.readFile(path.join(nameRoot,rawName),'utf8').catch(()=>`CUSTOM ${slot}`)).split(/\r?\n/)[0].trim()||`CUSTOM ${slot}`;
+        tracks.push({id:`track/custom-${slot}/class/custom`,
+          name:label,grade:'Custom',slot,bank,origin:'custom',available:true,
           directions:['forward','reverse'],blocks:pack.blocks});
       }
       return {tracks};
@@ -192,7 +221,7 @@ class LauncherService {
   async exportTrackMesh(id,file){return require('./track-meshes.cjs').exportMesh(this,id,file);}
   async trackScene(bank,preview=false) {
     this.requireReady();
-    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid track');
+    const prefix=this.trackPrefix(bank);
     return this.operation(preview?'Loading track preview':'Reading track scene',async signal=>{
       await this.loadProject();
       const snapshot=this.editor?.project.snapshot(),selection=snapshot?.selection;
@@ -201,7 +230,6 @@ class LauncherService {
         if(selection?.packages.length)directory=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
         const files=directory?await require('./mods.cjs').inventory(directory,this.tool('rage-mod-cli')):[];
         if(!directory){directory=path.join(this.root,'track-preview-'+randomUUID());await fs.mkdir(directory);}
-        const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
         const changes=(snapshot?.changes||[]).filter(c=>c.kind==='track'&&c.id.startsWith(prefix));
         await require('./track-edits.cjs').apply(this,changes,directory,files,signal);
         const relative=`raw/asset_${String(bank).padStart(3,'0')}.bin`;
@@ -245,20 +273,20 @@ class LauncherService {
   async saveCamera(bank,index,values,revision){return this.saveTrackEntry(bank,index,values,revision,'camera');}
   async saveTrackEntry(bank,index,values,revision,type){
     this.requireReady();
-    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Number.isInteger(index)||index<0||index>((type==='camera'||type==='intro')?128*1024*1024:10000)||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='env'?12:type==='road'||type==='camera'?10:6))throw Error('Invalid track object edit');
-    const id=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.${type}.${index}`;
+    if(!Number.isInteger(bank)||bank<88||bank>198||bank%2||!Number.isInteger(index)||index<0||index>((type==='camera'||type==='intro')?128*1024*1024:10000)||!values||typeof values!=='object'||Array.isArray(values)||!Object.keys(values).length||Object.keys(values).length>(type==='env'?12:type==='road'||type==='camera'?10:6))throw Error('Invalid track object edit');
+    const id=`${this.trackPrefix(bank)}${type}.${index}`;
     return this.saveTrackChanges(bank,Object.entries(values).map(([field,value])=>({kind:'track',id,field,value})),revision);
   }
   async saveEnvironment(bank,entries,revision){
-    this.requireReady();if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Array.isArray(entries)||!entries.length||entries.length>10000)throw Error('Invalid environment edits');
-    const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+    this.requireReady();if(!Number.isInteger(bank)||bank<88||bank>198||bank%2||!Array.isArray(entries)||!entries.length||entries.length>10000)throw Error('Invalid environment edits');
+    const prefix=this.trackPrefix(bank);
     const changes=[];for(const entry of entries){if(!['env','palette','environment'].includes(entry.type??'env')||!Number.isInteger(entry.index)||entry.index<0||!entry.values||Array.isArray(entry.values)||typeof entry.values!=='object'||Object.keys(entry.values).length>((entry.type??'env')==='palette'?16:12))throw Error('Invalid environment cue');for(const [field,value]of Object.entries(entry.values))changes.push({kind:'track',id:prefix+(entry.type??'env')+'.'+entry.index,field,value});}
     if(!changes.length||changes.length>10000)throw Error('Invalid environment edits');return this.saveTrackChanges(bank,changes,revision);
   }
   async saveTrackBatch(bank,entries,revision){
     this.requireReady();
-    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2||!Array.isArray(entries)||!entries.length||entries.length>10000)throw Error('Invalid track batch edits');
-    const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+    if(!Number.isInteger(bank)||bank<88||bank>198||bank%2||!Array.isArray(entries)||!entries.length||entries.length>10000)throw Error('Invalid track batch edits');
+    const prefix=this.trackPrefix(bank);
     const changes=[];
     for(const entry of entries){
       const t=entry?.type==='ai-hint'?'ai':entry?.type;
@@ -277,7 +305,7 @@ class LauncherService {
       let directory='';
       try{
         const snapshot=project.snapshot(),selection=snapshot.selection;
-        const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
+        const prefix=this.trackPrefix(bank);
         const effective=new Map([...snapshot.changes.filter(c=>c.kind==='track'&&c.id.startsWith(prefix)),...changes].map(c=>[c.id+':'+c.field,c]));
         if(selection.packages.length)directory=await this.composeMods(this.modsForSelection(selection),selection.resolutions);
         const files=directory?await require('./mods.cjs').inventory(directory,this.tool('rage-mod-cli')):[];
@@ -386,9 +414,21 @@ class LauncherService {
         await this.loadProject();
         if(this.editor){
           const project=this.editor.project,revision=project.revision;
-          const reference=await new (require('./project-files.cjs').ProjectFiles)(this.editor.file).put(mesh);
-          const bodyKey=`car.${part.rival?'rival':'player'}.${part.bank}.part.${part.rival?Math.floor(part.part/5)*5:0}`;
-          const store=new (require('./project-files.cjs').ProjectFiles)(this.editor.file),changes=[{kind:'car',id:key,field:'mesh',value:reference},{kind:'car',id:key,field:'base_mesh',value:reference},{kind:'car',id:bodyKey,field:'fitment',value:null}];for(const texture of textureChanges)changes.push({kind:'car',id:texture.id,field:'texture',value:await store.put(texture.file,'png')});return project.edit(changes,revision);
+          const store=new (require('./project-files.cjs').ProjectFiles)(this.editor.file);
+          const baseRef=await store.put(mesh);
+          const bodyPart=part.rival?Math.floor(part.part/5)*5:0;
+          const bodyKey=`car.${part.rival?'rival':'player'}.${part.bank}.part.${bodyPart}`;
+          const fitArr=project.document.changes.find(c=>c.kind==='car'&&c.id===bodyKey&&c.field==='fitment')?.value;
+          const offset=part.part-bodyPart;
+          const role=offset===0?'body':offset===2?'front':offset===3?'rear':null;
+          let meshRef=baseRef;
+          if(role&&Array.isArray(fitArr)&&fitArr.length===11){
+            const fitted=path.join(staging,'meshes/fitted.rmesh');
+            await fs.writeFile(fitted,require('./car-view.cjs').applyFitment(Buffer.from(await fs.readFile(mesh)),role,fitArr));
+            await run(this.tool('rage-mod-cli'),['--mesh',fitted],{signal});
+            meshRef=await store.put(fitted,'rmesh');
+          }
+          const changes=[{kind:'car',id:key,field:'mesh',value:meshRef},{kind:'car',id:key,field:'base_mesh',value:baseRef}];for(const texture of textureChanges)changes.push({kind:'car',id:texture.id,field:'texture',value:await store.put(texture.file,'png')});return project.edit(changes,revision);
         }
         await fs.writeFile(path.join(staging,'mod.toml'),`[mod]\nid = "car-replacement"\n[meshes]\n"${key}" = "meshes/model.rmesh"\n`);
         if(textureChanges.length)await fs.appendFile(path.join(staging,'mod.toml'),'[textures]\n'+textureChanges.map(t=>`"${t.id}" = "textures/${path.basename(t.file)}"`).join('\n')+'\n');
@@ -444,11 +484,13 @@ class LauncherService {
         rearWidth:fitArr[4],rearY:fitArr[5],rearZ:fitArr[6],rearScale:fitArr[7],
         bodyY:fitArr[8],bodyZ:fitArr[9],bodyScale:fitArr[10]
       }:{frontWidth:0,frontY:0,frontZ:0,frontScale:100,rearWidth:0,rearY:0,rearZ:0,rearScale:100,bodyY:0,bodyZ:0,bodyScale:100};
+      const dx4=Math.round(fit.frontWidth/4)*4;
       for(const inst of layout.instances){
         if(inst.part===bodyPart||inst.part===bodyPart+3){
           inst.position[1]+=fit.rearY;
           inst.position[2]+=fit.rearZ;
         }else if(inst.part===bodyPart+2){
+          inst.position[0]+=(inst.scale[0]<0?1:-1)*dx4;
           inst.position[1]+=fit.frontY;
           inst.position[2]+=fit.frontZ;
         }
@@ -615,14 +657,13 @@ class LauncherService {
   }
   async restoreOriginalTrack(bank,revision) {
     this.requireReady();
-    if(!Number.isInteger(bank)||bank<88||bank>134||bank%2)throw Error('Invalid track');
+    const prefix=this.trackPrefix(bank);
     return this.operation('Restoring original track from disc',async()=>{
       await this.loadProject();
       if(!this.editor)throw Error('Open a source project first');
       const project=this.editor.project;
       if(revision!==undefined)project.checkRevision(revision);
       const snapshot=project.snapshot();
-      const prefix=`track.${['big','mid','hi','oval'][((bank-88)/2)%4]}${Math.floor((bank-88)/8)+1}.`;
       const resets=[];
       for(const c of snapshot.changes){
         if(c.id.startsWith(prefix)&&!c.id.startsWith(prefix+'model-bank-1.')){
@@ -773,12 +814,18 @@ class LauncherService {
           ];
           const isRival=Boolean(raceOptions.rival);
           const rawCarBank=Number(raceOptions.carBank)||10;
-          const trackBank=isRival&&rawCarBank>=88&&rawCarBank<=134&&rawCarBank%2===0
+          const trackBank=isRival&&rawCarBank>=88&&rawCarBank<=198&&rawCarBank%2===0
             ?rawCarBank
             :(Number(raceOptions.trackBank)||88);
-          let classIndex=Math.max(0,Math.min(5,Math.floor((trackBank-88)/8)));
-          const course=Math.max(0,Math.min(3,Math.floor(((trackBank-88)/2)%4)));
-          if(course===3&&classIndex<2)classIndex=2;
+          let classIndex=0,course=0;
+          if(trackBank>=136&&trackBank<=198&&trackBank%2===0){
+            classIndex=0;
+            course=8+Math.floor((trackBank-136)/2);
+          }else{
+            classIndex=Math.max(0,Math.min(5,Math.floor((trackBank-88)/8)));
+            course=Math.max(0,Math.min(3,Math.floor(((trackBank-88)/2)%4)));
+            if(course===3&&classIndex<2)classIndex=2;
+          }
           let carIndex=0,variant=0,rivalBody=-1;
           if(isRival){
             const rawBody=Number(raceOptions.rivalBody);

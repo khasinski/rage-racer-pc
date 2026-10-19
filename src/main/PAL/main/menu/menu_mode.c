@@ -28,7 +28,10 @@ static void LoadMenuSelection(void) {
 }
 
 static void LoadMenuSeriesProgress(void) {
-    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) return;
+    if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        g_CourseIndex = g_RaceSession.course;
+        return;
+    }
     if (g_GrandPrixMode != 0) {
         g_GrandPrixSeries = g_SeriesSelection;
         g_PlayerMoney = g_RaceProgress->money;

@@ -146,13 +146,13 @@ static void ChooseCarSelectRow(CarBrowse *browse, s32 row) {
         StartSequenceFadeOut();
         if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
             ApplyCustomRaceSelection();
-            g_GrandPrixSeries = CourseSeries(g_CourseIndex);
+            g_GrandPrixSeries = CourseSeries(g_RaceSession.course);
         } else if (g_GrandPrixMode != 0) {
             /* Class five is the extra series, which has no round of its own. */
             g_GrandPrixSeries = (s16)GrandPrixAssetSeries(
                 g_GrandPrixSeries, g_GrandPrixClass);
         } else {
-            g_GrandPrixSeries = g_CourseIndex >> 2;
+            g_GrandPrixSeries = CourseSeries(g_CourseIndex);
         }
         RequestRoundAssets();
         SetCarSelectState(1);
@@ -357,7 +357,7 @@ static void EnterChosenScreen(void) {
         courseSelect->displayedCourse = g_CourseIndex;
         courseSelect->cardPendingGrade =
             g_CourseProgress != NULL
-                ? g_CourseProgress->bestPlace[CourseSlot(g_CourseIndex)]
+                ? g_CourseProgress->bestPlace[SeriesCourseIndexFor(g_CourseIndex)]
                 : 0;
         MenuWidgetState()->timeAttackStep = 0;
         DrawTimeAttackPlate(MenuWidgetState());

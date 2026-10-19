@@ -203,7 +203,7 @@ void DrawMenuCourseView(CourseSelectScreen *screen) {
     SetGteObjectMatrix(AsPositionWords(&renderObject->x), &mtxA);
     g_RenderState.geometry.envMode4 = 0;
     courseModelIndex = MenuModelIndexOrFallback(
-        CourseSlot(courseModelIndex), g_ModelBankCount);
+        SeriesCourseIndexFor(courseModelIndex), g_ModelBankCount);
     if (courseModelIndex >= 0) {
         SubmitModel(&g_RenderState, courseModelIndex);
     }

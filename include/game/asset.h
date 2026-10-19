@@ -169,14 +169,20 @@ extern size_t g_LoadBufferImageSize;
 #define ASSET_VOICE_BANK        0x56
 #define ASSET_TRACK_1ST_BASE    0x57
 #define ASSET_TRACK_2ND_BASE    0x58
+#define ASSET_EXTRA_TRACK_1ST_BASE 135
+#define ASSET_EXTRA_TRACK_2ND_BASE 136
 
 enum {
-    GAME_ASSET_COUNT = 135,
+    GAME_DISC_ASSET_COUNT = 135,
+    EXTRA_TRACK_COURSE_COUNT = 32,
+    EXTRA_TRACK_COURSE_SLOT_BASE = 8,
     CAR_ASSETS_PER_VARIANT = 2,
     TRACK_CLASS_COUNT = 6,
     TRACK_COURSE_COUNT = 4,
     TRACK_ASSETS_PER_CLASS = 8,
     TRACK_ASSETS_PER_COURSE = 2,
+    GAME_ASSET_COUNT = GAME_DISC_ASSET_COUNT +
+                       EXTRA_TRACK_COURSE_COUNT * TRACK_ASSETS_PER_COURSE,
 };
 
 static inline s32 CarVariantAssetIndex(s32 base, s32 variantIndex) {
@@ -185,8 +191,19 @@ static inline s32 CarVariantAssetIndex(s32 base, s32 variantIndex) {
 
 static inline s32 TrackCourseAssetIndex(s32 base, s32 classIndex,
                                         s32 courseIndex) {
-    if ((u32)classIndex >= TRACK_CLASS_COUNT ||
-        (u32)courseIndex >= TRACK_COURSE_COUNT) {
+    if ((u32)classIndex >= TRACK_CLASS_COUNT) {
+        return -1;
+    }
+    if (courseIndex >= EXTRA_TRACK_COURSE_SLOT_BASE &&
+        courseIndex < EXTRA_TRACK_COURSE_SLOT_BASE + EXTRA_TRACK_COURSE_COUNT) {
+        s32 extraBase = (base == ASSET_TRACK_2ND_BASE)
+                            ? ASSET_EXTRA_TRACK_2ND_BASE
+                            : ASSET_EXTRA_TRACK_1ST_BASE;
+        return extraBase +
+               (courseIndex - EXTRA_TRACK_COURSE_SLOT_BASE) *
+                   TRACK_ASSETS_PER_COURSE;
+    }
+    if ((u32)courseIndex >= TRACK_COURSE_COUNT) {
         return -1;
     }
     return base + classIndex * TRACK_ASSETS_PER_CLASS +

@@ -175,8 +175,11 @@ static s32 CrossTheLine(RaceScene *state, PlayerCarRuntime *car,
 
     lapsRun = g_LapCount;
     if (car->lap == lapsRun + 1) {
-        /* Anything below fourth is not a finish; the race is retired. */
-        if (car->drive.racePosition <= FINISHING_PLACE_LIMIT) {
+        /* Grand Prix keeps the retail podium: fourth and below retire.
+         * A custom race still ran its full distance, so every place takes
+         * the finish fade and the replay instead of dropping to the menu. */
+        if (car->drive.racePosition <= FINISHING_PLACE_LIMIT ||
+            g_RaceSession.kind == RACE_SESSION_CUSTOM) {
             FinishRace(&state->timing, car, recordMode, lapsRun);
         } else {
             RetireAtLastLap();

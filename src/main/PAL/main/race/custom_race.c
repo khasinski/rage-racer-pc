@@ -45,7 +45,7 @@ s32 CustomRacePerformanceCar(s32 course, s32 classIndex, s32 rivalModel) {
 s32 CustomRacePreviewCar(s32 model) {
     if ((u32)model < GAME_CAR_COUNT) return model;
     return CustomRacePerformanceCar(
-        g_RaceSession.course % COURSE_SLOT_COUNT,
+        SeriesCourseIndexFor(g_RaceSession.course),
         g_RaceSession.classIndex,
         model - GAME_CAR_COUNT);
 }
@@ -73,8 +73,8 @@ void ApplyCustomRaceSelection(void) {
         course -= COURSE_LONG_SLOT;
         g_RaceSession.course = course;
     }
-    g_CourseIndex = course % COURSE_SLOT_COUNT;
-    g_GrandPrixSeries = course / COURSE_SLOT_COUNT;
+    g_CourseIndex = CourseSlot(course);
+    g_GrandPrixSeries = (s16)CourseSeries(course);
     g_GrandPrixClass = g_RaceSession.classIndex;
     g_PlayerCarIndex = CustomRacePreviewCar(model);
     for (s32 car = 0; car < GAME_CAR_COUNT; ++car) {

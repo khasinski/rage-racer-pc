@@ -32,6 +32,9 @@ exports.exportSet=async(service,key,destination)=>{
     await fs.writeFile(path.join(named,'model.obj.mtl'),mtl);
     for(const name of await fs.readdir(named))if(!['model.obj','model.obj.mtl'].includes(name))await fs.rm(path.join(named,name));
    }
+   const fitArr=service.editor?.project.snapshot().changes.find(ch=>ch.kind==='car'&&ch.id===key&&ch.field==='fitment')?.value;
+   const axleFit=Array.isArray(fitArr)&&fitArr.length===11?[Math.round(fitArr[0]/4)*4,fitArr[1]-fitArr[5],fitArr[2]-fitArr[6],100,0,0,0,100,0,0,100]:null;
+   if(axleFit&&(axleFit[0]||axleFit[1]||axleFit[2]))manifest.fitment=axleFit;
    await fs.writeFile(path.join(target,'car-set.json'),JSON.stringify(manifest,null,2));
    const {run}=require('./service.cjs');
    const placement=await layout(service,c,signal,view);
@@ -72,7 +75,7 @@ exports.importSet=async(service,key,source,revision,owner)=>{
     await run(service.tool('rage-mesh-obj'),['separate-glb',source,staging],{signal,input:JSON.stringify({source:expectedSource,parts,instances})});
     source=staging;manifest={format:1,region:service.state.disc.region,key,parts:{body:'part-0.glb','front-wheels':'part-1.glb','rear-wheels':'part-2.glb'},textures:{}};
    }else manifest=JSON.parse(await fs.readFile(await boundedFile(source,'car-set.json',65536),'utf8'));
-   if(manifest.format!==1||manifest.region!==service.state.disc.region||typeof manifest.key!=='string')throw Error('Choose a valid car set exported for this game version.');
+   if(manifest.format!==1||typeof manifest.region!=='string'||!['PAL','NTSC-U','NTSC-J'].includes(manifest.region)||typeof manifest.key!=='string')throw Error('Choose a valid car set exported for this game version.');
    if(service.resolvePlayerKey(manifest.key)!==service.resolvePlayerKey(key))throw Error('Car set was exported for a different car slot');
    if(!manifest.parts||!manifest.textures||Array.isArray(manifest.textures)||Object.keys(manifest.textures).length>64)throw Error('Invalid car set manifest');
    const meshes=[],textures=[],embedded={};
@@ -109,7 +112,8 @@ exports.importSet=async(service,key,source,revision,owner)=>{
    await service.loadProject();
    if(service.editor){
     const project=service.editor.project,revision=project.revision;
-    const store=new (require('./project-files.cjs').ProjectFiles)(service.editor.file),changes=[{kind:'car',id:key,field:'fitment',value:null}];
+    const validFit=Array.isArray(manifest.fitment)&&manifest.fitment.length===11&&manifest.fitment.every(v=>Number.isSafeInteger(v))?manifest.fitment:null;
+    const store=new (require('./project-files.cjs').ProjectFiles)(service.editor.file),changes=[{kind:'car',id:key,field:'fitment',value:validFit}];
     for(const [field,entries,type]of [['mesh',meshEntries,'rmesh'],['texture',textureEntries,'png']]){
      for(const [id,relative]of entries){
       const ref=await store.put(path.join(staging,relative),type);

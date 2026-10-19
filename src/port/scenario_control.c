@@ -276,7 +276,7 @@ static void ScenarioInitialize(void) {
     else
         s_scenario.launch.series = ScenarioInt("race.series", 0, 0, 1);
     s_scenario.launch.classIndex = ScenarioInt("race.class", 0, 0, 5);
-    s_scenario.launch.course = ScenarioInt("race.course", 0, 0, 3);
+    s_scenario.launch.course = ScenarioInt("race.course", 0, 0, 39);
     s_scenario.launch.car = ScenarioInt("race.car", 3, 0, 12);
     /* Select an asset variant within this car's catalog range, rather than
      * allowing an upgrade index to spill into the next car's assets. */
@@ -399,7 +399,9 @@ static void ScenarioSelectDirectSeries(void) {
         ? GrandPrixAssetSeries(selection->series, selection->classIndex)
         : selection->series);
     g_GrandPrixClass = selection->classIndex;
-    g_CourseIndex = selection->course;
+    g_CourseIndex = selection->course >= 8
+        ? 8 + (selection->course - 8) * 2 + selection->series
+        : selection->course + selection->series * 4;
 
     if (!selection->mode) {
         g_CarTable = g_TimeAttackCars;
@@ -513,7 +515,7 @@ static void ScenarioDirectBoot(void) {
                 s_scenario.enabled = 0;
                 break;
             }
-            g_GrandPrixRound = DetermineGrandPrixRound(
+            g_GrandPrixRound = s_scenario.launch.course >= 8 ? 0 : DetermineGrandPrixRound(
                 g_CourseProgress != NULL ? g_CourseProgress->bestPlace : NULL,
                 g_GrandPrixClass,
                 SeriesCourseIndex());
@@ -560,7 +562,9 @@ static void ScenarioApplyLaunchSelection(void) {
     g_PlayerCarIndex = (s16)selection->car;
     /* Menu course indices retain the series in bit 2 until car select starts
      * the round; car_select.c then converts it to the physical course index. */
-    g_CourseIndex = selection->course + selection->series * 4;
+    g_CourseIndex = selection->course >= 8
+        ? selection->course
+        : selection->course + selection->series * 4;
     if (g_CarTable != NULL && selection->transmission >= 0)
         g_CarTable[selection->car].transmission =
             (u8)selection->transmission;

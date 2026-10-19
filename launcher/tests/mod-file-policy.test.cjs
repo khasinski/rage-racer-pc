@@ -22,9 +22,9 @@ test('launcher inventory validates empty directories through the native policy',
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
 test('compiled inventory validates complete batches without silently truncating paths',async()=>{
- await check(['mod.toml','rage-mod.json','raw/asset_134.bin','textures/a.png','meshes/a.rmesh']);
+ await check(['mod.toml','rage-mod.json','raw/asset_134.bin','raw/asset_198.bin','raw/course_01.txt','raw/course_32.txt','textures/a.png','meshes/a.rmesh']);
  await check([]);
- for(const files of [['raw/asset_135.bin'],['textures/../a.png'],['textures/a.png\0.exe'],[42],{},
+ for(const files of [['raw/asset_199.bin'],['raw/course_00.txt'],['raw/course_33.txt'],['textures/../a.png'],['textures/a.png\0.exe'],[42],{},
   Array(10001).fill('mod.toml'),['run.js'],['textures/folder/a b.png']])
   await assert.rejects(check(files),/mod file/);
  await assert.rejects(run(tool,['--check-files-stdin'],{input:Buffer.from('[')}),/mod file/);

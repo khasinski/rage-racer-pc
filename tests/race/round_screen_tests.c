@@ -37,6 +37,7 @@ s32 g_MirrorMode;
 u16 g_PadHeld;
 u16 g_PadPressed;
 RagePrizeMoneyStorage g_PrizeMoneyState;
+RaceSession g_RaceSession;
 GameRenderState g_RenderState;
 s32 g_SceneId;
 s32 g_SceneTimer;

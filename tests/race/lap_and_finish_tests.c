@@ -46,6 +46,7 @@ s16 g_RivalCueEnabled;
 s32 g_SeriesCleared;
 s32 g_TrackLength;
 s16 g_WrongWayTimer;
+RaceSession g_RaceSession;
 
 static unsigned long s_digest = 2166136261UL;
 static FILE *s_out;
@@ -471,6 +472,46 @@ int main(int argc, char **argv) {
         puts("FAIL overflowed progress crossed the lap line");
         return 1;
     }
+
+    /* Custom mode has rivals, so fourth and below used to retire and the
+     * race scene sent that straight back to the menu. Completing the
+     * distance is a finish at every place, which is the replay path. */
+    memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = 0x10000;
+    g_PlayerCar.drive.racePosition = 5;
+    g_LapCount = 1;
+    g_TrackLength = 0x10000;
+    g_RacePhase = 0;
+    g_RaceCueDelay = 0;
+    g_RaceCueFlags = 0;
+    g_GrandPrixMode = 0;
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    s_state.fadeTimer = 0;
+    s_state.timing.bestLap = 0x7FFFFFFF;
+    s_lastSoundCue = -1;
+    s_followupCue = -1;
+    s_followupCount = 0;
+    if (UpdateLapAndFinish(&s_state, &g_PlayerCar, 0) != 1 ||
+        g_RacePhase != RACE_PHASE_FINISHED || s_followupCue != 0x2B ||
+        s_followupCount != 1) {
+        puts("FAIL custom finish outside the podium skipped the replay");
+        return 1;
+    }
+    g_RaceSession.kind = RACE_SESSION_STANDARD;
+    g_PlayerCar.drive.racePosition = 5;
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = 0x10000;
+    g_RacePhase = 0;
+    g_GrandPrixMode = 1;
+    s_followupCue = -1;
+    s_followupCount = 0;
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 1);
+    if (g_RacePhase != RACE_PHASE_RETIRED || s_followupCount != 0) {
+        puts("FAIL grand prix outside the podium took the custom replay");
+        return 1;
+    }
+
     printf("laps and finishing take the same %d states they always did\n",
            steps);
     return 0;

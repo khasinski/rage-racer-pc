@@ -1,5 +1,6 @@
 #include "game/asset.h"
 #include "game/asset_internal.h"
+#include "game/course_index.h"
 #include "game/race.h"
 #include "game/track_internal.h"
 #include <psyz/gpu.h>
@@ -62,7 +63,7 @@ void LoadCustomRivalPreviewAssets(void) {
     if (g_AssetLoadState == CUSTOM_PREVIEW_LOAD_TEXTURES) {
         asset = TrackCourseAssetIndex(ASSET_TRACK_1ST_BASE,
                                       g_RaceSession.classIndex,
-                                      g_RaceSession.course % COURSE_SLOT_COUNT);
+                                      CourseSlot(g_RaceSession.course));
         loaded = LoadAsset(asset, s_buffer);
         if (AssetLoadDidNotComplete(loaded)) return;
         Psyz_GpuTextureUploadContext(1);
@@ -85,7 +86,7 @@ void LoadCustomRivalPreviewAssets(void) {
     if (g_AssetLoadState == CUSTOM_PREVIEW_LOAD_MODELS) {
         asset = TrackCourseAssetIndex(ASSET_TRACK_2ND_BASE,
                                       g_RaceSession.classIndex,
-                                      g_RaceSession.course % COURSE_SLOT_COUNT);
+                                      CourseSlot(g_RaceSession.course));
         loaded = LoadAsset(asset, g_AssetLoadCursor);
         if (AssetLoadDidNotComplete(loaded)) return;
         if (!InstallPreviewModels(g_AssetLoadCursor, (size_t)loaded)) {

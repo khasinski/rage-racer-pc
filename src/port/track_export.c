@@ -14,7 +14,7 @@ int ExportTrack(const char *source,int bank,const char *directory) {
     RenderMeshInstance instances[2]={{0},{0}};
     const char *names[]={"course","terrain"};char files[2][2048]={{0}};int written[2]={0};
     SDL_PathInfo info;
-    if(!source||!directory||bank<88||bank>134||bank%2||
+    if(!source||!directory||bank<88||bank>198||bank%2||
        !SDL_GetPathInfo(source,&info)||info.type!=SDL_PATHTYPE_FILE||info.size>128u*1024u*1024u)return 0;
     bytes=SDL_LoadFile(source,&size);
     if(!bytes||size>128u*1024u*1024u||!InstallTrackRuntimeAssetPack(bytes,size,bank,0)||!NativeAssetImporterInit())goto done;

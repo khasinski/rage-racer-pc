@@ -1,9 +1,10 @@
 const fs=require('node:fs/promises'),path=require('node:path');
 const {ProjectFiles}=require('./project-files.cjs');
-const pattern=/^track\.(big|mid|hi|oval)([1-6])\.(course|terrain)$/;
+const pattern=/^track\.(?:(big|mid|hi|oval)([1-6])|custom([1-9]|[12][0-9]|3[0-2]))\.(course|terrain)$/;
 function slot(id){
  const m=pattern.exec(id);if(!m)throw Error('Invalid track mesh slot');
- return {bank:88+(Number(m[2])-1)*8+['big','mid','hi','oval'].indexOf(m[1])*2,name:m[3]};
+ const bank=m[3]?136+(Number(m[3])-1)*2:88+(Number(m[2])-1)*8+['big','mid','hi','oval'].indexOf(m[1])*2;
+ return {bank,name:m[4]};
 }
 function checkBank(info,metadata){
  if(info.meshes!==metadata.meshes)throw Error('Track model bank must retain its model count and order');
@@ -44,8 +45,8 @@ async function withBank(service,id,signal,work){
  return require('./car-view.cjs').withView(service,signal,undefined,async view=>{
   const directory=path.join(service.root,'track-model-'+randomUUID());await fs.mkdir(directory);
   try{
-   const relative=`raw/asset_${String(bank).padStart(3,'0')}.bin`,files=[];
-   if(view.files.includes(relative)){await fs.mkdir(path.join(directory,'raw'));await fs.copyFile(path.join(view.root,relative),path.join(directory,relative));files.push(relative);}
+   const relative=`raw/asset_${String(bank).padStart(3,'0')}.bin`,texRelative=`raw/asset_${String(bank-1).padStart(3,'0')}.bin`,files=[];
+   for(const rel of [texRelative,relative])if(view.files.includes(rel)){await fs.mkdir(path.join(directory,'raw'),{recursive:true});await fs.copyFile(path.join(view.root,rel),path.join(directory,rel));files.push(rel);}
    const prefix=id.slice(0,id.lastIndexOf('.'))+'.';
    await require('./track-edits.cjs').apply(service,(service.editor?.project.snapshot().changes||[]).filter(c=>c.kind==='track'&&c.id.startsWith(prefix)),directory,files,signal);
    const source=path.join(files.includes(relative)?directory:service.state.disc.data,relative);
@@ -97,7 +98,8 @@ async function importPart(service,id,part,input,revision){
 async function exportPart(service,id,part,destination,format='obj'){
  if(!['obj','glb'].includes(format))throw Error('Choose OBJ or GLB export');
  service.requireReady();const {bank,name}=slot(id);if(!Number.isInteger(part)||part<0)throw Error('Invalid track model');
- const course=['Mythical Coast','Over Pass City','Lakeside Gate','The Extreme Oval'][((bank-88)/2)%4],grade=Math.floor((bank-88)/8)+1;
+ const isCustom=bank>=136;
+ const course=isCustom?`Custom Track ${(bank-136)/2+1}`:['Mythical Coast','Over Pass City','Lakeside Gate','The Extreme Oval'][((bank-88)/2)%4],grade=isCustom?'Custom':Math.floor((bank-88)/8)+1;
  return service.operation('Exporting track model '+format.toUpperCase(),signal=>withBank(service,id,signal,async({file,directory,metadata,view})=>{
   await model(service,id,file,view.root,view.files,signal,metadata.meshes);
   const {run}=require('./service.cjs'),folder=await require('./export-folder.cjs')(destination,`${course} - Class ${grade} - ${name==='course'?'Course':'Terrain'} model ${part}`,'Track');

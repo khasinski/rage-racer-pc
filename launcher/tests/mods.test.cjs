@@ -62,13 +62,13 @@ test('mod inventory excludes arbitrary files and symlinks',async()=>{
  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
 
-test('raw overrides are limited to the 135 archive entries',async()=>{
+test('raw overrides are limited to the 199 archive entries and 32 custom course labels',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rage-raw-range-'));
  try{
   await fs.mkdir(path.join(root,'raw'));
-  await fs.writeFile(path.join(root,'raw/asset_134.bin'),'last entry');
-  assert.deepEqual(await inventory(root),['raw/asset_134.bin']);
-  for(const index of ['135','999']){
+  await fs.writeFile(path.join(root,'raw/asset_198.bin'),'last entry');
+  assert.deepEqual(await inventory(root),['raw/asset_198.bin']);
+  for(const index of ['199','999']){
    const file=path.join(root,`raw/asset_${index}.bin`);await fs.writeFile(file,'invalid');
    await assert.rejects(inventory(root),/Unsupported mod file/);await fs.rm(file);
   }

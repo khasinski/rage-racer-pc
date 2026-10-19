@@ -70,8 +70,8 @@ static s32 RejectTrackRuntimePack(s32 assetIndex, const char *reason) {
 
 static s32 IsTrackRuntimeAssetIndex(s32 assetIndex) {
     const s32 lastAsset = TrackCourseAssetIndex(
-        ASSET_TRACK_2ND_BASE, TRACK_CLASS_COUNT - 1,
-        TRACK_COURSE_COUNT - 1);
+        ASSET_TRACK_2ND_BASE, 0,
+        EXTRA_TRACK_COURSE_SLOT_BASE + EXTRA_TRACK_COURSE_COUNT - 1);
 
     return assetIndex >= ASSET_TRACK_2ND_BASE && assetIndex <= lastAsset &&
            ((assetIndex - ASSET_TRACK_2ND_BASE) %

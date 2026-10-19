@@ -25,7 +25,7 @@ function selection(input){
   const choices=Object.entries(input.resolutions).sort(([a],[b])=>a.localeCompare(b,'en'));
   if(choices.length>10000)throw Error('Too many project priorities');
   const resolutions=Object.fromEntries(choices.map(([key,choice])=>{
-    if(key.length>512||!/^(?:raw\/asset_[0-9]{3}\.bin|textures\/[A-Za-z0-9_./-]+|(?:texture|material|mesh|audio|legacy-textures):[a-z0-9_.-]+)$/.test(key)||key.split('/').some(part=>!part||part==='.'||part==='..')||
+    if(key.length>512||!/^(?:raw\/(?:asset_[0-9]{3}\.bin|course_(?:0[1-9]|[12][0-9]|3[0-2])\.txt)|textures\/[A-Za-z0-9_./-]+|(?:texture|material|mesh|audio|legacy-textures):[a-z0-9_.-]+)$/.test(key)||key.split('/').some(part=>!part||part==='.'||part==='..')||
        !choice||!Array.isArray(choice.candidates)||choice.candidates.length<2||choice.candidates.length>128||
        choice.candidates.some(id=>!packageId(id))||new Set(choice.candidates).size!==choice.candidates.length||
        !choice.candidates.includes(choice.winner))throw Error('Invalid project priority');

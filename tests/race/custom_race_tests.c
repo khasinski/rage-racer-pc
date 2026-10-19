@@ -54,6 +54,17 @@ int main(void) {
     ApplyCustomRaceSelection();
     CHECK(g_CourseIndex == 3 && g_GrandPrixSeries == 0 &&
           g_RaceSession.course == 3);
+
+    /* Extra custom courses keep their slot in g_CourseIndex (8..39) and map
+     * normal (8..39) vs reverse (40..71) into g_GrandPrixSeries (0 vs 1). */
+    g_RaceSession = (RaceSession){RACE_SESSION_CUSTOM, 8, 0, 13};
+    ApplyCustomRaceSelection();
+    CHECK(g_CourseIndex == 8 && g_GrandPrixSeries == 0 &&
+          g_RaceSession.course == 8 && g_PlayerCarIndex == 3);
+    g_RaceSession = (RaceSession){RACE_SESSION_CUSTOM, 40, 0, 13};
+    ApplyCustomRaceSelection();
+    CHECK(g_CourseIndex == 8 && g_GrandPrixSeries == 1 &&
+          g_RaceSession.course == 40 && g_PlayerCarIndex == 3);
     puts("custom race tests passed");
     return 0;
 }

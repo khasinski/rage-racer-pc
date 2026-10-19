@@ -22,7 +22,7 @@ static RageResourceStatus ResolveModRaw(void *context) {
     request->loaded=ModAssetLoad(request->index,request->destination,
                                 g_AssetCdEntries[request->index].size);
     int player = request->index >= 10 && request->index <= 72;
-    int rival = request->index >= 88 && request->index <= 134;
+    int rival = request->index >= 88 && request->index < GAME_DISC_ASSET_COUNT;
     if (request->loaded > 0 && (player || rival) && request->index % 2 == 0) {
         unsigned size = g_AssetCdEntries[request->index].size;
         void *original = size <= 128u * 1024u * 1024u ? malloc(size) : NULL;
@@ -40,6 +40,7 @@ static RageResourceStatus ResolveModRaw(void *context) {
 }
 static RageResourceStatus ResolveDiscRaw(void *context) {
     RawAssetRequest *request=context;
+    if (request->index >= GAME_DISC_ASSET_COUNT) return RAGE_RESOURCE_ERROR;
     request->loaded=HostLoadAsset(g_AssetCdEntries[request->index].position.sectorOffset,
                                  g_AssetCdEntries[request->index].size,request->destination);
     return request->loaded>0?RAGE_RESOURCE_READY:RAGE_RESOURCE_ERROR;
@@ -93,7 +94,10 @@ s32 LoadAsset(s32 assetIndex, void *dst) {
 }
 
 void LoadDiscArchiveIndex(void) {
-    if (!HostLoadArchiveIndex(g_AssetCdEntries, GAME_ASSET_COUNT)) {
+    memset(g_AssetCdEntries + GAME_DISC_ASSET_COUNT, 0,
+           sizeof(g_AssetCdEntries) -
+               GAME_DISC_ASSET_COUNT * sizeof(g_AssetCdEntries[0]));
+    if (!HostLoadArchiveIndex(g_AssetCdEntries, GAME_DISC_ASSET_COUNT)) {
         memset(g_AssetCdEntries, 0, sizeof(g_AssetCdEntries));
         g_AssetLoadFailed = 1;
         fprintf(stderr, "rage-port: unable to load the disc archive index\n");

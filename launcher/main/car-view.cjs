@@ -45,9 +45,10 @@ function applyFitment(bytes,role,fitArr){
   }
  }else if(role==='front'){
   const [cx,cy,cz]=bbox();
+  const remFrontX=frontWidth-Math.round(frontWidth/4)*4;
   for(let i=0;i<vertexCount;i++){
    const at=vBase+i*40;
-   bytes.writeFloatLE(cx+(bytes.readFloatLE(at)-cx)*frontScale+frontWidth,at);
+   bytes.writeFloatLE(cx+(bytes.readFloatLE(at)-cx)*frontScale-remFrontX,at);
    bytes.writeFloatLE(cy+(bytes.readFloatLE(at+4)-cy)*frontScale,at+4);
    bytes.writeFloatLE(cz+(bytes.readFloatLE(at+8)-cz)*frontScale,at+8);
   }

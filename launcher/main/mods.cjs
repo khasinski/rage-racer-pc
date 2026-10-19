@@ -138,9 +138,10 @@ function installMethods(Service){
      const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),['--wav-info',path.join(source,relative)],{signal});
    }
    for(const [key,relative] of Object.entries(manifest.meshes||{})){
-     if(!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key))throw Error('Unsupported car mesh target: '+key);
+     const isTrack=/^track\.(?:(?:big|mid|hi|oval)[1-6]|custom(?:[1-9]|[12][0-9]|3[0-2]))\.(?:course|terrain)$/.test(key);
+     if(!isTrack&&!/^car\.(player|rival)\.\d+\.part\.\d+$/.test(key))throw Error('Unsupported car mesh target: '+key);
      if(!relative.startsWith('meshes/')||!files.includes(relative))throw Error('Missing or invalid mesh: '+relative);
-     const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),['--mesh',path.join(source,relative)],{signal});
+     const {run}=require('./service.cjs');await run(this.tool('rage-mod-cli'),[isTrack?'--mesh-bank':'--mesh',path.join(source,relative)],{signal});
    }
    return {manifest,metadata,legacy};
  };

@@ -15,5 +15,20 @@ int main(void) {
         assert(CourseLapCount(physical) ==
                (physical % 4 == 3 ? 6 : 3));
     }
+    for (physical = EXTRA_COURSE_SLOT_BASE;
+         physical < CUSTOM_PHYSICAL_COURSE_COUNT;
+         physical++) {
+        s32 expectedSlot = physical < EXTRA_COURSE_SLOT_END
+                               ? physical
+                               : physical - EXTRA_COURSE_SLOT_COUNT;
+        s32 expectedSeries = physical < EXTRA_COURSE_SLOT_END ? 0 : 1;
+        g_CourseIndex = physical;
+        assert(PhysicalCourseIndex() == physical);
+        assert(CourseSlot(physical) == expectedSlot);
+        assert(CourseSlot(expectedSlot) == expectedSlot);
+        assert(CourseSeries(physical) == expectedSeries);
+        assert(SeriesCourseIndex() == 0);
+        assert(CourseLapCount(physical) == 3);
+    }
     return 0;
 }

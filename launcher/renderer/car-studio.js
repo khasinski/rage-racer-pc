@@ -2,7 +2,7 @@ import {installMaterialEditor} from './material-editor.mjs';
 import {carImportForm, carPartName} from './car-workshop.mjs';
 import {surfaceDialog} from './tracks.mjs';
 import {displayedShiftSpeed, storedShiftSpeed} from './car-speed.mjs';
-import {mountModelPreview} from './model-preview.js?v=17';
+import {mountModelPreview} from './model-preview.js?v=18';
 
 const $ = s => document.querySelector(s);
 const api = window.launcher;
@@ -135,7 +135,7 @@ function computeFittedVertices(base, partRanges, targetFitment, bakedFitment = D
       }
     } else if (role === 'front') {
       const [cx, cy, cz] = rangeCenter(startVertex, vertexCount);
-      const xDir = (scale?.[0] ?? 1) < 0 ? -1 : 1;
+      const xDir = cx < 0 ? -1 : 1;
       for (let i = 0; i < vertexCount; i++) {
         const at = (startVertex + i) * 9;
         next[at] = cx + (base[at] - cx) * fScale + xDir * fWidth;
@@ -1745,6 +1745,14 @@ document.addEventListener('click', e => {
         return;
       }
       if (b.dataset.exportSet) {
+        const {car} = resolveCatalogBodies();
+        if (car && hasPendingFitment()) {
+          if (previewPromise) await cancelPreview();
+          project = await request('saveCarFitment', car.bank, car.part, Boolean(car.rival), fitmentDraft, project?.revision ?? 0);
+          syncFitmentFromProject();
+          activePreviewKey = '';
+          render();
+        }
         const folder = await request('exportCarSet', b.dataset.exportSet);
         if (folder) toast('Complete car exported to ' + folder);
         return;
@@ -1791,6 +1799,14 @@ document.addEventListener('click', e => {
         return;
       }
       if (b.dataset.exportCar) {
+        const {car} = resolveCatalogBodies();
+        if (car && hasPendingFitment()) {
+          if (previewPromise) await cancelPreview();
+          project = await request('saveCarFitment', car.bank, car.part, Boolean(car.rival), fitmentDraft, project?.revision ?? 0);
+          syncFitmentFromProject();
+          activePreviewKey = '';
+          render();
+        }
         const folder = await request('exportCar', b.dataset.exportCar, b.dataset.format || 'obj');
         if (folder) toast('Part exported to ' + folder);
         return;

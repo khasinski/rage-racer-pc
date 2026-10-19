@@ -35,7 +35,7 @@ static s32 CourseBestPlace(s32 course) {
     if (g_CourseProgress == NULL) {
         return 0;
     }
-    return g_CourseProgress->bestPlace[CourseSlot(course)];
+    return g_CourseProgress->bestPlace[SeriesCourseIndexFor(course)];
 }
 
 static s32 MaxSelectableClass(void) {
@@ -66,8 +66,10 @@ static void BrowseToCourse(CourseSelectScreen *screen, s32 step,
     screen->displayedCourse = course;
     course = SelectableCourseStep(course, step);
     if (course < 0) {
-        course = AddClampedMenuValue(g_CourseIndex, step, 0,
-                                     PHYSICAL_COURSE_COUNT - 1);
+        s32 maxCourse = g_RaceSession.kind == RACE_SESSION_CUSTOM
+                            ? CUSTOM_PHYSICAL_COURSE_COUNT - 1
+                            : PHYSICAL_COURSE_COUNT - 1;
+        course = AddClampedMenuValue(g_CourseIndex, step, 0, maxCourse);
     }
     g_MenuViewAngle =
         RebaseCarouselValue(g_MenuViewAngle, previousTarget,
@@ -141,6 +143,7 @@ static void ChooseCourseSelectRow(CourseSelectScreen *screen, s32 row) {
             g_RaceSession.course = g_CourseIndex;
             g_RaceSession.classIndex = g_GrandPrixClass;
             ApplyCustomRaceSelection();
+            g_CourseIndex = g_RaceSession.course;
             RequestCustomRivalPreviewAssets();
         }
         PlaySoundCue(2);
@@ -346,17 +349,19 @@ static void UpdateClassChange(CourseSelectScreen *screen,
         screen->classChangeApplied = 1;
         g_GrandPrixClass = screen->modalCursor;
         if (g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+            g_RaceSession.course = g_CourseIndex;
             g_RaceSession.classIndex = g_GrandPrixClass;
             ApplyCustomRaceSelection();
+            g_CourseIndex = g_RaceSession.course;
         } else {
             ResetCourseProgressState(g_CourseProgress, screen->modalCursor);
+            g_CourseIndex = CourseSeries(g_CourseIndex) * COURSE_SLOT_COUNT;
         }
         g_MenuViewAngle = MENU_COURSE_VIEW_REBASE_SPAN;
         g_MenuViewAngleTarget = MENU_COURSE_VIEW_REBASE_SPAN;
         screen->option = 0;
         screen->pendingCourse = -1;
         screen->cardSpin = 0;
-        g_CourseIndex = CourseSeries(g_CourseIndex) * COURSE_SLOT_COUNT;
         screen->displayedCourse = g_CourseIndex;
         screen->cardPendingGrade = CourseBestPlace(g_CourseIndex);
     }

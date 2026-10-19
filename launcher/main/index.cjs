@@ -86,6 +86,10 @@ handle('import-title-image',async(id,revision)=>{require('./title-images.cjs').s
 handle('export-title-image',async id=>{require('./title-images.cjs').slot(id);const file=await output({title:'Export title menu PNG',defaultPath:id+'.png',filters:[{name:'PNG images',extensions:['png']}]});return file?service.exportTitleImage(id,file):null;});
 handle('reset-title-image',(id,revision)=>service.resetTitleImage(id,revision));
 handle('tracks',()=>service.tracks());
+handle('import-r4-tracks',async file=>{
+  const chosen=file||await open({title:'Choose Ridge Racer Type 4 Disc Image (CUE / Track 01 BIN) or R4.BIN',filters:[{name:'R4 Disc Image or Archive',extensions:['bin','cue']}],properties:['openFile']});
+  return chosen?service.importR4Tracks(chosen):null;
+});
 handle('track-scene',bank=>service.trackScene(bank));
 handle('track-textures',(id,part)=>service.trackTextures(id,part));
 handle('import-track-texture',async(id,part,source,revision)=>{const file=await open({title:'Replace track surface PNG',filters:[{name:'PNG image',extensions:['png']}],properties:['openFile']});return file?service.importTrackTexture(id,part,source,file,revision):null;});

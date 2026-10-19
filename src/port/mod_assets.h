@@ -29,6 +29,10 @@ unsigned ModAssetsGeneration(void);
 int ModAssetWasReplaced(unsigned index);
 void ModAssetSetGeometryChanged(unsigned index,int changed);
 int ModAssetGeometryChanged(unsigned index);
+int ModAssetExists(int index);
+void ModAssetCourseLabel(int extraCourseIndex, char *nameOut,
+                         size_t nameCapacity, char *lengthOut,
+                         size_t lengthCapacity);
 int ModAssetLoad(int index, void *destination, unsigned int originalSize);
 
 /* Bytes usable from `at` to the end of the buffer it falls in, or 0 when the

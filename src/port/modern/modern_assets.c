@@ -28,7 +28,7 @@
 /* One entry per bank's first definition. More than one car may share a bank;
  * all matching replacements are assembled before the result is cached. */
 static RageRuntimeCachedMesh
-    s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT + RAGE_ARCHIVE_INDEX_ENTRY_COUNT];
+    s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT + RAGE_MOD_ASSET_ENTRY_COUNT];
 /* CPU copies move source-image work to the completed logic frame. GPU upload
  * still needs a command buffer, but a first draw never has to reopen a disc
  * file, decode an override, apply paint, or rebuild the material definition. */
@@ -40,7 +40,7 @@ static int s_modReady;
 static struct {
     RageRuntimeCachedMesh mesh;
     int checked;
-} s_trackMeshes[48];
+} s_trackMeshes[48 + RAGE_EXTRA_TRACK_SLOT_COUNT * 2];
 
 static void ReleaseTrackBytes(void *context,const void *bytes) {
     (void)context;SDL_free((void *)bytes);
@@ -161,7 +161,7 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     for (first = 0; first != RAGE_AUTHORED_CAR_COUNT; first++)
         if (AuthoredCarMatches(&s_authoredCars[first], instance)) break;
     int nativeOnly = first == RAGE_AUTHORED_CAR_COUNT;
-    if (nativeOnly && instance->assetKey >= RAGE_ARCHIVE_INDEX_ENTRY_COUNT) return base;
+    if (nativeOnly && instance->assetKey >= RAGE_MOD_ASSET_ENTRY_COUNT) return base;
     if (nativeOnly && (!s_modReady || !s_modManifest->meshCount)) return base;
     if (nativeOnly) authored = 0;
     entry = &s_authoredCarMesh[nativeOnly ? RAGE_AUTHORED_CAR_COUNT + instance->assetKey : first];
@@ -182,6 +182,14 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         if (!AuthoredCarMatches(car, instance)) continue;
         AuthoredCarKey(car, key, sizeof(key));
         override = s_modReady ? ModManifestFindMesh(s_modManifest, key) : NULL;
+        if (!override && s_modReady &&
+            car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
+            car->submesh >= 4 && car->submesh <= 21) {
+            AuthoredCarReplacement fallback = *car;
+            fallback.submesh = (car->submesh & 1u) ? 3u : 2u;
+            AuthoredCarKey(&fallback, key, sizeof(key));
+            override = ModManifestFindMesh(s_modManifest, key);
+        }
         if (!authored && !override) continue;
         if (override) {
             size_t modSize;
@@ -506,7 +514,8 @@ void ModernAssetsShutdown(void) {
     size_t i;
     if (s_source != MODERN_ASSET_SOURCE_NONE) ++s_generation;
     ModernPreparedMaterialsClear(&s_preparedMaterials);
-    for(i=0;i<48;i++)RuntimeCachedMeshRelease(&s_trackMeshes[i].mesh);
+    for(i=0;i<sizeof(s_trackMeshes)/sizeof(s_trackMeshes[0]);i++)
+        RuntimeCachedMeshRelease(&s_trackMeshes[i].mesh);
     memset(s_trackMeshes,0,sizeof(s_trackMeshes));
     for (i=0;i<sizeof(s_authoredCarMesh)/sizeof(s_authoredCarMesh[0]);i++)
         RuntimeCachedMeshRelease(&s_authoredCarMesh[i]);
@@ -646,7 +655,7 @@ const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
             s_authoredCarMesh[i].ownedBytes != NULL)
             return &s_authoredCarMesh[i].mesh;
     }
-    if (instance->assetKey < RAGE_ARCHIVE_INDEX_ENTRY_COUNT &&
+    if (instance->assetKey < RAGE_MOD_ASSET_ENTRY_COUNT &&
         (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
          instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
         const RageRuntimeCachedMesh *original = &s_authoredCarMesh[RAGE_AUTHORED_CAR_COUNT + instance->assetKey];

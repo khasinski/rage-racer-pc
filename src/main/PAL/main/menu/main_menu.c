@@ -119,12 +119,10 @@ void UpdateMainMenuInput(void) {
             RequestSelectBgmAssetsKeepAudioSlots();
             break;
         case TITLE_MENU_CUSTOM:
-            g_RaceSession = (RaceSession){
-                .kind = RACE_SESSION_CUSTOM,
-                .course = 0,
-                .classIndex = 0,
-                .model = 3,
-            };
+            g_RaceSession.kind = RACE_SESSION_CUSTOM;
+            g_RaceSession.course = 0;
+            g_RaceSession.classIndex = 0;
+            g_RaceSession.model = 3;
             memcpy(g_RaceSession.cars, g_TimeAttackCars,
                    sizeof(g_RaceSession.cars));
             for (s32 car = 0; car < GAME_CAR_COUNT; ++car) {

@@ -7,7 +7,14 @@ static int TrackName(char *out, size_t capacity, uint32_t assetKey) {
     uint32_t offset, course, classNumber;
     int written;
 
-    /* Track Render World keys are the .2ND pack for BIG1 through OVAL6. */
+    /* Track Render World keys are the .2ND pack for BIG1 through OVAL6,
+     * followed by the 32 custom track slots (custom1..custom32). */
+    if (assetKey >= 0x88u && assetKey <= 0xC6u &&
+        ((assetKey - 0x88u) & 1u) == 0) {
+        written = snprintf(out, capacity, "custom%u",
+                           (assetKey - 0x88u) / 2u + 1u);
+        return written >= 0 && (size_t)written < capacity;
+    }
     if (assetKey < 0x58u || assetKey > 0x86u ||
         ((assetKey - 0x58u) & 1u) != 0) return 0;
     offset = (assetKey - 0x58u) / 2u;

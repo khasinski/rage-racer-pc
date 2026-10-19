@@ -93,7 +93,16 @@ async function cancelPreview() {
 }
 
 function trackAssetPrefix(bank) {
+  if (bank >= 136) return `track.custom${(bank - 136) / 2 + 1}`;
   return `track.${['big', 'mid', 'hi', 'oval'][((bank - 88) / 2) % 4]}${Math.floor((bank - 88) / 8) + 1}`;
+}
+
+function trackGradeBadge(t) {
+  if (!t) return 'Class 1';
+  if (t.origin === 'custom' || t.grade === 'Custom') {
+    return t.slot ? `Custom #${t.slot}` : 'Custom';
+  }
+  return `Class ${t.grade}`;
 }
 
 function getTerrainCellModel(cells, idx) {
@@ -991,24 +1000,30 @@ function renderTrackAccordion() {
 function openLoadTrackModal() {
   const dialog = $('#dialog');
   dialog.innerHTML = `
-    <div style="min-width:620px;max-width:740px">
-      <div class="eyebrow">FILE → LOAD TRACK</div>
-      <h2 style="margin:2px 0 8px">Select a Track &amp; Class Layout</h2>
-      <div class="studio-browser-grid">
+    <div style="min-width:640px;max-width:780px">
+      <div class="row between" style="align-items:flex-start;margin-bottom:8px">
+        <div>
+          <div class="eyebrow">FILE → LOAD TRACK</div>
+          <h2 style="margin:2px 0 0">Select a Track &amp; Class Layout (${trackList.length} Tracks)</h2>
+        </div>
+        <button type="button" class="studio-btn primary" data-action="import-r4-tracks" title="Import all 8 tracks from Ridge Racer Type 4 (R4.BIN, CUE, or Track 01 BIN)">🏁 Import R4 Tracks…</button>
+      </div>
+      <div class="studio-browser-grid" style="max-height:65vh;overflow-y:auto;padding-right:4px">
         ${trackList.map(t => `
           <div class="studio-browser-card ${t.bank === trackBank ? 'active' : ''}" data-pick-track="${t.bank}" role="button" tabindex="0">
             <div class="row between" style="width:100%">
-              <span class="car-slot-badge">Class ${t.grade}</span>
+              <span class="car-slot-badge">${esc(trackGradeBadge(t))}</span>
               <small>Bank ${t.bank}</small>
             </div>
             <strong style="font-size:13.5px">${esc(t.name)}</strong>
             <div class="row between" style="width:100%;margin-top:2px;gap:6px">
-              <small>${t.available ? 'Driveable in Class ' + t.grade : 'Bonus / Unlockable'}</small>
-              <button type="button" class="studio-btn" data-restore-track-bank="${t.bank}" style="padding:2px 7px;font-size:10.5px" title="Restore original version from game disc">↺ Restore Original</button>
+              <small>${t.origin === 'custom' ? 'Custom Track · Driveable in Custom / GP' : t.available ? 'Driveable in Class ' + t.grade : 'Bonus / Unlockable'}</small>
+              <button type="button" class="studio-btn" data-restore-track-bank="${t.bank}" style="padding:2px 7px;font-size:10.5px" title="Restore original version">↺ Restore</button>
             </div>
           </div>`).join('')}
       </div>
-      <footer class="row end">
+      <footer class="row between" style="margin-top:12px">
+        <button type="button" class="studio-btn" data-action="import-r4-tracks">🏁 Import Ridge Racer Type 4 Tracks (R4.BIN / Disc)…</button>
         <button type="button" class="studio-btn" data-action="close">Close</button>
       </footer>
     </div>`;
@@ -1019,8 +1034,12 @@ function summarizeTrackProjectChanges() {
   const groups = new Map();
   for (const c of project?.changes || []) {
     if (c.kind === 'track') {
-      const m = /^track\.(\d+)/.exec(String(c.id || ''));
-      const bank = m ? Number(m[1]) : Number(c.bank || trackBank);
+      const m = /^track\.(?:(big|mid|hi|oval)([1-6])|custom(\d+)|(\d+))/.exec(String(c.id || ''));
+      const bank = m
+        ? (m[1] ? 88 + (Number(m[2]) - 1) * 8 + ['big', 'mid', 'hi', 'oval'].indexOf(m[1]) * 2
+          : m[3] ? 136 + (Number(m[3]) - 1) * 2
+          : Number(m[4]))
+        : Number(c.bank || trackBank);
       const key = `track.${bank}`;
       if (!groups.has(key)) {
         const tr = trackList.find(t => t.bank === bank);
@@ -1028,7 +1047,7 @@ function summarizeTrackProjectChanges() {
           id: key,
           kind: 'track',
           bank,
-          title: tr ? `Class ${tr.grade} · ${tr.name}` : `Track Bank ${bank}`,
+          title: tr ? `${trackGradeBadge(tr)} · ${tr.name}` : `Track Bank ${bank}`,
           subtitle: `Track Bank ${bank}`,
           tags: new Set(),
           count: 0
@@ -1119,7 +1138,8 @@ function openCommandPaletteModal(query = trackPaletteQuery) {
   const currentTrack = trackList.find(t => t.bank === trackBank) || trackList[0] || {name: 'Mythical Coast', grade: 1, bank: 88};
   const items = [
     {group: 'Action', label: '💾 Save & Apply All Track Changes to Game', hint: 'Ctrl+S', attr: 'data-action="save-all"'},
-    {group: 'Action', label: `🏁 Start Test Race on Class ${currentTrack.grade} · ${currentTrack.name}`, hint: 'Launch Race', attr: 'data-action="test-race"'},
+    {group: 'Action', label: `🏁 Start Test Race on ${trackGradeBadge(currentTrack)} · ${currentTrack.name}`, hint: 'Launch Race', attr: 'data-action="test-race"'},
+    {group: 'Action', label: '🏁 Import All 8 Tracks from Ridge Racer Type 4 (R4.BIN / Disc)…', hint: 'Custom #1–#8', attr: 'data-action="import-r4-tracks"'},
     {group: 'Action', label: `📦 Project Changes Outliner (${project?.changes?.length || 0} edits)`, hint: 'Inspect / Revert', attr: 'data-open-project-changes="true"'},
     {group: 'Action', label: '🗺️ Browse Track Catalog Modal…', hint: 'Ctrl+O', attr: 'data-open-load-track="true"'},
     {group: 'Action', label: '↺ Restore Current Track to Original Disc Version', hint: `Bank ${trackBank}`, attr: 'data-action="restore-original-track"'},
@@ -1129,8 +1149,8 @@ function openCommandPaletteModal(query = trackPaletteQuery) {
     {group: 'Studio', label: '🚗 Switch to Car Editor Studio', hint: '120+ Car Slots', attr: 'data-open-studio="car"'},
     {group: 'Studio', label: '💾 Switch to Save Editor', hint: 'Garage & Credits', attr: 'data-open-studio="saves"'},
     ...trackList.map(t => ({
-      group: `Class ${t.grade}`,
-      label: `${t.name} (Class ${t.grade})`,
+      group: trackGradeBadge(t),
+      label: `${t.name} (${trackGradeBadge(t)})`,
       hint: `Bank ${t.bank}`,
       attr: `data-pick-track="${t.bank}"`
     }))
@@ -1842,6 +1862,7 @@ function render() {
           <summary>File ▾</summary>
           <div class="studio-menu-dropdown">
             <button type="button" data-open-load-track><span>🗺️ Load Track…</span><small>Ctrl+O</small></button>
+            <button type="button" data-action="import-r4-tracks" ${!canAct ? 'disabled' : ''}><span>🏁 Import R4 Tracks (R4.BIN / Disc)…</span></button>
             <button type="button" data-open-command-palette><span>🔍 Command Palette…</span><small>Ctrl+K</small></button>
             <hr>
             <button type="button" data-import-route data-revision="${trackScene?.revision ?? 0}"><span>📥 Import Track Route (.JSON / .OBJ)…</span></button>
@@ -1890,8 +1911,9 @@ function render() {
       <div class="studio-menubar-center">
         <button type="button" class="studio-doc-pill" data-open-load-track title="Click to switch track (File -> Load Track)">
           <span class="studio-doc-dot ${isDirty ? 'dirty' : ''}"></span>
-          <span>Class ${currentTrack.grade} · <b>${esc(currentTrack.name)}</b> (${n} segs) ▾</span>
+          <span>${esc(trackGradeBadge(currentTrack))} · <b>${esc(currentTrack.name)}</b> (${n} segs) ▾</span>
         </button>
+        <button type="button" class="studio-btn" data-action="import-r4-tracks" ${!canAct ? 'disabled' : ''} title="Import all 8 tracks from Ridge Racer Type 4 (R4.BIN, CUE, or Track 01 BIN)">🏁 Import R4 Tracks…</button>
         <button type="button" class="studio-btn" data-open-command-palette title="Open Quick Command Palette (Ctrl+K)">🔍 Ctrl+K</button>
       </div>
 
@@ -1955,7 +1977,7 @@ function render() {
     <!-- 3. BOTTOM STATUS BAR -->
     <footer class="studio-statusbar">
       <span style="display:inline-flex;align-items:center;gap:8px">
-        <span>Ready · ${esc(currentTrack.name)} (Class ${currentTrack.grade}) · View: ${stageView.toUpperCase()} · Road Seg #${sel + 1} · Terrain [${terrainCell & 31}, ${terrainCell >> 5}] (${activeTileModel === 1023 ? 'Empty' : 'Model #' + activeTileModel})</span>
+        <span>Ready · ${esc(currentTrack.name)} (${esc(trackGradeBadge(currentTrack))}) · View: ${stageView.toUpperCase()} · Road Seg #${sel + 1} · Terrain [${terrainCell & 31}, ${terrainCell >> 5}] (${activeTileModel === 1023 ? 'Empty' : 'Model #' + activeTileModel})</span>
         <button type="button" class="studio-status-edits-btn" data-open-project-changes title="Open Project Changes Outliner to inspect or revert modified tracks & cars">📦 ${project?.changes?.length || 0} Project Edit(s)</button>
       </span>
       <span>[ / ] Prev/Next Seg · Ctrl+K Palette · Orbit 3D / Pan 2D · Scroll Zoom</span>
@@ -2065,11 +2087,34 @@ document.addEventListener('click', e => {
       if (b.dataset.action === 'close') { $('#dialog').close(); return; }
       if (b.dataset.action === 'choose-game') { await request('chooseGame'); return; }
       if (b.dataset.action === 'play') { await request('play'); return; }
+      if (b.dataset.action === 'import-r4-tracks') {
+        if ($('#dialog')?.open) $('#dialog').close();
+        await cancelPreview();
+        const res = await request('importR4Tracks');
+        if (!res) return;
+        project = res.project || (await request('project').catch(() => project));
+        const catalog = await request('tracks');
+        trackList = catalog.tracks || trackList;
+        trackBank = res.firstBank || 136;
+        trackPoint = 0;
+        trackObject = 0;
+        roadDraft = null;
+        cachedTrackPreview = null;
+        cachedTrackPreviewKey = '';
+        active3dKey = '';
+        loading3dKey = '';
+        trackScene = await request('trackScene', trackBank);
+        const pts = trackScene?.road?.points || [];
+        terrainCell = findNearestPopulatedTerrainCell(trackScene, pts[0]);
+        render();
+        toast(`Imported ${res.imported?.length || 8} Ridge Racer Type 4 tracks into Custom #1–#${res.imported?.length || 8}!`);
+        return;
+      }
       if (b.dataset.openProjectChanges !== undefined) { openProjectChangesModal(); return; }
       if (b.dataset.openCommandPalette !== undefined) { openCommandPaletteModal(''); return; }
       if (b.dataset.action === 'restore-original-track' || b.dataset.restoreTrackBank) {
         const targetBank = b.dataset.restoreTrackBank ? Number(b.dataset.restoreTrackBank) : trackBank;
-        const targetTrack = trackList.find(t => t.bank === targetBank) || {name: `Track ${targetBank}`, grade: Math.floor((targetBank - 88) / 8) + 1};
+        const targetTrack = trackList.find(t => t.bank === targetBank) || {name: `Track ${targetBank}`, grade: targetBank >= 136 ? 'Custom' : Math.floor((targetBank - 88) / 8) + 1};
         project = await request('restoreOriginalTrack', targetBank, project?.revision);
         if (targetBank === trackBank) {
           roadDraft = null;
@@ -2084,7 +2129,7 @@ document.addEventListener('click', e => {
           else openLoadTrackModal();
         }
         render();
-        toast(`Restored original disc version of Class ${targetTrack.grade} · ${targetTrack.name}`);
+        toast(`Restored original version of ${trackGradeBadge(targetTrack)} · ${targetTrack.name}`);
         return;
       }
       if (b.dataset.openStudio) {

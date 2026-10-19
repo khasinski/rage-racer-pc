@@ -89,8 +89,15 @@ void DrawRoundScreen(void) {
     } else {
         y0 = 0x68;
     }
-    DrawSprite(ot, 0x5e, y0, 0x84, 0xc, 0,
-               g_CourseIndex * 12 + 156, col, col, col, 0x12, 0, 1, 0x29);
+    if (CourseSlot(g_CourseIndex) >= EXTRA_COURSE_SLOT_BASE) {
+        GameDrawProportionalTextShaded(
+            0x5e, y0,
+            ExtraCourseName(CourseSlot(g_CourseIndex)),
+            0x7812, col);
+    } else {
+        DrawSprite(ot, 0x5e, y0, 0x84, 0xc, 0,
+                   g_CourseIndex * 12 + 156, col, col, col, 0x12, 0, 1, 0x29);
+    }
 
     /* Prize values are part of the BGM choice, so make them readable as soon
      * as the selector is shown.  The authored details delay is 512 quarter

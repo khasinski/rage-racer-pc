@@ -29,7 +29,8 @@ export async function mountModelPreview(dialog,data,options={}){
  gl.attachShader(program,shader(gl.FRAGMENT_SHADER,'precision mediump float;varying vec3 normalDir;varying vec3 shade;varying vec2 texUV;uniform sampler2D atlas;uniform bool textured;uniform vec4 factor;uniform vec3 emission;uniform vec2 finish;uniform int alphaMode;uniform vec3 sunDir;void main(){vec4 t=textured?texture2D(atlas,texUV):vec4(1.);float alpha=t.a*factor.a;if(t.a<.01||(alphaMode==1&&alpha<.5))discard;vec3 halfVec=normalize(sunDir+vec3(0.,0.,1.));float highlight=pow(abs(dot(normalize(normalDir),halfVec)),mix(128.,2.,finish.x))*finish.y*.38;gl_FragColor=vec4(t.rgb*shade*factor.rgb+emission+highlight,alphaMode==2?alpha:1.);}'));
  gl.linkProgram(program);if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw Error(gl.getShaderInfoLog(program));gl.useProgram(program);
  const min=[Infinity,Infinity,Infinity],max=[-Infinity,-Infinity,-Infinity];let v=data.vertices;
- for(let i=0;i<v.length;i+=9)for(let a=0;a<3;a++){min[a]=Math.min(min[a],v[i+a]);max[a]=Math.max(max[a],v[i+a]);}
+ const refVerts=hasGhost?options.ghostVertices:v;
+ for(let i=0;i<refVerts.length;i+=9)for(let a=0;a<3;a++){min[a]=Math.min(min[a],refVerts[i+a]);max[a]=Math.max(max[a],refVerts[i+a]);}
  if(options.comparison&&!options.frame){const original=options.comparison.original.vertices;min.fill(Infinity);max.fill(-Infinity);for(let i=0;i<original.length;i+=9)for(let a=0;a<3;a++){min[a]=Math.min(min[a],original[i+a]);max[a]=Math.max(max[a],original[i+a]);}}
  const frame=options.frame||{scale:2/Math.max(...max.map((x,a)=>x-min[a]),1e-6),center:max.map((x,a)=>(x+min[a])/2)}, {scale,center}=frame;
  function vertex(index,out){const at=index*9,material=v[at+6]>>>0,col=(material&0xffff)===65535?[.15,.16,.18]:!data.worldScene&&((material&0xffff)>>>6)===1?[.10,.16,.2]:[1,1,1];if(data.colors){const untextured=(material&0xffff)===65535;for(let c=0;c<3;c++)col[c]=untextured?data.colors[index*4+c]/255:col[c]*Math.min(data.colors[index*4+c]*2/255,1);}
@@ -43,7 +44,7 @@ export async function mountModelPreview(dialog,data,options={}){
  const guideBuffer=gl.createBuffer(),ghostBuffer=gl.createBuffer();
  buffers.push(guideBuffer,ghostBuffer);
  let guideCount=0,ghostCount=0;
- const savedState=options.view||dialog._viewState||{};
+ const savedState=options.view||options.viewState||dialog._viewState||dialog._savedView||{};
  let {yaw=-.65,pitch=-.35,zoom=.75,wire=false,showGrid=Boolean(data.wholeCar),showBox=false,showGhost=false,turntable=false,sunAngle=.55,driveMode=false}=savedState,target=Array.isArray(savedState.target)?[...savedState.target]:[0,0,0],drag=null,panning=false,rafId=0;
  let selectedCenter=[0,0,0],selectedRoadIdx=Number.isInteger(data.selectedRoadPoint)&&data.selectedRoadPoint>=0?data.selectedRoadPoint:0;
  const maxZoom=data.worldScene?80:18;
@@ -67,12 +68,11 @@ export async function mountModelPreview(dialog,data,options={}){
  const baseTitle=titleEl?titleEl.textContent:'Model preview';
  const baseCaption=captionEl?captionEl.textContent:'';
  let baseGroundY=Infinity;
- const refVerts=hasGhost?options.ghostVertices:v;
  for(let i=0;i<refVerts.length;i+=9)baseGroundY=Math.min(baseGroundY,refVerts[i+1]);
  function updateStatsAndGuides(){
   const curMin=[Infinity,Infinity,Infinity],curMax=[-Infinity,-Infinity,-Infinity];
   for(let i=0;i<v.length;i+=9)for(let a=0;a<3;a++){curMin[a]=Math.min(curMin[a],v[i+a]);curMax[a]=Math.max(curMax[a],v[i+a]);}
-  const roadY=hasGhost&&Number.isFinite(baseGroundY)?baseGroundY:curMin[1];
+  const roadY=curMin[1];
   if(captionEl&&Number.isFinite(curMin[0])){
    const tris=Math.floor(data.indices.length/3),verts=Math.floor(v.length/9);
    const w=Math.round(curMax[0]-curMin[0]),h=Math.round(curMax[1]-curMin[1]),l=Math.round(curMax[2]-curMin[2]);

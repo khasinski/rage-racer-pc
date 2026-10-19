@@ -118,8 +118,10 @@ static void GameRenderWorldEnvironmentColor(int slot, Vec3 *out) {
 }
 
 static uint32_t TrackDataAssetKey(void) {
-    uint32_t current = (uint32_t)(ASSET_TRACK_2ND_BASE +
-                                  g_GrandPrixClass * 8 + g_CourseIndex * 2);
+    s32 asset = TrackCourseAssetIndex(ASSET_TRACK_2ND_BASE,
+                                      g_GrandPrixClass, g_CourseIndex);
+    uint32_t current = asset >= 0 ? (uint32_t)asset
+                                  : (uint32_t)ASSET_TRACK_2ND_BASE;
     return TrackAssetIdentityResolve(current);
 }
 
