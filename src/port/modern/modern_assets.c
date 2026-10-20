@@ -22,6 +22,7 @@
 #include "modern_material_transaction.h"
 #include "modern_png.h"
 #include "modern_prepared_materials.h"
+#include "rage/track_asset_identity.h"
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
 
@@ -33,6 +34,7 @@ static RageRuntimeCachedMesh
  * still needs a command buffer, but a first draw never has to reopen a disc
  * file, decode an override, apply paint, or rebuild the material definition. */
 static ModernPreparedMaterials s_preparedMaterials;
+static uint64_t s_preparedTrackRevision = UINT64_MAX;
 static char s_modRoot[1024];
 static const RageModManifest *s_modManifest;
 static int s_modReady;
@@ -136,7 +138,13 @@ int ModernAssetsExportCar(const char *key, const char *path) {
 
 static int AuthoredCarMatches(const AuthoredCarReplacement *car,
                              const RenderMeshInstance *instance) {
-    return car->assetKey == instance->assetKey &&
+    uint32_t assetKey = instance->assetKey;
+    if (instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1 &&
+        assetKey >= 136 && assetKey < RAGE_MOD_ASSET_ENTRY_COUNT &&
+        (assetKey & 1u) == 0) {
+        assetKey = 88;
+    }
+    return car->assetKey == assetKey &&
            car->assetSet == instance->assetSet;
 }
 
@@ -161,10 +169,10 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
     for (first = 0; first != RAGE_AUTHORED_CAR_COUNT; first++)
         if (AuthoredCarMatches(&s_authoredCars[first], instance)) break;
     int nativeOnly = first == RAGE_AUTHORED_CAR_COUNT;
-    if (nativeOnly && instance->assetKey >= RAGE_MOD_ASSET_ENTRY_COUNT) return base;
+    if ( (nativeOnly || instance->assetKey >= 136) && instance->assetKey >= RAGE_MOD_ASSET_ENTRY_COUNT) return base;
     if (nativeOnly && (!s_modReady || !s_modManifest->meshCount)) return base;
     if (nativeOnly) authored = 0;
-    entry = &s_authoredCarMesh[nativeOnly ? RAGE_AUTHORED_CAR_COUNT + instance->assetKey : first];
+    entry = &s_authoredCarMesh[(nativeOnly || instance->assetKey >= 136) ? RAGE_AUTHORED_CAR_COUNT + instance->assetKey : first];
     if (entry->ownedBytes) return entry;
     working = base->mesh;
     for (i = nativeOnly ? 0 : first;
@@ -172,6 +180,7 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         AuthoredCarReplacement original = {.name="Original", .assetKey=instance->assetKey,
             .assetSet=instance->assetSet, .submesh=(uint16_t)i};
         const AuthoredCarReplacement *car = nativeOnly ? &original : &s_authoredCars[i];
+        AuthoredCarReplacement keyCar;
         RageRuntimeMesh body, next;
         uint32_t map[RAGE_CAR_SURFACE_SOURCE_STRIDE * RAGE_CAR_SURFACE_COUNT];
         size_t j, size;
@@ -180,12 +189,14 @@ static const RageRuntimeCachedMesh *ModernAuthoredCar(
         const char *override;
         char key[96], fullPath[1600];
         if (!AuthoredCarMatches(car, instance)) continue;
-        AuthoredCarKey(car, key, sizeof(key));
+        keyCar = *car;
+        keyCar.assetKey = instance->assetKey;
+        AuthoredCarKey(&keyCar, key, sizeof(key));
         override = s_modReady ? ModManifestFindMesh(s_modManifest, key) : NULL;
         if (!override && s_modReady &&
             car->assetSet == RAGE_RENDER_ASSET_MODEL_BANK &&
             car->submesh >= 4 && car->submesh <= 21) {
-            AuthoredCarReplacement fallback = *car;
+            AuthoredCarReplacement fallback = keyCar;
             fallback.submesh = (car->submesh & 1u) ? 3u : 2u;
             AuthoredCarKey(&fallback, key, sizeof(key));
             override = ModManifestFindMesh(s_modManifest, key);
@@ -514,6 +525,7 @@ void ModernAssetsShutdown(void) {
     size_t i;
     if (s_source != MODERN_ASSET_SOURCE_NONE) ++s_generation;
     ModernPreparedMaterialsClear(&s_preparedMaterials);
+    s_preparedTrackRevision = UINT64_MAX;
     for(i=0;i<sizeof(s_trackMeshes)/sizeof(s_trackMeshes[0]);i++)
         RuntimeCachedMeshRelease(&s_trackMeshes[i].mesh);
     memset(s_trackMeshes,0,sizeof(s_trackMeshes));
@@ -947,11 +959,19 @@ static int BuildMaterialTransaction(void *context,RageRenderMaterial *definition
     return ModernAssetsBuildMaterial(request->instance,request->material,request->variant,
                                      definition,image,storage);
 }
+static void ModernAssetsSyncTrackRevision(void) {
+    uint64_t revision = TrackAssetIdentityRevision();
+    if (revision != s_preparedTrackRevision) {
+        ModernPreparedMaterialsClear(&s_preparedMaterials);
+        s_preparedTrackRevision = revision;
+    }
+}
 int ModernAssetsLoadMaterial(const RenderMeshInstance *instance,
                              uint32_t material,uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
     if(!instance)return 0;
+    ModernAssetsSyncTrackRevision();
     if (ModernPreparedMaterialsCopy(&s_preparedMaterials, instance, material,
                                     variant, definition, image, storage))
         return 1;
@@ -1011,6 +1031,7 @@ static void ModernAssetsPrepareInstance(const RenderMeshInstance *instance) {
 void ModernAssetsPrepareWorld(const RenderWorld *world) {
     uint32_t i, pass;
     if (s_source == MODERN_ASSET_SOURCE_NONE || world == NULL) return;
+    ModernAssetsSyncTrackRevision();
     /* Vehicles have a small, bounded material set. Prepare them before the
      * dense course world consumes the shared cache, then prepare all remaining
      * geometry. */

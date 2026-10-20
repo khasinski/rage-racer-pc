@@ -276,7 +276,7 @@ replaceDone:
         int bankMode=!strcmp(argv[1],"--mesh-bank")||!strcmp(argv[1],"--preview-bank");
         if(i!=(size_t)size||!RuntimeMeshOpen(&mesh,bytes,(size_t)size)||(!bankMode&&mesh.meshCount!=1)){free(bytes);fprintf(stderr,"Invalid %sRRMESH\n",bankMode?"":"single-part ");return 1;}
         if(strcmp(argv[1],"--preview")==0||strcmp(argv[1],"--preview-bank")==0) {
-            if(mesh.vertexCount>100000 || mesh.indexCount>300000){free(bytes);fprintf(stderr,"Model exceeds preview limit (100,000 vertices / 100,000 triangles)\n");return 1;}
+            if(mesh.vertexCount>250000 || mesh.indexCount>750000){free(bytes);fprintf(stderr,"Model exceeds preview limit (250,000 vertices / 250,000 triangles)\n");return 1;}
             putchar('{');
             if(bankMode){
                 printf("\"ranges\":[");

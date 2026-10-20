@@ -22,12 +22,13 @@ static RageResourceStatus ResolveModRaw(void *context) {
     request->loaded=ModAssetLoad(request->index,request->destination,
                                 g_AssetCdEntries[request->index].size);
     int player = request->index >= 10 && request->index <= 72;
-    int rival = request->index >= 88 && request->index < GAME_DISC_ASSET_COUNT;
+    int rival = request->index >= 88 && request->index < RAGE_MOD_ASSET_ENTRY_COUNT;
     if (request->loaded > 0 && (player || rival) && request->index % 2 == 0) {
-        unsigned size = g_AssetCdEntries[request->index].size;
+        int baseIndex = request->index < GAME_DISC_ASSET_COUNT ? request->index : 88;
+        unsigned size = g_AssetCdEntries[baseIndex].size;
         void *original = size <= 128u * 1024u * 1024u ? malloc(size) : NULL;
         if (original && HostLoadAsset(
-                g_AssetCdEntries[request->index].position.sectorOffset,
+                g_AssetCdEntries[baseIndex].position.sectorOffset,
                 size, original) == (int)(size & ~3u)) {
             ModAssetSetGeometryChanged((unsigned)request->index,
                 !CarBankGeometryEqual(original, size, request->destination,

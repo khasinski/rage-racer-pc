@@ -4,31 +4,67 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 
 const R4_TRACKS = [
-  { course: 0, slot: 1, texAsset: 135, trackAsset: 136, name: 'HELTER SKELTER',    lengthText: '4,715m' },
-  { course: 1, slot: 2, texAsset: 137, trackAsset: 138, name: 'OUT OF BLUE',       lengthText: '5,155m' },
-  { course: 2, slot: 3, texAsset: 139, trackAsset: 140, name: 'WONDERHILL',        lengthText: '5,137m' },
-  { course: 3, slot: 4, texAsset: 141, trackAsset: 142, name: 'HEAVEN AND HELL',   lengthText: '5,299m' },
-  { course: 4, slot: 5, texAsset: 143, trackAsset: 144, name: 'EDGE OF THE EARTH', lengthText: '6,133m' },
-  { course: 5, slot: 6, texAsset: 145, trackAsset: 146, name: 'BRIGHTEST NITE',    lengthText: '5,917m' },
-  { course: 6, slot: 7, texAsset: 147, trackAsset: 148, name: 'PHANTOMILE',        lengthText: '2,772m' },
-  { course: 7, slot: 8, texAsset: 149, trackAsset: 150, name: 'SHOOTING HOOPS',    lengthText: '3,573m' },
+  { course: 0, slot: 1, texAsset: 135, trackAsset: 136, name: 'HELTER SKELTER',    lengthText: '5,220m' },
+  { course: 1, slot: 2, texAsset: 137, trackAsset: 138, name: 'OUT OF BLUE',       lengthText: '5,564m' },
+  { course: 2, slot: 3, texAsset: 139, trackAsset: 140, name: 'EDGE OF THE EARTH', lengthText: '5,665m' },
+  { course: 3, slot: 4, texAsset: 141, trackAsset: 142, name: 'BRIGHTEST NITE',    lengthText: '5,868m' },
+  { course: 4, slot: 5, texAsset: 143, trackAsset: 144, name: 'WONDERHILL',        lengthText: '6,724m' },
+  { course: 5, slot: 6, texAsset: 145, trackAsset: 146, name: 'HEAVEN AND HELL',   lengthText: '6,494m' },
+  { course: 6, slot: 7, texAsset: 147, trackAsset: 148, name: 'PHANTOMILE',        lengthText: '3,012m' },
+  { course: 7, slot: 8, texAsset: 149, trackAsset: 150, name: 'SHOOTING HOOPS',    lengthText: '3,958m' },
 ];
 
-// R4 terrain pages across all 8 tracks: 12, 14, 15, 21..29. Skybox uses page 11.
+// Default R4 terrain pages across all 8 tracks: 12, 14, 15, 21..29. Skybox uses page 11.
 // Pages 8 (512,0), 30 (896,256), and 31 (960,256) are 100% free in Rage Racer races (HUD uses 9..10, player car uses 11, rivals/countdown use 12..14).
 const USED_R4_PAGES = new Set([12, 14, 15, 21, 22, 23, 24, 25, 26, 27, 28, 29]);
-const SKY_CLUTS = [
+const DEFAULT_SKY_CLUTS = [
   0x783c, 0x783d, 0x783e, 0x783f,
   0x787c, 0x787d, 0x787e, 0x787f,
   0x78bc, 0x78bd, 0x78be, 0x78bf,
 ];
+const RAGE_RESERVED_RACE_PAGES = new Set([9, 10, 11, 12, 13, 14]);
+const SAFE_RELOC_CANDIDATE_PAGES = [8, 30, 31, 16, 17, 18, 19, 20];
 
-function remapTpage(tp) {
-  const page = tp & 0x1f;
-  if (page === 12) return (tp & ~0x1f) | 8;  // 12:0 (768,0) -> 8:0 (512,0)
-  if (page === 14) return (tp & ~0x1f) | 30; // 14:0 (896,0) -> 14:1 (896,256)
-  if (page === 11) return (tp & ~0x1f) | 31; // 11:0 (704,0) -> 15:1 (960,256)
-  return tp;
+function buildTpageRemapTable(usedOrigPages, skyOrigPage = 11) {
+  const pageRemap = new Map();
+  const occupied = new Set(usedOrigPages || []);
+  occupied.delete(skyOrigPage);
+  for (const p of RAGE_RESERVED_RACE_PAGES) occupied.delete(p);
+
+  const allocFreePage = preferred => {
+    if (preferred !== undefined && !occupied.has(preferred) && !RAGE_RESERVED_RACE_PAGES.has(preferred)) {
+      occupied.add(preferred);
+      return preferred;
+    }
+    for (const cand of SAFE_RELOC_CANDIDATE_PAGES) {
+      if (!occupied.has(cand) && !RAGE_RESERVED_RACE_PAGES.has(cand)) {
+        occupied.add(cand);
+        return cand;
+      }
+    }
+    return preferred ?? 8;
+  };
+
+  const skyDstPage = allocFreePage(31);
+  if (usedOrigPages && usedOrigPages.has(12)) pageRemap.set(12, allocFreePage(8));
+  if (usedOrigPages && usedOrigPages.has(14)) pageRemap.set(14, allocFreePage(30));
+  if (usedOrigPages) {
+    for (const p of usedOrigPages) {
+      if (RAGE_RESERVED_RACE_PAGES.has(p) && !pageRemap.has(p)) {
+        pageRemap.set(p, allocFreePage());
+      }
+    }
+  }
+  return {
+    skyOrigPage,
+    skyDstPage,
+    pageRemap,
+    remapTerrainTpage(tp) {
+      const page = tp & 0x1f;
+      const dst = pageRemap.get(page);
+      return dst !== undefined ? ((tp & ~0x1f) | (dst & 0x1f)) : tp;
+    },
+  };
 }
 
 function isR4SectorTable(buf) {
@@ -46,13 +82,96 @@ function isR4SectorTable(buf) {
   return true;
 }
 
+function isValidR4TexPack(buf) {
+  if (!buf || buf.length < 64) return false;
+  const count = buf.readUInt32LE(0);
+  if (count < 2 || count > 8) return false;
+  const b0Off = buf.readUInt32LE(4);
+  const b1Off = buf.readUInt32LE(8);
+  if (b0Off < 12 || b1Off <= b0Off || b1Off + 8 > buf.length) return false;
+  return buf.readInt32LE(b0Off) === 256 && buf.readInt32LE(b1Off) === 256;
+}
+
+function isValidR4TrackPack(buf) {
+  if (!buf || buf.length < 0x1000) return false;
+  const nBlocks = buf.readUInt32LE(0);
+  if (nBlocks < 5 || nBlocks > 16) return false;
+  let prev = 4 + nBlocks * 4;
+  const bo = [];
+  for (let i = 0; i < nBlocks; i++) {
+    const cur = buf.readUInt32LE(4 + i * 4);
+    if (cur < prev || cur >= buf.length) return false;
+    bo.push(cur);
+    prev = cur;
+  }
+  bo.push(buf.length);
+  const b0 = buf.subarray(bo[0], bo[1]);
+  const b4 = buf.subarray(bo[4], bo[5]);
+  if (b0.length < 0x34 || b4.length < 0x808 + 60 * 32) return false;
+  const s0 = b0.readUInt32LE(0x20);
+  const s1 = b0.readUInt32LE(0x24);
+  const s2 = b0.readUInt32LE(0x28);
+  const s3 = b0.readUInt32LE(0x2c);
+  const s4 = b0.readUInt32LE(0x30);
+  if (s0 < 0x34 || s1 < s0 || s2 < s1 || s3 < s2 || s4 < s3 || s4 > b0.length) return false;
+  if ((s1 - s0) % 64 !== 0 || (s2 - s1) % 68 !== 0 || (s3 - s2) % 48 !== 0 || (s4 - s3) % 52 !== 0) return false;
+  return (s4 - s0) >= 64 * 64;
+}
+
+function parseIso9660Directory(dirBuf) {
+  const entries = [];
+  let off = 0;
+  while (off < dirBuf.length) {
+    const recLen = dirBuf[off];
+    if (recLen === 0) {
+      off = (Math.floor(off / 2048) + 1) * 2048;
+      continue;
+    }
+    if (off + recLen > dirBuf.length || recLen < 34) break;
+    const lba = dirBuf.readUInt32LE(off + 2);
+    const size = dirBuf.readUInt32LE(off + 10);
+    const flags = dirBuf[off + 25];
+    const nameLen = dirBuf[off + 32];
+    if (nameLen > 0 && off + 33 + nameLen <= dirBuf.length) {
+      const rawName = dirBuf.toString('ascii', off + 33, off + 33 + nameLen);
+      if (rawName !== '\x00' && rawName !== '\x01') {
+        entries.push({
+          name: rawName.toUpperCase().replace(/;1$/, ''),
+          lba,
+          size,
+          isDir: (flags & 2) !== 0,
+        });
+      }
+    }
+    off += recLen;
+  }
+  return entries;
+}
+
+async function resolveCueTargetPath(cuePath, refFile) {
+  const normalizedRef = refFile.replace(/\\/g, '/');
+  const cueDir = path.dirname(cuePath);
+  const direct = path.resolve(cueDir, normalizedRef);
+  try {
+    const st = await fs.stat(direct);
+    if (st.isFile()) return direct;
+  } catch {}
+  const targetBase = path.basename(normalizedRef).toLowerCase();
+  try {
+    const dirEntries = await fs.readdir(cueDir);
+    const match = dirEntries.find(e => e.toLowerCase() === targetBase);
+    if (match) return path.join(cueDir, match);
+  } catch {}
+  return direct;
+}
+
 async function openR4ArchiveReader(inputPath) {
   let targetPath = inputPath;
   if (path.extname(inputPath).toLowerCase() === '.cue') {
     const cueText = await fs.readFile(inputPath, 'utf8');
     const m = /FILE\s+"([^"]+)"\s+BINARY/i.exec(cueText) || /FILE\s+(\S+)\s+BINARY/i.exec(cueText);
     if (!m) throw Error('Could not find a Track 01 BIN entry in the selected CUE file');
-    targetPath = path.resolve(path.dirname(inputPath), m[1]);
+    targetPath = await resolveCueTargetPath(inputPath, m[1]);
   }
   const handle = await fs.open(targetPath, 'r');
   try {
@@ -75,44 +194,101 @@ async function openR4ArchiveReader(inputPath) {
         },
       };
     }
-    // 2. Check raw 2352-byte/sector Track 01 BIN (LBA 337 first, then scan LBA 16..1024)
-    const candidateLbas = [337];
-    for (let s = 16; s <= 1024; s++) if (s !== 337) candidateLbas.push(s);
-    for (const lba of candidateLbas) {
-      const pos = lba * 2352 + 24;
-      if (pos + 128 > stat.size) continue;
-      const probe = Buffer.alloc(128);
-      await handle.read(probe, 0, 128, pos);
-      if (isR4SectorTable(probe)) {
-        return {
-          handle,
-          close: () => handle.close(),
-          readSectors: async (startSector, numSectors) => {
-            const rawLen = numSectors * 2352;
-            const rawBuf = Buffer.alloc(rawLen);
-            const { bytesRead } = await handle.read(rawBuf, 0, rawLen, (lba + startSector) * 2352);
-            if (bytesRead < rawLen) throw Error('Unexpected EOF reading R4 Track 01 BIN');
-            const out = Buffer.alloc(numSectors * 2048);
-            for (let s = 0; s < numSectors; s++) {
-              rawBuf.copy(out, s * 2048, s * 2352 + 24, s * 2352 + 24 + 2048);
-            }
-            return out;
-          },
-        };
+
+    const readSectorLayout = async (sectorSize, dataOffset, lba, count = 1) => {
+      const rawLen = count * sectorSize;
+      if ((lba + count) * sectorSize > stat.size) return null;
+      const rawBuf = Buffer.alloc(rawLen);
+      const { bytesRead } = await handle.read(rawBuf, 0, rawLen, lba * sectorSize);
+      if (bytesRead < rawLen) return null;
+      if (sectorSize === 2048 && dataOffset === 0) return rawBuf;
+      const out = Buffer.alloc(count * 2048);
+      for (let s = 0; s < count; s++) {
+        rawBuf.copy(out, s * 2048, s * sectorSize + dataOffset, s * sectorSize + dataOffset + 2048);
+      }
+      return out;
+    };
+
+    // 2. Check ISO9660 Primary Volume Descriptor (sector 16) across raw Mode2/Mode1 BIN and 2048-byte ISO (PAL, NTSC-U, NTSC-J)
+    const layouts = [
+      { sectorSize: 2352, dataOffset: 24 },
+      { sectorSize: 2352, dataOffset: 16 },
+      { sectorSize: 2048, dataOffset: 0 },
+    ];
+    for (const { sectorSize, dataOffset } of layouts) {
+      const pvd = await readSectorLayout(sectorSize, dataOffset, 16, 1);
+      if (pvd && pvd[0] === 1 && pvd.toString('ascii', 1, 6) === 'CD001') {
+        const rootDirLba = pvd.readUInt32LE(156 + 2);
+        const rootDirBytes = pvd.readUInt32LE(156 + 10);
+        const rootDirSectors = Math.max(1, Math.min(16, Math.ceil(rootDirBytes / 2048)));
+        const dirBuf = await readSectorLayout(sectorSize, dataOffset, rootDirLba, rootDirSectors);
+        const entries = dirBuf ? parseIso9660Directory(dirBuf) : [];
+        let r4Entry = entries.find(e => !e.isDir && e.name === 'R4.BIN');
+        if (!r4Entry) {
+          for (const sub of entries.filter(e => e.isDir)) {
+            const subSectors = Math.max(1, Math.min(16, Math.ceil((sub.size || 2048) / 2048)));
+            const subBuf = await readSectorLayout(sectorSize, dataOffset, sub.lba, subSectors);
+            if (!subBuf) continue;
+            const subEntries = parseIso9660Directory(subBuf);
+            r4Entry = subEntries.find(e => !e.isDir && e.name === 'R4.BIN');
+            if (r4Entry) break;
+          }
+        }
+        if (r4Entry && r4Entry.lba > 0) {
+          const head = await readSectorLayout(sectorSize, dataOffset, r4Entry.lba, 1);
+          if (head && isR4SectorTable(head)) {
+            return {
+              handle,
+              close: () => handle.close(),
+              readSectors: async (startSector, numSectors) => {
+                const out = await readSectorLayout(sectorSize, dataOffset, r4Entry.lba + startSector, numSectors);
+                if (!out) throw Error('Unexpected EOF reading R4 disc image');
+                return out;
+              },
+            };
+          }
+        }
       }
     }
-    throw Error('Could not locate R4.BIN track archive in the selected image. Choose a Ridge Racer Type 4 Track 01 BIN, CUE, or R4.BIN file.');
+
+    // 3. Fallback: scan LBA 16..4096 in raw 2352-byte/sector or 2048-byte/sector image
+    const candidateLbas = [337, 23, 24, 150, 300];
+    for (let s = 16; s <= 4096; s++) if (!candidateLbas.includes(s)) candidateLbas.push(s);
+    for (const { sectorSize, dataOffset } of layouts) {
+      for (const lba of candidateLbas) {
+        const pos = lba * sectorSize + dataOffset;
+        if (pos + 128 > stat.size) continue;
+        const probe = Buffer.alloc(128);
+        await handle.read(probe, 0, 128, pos);
+        if (isR4SectorTable(probe)) {
+          return {
+            handle,
+            close: () => handle.close(),
+            readSectors: async (startSector, numSectors) => {
+              const out = await readSectorLayout(sectorSize, dataOffset, lba + startSector, numSectors);
+              if (!out) throw Error('Unexpected EOF reading R4 Track 01 BIN');
+              return out;
+            },
+          };
+        }
+      }
+    }
+    throw Error('Could not locate R4.BIN track archive in the selected image. Choose a Ridge Racer Type 4 (PAL, NTSC-U, or NTSC-J) Track 01 BIN, CUE, or R4.BIN file.');
   } catch (err) {
     await handle.close().catch(() => {});
     throw err;
   }
 }
 
-function buildRelocatedImageChain(streams) {
+function buildRelocatedImageChain(streams, usedOrigPages = null, usedClutCoords = null, tpageRemap = null) {
   const chunks = [];
   const hdr = Buffer.alloc(4);
   hdr.writeInt32LE(256, 0);
   chunks.push(hdr);
+
+  const skyOrigPage = tpageRemap ? tpageRemap.skyOrigPage : 11;
+  const skyDstPage = tpageRemap ? tpageRemap.skyDstPage : 31;
+  const pageRemap = tpageRemap ? tpageRemap.pageRemap : new Map([[12, 8], [14, 30]]);
 
   for (const { buf, isSky } of streams) {
     let pos = 4;
@@ -131,25 +307,41 @@ function buildRelocatedImageChain(streams) {
         const cSize = entry.readUInt32LE(8);
         const cx = entry.readUInt16LE(12);
         const cy = entry.readUInt16LE(14);
-        keepClut = isSky ? true : (cx >= 832 && cx < 896 && cy >= 256 && cy < 352);
+        const cw = entry.readUInt16LE(16);
+        const ch = entry.readUInt16LE(18);
+        let hitsUsedClut = false;
+        if (usedClutCoords && cw > 0 && ch > 0) {
+          for (let r = 0; r < ch && !hitsUsedClut; r++) {
+            for (let x = 0; x < cw; x += 16) {
+              if (usedClutCoords.has(`${cx + x}:${cy + r}`)) {
+                hitsUsedClut = true;
+                break;
+              }
+            }
+          }
+        }
+        keepClut = isSky
+          ? true
+          : ((cx >= 320 && cy >= 256 && cy < 512) || hitsUsedClut);
         pOff += cSize;
       }
 
       const px = entry.readUInt16LE(pOff + 4);
       const py = entry.readUInt16LE(pOff + 6);
       const pPage = Math.floor(px / 64) + (py >= 256 ? 16 : 0);
-      const keepPixels = isSky ? (pPage === 11) : USED_R4_PAGES.has(pPage);
+      const keepPixels = isSky
+        ? (pPage === skyOrigPage)
+        : (USED_R4_PAGES.has(pPage) || Boolean(usedOrigPages && usedOrigPages.has(pPage)));
 
       if (!keepClut && !keepPixels) continue;
 
       if (keepPixels) {
-        if (isSky && pPage === 11) {
-          entry.writeUInt16LE(px + 256, pOff + 4); // 704 -> 960 (page 31 = 15:1)
-          entry.writeUInt16LE(py + 256, pOff + 6); // 0..223 -> 256..479
-        } else if (pPage === 12) {
-          entry.writeUInt16LE(px - 256, pOff + 4); // 768 -> 512 (page 8 = 8:0)
-        } else if (pPage === 14) {
-          entry.writeUInt16LE(py + 256, pOff + 6); // 896,0..255 -> 896,256..511 (page 30 = 14:1)
+        const dstPage = isSky ? skyDstPage : pageRemap.get(pPage);
+        if (dstPage !== undefined && dstPage !== pPage) {
+          const newPx = (dstPage & 15) * 64 + (px % 64);
+          const newPy = (dstPage >= 16 ? 256 : 0) + (py % 256);
+          entry.writeUInt16LE(newPx, pOff + 4);
+          entry.writeUInt16LE(newPy, pOff + 6);
         }
       } else {
         entry.writeUInt32LE(12, pOff + 0);
@@ -511,7 +703,34 @@ function extractSkyPaletteFromB1(b1Buf) {
   return { zenith, mid, horizon, bottom };
 }
 
-function buildSkyCourseRmesh(b1Buf, skyBottomColor) {
+function extractSkyMaterialsFromB1(b1Buf) {
+  const sOff = b1Buf.readUInt32LE(4 + 2 * 12 + 8);
+  const triCnt = b1Buf.readUInt16LE(sOff + 2);
+  const cluts = [];
+  const seen = new Set();
+  let skyOrigPage = 11;
+  for (let f = 0; f < triCnt; f++) {
+    const r = b1Buf.subarray(sOff + 4 + f * 32, sOff + 4 + (f + 1) * 32);
+    const clut = r.readUInt16LE(22) & 0x7fff;
+    const tpage = r.readUInt16LE(26) & 0x1ff;
+    if (f === 0 && (tpage & 0x1f) !== 0) {
+      skyOrigPage = tpage & 0x1f;
+    }
+    if (!seen.has(clut)) {
+      seen.add(clut);
+      cluts.push(clut);
+    }
+  }
+  for (const defClut of DEFAULT_SKY_CLUTS) {
+    if (!seen.has(defClut)) {
+      seen.add(defClut);
+      cluts.push(defClut);
+    }
+  }
+  return { skyCluts: cluts.length ? cluts : DEFAULT_SKY_CLUTS.slice(), skyOrigPage };
+}
+
+function buildSkyCourseRmesh(b1Buf, skyBottomColor, skyCluts = DEFAULT_SKY_CLUTS) {
   const vOff = b1Buf.readUInt32LE(4 + 2 * 12 + 0);
   const vCnt = b1Buf.readUInt32LE(4 + 2 * 12 + 4);
   const sOff = b1Buf.readUInt32LE(4 + 2 * 12 + 8);
@@ -561,7 +780,7 @@ function buildSkyCourseRmesh(b1Buf, skyBottomColor) {
     const i1 = r.readUInt16LE(2);
     const i2 = r.readUInt16LE(4);
     const clut = r.readUInt16LE(22) & 0x7fff;
-    const matIdx = Math.max(0, SKY_CLUTS.indexOf(clut));
+    const matIdx = Math.max(0, skyCluts.indexOf(clut));
     const v0 = skyVerts[i0], v1 = skyVerts[i1], v2 = skyVerts[i2];
     const p0 = [v0.vx * SKY_XZ_SCALE, -v0.vy * SKY_Y_SCALE, -v0.vz * SKY_XZ_SCALE];
     const p1 = [v1.vx * SKY_XZ_SCALE, -v1.vy * SKY_Y_SCALE, -v1.vz * SKY_XZ_SCALE];
@@ -617,12 +836,12 @@ function buildSkyCourseRmesh(b1Buf, skyBottomColor) {
   return buf;
 }
 
-function buildCleanBlock5() {
+function buildCleanBlock5(skyCluts = DEFAULT_SKY_CLUTS, skyDstPage = 31) {
   const modelCount = 64;
   const headerBytes = 4 + modelCount * 12;
   const geomOffset = headerBytes;
   const model0Offset = geomOffset + 8;
-  const emptyModelOffset = model0Offset + 4 + SKY_CLUTS.length * 28;
+  const emptyModelOffset = model0Offset + 4 + skyCluts.length * 28;
   const b5 = Buffer.alloc(emptyModelOffset + 4);
   b5.writeInt32LE(modelCount, 0);
   for (let m = 0; m < modelCount; m++) {
@@ -632,12 +851,12 @@ function buildCleanBlock5() {
     b5.writeInt32LE(m === 0 ? model0Offset : emptyModelOffset, eOff + 8);
   }
   b5.writeUInt16LE(1, model0Offset + 0);
-  b5.writeUInt16LE(SKY_CLUTS.length, model0Offset + 2);
-  for (let i = 0; i < SKY_CLUTS.length; i++) {
+  b5.writeUInt16LE(skyCluts.length, model0Offset + 2);
+  for (let i = 0; i < skyCluts.length; i++) {
     const rOff = model0Offset + 4 + i * 28;
     b5[rOff + 8] = 128; b5[rOff + 9] = 128; b5[rOff + 10] = 128; b5[rOff + 11] = 0x2c;
-    b5.writeUInt16LE(SKY_CLUTS[i], rOff + 14);
-    b5.writeUInt16LE(0x1f, rOff + 18);
+    b5.writeUInt16LE(skyCluts[i], rOff + 14);
+    b5.writeUInt16LE(skyDstPage & 0x1ff, rOff + 18);
   }
   b5.writeUInt32LE(0, emptyModelOffset);
   return b5;
@@ -803,16 +1022,60 @@ function detectTunnelAndBridgeZones(courseIdx, r4Road, quads) {
 }
 
 function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b87_1, origPack088, origScene088 }) {
-  // 1. Relocate R4 Texture Pack (entry[2*c]) into PS1 VRAM container (asset_135..149.bin)
+  // 1. Parse R4 TrackPack (entry[2*c + 1]) header & quad stream descriptors first
+  const nBlocks = trackEntryBuf.readUInt32LE(0);
+  const bo = [];
+  for (let i = 0; i < nBlocks; i++) bo.push(trackEntryBuf.readUInt32LE(4 + i * 4));
+  bo.push(trackEntryBuf.length);
+
+  const b0 = trackEntryBuf.subarray(bo[0], bo[1]);
+  const b1 = trackEntryBuf.subarray(bo[1], bo[2]);
+  const b4 = trackEntryBuf.subarray(bo[4], bo[5]);
+
+  // Read exact quad stream offsets from Block 0 header (+0x20..+0x30)
+  const streams = [
+    { name: 'subA', start: b0.readUInt32LE(0x20), end: b0.readUInt32LE(0x24), stride: 64, gouraud: true,  hasWin: false },
+    { name: 'subB', start: b0.readUInt32LE(0x24), end: b0.readUInt32LE(0x28), stride: 68, gouraud: true,  hasWin: true  },
+    { name: 'subC', start: b0.readUInt32LE(0x28), end: b0.readUInt32LE(0x2c), stride: 48, gouraud: false, hasWin: false },
+    { name: 'subD', start: b0.readUInt32LE(0x2c), end: b0.readUInt32LE(0x30), stride: 52, gouraud: false, hasWin: true  },
+  ];
+
+  // Compute dynamic Y_OFFSET and collect all quad-referenced VRAM pages & CLUT coordinates
+  let minRawY = Infinity, maxRawY = -Infinity;
+  const usedOrigPages = new Set();
+  const usedClutCoords = new Set();
+  for (const s of streams) {
+    for (let off = s.start; off + s.stride <= s.end; off += s.stride) {
+      for (const yOff of [2, 10, 14, 22]) {
+        const qy = b0.readInt16LE(off + yOff);
+        if (qy < minRawY) minRawY = qy;
+        if (qy > maxRawY) maxRawY = qy;
+      }
+      const rawClut = b0.readUInt16LE(off + 26) & 0x7fff;
+      const rawTpage = b0.readUInt16LE(off + 30) & 0x1ff;
+      usedOrigPages.add(rawTpage & 0x1f);
+      usedClutCoords.add(`${(rawClut & 0x3f) * 16}:${(rawClut >> 6) & 0x1ff}`);
+    }
+  }
+  const Y_OFFSET = Math.max(5000, Math.min(8000 - maxRawY, 500 - minRawY));
+  const { skyCluts, skyOrigPage } = extractSkyMaterialsFromB1(b1);
+  const tpageRemap = buildTpageRemapTable(usedOrigPages, skyOrigPage);
+
+  // 2. Relocate R4 Texture Pack (entry[2*c]) into PS1 VRAM container (asset_135..149.bin)
   const b0Off = texEntryBuf.readUInt32LE(4);
   const b1Off = texEntryBuf.readUInt32LE(8);
   const rawB0 = texEntryBuf.subarray(b0Off, b1Off);
   const rawB1 = texEntryBuf.subarray(b1Off);
 
-  const r4RelocChain = buildRelocatedImageChain([
-    { buf: rawB0, isSky: false },
-    { buf: rawB1, isSky: true },
-  ]);
+  const r4RelocChain = buildRelocatedImageChain(
+    [
+      { buf: rawB0, isSky: false },
+      { buf: rawB1, isSky: true },
+    ],
+    usedOrigPages,
+    usedClutCoords,
+    tpageRemap
+  );
 
   const b87_2 = Buffer.alloc(20);
   b87_2.writeUInt32LE(12, 8);
@@ -831,37 +1094,6 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
     b87Cursor += b87Blocks[i].length;
   }
   const outTexPack = Buffer.concat([b87Header, ...b87Blocks]);
-
-  // 2. Parse R4 TrackPack (entry[2*c + 1])
-  const nBlocks = trackEntryBuf.readUInt32LE(0);
-  const bo = [];
-  for (let i = 0; i < nBlocks; i++) bo.push(trackEntryBuf.readUInt32LE(4 + i * 4));
-  bo.push(trackEntryBuf.length);
-
-  const b0 = trackEntryBuf.subarray(bo[0], bo[1]);
-  const b1 = trackEntryBuf.subarray(bo[1], bo[2]);
-  const b4 = trackEntryBuf.subarray(bo[4], bo[5]);
-
-  // Read exact quad stream offsets from Block 0 header (+0x20..+0x30)
-  const streams = [
-    { name: 'subA', start: b0.readUInt32LE(0x20), end: b0.readUInt32LE(0x24), stride: 64, gouraud: true,  hasWin: false },
-    { name: 'subB', start: b0.readUInt32LE(0x24), end: b0.readUInt32LE(0x28), stride: 68, gouraud: true,  hasWin: true  },
-    { name: 'subC', start: b0.readUInt32LE(0x28), end: b0.readUInt32LE(0x2c), stride: 48, gouraud: false, hasWin: false },
-    { name: 'subD', start: b0.readUInt32LE(0x2c), end: b0.readUInt32LE(0x30), stride: 52, gouraud: false, hasWin: true  },
-  ];
-
-  // Compute dynamic Y_OFFSET so all SVECTOR vy*4 stay within [-32000..+32000] and horizon sits near +6000
-  let minRawY = Infinity, maxRawY = -Infinity;
-  for (const s of streams) {
-    for (let off = s.start; off + s.stride <= s.end; off += s.stride) {
-      for (const yOff of [2, 10, 14, 22]) {
-        const qy = b0.readInt16LE(off + yOff);
-        if (qy < minRawY) minRawY = qy;
-        if (qy > maxRawY) maxRawY = qy;
-      }
-    }
-  }
-  const Y_OFFSET = Math.max(5000, Math.min(8000 - maxRawY, 500 - minRawY));
 
   // 3. Parse R4 road points from Block 4
   const numR4Pts = Math.floor((b4.length - 0x808) / 60);
@@ -888,10 +1120,10 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
       z: rz,
       y: ry,
       r4Pitch: rp.readInt16LE(20),
-      crossSlope: -rp.readInt16LE(22),
-      tangentAngle: ((rp.readInt16LE(30) - 1024) % 4096 + 4096) % 4096,
-      leftWidth: Math.max(320, Math.min(900, halfAsphaltL + 80)),
-      rightWidth: Math.max(320, Math.min(900, halfAsphaltR + 80)),
+      crossSlope: rp.readInt16LE(22),
+      tangentAngle: ((rp.readInt16LE(30) + 1024) % 4096 + 4096) % 4096,
+      leftWidth: Math.max(320, Math.min(900, halfAsphaltR + 80)),
+      rightWidth: Math.max(320, Math.min(900, halfAsphaltL + 80)),
     });
   }
 
@@ -913,7 +1145,7 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
         [q[34], q[35]],
       ];
       const clut = q.readUInt16LE(26) & 0x7fff;
-      const tpage = remapTpage(q.readUInt16LE(30) & 0x1ff);
+      const tpage = tpageRemap.remapTerrainTpage(q.readUInt16LE(30) & 0x1ff);
       const rawWin = s.hasWin ? q.readUInt32LE(s.stride - 4) : 0;
       const win = s.hasWin ? decodeWindow(rawWin) : [0, 0, 0, 0];
       const hasValidWin = win[0] !== 0 && win[1] !== 0;
@@ -1094,14 +1326,14 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
 
   const skyPalette = extractSkyPaletteFromB1(b1);
   const terrainRmeshBuf = buildTerrainRmesh(activeCells);
-  const courseRmeshBuf = buildSkyCourseRmesh(b1, skyPalette.bottom);
+  const courseRmeshBuf = buildSkyCourseRmesh(b1, skyPalette.bottom, skyCluts);
 
   // 5. Build Block 4 road spline & 3D wall distances
   const rrCount = numR4Pts;
   const START_RR_IDX = (rrCount - 73 + rrCount) % rrCount;
   const sampledRoad = new Array(rrCount);
   for (let k = 0; k < rrCount; k++) {
-    const rrIdx = (START_RR_IDX - k + rrCount) % rrCount;
+    const rrIdx = (START_RR_IDX + k) % rrCount;
     sampledRoad[rrIdx] = { ...r4Road[k], r4Idx: k };
   }
 
@@ -1308,6 +1540,10 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
     origBlocks.push(Buffer.from(origPack088.subarray(start, end)));
   }
 
+  // Disable mid-lap Page 1 VRAM texture swap on R4 tracks so all textures stay resident on Page 0
+  origBlocks[0].writeInt32LE(-1, 0);
+  origBlocks[0].writeInt32LE(-1, 4);
+
   origBlocks[1].fill(0);
   origBlocks[2].writeUInt32LE(0, 0);
   const envPalette = [
@@ -1330,10 +1566,11 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
       origBlocks[2][colOff + 2] = envPalette[s][2];
       origBlocks[2][colOff + 3] = 0;
     }
+    origBlocks[2].writeUInt16LE(2, cueOff + 44);
   }
 
   origBlocks[4] = newBlock4;
-  origBlocks[5] = buildCleanBlock5();
+  origBlocks[5] = buildCleanBlock5(skyCluts, tpageRemap.skyDstPage);
   origBlocks[7] = buildFullBlock7(classicCells);
 
   const centerRoadX = (minRoadX + maxRoadX) >> 1;
@@ -1359,41 +1596,120 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
   for (let c = 0; c < 16; c++) {
     b9.writeInt32LE(-1, 4 + c * 8 + 4);
   }
+  // Disable Mythical Coast lateral racingLineHints (132..851) so rivals follow the R4 road spline cleanly
   for (let h = 0; h < 60; h++) {
     const hOff = 132 + h * 12;
-    if (b9.readInt16LE(hOff) !== -1) {
-      b9.writeInt16LE(0, hOff + 4);
-      b9.writeInt16LE(0, hOff + 6);
-      b9.writeInt16LE(0, hOff + 8);
-    }
+    b9.writeInt16LE(-1, hOff + 0);
+    b9.writeInt16LE(-1, hOff + 2);
+    b9.writeInt16LE(0, hOff + 4);
+    b9.writeInt16LE(0, hOff + 6);
+    b9.writeUInt16LE(0, hOff + 8);
+    b9.writeUInt16LE(0, hOff + 10);
   }
 
   const cumDist = new Array(rrCount + 1);
   cumDist[0] = 0;
-  for (let k = 0; k < rrCount; k++) {
-    const rrIdx = (START_RR_IDX - k + rrCount) % rrCount;
+  for (let step = 0; step < rrCount; step++) {
+    const rrIdx = (START_RR_IDX - step + rrCount) % rrCount;
     const prevIdx = (rrIdx - 1 + rrCount) % rrCount;
-    cumDist[k + 1] = cumDist[k] + sampledRoad[prevIdx].length;
+    cumDist[step + 1] = cumDist[step] + sampledRoad[prevIdx].length;
+  }
+  const totalTrackLen = cumDist[rrCount];
+  const maxProgress16 = Math.max(256, totalTrackLen >> 4);
+
+  // Generate per-track AI speed keys (1140..2291) for both Normal (g=0) and Reverse (g=1)
+  // NOTE: Do NOT touch offsets 2292..2675 — those are rivalAiConfigs[2][12]!
+  const numSpeedKeys = 32;
+  for (let g = 0; g < 2; g++) {
+    for (let k = 0; k < 48; k++) {
+      const kOff = 1140 + (g * 48 + k) * 12;
+      if (k < numSpeedKeys) {
+        const frac = k / (numSpeedKeys - 1);
+        const prog = k === numSpeedKeys - 1
+          ? maxProgress16 + 64
+          : Math.round(frac * maxProgress16);
+        const stepIdx = Math.min(rrCount - 1, Math.floor(frac * rrCount));
+        const rrIdx = g === 0
+          ? (START_RR_IDX - stepIdx + rrCount) % rrCount
+          : (START_RR_IDX + stepIdx) % rrCount;
+        let maxDeltaAngle = 0;
+        for (let look = 0; look < 6; look++) {
+          const s0 = (rrIdx + (g === 0 ? -look : look) + rrCount) % rrCount;
+          const s1 = (rrIdx + (g === 0 ? -(look + 1) : (look + 1)) + rrCount) % rrCount;
+          const da = Math.abs(signedAngleDelta(sampledRoad[s0].angle, sampledRoad[s1].angle));
+          if (da > maxDeltaAngle) maxDeltaAngle = da;
+        }
+        const cornerFactor = Math.min(1, Math.max(0, (maxDeltaAngle - 16) / 96));
+        const topSpd = Math.round(262 - cornerFactor * 36);
+        const s1Spd  = Math.round(244 - cornerFactor * 32);
+        const s2Spd  = Math.round(228 - cornerFactor * 28);
+        const s3Spd  = Math.round(224 - cornerFactor * 26);
+        b9.writeInt16LE(prog, kOff + 0);
+        b9.writeUInt16LE(0, kOff + 2);
+        b9.writeInt16LE(topSpd, kOff + 4);
+        b9.writeInt16LE(s1Spd,  kOff + 6);
+        b9.writeInt16LE(s2Spd,  kOff + 8);
+        b9.writeInt16LE(s3Spd,  kOff + 10);
+      } else {
+        b9.writeInt16LE(-1, kOff + 0);
+        b9.writeUInt16LE(0, kOff + 2);
+        b9.writeInt16LE(250, kOff + 4);
+        b9.writeInt16LE(235, kOff + 6);
+        b9.writeInt16LE(220, kOff + 8);
+        b9.writeInt16LE(220, kOff + 10);
+      }
+    }
   }
 
-  for (let i = 0; i < 10; i++) {
-    const off = 2300 + i * 12;
-    b9.writeInt32LE(-1, off + 0);
-    b9.writeInt32LE(-1, off + 4);
-  }
-  for (let i = 0; i < 16; i++) {
-    const off = 2420 + i * 16;
-    b9.writeInt32LE(-1, off + 0);
-    b9.writeInt32LE(-1, off + 4);
+  // Clear Mythical Coast sound/ambience zones at their true offsets after reservedB7C[0x1000]
+  // eventSoundZones[30] at 7036, pointAmbienceZones[2] at 7276, ambienceZones[4] at 7324, raceCues at 7372
+  if (b9.length >= 7404) {
+    for (let i = 0; i < 30; i++) {
+      const off = 7036 + i * 8;
+      b9.writeInt16LE(-1, off + 0);
+      b9.writeInt16LE(-1, off + 2);
+      b9.writeInt16LE(0, off + 4);
+      b9.writeUInt16LE(0, off + 6);
+    }
+    for (let i = 0; i < 2; i++) {
+      const off = 7276 + i * 24;
+      b9.writeInt32LE(-1, off + 0);
+      b9.writeInt32LE(-1, off + 4);
+    }
+    for (let i = 0; i < 4; i++) {
+      const off = 7324 + i * 12;
+      b9.writeInt32LE(-1, off + 0);
+      b9.writeInt32LE(-1, off + 4);
+    }
+    // Scale finish cues (7372..7379) and speed cues (7388..7403) to track length
+    b9.writeInt16LE(Math.max(100, maxProgress16 - 180), 7372 + 0);
+    b9.writeInt16LE(Math.max(100, maxProgress16 - 180), 7372 + 4);
+    for (let g = 0; g < 2; g++) {
+      for (let c = 0; c < 3; c++) {
+        const scOff = 7388 + (g * 3 + c) * 4;
+        b9.writeInt16LE(Math.round(((c + 1) / 4) * maxProgress16), scOff + 0);
+      }
+    }
   }
 
-  const r4Zones = detectTunnelAndBridgeZones(courseSpec.course, r4Road, quads);
+  const r4Zones = detectTunnelAndBridgeZones(courseSpec.course, r4Road, quads)
+    .map(rz => {
+      const stepStart = Math.max(0, Math.min(rrCount, rrCount - 1 - rz.kEnd));
+      const stepEnd = Math.max(stepStart + 1, Math.min(rrCount, rrCount - rz.kStart));
+      return {
+        startDist: cumDist[stepStart],
+        endDist: cumDist[stepEnd],
+        code: rz.code,
+        val: rz.val,
+      };
+    })
+    .sort((a, b) => a.startDist - b.startDist);
   for (let z = 0; z < 20; z++) {
     const zOff = 2676 + z * 12;
     if (z < r4Zones.length) {
       const rz = r4Zones[z];
-      b9.writeInt32LE(cumDist[rz.kStart], zOff + 0);
-      b9.writeInt32LE(cumDist[rz.kEnd], zOff + 4);
+      b9.writeInt32LE(rz.startDist, zOff + 0);
+      b9.writeInt32LE(rz.endDist, zOff + 4);
       b9.writeInt16LE(rz.code, zOff + 8);
       b9.writeInt16LE(rz.val, zOff + 10);
     } else {
@@ -1404,24 +1720,35 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
     }
   }
 
-  const ORIG_START_IDX = 299;
+  const origCount =
+    (origScene088.road && origScene088.road.points && origScene088.road.points.length) ||
+    (origScene088.points && origScene088.points.length) ||
+    316;
   for (let g = 0; g < 2; g++) {
+    const origBasePt = origScene088.ai.starts[g][0].point;
     for (let s = 0; s < 12; s++) {
       const origSlot = origScene088.ai.starts[g][s];
-      const deltaPts = origSlot.point - ORIG_START_IDX;
+      let deltaPts = (origSlot.point - origBasePt) % origCount;
+      if (deltaPts > origCount / 2) deltaPts -= origCount;
+      if (deltaPts < -origCount / 2) deltaPts += origCount;
       const ptIdx = (START_RR_IDX + deltaPts + rrCount * 4) % rrCount;
       const p0 = sampledRoad[ptIdx];
-      const pPrev = sampledRoad[(ptIdx - 1 + rrCount) % rrCount];
-      const fx = pPrev.x - p0.x;
-      const fz = pPrev.z - p0.z;
-      const flen = Math.max(1, Math.hypot(fx, fz));
-      const ux = fx / flen;
-      const uz = fz / flen;
+      const pNext = sampledRoad[(ptIdx + 1) % rrCount];
+      // Place car at the midpoint of segment ptIdx (p0 -> pNext) so TrackSegmentContainsCar(car, ptIdx)
+      // always succeeds on attempt 0 in both Normal (g=0) and Reverse (g=1) modes
+      const midX = (p0.x + pNext.x) * 0.5;
+      const midZ = (p0.z + pNext.z) * 0.5;
+      const segDx = pNext.x - p0.x;
+      const segDz = pNext.z - p0.z;
+      const segLen = Math.max(1, Math.hypot(segDx, segDz));
+      // Driving forward vector: towards p0 in Normal (g=0), towards pNext in Reverse (g=1)
+      const ux = g === 0 ? -segDx / segLen : segDx / segLen;
+      const uz = g === 0 ? -segDz / segLen : segDz / segLen;
       const side = (s % 2 === 0 ? -1 : 1) * 90;
       const rx = -uz;
       const rz = ux;
-      const sx = Math.max(0, Math.min(65535, Math.round(p0.x + rx * side)));
-      const sz = Math.max(0, Math.min(65535, Math.round(p0.z + rz * side)));
+      const sx = Math.max(0, Math.min(65535, Math.round(midX + rx * side)));
+      const sz = Math.max(0, Math.min(65535, Math.round(midZ + rz * side)));
       const sOff = 852 + (g * 12 + s) * 12;
       b9.writeInt32LE(sx, sOff + 0);
       b9.writeInt32LE(sz, sOff + 4);
@@ -1441,16 +1768,57 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
           b9.writeInt32LE(Math.round(sz + uz * k.fwd + rz * k.right), k.off + 8);
         }
       } else if (s === 0 && g === 1) {
+        // Note: in g=1, ux/uz already points along the Reverse driving direction
         const rKeys = [
-          { off: 3444, fwd: -1100, right: 140, up: -55 },
-          { off: 3464, fwd: -1100, right: 140, up: -55 },
-          { off: 3484, fwd: 140,   right: 80,  up: -45 },
+          { off: 3444, fwd: 1100, right: 140, up: -55 },
+          { off: 3464, fwd: 1100, right: 140, up: -55 },
+          { off: 3484, fwd: -140, right: 80,  up: -45 },
         ];
         for (const k of rKeys) {
           b9.writeInt32LE(Math.round(sx + ux * k.fwd + rx * k.right), k.off + 0);
           b9.writeInt32LE(Math.round(p0.y + k.up), k.off + 4);
           b9.writeInt32LE(Math.round(sz + uz * k.fwd + rz * k.right), k.off + 8);
         }
+      }
+    }
+  }
+
+  // Update Block 10 replay cameras (TrackCameraTable) so camera positions and sections match the R4 road
+  const b10 = origBlocks[10];
+  if (b10 && b10.length >= 48) {
+    const camOffsets = new Set([
+      b10.readInt32LE(0),
+      b10.readInt32LE(4),
+      b10.readInt32LE(8),
+    ]);
+    for (const listOff of camOffsets) {
+      if (listOff < 12 || listOff + 36 > b10.length) continue;
+      let count = 0;
+      while (listOff + (count + 1) * 36 <= b10.length) {
+        const sec = b10.readInt16LE(listOff + count * 36 + 34);
+        if (sec === -1) break;
+        count++;
+      }
+      for (let i = 0; i < count; i++) {
+        const nOff = listOff + i * 36;
+        const frac = (i + 0.5) / Math.max(1, count);
+        const newSec = Math.max(1, Math.min(maxProgress16 - 1, Math.round(frac * maxProgress16)));
+        const stepIdx = Math.min(rrCount - 1, Math.floor(frac * rrCount));
+        const rrIdx = (START_RR_IDX - stepIdx + rrCount) % rrCount;
+        const rp = sampledRoad[rrIdx];
+        const rad = (rp.angle * 2 * Math.PI) / 4096;
+        const sideSign = i % 2 === 0 ? 1 : -1;
+        const sideDist = Math.min(rp.leftWidth, rp.rightWidth, 260) * 0.65 * sideSign;
+        const camX = Math.round(rp.x - Math.sin(rad) * sideDist);
+        const camY = Math.round(rp.y - 110);
+        const camZ = Math.round(rp.z + Math.cos(rad) * sideDist);
+        const mode = b10.readInt16LE(nOff + 32);
+        if (mode === 2 || mode === 3 || mode === 4) {
+          b10.writeInt32LE(camX, nOff + 0);
+          b10.writeInt32LE(camY, nOff + 4);
+          b10.writeInt32LE(camZ, nOff + 8);
+        }
+        b10.writeInt16LE(newSec, nOff + 34);
       }
     }
   }
@@ -1468,10 +1836,62 @@ function convertSingleR4Track({ courseSpec, texEntryBuf, trackEntryBuf, b87_0, b
     outTrackPack,
     terrainRmeshBuf,
     courseRmeshBuf,
+    skyCluts,
     roadPoints: rrCount,
     quadCount: quads.length,
     cellCount: activeCells.length,
   };
+}
+
+async function resolveR4CourseEntryOffsets(reader) {
+  const tableBuf = await reader.readSectors(0, 4);
+  const entryCount = tableBuf.readUInt32LE(0);
+  if (entryCount < 16) throw Error('R4 archive does not contain all 8 course entries');
+  const maxEntries = Math.min(entryCount, Math.floor((tableBuf.length - 4) / 4) - 1);
+  const offsets = [];
+  for (let i = 0; i <= maxEntries; i++) offsets.push(tableBuf.readUInt32LE(4 + i * 4));
+
+  const checkPair = async baseIdx => {
+    if (baseIdx + 2 >= offsets.length) return false;
+    const texSectors = offsets[baseIdx + 1] - offsets[baseIdx];
+    const trkSectors = offsets[baseIdx + 2] - offsets[baseIdx + 1];
+    if (texSectors <= 8 || texSectors > 2048 || trkSectors <= 8 || trkSectors > 2048) return false;
+    try {
+      const [texProbe, trkProbe] = await Promise.all([
+        reader.readSectors(offsets[baseIdx], texSectors),
+        reader.readSectors(offsets[baseIdx + 1], trkSectors),
+      ]);
+      return isValidR4TexPack(texProbe) && isValidR4TrackPack(trkProbe);
+    } catch {
+      return false;
+    }
+  };
+
+  if (await checkPair(0)) {
+    return R4_TRACKS.map(spec => ({
+      texStart: offsets[spec.course * 2],
+      texCount: offsets[spec.course * 2 + 1] - offsets[spec.course * 2],
+      trkStart: offsets[spec.course * 2 + 1],
+      trkCount: offsets[spec.course * 2 + 2] - offsets[spec.course * 2 + 1],
+    }));
+  }
+
+  const foundPairs = [];
+  for (let idx = 0; idx + 1 < maxEntries && foundPairs.length < 8; idx++) {
+    if (await checkPair(idx)) {
+      foundPairs.push({
+        texStart: offsets[idx],
+        texCount: offsets[idx + 1] - offsets[idx],
+        trkStart: offsets[idx + 1],
+        trkCount: offsets[idx + 2] - offsets[idx + 1],
+      });
+      idx++;
+    }
+  }
+  if (foundPairs.length < 8) {
+    throw Error('Could not verify all 8 Ridge Racer Type 4 course entries in R4.BIN');
+  }
+  return foundPairs;
 }
 
 async function importR4Tracks(service, inputPath) {
@@ -1487,11 +1907,7 @@ async function importR4Tracks(service, inputPath) {
     await fs.mkdir(path.join(staging, 'meshes'), { recursive: true });
 
     try {
-      const tableBuf = await reader.readSectors(0, 2);
-      const entryCount = tableBuf.readUInt32LE(0);
-      if (entryCount < 16) throw Error('R4 archive does not contain all 8 course entries');
-      const offsets = [];
-      for (let i = 0; i <= 16; i++) offsets.push(tableBuf.readUInt32LE(4 + i * 4));
+      const coursePairs = await resolveR4CourseEntryOffsets(reader);
 
       const orig087Path = path.join(service.state.disc.data, 'raw/asset_087.bin');
       const orig088Path = path.join(service.state.disc.data, 'raw/asset_088.bin');
@@ -1518,12 +1934,14 @@ async function importR4Tracks(service, inputPath) {
           service.busy.label = `Importing R4 Track ${spec.slot}/8: ${spec.name}`;
           await service.update();
         }
-        const texIdx = spec.course * 2;
-        const trkIdx = spec.course * 2 + 1;
+        const pair = coursePairs[spec.course];
         const [texEntryBuf, trackEntryBuf] = await Promise.all([
-          reader.readSectors(offsets[texIdx], offsets[texIdx + 1] - offsets[texIdx]),
-          reader.readSectors(offsets[trkIdx], offsets[trkIdx + 1] - offsets[trkIdx]),
+          reader.readSectors(pair.texStart, pair.texCount),
+          reader.readSectors(pair.trkStart, pair.trkCount),
         ]);
+        if (!isValidR4TexPack(texEntryBuf) || !isValidR4TrackPack(trackEntryBuf)) {
+          throw Error(`Invalid R4 binary layout in course ${spec.slot} (${spec.name})`);
+        }
 
         const res = convertSingleR4Track({
           courseSpec: spec,
@@ -1555,7 +1973,8 @@ async function importR4Tracks(service, inputPath) {
         const prefix = `track.custom${spec.slot}`;
         manifestMeshes[`${prefix}.terrain`] = terrainRel;
         manifestMeshes[`${prefix}.course`] = courseRel;
-        for (let i = 0; i < SKY_CLUTS.length; i++) {
+        const skyMatCount = (res.skyCluts && res.skyCluts.length) || DEFAULT_SKY_CLUTS.length;
+        for (let i = 0; i < skyMatCount; i++) {
           manifestMaterials[`${prefix}.course.material.${i}`] = 'unlit mask 1 0 1 1 1 1 0 0 0';
         }
 
@@ -1577,7 +1996,7 @@ async function importR4Tracks(service, inputPath) {
         packageId: 'r4-tracks',
         author: 'Namco (R4 Import)',
         version: '1.0.0',
-        description: 'All 8 courses imported from Ridge Racer Type 4 (Helter Skelter, Out of Blue, Wonderhill, Heaven and Hell, Edge of the Earth, Brightest Nite, Phantomile, Shooting Hoops).',
+        description: 'All 8 courses imported from Ridge Racer Type 4 (Helter Skelter, Out of Blue, Edge of the Earth, Brightest Nite, Wonderhill, Heaven and Hell, Phantomile, Shooting Hoops).',
       }, null, 2) + '\n';
       await fs.writeFile(path.join(staging, 'rage-mod.json'), metadataJson, 'utf8');
 
