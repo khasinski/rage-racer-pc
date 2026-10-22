@@ -13,8 +13,25 @@ set(CMAKE_C_EXTENSIONS OFF)
 # Request the POSIX interfaces used by the native Linux runtime while keeping
 # the project in strict C17 mode. glibc otherwise hides APIs such as setenv,
 # strdup, readlink, and realpath when compiler extensions are disabled.
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
+    # Bionic hides the same POSIX calls as glibc when extensions are off.
     add_compile_definitions(_POSIX_C_SOURCE=200809L _XOPEN_SOURCE=700)
+endif()
+if(ANDROID)
+    # The phone build is the game library only. Host tools, authored-mesh
+    # import, and the test tree need executables that cannot run on device.
+    set(BUILD_TESTING OFF CACHE BOOL "Build the testing tree" FORCE)
+    set(BUILD_TESTING OFF)
+    set(RAGE_EMBED_AUTHORED_CARS OFF CACHE BOOL
+        "Embed optional local authored car models" FORCE)
+    set(PSYZ_RENDERER "sdl3_gpu" CACHE STRING
+        "Rendering backend: sdl3_gpu or sdl3_gl" FORCE)
+    # SDL's Android HID driver is C++ inside libSDL3.a. A direct
+    # target_link_libraries(c++_static) is emitted before that archive, so
+    # the linker never pulls operator new. This variable is the tail of
+    # every C link. -lc++ is the NDK per-API linker script, which pulls
+    # libc++_static and libc++abi. -Bstatic keeps the shared STL out.
+    set(CMAKE_C_STANDARD_LIBRARIES "-Wl,-Bstatic -lc++ -Wl,-Bdynamic -latomic -lm")
 endif()
 
 # The retail data segment, split so each subsystem's state sits with the code
@@ -297,23 +314,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
 
-add_library(rage-ray STATIC
-    src/render/ray/ray.c
-    src/render/ray/ray_bvh.c
-    src/render/ray/ray_draws.c
-    src/render/ray/ray_gpu.c
-    src/render/ray/ray_mesh_import.c
-    src/render/ray/ray_scene.c
-    src/render/ray/ray_world.c)
-target_include_directories(rage-ray PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-if(NOT MSVC)
-    target_link_libraries(rage-ray PUBLIC m)
-endif()
-target_link_libraries(rage-ray PUBLIC rage-rmesh)
-if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
-    target_compile_options(rage-ray PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
-endif()
-
 if(RAGE_BUILD_PORT)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     set(CHDR_WANT_TESTS OFF CACHE BOOL "" FORCE)
@@ -384,6 +384,7 @@ if(RAGE_BUILD_PORT)
         src/port/mod_assets.c
         src/port/menu_images.c
         src/port/menu_label_font.c
+        src/port/graphics_overlay.c
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c
@@ -410,7 +411,7 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
-        src/port/modern/modern_ray_gpu.c
+        src/port/modern/modern_ssao.c
         src/port/modern/modern_shader_sources.c
         src/port/modern/modern_texture_dump.c
         src/port/modern/modern_renderer_diagnostics.c
@@ -442,14 +443,23 @@ if(RAGE_BUILD_PORT)
     target_include_directories(rage-port-legacy PRIVATE src/port/include include)
     target_link_libraries(rage-port-legacy PRIVATE psyz rage-content)
     target_compile_options(rage-port-legacy PRIVATE ${RAGE_COMPAT_COMPILE_OPTIONS})
-    add_executable(rage-racer
-        MACOSX_BUNDLE
+    set(RAGE_APP_SOURCES
         src/port/main.c
         src/port/runtime_control.c
         ${RAGE_PORT_COMMON_SOURCES}
         $<TARGET_OBJECTS:rage-port-legacy>
         $<TARGET_OBJECTS:rage-game-full>
         $<TARGET_OBJECTS:rage-host-state>
+    )
+    if(ANDROID)
+        # SDLActivity loads libmain.so and calls SDL_main. Desktop tools are
+        # not part of this package.
+        add_library(main SHARED ${RAGE_APP_SOURCES})
+        set(RAGE_PORT_TARGETS main)
+    else()
+    add_executable(rage-racer
+        MACOSX_BUNDLE
+        ${RAGE_APP_SOURCES}
     )
     add_executable(rage-racer-smoke
         src/port/main_smoke.c
@@ -460,6 +470,7 @@ if(RAGE_BUILD_PORT)
         $<TARGET_OBJECTS:rage-host-state>
     )
     target_compile_definitions(rage-racer-smoke PRIVATE RAGE_SMOKE_TARGET=1)
+    set(RAGE_PORT_TARGETS rage-racer rage-racer-smoke)
     add_executable(rage-extract tools/rage_extract.c
         src/port/menu_music_asset.c
         src/port/menu_music_render.c)
@@ -557,7 +568,7 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
-        src/port/modern/modern_ray_gpu.c
+        src/port/modern/modern_ssao.c
         src/port/modern/modern_texture_dump.c)
     add_executable(rage-render-stage
         tools/rage_render_stage.c
@@ -577,14 +588,14 @@ if(RAGE_BUILD_PORT)
         src/port/modern/modern_material_uniform.c
         src/port/modern/modern_png.c
         src/port/modern/modern_native_gpu.c
-        src/port/modern/modern_ray_gpu.c
+        src/port/modern/modern_ssao.c
         src/port/modern/modern_texture_dump.c)
     target_include_directories(rage-render-stage PRIVATE
         src src/port src/port/include include)
     add_dependencies(rage-render-stage rage-authored-cars)
     add_dependencies(rage-frame-replay rage-authored-cars)
     target_link_libraries(rage-render-stage PRIVATE
-        rage-content rage-render-world rage-ray SDL3::SDL3 miniz rage-json)
+        rage-content rage-render-world SDL3::SDL3 miniz rage-json)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-render-stage PRIVATE
             ${RAGE_STRICT_WARNING_OPTIONS})
@@ -593,7 +604,7 @@ if(RAGE_BUILD_PORT)
         src src/port src/port/include include)
     target_link_libraries(rage-frame-replay PRIVATE
         rage-content
-        rage-render-world rage-ray SDL3::SDL3 miniz rage-json)
+        rage-render-world SDL3::SDL3 miniz rage-json)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
         target_compile_options(rage-frame-replay PRIVATE
             ${RAGE_STRICT_WARNING_OPTIONS})
@@ -606,6 +617,7 @@ if(RAGE_BUILD_PORT)
         target_compile_options(rage-save-generator PRIVATE
             "-iquote${CMAKE_CURRENT_SOURCE_DIR}/src/port/include"
             "-iquote${CMAKE_CURRENT_SOURCE_DIR}/include")
+    endif()
     endif()
     target_include_directories(rage-game-full PRIVATE
         src/port
@@ -621,14 +633,17 @@ if(RAGE_BUILD_PORT)
         CMAKE_C_COMPILER_ID MATCHES "Clang"))
         target_compile_options(rage-game-full PRIVATE
             -fcommon -Wall -Wextra -Werror)
-        if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "Clang")
+        if((APPLE OR ANDROID) AND CMAKE_C_COMPILER_ID MATCHES "Clang")
+            # Apple Clang and the NDK both warn on the recovered PS1
+            # declarations. Those warnings stay visible and do not fail
+            # the library that only packages that code.
             target_compile_options(rage-game-full PRIVATE
                 -Wno-error)
         endif()
     elseif(WIN32 AND CMAKE_C_COMPILER_ID MATCHES "Clang")
         target_compile_options(rage-game-full PRIVATE /clang:-fcommon)
     endif()
-    foreach(RAGE_PORT_TARGET rage-racer rage-racer-smoke)
+    foreach(RAGE_PORT_TARGET ${RAGE_PORT_TARGETS})
         add_dependencies(${RAGE_PORT_TARGET} rage-authored-cars)
         target_include_directories(${RAGE_PORT_TARGET} PRIVATE
             src/port/include
@@ -644,33 +659,40 @@ if(RAGE_BUILD_PORT)
             # without prototypes. Keep the diagnostics visible while the
             # legacy headers are incrementally typed, but do not fail release
             # builds solely on this compatibility warning.
-            if(APPLE AND CMAKE_C_COMPILER_ID MATCHES "Clang")
+            if((APPLE OR ANDROID) AND CMAKE_C_COMPILER_ID MATCHES "Clang")
                 target_compile_options(${RAGE_PORT_TARGET} PRIVATE
                     -Wno-error=deprecated-non-prototype)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world rage-ray rage-content rage-car-catalog chdr-static miniz rage-json)
+            rage-sim psyz rage-render-world rage-content rage-car-catalog chdr-static miniz rage-json)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
+        endif()
+        if(ANDROID)
+            # Keep JNI_OnLoad and SDL_main visible to the activity loader.
+            # The C++ runtime is on CMAKE_C_STANDARD_LIBRARIES so it is
+            # scanned after libSDL3.a.
+            target_link_options(${RAGE_PORT_TARGET} PRIVATE
+                "-Wl,-u,JNI_OnLoad" "-Wl,-u,SDL_main")
         endif()
     endforeach()
     if(RAGE_ENABLE_SANITIZERS AND
        CMAKE_C_COMPILER_ID MATCHES "Clang|GNU" AND NOT WIN32)
         foreach(RAGE_SANITIZER_TARGET rage-game-full rage-host-state rage-port-legacy
-                                      rage-racer rage-racer-smoke rage-sim rage-content rage-car-catalog
-                                      rage-mod-package rage-rmesh rage-render-world rage-ray)
+                                      ${RAGE_PORT_TARGETS} rage-sim rage-content rage-car-catalog
+                                      rage-mod-package rage-rmesh rage-render-world)
             target_compile_options(${RAGE_SANITIZER_TARGET} PRIVATE
                 -fsanitize=address,undefined -fno-omit-frame-pointer)
         endforeach()
         # Instrument the native renderer/asset libraries too. Their tools and
         # tests need the runtime even when they do not link a game executable.
         foreach(RAGE_SANITIZER_TARGET rage-sim rage-content rage-car-catalog rage-mod-package
-                                      rage-rmesh rage-render-world rage-ray)
+                                      rage-rmesh rage-render-world)
             target_link_options(${RAGE_SANITIZER_TARGET} INTERFACE
                 -fsanitize=address,undefined)
         endforeach()
-        foreach(RAGE_SANITIZER_TARGET rage-racer rage-racer-smoke)
+        foreach(RAGE_SANITIZER_TARGET ${RAGE_PORT_TARGETS})
             target_link_options(${RAGE_SANITIZER_TARGET} PRIVATE
                 -fsanitize=address,undefined)
         endforeach()

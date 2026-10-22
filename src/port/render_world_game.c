@@ -542,7 +542,7 @@ static void GameRenderWorldSubmitCourseTransform(
     uint32_t entity, int32_t mesh, int32_t x, int32_t y, int32_t z,
     RageSceneMat3 rotation, int fogged, int mirror_pass,
     int cullBackfaces, int depthOverlay, float depthBias,
-    uint8_t paletteOffset, int rayOnly) {
+    uint8_t paletteOffset, uint32_t extraFlags) {
     RenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
@@ -581,8 +581,7 @@ static void GameRenderWorldSubmitCourseTransform(
         instance.flags |= RAGE_RENDER_INSTANCE_CULL_BACKFACES;
     if (depthOverlay)
         instance.flags |= RAGE_RENDER_INSTANCE_DEPTH_DECAL;
-    if (rayOnly)
-        instance.flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
+    instance.flags |= extraFlags;
     instance.previousTransform = instance.transform;
     RenderWorldSubmitMesh(GameRenderWorldMutable(), &instance);
 }
@@ -654,7 +653,7 @@ void GameRenderWorldSubmitDynamicCourseOverlay(
 }
 
 static void SubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
-                              int32_t mesh, int mirror_pass, int rayOnly) {
+                              int32_t mesh, int mirror_pass, int shadowOnly) {
     RenderMeshInstance instance;
 
     if (!s_initialized || mesh < 0) return;
@@ -688,8 +687,8 @@ static void SubmitTerrainCell(uint32_t grid_x, uint32_t grid_z,
     instance.lightInfluence = 0.65f;
     if (g_IsEnvironmentMode4)
         instance.flags |= RAGE_RENDER_INSTANCE_ENVIRONMENT_MODE_4;
-    if (rayOnly)
-        instance.flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
+    if (shadowOnly)
+        instance.flags |= RAGE_RENDER_INSTANCE_SHADOW_ONLY;
     instance.previousTransform = instance.transform;
     RenderWorldSubmitMesh(GameRenderWorldMutable(), &instance);
 }
@@ -733,7 +732,8 @@ void GameRenderWorldPublishTerrainGrid(void) {
                          & 0x3FF;
             int allowed = (trace || mesh != 0x3FF) &&
                           NativeRegionAllowsCell(grid_x, grid_z);
-            if (trace && allowed) cells[grid_z] |= UINT32_C(1) << grid_x;
+            if (trace && allowed) cells[grid_z]             /* Masked-out cells are not drawn, only cast shadows. */
+|= UINT32_C(1) << grid_x;
             if (mesh != 0x3FF)
                 SubmitTerrainCell(grid_x, grid_z, mesh, 0, !allowed);
         }
@@ -764,6 +764,8 @@ void GameRenderWorldPublishCourseObjects(void) {
         if (object->modelId < 0) continue;
         int allowed = NativeRegionAllowsCell(
             object->x / 2048, object->z / 2048);
+        /* Outside the original visibility mask the object is not drawn, but it
+         * still shades the road, so it stays in the scene as a caster. */
         /* This is intentionally not gated by the 32x32 classic scan list:
          * it exists for the classic OT/GTE emitter.  The native path
          * keeps semantic scene data complete and applies normal frustum/depth
@@ -776,7 +778,8 @@ void GameRenderWorldPublishCourseObjects(void) {
                 ? (object->flags &
                    COURSE_OBJECT_ALTERNATE_ENVIRONMENT_4) != 0
                 : (object->flags & COURSE_OBJECT_ALTERNATE_NORMAL) != 0,
-            0, 1, 0, 0.0f, 0, !allowed);
+            0, 1, 0, 0.0f, 0,
+            allowed ? 0 : RAGE_RENDER_INSTANCE_SHADOW_ONLY);
     }
 }
 

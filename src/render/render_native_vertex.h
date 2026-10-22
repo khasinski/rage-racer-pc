@@ -65,6 +65,20 @@ uint32_t RenderBuildNativeLocalCompactPassDraws(
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
+/* Sun-shadow casters that the camera does not see: instances outside its
+ * frustum (behind, beside or past the far plane) whose bounds reach the sphere.
+ * Appended to a view after its own draws; firstVertex is relative to `vertices`. */
+typedef struct RenderShadowCasterVolume {
+    Vec3 center;
+    float radius;
+} RenderShadowCasterVolume;
+uint32_t RenderBuildNativeLocalCompactShadowCasterDraws(
+    RageNativeMeshTemplateCache *cache,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
+    const RenderShadowCasterVolume *volume,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount);
 int RenderExpandNativeLocalDraw(const RageNativeDrawSpan *span,
     RageNativeGpuVertex *vertices, uint32_t capacity);
 uint32_t RenderBuildNativeCachedCompactPassDraws(

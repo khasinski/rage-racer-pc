@@ -1,6 +1,5 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
-#include "native_ray.glsl"
 
 layout(location = 0) in vec2 uv;
 layout(location = 1) in vec4 color;
@@ -8,31 +7,15 @@ layout(location = 2) in vec3 normal;
 layout(location = 3) in vec4 fog;
 layout(location = 4) in float lighting;
 layout(location = 5) in vec3 environmentLight;
-layout(location = 6) in vec3 shadowCoord;
 layout(location = 7) in float shadowReception;
 layout(location = 8) in vec3 viewDirection;
 layout(location = 9) in vec3 worldPositionIn;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
-layout(set = 2, binding = 1) uniform sampler2D shadowMap;
-struct SpotLight {
-    vec4 positionRange;
-    vec4 directionOuter;
-    vec4 colorInner;
-};
-layout(set = 3, binding = 0, std140) uniform NativeSceneLight {
-
-    vec4 direction;
-    vec4 ambient;
-    vec4 diffuse;
-    vec4 skyTop;
-    vec4 skyHorizon;
-    vec4 skyBottom;
-    vec4 ray; // enabled, total node count, TLAS node count, instance count
-    vec4 spotCount;
-    SpotLight spots[72];
-} sceneLight;
+layout(set = 2, binding = 1) uniform sampler2DShadow shadowMap;
+#include "native_scene_light.glsl"
 #include "native_spot.glsl"
+#include "native_sun_shadow.glsl"
 struct LampPatch {
     vec4 bounds;
     vec4 emission;
@@ -43,30 +26,6 @@ layout(set = 3, binding = 1, std140) uniform NativeMaterial {
     vec4 surface;
     LampPatch lamps[8];
 } material;
-
-float shadowVisibility(vec3 n) {
-    if (shadowCoord.x <= 0.0 || shadowCoord.x >= 1.0 ||
-        shadowCoord.y <= 0.0 || shadowCoord.y >= 1.0 ||
-        shadowCoord.z <= 0.0 || shadowCoord.z >= 1.0) return 1.0;
-    float facing = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
-    float bias = mix(0.00025, 0.00008, facing);
-    vec2 texelSize = 1.0 / vec2(textureSize(shadowMap, 0));
-    vec2 pixel = shadowCoord.xy / texelSize - 0.5;
-    vec2 fraction = fract(pixel);
-    vec2 first = (floor(pixel) + 0.5) * texelSize;
-    float visible = 0.0;
-    for (int y = 0; y < 2; y++) {
-        for (int x = 0; x < 2; x++) {
-            float storedDepth = texture(
-                shadowMap,
-                first + vec2(x, y) * texelSize).r;
-            float weight = (x == 0 ? 1.0 - fraction.x : fraction.x) *
-                           (y == 0 ? 1.0 - fraction.y : fraction.y);
-            visible += shadowCoord.z - bias <= storedDepth ? weight : 0.0;
-        }
-    }
-    return visible;
-}
 
 vec3 reflectedSky(vec3 direction) {
     if (direction.y >= 0.0)
@@ -92,25 +51,7 @@ void main() {
         materialLighting = material.emissiveAndShading.w;
     float visibility = 1.0;
     if (shadowReception > 0.5 && materialLighting > 0.0 && fog.a < 1.0) {
-        /* Fog replaces the lit colour, so a fragment that is nearly all fog
-         * gains nothing from a traced sun ray; the shadow map is enough. */
-        if (sceneLight.ray.x > 0.5 && fog.a < 0.9) {
-            vec3 rayDirection = normalize(sceneLight.direction.xyz);
-            float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
-            visibility = tracedVisibility(
-                worldPositionIn + rayDirection * epsilon, rayDirection,
-                uint(sceneLight.ray.y + 0.5), uint(sceneLight.ray.w + 0.5));
-        } else {
-            visibility = shadowVisibility(n);
-        }
-    }
-    // Estimate edge coverage from the neighbouring fragment quad. Keep this
-    // outside the reception branch so derivatives have all four lanes, and
-    // leave uniform shadow interiors alone. This adds no rays or history.
-    if (sceneLight.ray.x > 0.5) {
-        float edge = clamp(fwidth(visibility), 0.0, 1.0);
-        if (shadowReception > 0.5)
-            visibility = mix(visibility, 0.5, edge * 0.5);
+        visibility = sunVisibility(worldPositionIn, n);
     }
     float shadow = mix(0.10, 1.0, visibility);
     float ambientShadow = mix(0.55, 1.0, visibility);
@@ -118,12 +59,10 @@ void main() {
         environmentLight * (sceneLight.ambient.rgb * ambientShadow +
             sceneLight.diffuse.rgb * diffuse * shadow),
         materialLighting);
-    /* Authored vertex colours retain some baked brightness even on lit
-     * terrain.  Apply traced occlusion after that blend as well, otherwise a
-     * fully blocked sun ray only changes a small fraction of the final road
-     * colour and vehicle shadows appear washed out. */
-    float tracedOcclusion = mix(0.60, 1.0, visibility);
-    light *= mix(1.0, tracedOcclusion, materialLighting);
+    /* Authored vertex colours keep some baked brightness even on lit terrain,
+     * so a shadow that only removes the sun term looks washed out. Darken the
+     * blended result as well. */
+    light *= mix(1.0, mix(0.60, 1.0, visibility), materialLighting);
     // Preserve texture contrast, but keep indirect light readable in tunnels.
     light = max(light, vec3(0.18));
     light = mix(light, vec3(1.0), fog.a);
@@ -162,23 +101,6 @@ void main() {
         mix(0.85, 1.15, metallic);
     vec3 reflectionDirection = reflect(-view, n);
     vec3 reflected = reflectedSky(reflectionDirection);
-    if (sceneLight.ray.z > 0.5 && coat > 0.001) {
-        float hitDistance;
-        vec3 hitNormal;
-        float epsilon = max(0.02, length(worldPositionIn) * 0.000001);
-        /* Hits beyond 2500 units already read almost entirely as sky, so
-         * stop the reflection ray there instead of walking the whole course. */
-        if (tracedClosest(worldPositionIn + reflectionDirection * epsilon,
-                          reflectionDirection,
-                          uint(sceneLight.ray.y + 0.5),
-                          uint(sceneLight.ray.w + 0.5), 4000.0,
-                          hitDistance, hitNormal)) {
-            vec3 hitLight = sceneLight.ambient.rgb + sceneLight.diffuse.rgb *
-                max(dot(hitNormal, normalize(sceneLight.direction.xyz)), 0.0);
-            reflected = mix(hitLight, sceneLight.skyHorizon.rgb,
-                            clamp(hitDistance / 2500.0, 0.0, 0.65));
-        }
-    }
     float reflectedLuminance = dot(reflected, vec3(0.2126, 0.7152, 0.0722));
     reflected = mix(vec3(reflectedLuminance), reflected, 0.65);
     base = mix(base, reflected, clamp(reflectionStrength, 0.0, 0.85) * (1.0 - fog.a));

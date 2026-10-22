@@ -37,10 +37,18 @@ static void TestInputRules(void) {
     Check(!CanPauseRace(0) && CanPauseRace(1) && CanPauseRace(2) &&
               !CanPauseRace(3),
           "pause is limited to grid and live race phases");
+    Check(ShouldPauseForDrivingDeviceLoss(RACE_PHASE_ACTIVE, 0, 1) &&
+              ShouldPauseForDrivingDeviceLoss(RACE_PHASE_COUNTDOWN, 0, 1),
+          "a lost driving controller pauses the grid and the live race");
+    Check(!ShouldPauseForDrivingDeviceLoss(RACE_PHASE_ACTIVE, 1, 1) &&
+              !ShouldPauseForDrivingDeviceLoss(RACE_PHASE_INTRO, 0, 1) &&
+              !ShouldPauseForDrivingDeviceLoss(RACE_PHASE_FINISHED, 0, 1) &&
+              !ShouldPauseForDrivingDeviceLoss(RACE_PHASE_ACTIVE, 0, 0),
+          "device loss does not pause an intro, a finish, or an open pause");
     Check(!CanToggleRaceCamera(1) && CanToggleRaceCamera(2) &&
               CanToggleRaceCamera(3) && !CanToggleRaceCamera(4),
           "camera toggle is limited to active driving phases");
-    Check(LastRacePauseOption(0) == 4 && LastRacePauseOption(1) == 3,
+    Check(LastRacePauseOption(0) == 3 && LastRacePauseOption(1) == 2,
           "both pause menus append the force feedback row");
 }
 
@@ -59,11 +67,8 @@ static void TestPauseActions(void) {
           "Grand Prix final row quits before the start");
     Check(DecideRacePauseAction(2, 1, 1) == RACE_PAUSE_RETIRE,
           "Grand Prix final row retires after the start");
-    Check(DecideRacePauseAction(2, 0, 3) == RACE_PAUSE_TOGGLE_RENDERER &&
-              DecideRacePauseAction(2, 1, 2) == RACE_PAUSE_TOGGLE_RENDERER,
-          "renderer row stays directly above force feedback");
-    Check(DecideRacePauseAction(2, 0, 4) == RACE_PAUSE_TOGGLE_FFB &&
-              DecideRacePauseAction(2, 1, 3) == RACE_PAUSE_TOGGLE_FFB,
+    Check(DecideRacePauseAction(2, 0, 3) == RACE_PAUSE_TOGGLE_FFB &&
+              DecideRacePauseAction(2, 1, 2) == RACE_PAUSE_TOGGLE_FFB,
           "last pause row toggles force feedback in either race mode");
 }
 
@@ -90,10 +95,6 @@ static void TestPauseToggle(void) {
           "leaving pre-start pause carries the quit action");
     toggle = DecideRacePauseToggle(2, 1, 1, 0, 1, 2);
     Check(toggle.toggled && toggle.paused &&
-              toggle.action == RACE_PAUSE_TOGGLE_RENDERER,
-          "renderer switch keeps the race paused");
-    toggle = DecideRacePauseToggle(2, 1, 1, 0, 1, 3);
-    Check(toggle.toggled && toggle.paused &&
               toggle.action == RACE_PAUSE_TOGGLE_FFB,
           "force feedback switch keeps the race paused");
 }
@@ -104,11 +105,11 @@ static void TestPauseCursor(void) {
     result = MoveRacePauseCursor(PAD_UP, 0, 0);
     Check(result.cursor == 0 && result.moveCount == 0,
           "pause cursor does not move above the first row");
-    result = MoveRacePauseCursor(PAD_DOWN, 4, 0);
-    Check(result.cursor == 4 && result.moveCount == 0,
-          "time attack cursor does not move below its final row");
     result = MoveRacePauseCursor(PAD_DOWN, 3, 0);
-    Check(result.cursor == 4 && result.moveCount == 1,
+    Check(result.cursor == 3 && result.moveCount == 0,
+          "time attack cursor does not move below its final row");
+    result = MoveRacePauseCursor(PAD_DOWN, 2, 0);
+    Check(result.cursor == 3 && result.moveCount == 1,
           "time attack cursor reaches the feedback row");
     result = MoveRacePauseCursor(PAD_DOWN, 0, 1);
     Check(result.cursor == 1 && result.moveCount == 1,
@@ -119,7 +120,7 @@ static void TestPauseCursor(void) {
     result = MoveRacePauseCursor(0, SHRT_MIN, 0);
     Check(result.cursor == 0, "negative pause cursor resets");
     result = MoveRacePauseCursor(0, SHRT_MAX, 1);
-    Check(result.cursor == 3, "past-end pause cursor is clamped");
+    Check(result.cursor == 2, "past-end pause cursor is clamped");
 }
 
 static void TestRaceEndPresentation(void) {

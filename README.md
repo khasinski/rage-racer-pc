@@ -18,7 +18,10 @@ obtained Rage Racer CUE (with its BIN tracks alongside it), Track 01 BIN, or
 CHD when prompted. Native assets are imported automatically and the game starts
 with the modern renderer. No separate launcher or extractor is required.
 
-Press **F10** to switch to enhanced classic rendering. Video settings are in
+Press **Esc** at any time to pause the game and open the graphics options:
+renderer, resolution, aspect ratio, frame rate, texture filtering, anti-aliasing,
+colour grading, ambient occlusion, shadow detail and draw distance (arrow keys, mouse or gamepad). **F10** still
+switches renderer directly. Defaults are in
 `rage-port.ini`; see the [classic renderer guide](docs/classic-renderer.md) for
 resolution, widescreen and FPS examples. No game data is supplied in the archive.
 
@@ -206,6 +209,8 @@ Video settings:
 | `texture_filter` | `nearest`, `linear` |
 | `post` | `none`, `fxaa` |
 | `grading` | `off`, `vibrant` |
+| `ssao` | `off`, `on` |
+| `shadows` | `off`, `standard`, `high` |
 | `fmv_zoom` | `false` (whole 4:3 movie), `true` (crop the movie to fill the window) |
 | `toggle_renderer_key` | an SDL key name, such as `F10` |
 
@@ -218,7 +223,6 @@ Display, content and storage settings:
 | `hud` | `show_time_limit` | `true`, `false` | `true` |
 | `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
 | `modern` | `assets` | Optional explicit prebuilt native-asset cache for renderer development, or `disc`; omitted always imports from the selected disc | omitted |
-| `modern` | `ray_tracing` | **Experimental** hybrid rays: `off`, `shadows`, `reflections`, `full`. May cause visual artifacts and substantially reduce performance. Disabled by default. | `off` |
 | `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
 | `timing` | `standard` | `auto`, `pal`, `ntsc` | `auto` |
 | `content` | `car_names` | `international`, `japanese` | `international` |
@@ -325,6 +329,11 @@ content.
 Press `F10` while playing to switch between classic and modern rendering
 without restarting the race; the key is configurable as
 `[video] toggle_renderer_key`. `F4` goes full screen and back.
+
+`Esc` opens the in-game graphics panel, which pauses the game. Changes apply
+immediately and last until the game is closed; `rage-port.ini` (or the
+launcher) holds the values used at start-up. The panel has Resume and Quit
+rows, so Esc no longer closes the game.
 
 In the modern renderer the rear-view mirror is a native second camera. It
 renders the complete semantic track and traffic scene into its own small color

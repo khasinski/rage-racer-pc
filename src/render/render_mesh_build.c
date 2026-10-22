@@ -330,6 +330,28 @@ static int InstanceOutsideFrustum(const RenderWorld *world,
            fabsf(view.y) > depth * frustum->tanY + verticalRadius;
 }
 
+/* While set, the builders emit only what the camera cannot see but a sun
+ * shadow still can: instances outside the frustum whose bounds reach the
+ * volume. Set by RenderBuildNativeLocalCompactShadowCasterDraws alone. */
+static const RenderShadowCasterVolume *s_casterVolume;
+
+static int InstanceReachesCasterVolume(const RenderShadowCasterVolume *volume,
+                                       const RageTransformBasis *basis,
+                                       const RageRuntimeMesh *mesh,
+                                       uint32_t meshIndex) {
+    float center[3], radius, maxScale, dx, dy, dz;
+    Vec3 worldCenter;
+    if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
+    worldCenter = TransformPoint(basis, center);
+    maxScale = fmaxf(fabsf(basis->scale.x),
+                     fmaxf(fabsf(basis->scale.y), fabsf(basis->scale.z)));
+    dx = worldCenter.x - volume->center.x;
+    dy = worldCenter.y - volume->center.y;
+    dz = worldCenter.z - volume->center.z;
+    return sqrtf(dx * dx + dy * dy + dz * dz) - radius * maxScale <=
+           volume->radius;
+}
+
 /* These values belong to an instance, not its immutable source vertices or
  * camera. Resolve compatibility defaults once, before visiting the mesh. */
 static RageNativeInstanceState PrepareInstanceState(
@@ -606,8 +628,9 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         terrainQuad.indicesValid = terrainQuad.positionsValid = 0;
         if (passFilter >= 0 && instance->pass != (RenderPass)passFilter)
             continue;
-        if (instance->flags & (RAGE_RENDER_INSTANCE_RAY_ONLY |
-                               RAGE_RENDER_INSTANCE_LAMPS_ONLY)) continue;
+        if (instance->flags & RAGE_RENDER_INSTANCE_LAMPS_ONLY) continue;
+        if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_ONLY) && s_casterVolume == NULL)
+            continue;
         /* Excluded passes must not consult (or trigger work in) the asset
          * provider. Both cameras may consume only the main semantic scene. */
         mesh = lookup(context, instance);
@@ -615,7 +638,20 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             continue;
         }
         basis = RenderPrepareInstanceTransform(&instance->transform);
-        if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
+        if (s_casterVolume != NULL) {
+            /* Everything the camera sees is already in the view's draws,
+             * except what the course hid from it: that is never drawn
+             * there, so it is a caster wherever it lies. */
+            const int hidden =
+                (instance->flags & RAGE_RENDER_INSTANCE_SHADOW_ONLY) != 0;
+            if (!hidden &&
+                (!(instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) ||
+                 !InstanceOutsideFrustum(world, &viewTransform, &frustum,
+                                         &basis, mesh, instance->mesh)))
+                continue;
+            if (!InstanceReachesCasterVolume(s_casterVolume, &basis, mesh,
+                                             instance->mesh)) continue;
+        } else if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
             InstanceOutsideFrustum(world, &viewTransform, &frustum, &basis, mesh,
                                        instance->mesh)) continue;
         instanceState = PrepareInstanceState(instance);
@@ -972,4 +1008,20 @@ uint32_t RenderBuildNativeLocalCompactPassDraws(
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(cache, 0, expandWorldVertices ? 1 : 2, world, (int)pass, aspect, !cpuFog,
         lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount);
+}
+
+uint32_t RenderBuildNativeLocalCompactShadowCasterDraws(
+    RageNativeMeshTemplateCache *cache,
+    const RenderWorld *world, RenderPass pass, float aspect, int cpuFog, int expandWorldVertices,
+    const RenderShadowCasterVolume *volume,
+    RageRenderMeshLookup lookup, void *context,
+    RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
+    uint32_t vertexCount;
+    s_casterVolume = volume;
+    vertexCount = RenderBuildNativeLocalCompactPassDraws(cache, world, pass,
+        aspect, cpuFog, expandWorldVertices, lookup, context, vertices,
+        vertexCapacity, spans, spanCapacity, spanCount);
+    s_casterVolume = NULL;
+    return vertexCount;
 }

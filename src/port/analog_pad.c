@@ -7,6 +7,7 @@
 
 #include "game/input_internal.h"
 #include "game/render.h"
+#include "game/scene.h"
 #include "game/state.h"
 #include "analog_pad.h"
 #include "axis_curve.h"
@@ -217,6 +218,57 @@ static float s_steeringDeflection;
 static int s_wheelActive;
 static SDL_Joystick *s_wheel;
 static SDL_Gamepad *s_pad;
+static SDL_JoystickID s_drivingId;
+static int s_controlLost;
+
+static SDL_JoystickID FirstConnectedGamepad(void) {
+    SDL_JoystickID *ids;
+    SDL_JoystickID id = 0;
+    int count = 0;
+
+    ids = SDL_GetGamepads(&count);
+    if (ids != NULL && count > 0) id = ids[0];
+    SDL_free(ids);
+    return id;
+}
+
+static int JoystickIdConnected(SDL_JoystickID id) {
+    SDL_Joystick *joystick;
+
+    if (id == 0) return 0;
+    if (SDL_GetGamepadFromID(id) != NULL) return 1;
+    joystick = SDL_GetJoystickFromID(id);
+    return joystick != NULL && SDL_JoystickConnected(joystick);
+}
+
+/* Remember the device that is actually steering. A later sample that can no
+ * longer see that id, during a race, asks the race to pause. Outside a race
+ * the same transition is forgotten so a menu unplug cannot pause the next
+ * grid. */
+static void ObserveDrivingDevice(void) {
+    SDL_JoystickID current = 0;
+
+    if (s_wheel != NULL) current = SDL_GetJoystickID(s_wheel);
+    else if (s_pad != NULL) current = SDL_GetGamepadID(s_pad);
+    else current = FirstConnectedGamepad();
+
+    if (s_drivingId != 0 && !JoystickIdConnected(s_drivingId) &&
+        g_SceneId == GAME_SCENE_RACE) {
+        if (!s_controlLost) {
+            fprintf(stderr, "rage-port: driving controller disconnected\n");
+        }
+        s_controlLost = 1;
+    }
+    s_drivingId = current;
+    if (g_SceneId != GAME_SCENE_RACE) s_controlLost = 0;
+}
+
+int PortTakeDrivingControlLoss(void) {
+    int lost = s_controlLost;
+
+    s_controlLost = 0;
+    return lost;
+}
 
 float AnalogSteeringDeflection(void) { return s_steeringDeflection; }
 
@@ -315,6 +367,7 @@ void PortSampleAnalogPad(void) {
     }
     if (!enabled) {
         PublishAnalogInput(NULL, NULL, 0.0f);
+        ObserveDrivingDevice();
         return;
     }
 
@@ -325,6 +378,7 @@ void PortSampleAnalogPad(void) {
     pad = wheel == NULL ? AnalogFindGamepad() : NULL;
     if (pad == NULL && wheel == NULL) {
         PublishAnalogInput(NULL, NULL, 0.0f);
+        ObserveDrivingDevice();
         return;
     }
 
@@ -402,4 +456,5 @@ void PortSampleAnalogPad(void) {
     g_PadBuffers[6] = (u8)(g_NegconNeutralII + analogII);
     g_PadBuffers[7] = (u8)(g_NegconNeutralL + analogL);
     PublishAnalogInput(wheel, pad, AxisShaped(lx, &steering));
+    ObserveDrivingDevice();
 }

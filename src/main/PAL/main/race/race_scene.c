@@ -117,35 +117,48 @@ static s32 UpdateRaceEndState(RaceScene *state) {
     return 0;
 }
 
+static void EnterRacePause(RaceScene *state) {
+    state->pauseDelay = PAUSE_TOGGLE_DEBOUNCE;
+    g_RacePaused = 1;
+    ResetRaceOptionMenuAnimation();
+    PauseCdAudio();
+    ForceAllEffectVoicesEnabled(0);
+    state->optionCursor = 0;
+    PlaySoundCue(2);
+}
+
 /* Returns non-zero when the selected action has already replaced this scene. */
 static s32 UpdateRacePause(RaceScene *state) {
     RacePauseToggleResult toggle;
+    /* Keep a loss that happens during the intro until the grid can pause.
+     * Consuming it while already paused drops it, so resume does not pause
+     * again for the same disconnect. */
+    s32 deviceLost = 0;
+
+    if (CanPauseRace(g_RacePhase) || g_RacePaused != 0) {
+        deviceLost = PortTakeDrivingControlLoss();
+    }
 
     toggle = DecideRacePauseToggle(
         g_RacePhase, g_RacePaused, (g_PadPressed & PAD_START) != 0,
         state->pauseDelay, g_GrandPrixMode, state->optionCursor);
     if (!toggle.toggled) {
+        if (ShouldPauseForDrivingDeviceLoss(
+                g_RacePhase, g_RacePaused, deviceLost)) {
+            EnterRacePause(state);
+        }
         return 0;
     }
 
     state->pauseDelay = PAUSE_TOGGLE_DEBOUNCE;
     g_RacePaused = toggle.paused;
-    if (toggle.action == RACE_PAUSE_TOGGLE_RENDERER) {
-        PortToggleRenderer();
-        PlaySoundCue(2);
-        return 0;
-    }
     if (toggle.action == RACE_PAUSE_TOGGLE_FFB) {
         PortToggleForceFeedback();
         PlaySoundCue(2);
         return 0;
     }
     if (toggle.paused) {
-        ResetRaceOptionMenuAnimation();
-        PauseCdAudio();
-        ForceAllEffectVoicesEnabled(0);
-        state->optionCursor = 0;
-        PlaySoundCue(2);
+        EnterRacePause(state);
         return 0;
     }
 

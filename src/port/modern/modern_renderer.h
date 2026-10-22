@@ -36,6 +36,12 @@ int ModernPresentationActive(void);
  * compatibility framebuffer keeps rendering in both modes. */
 void ModernToggle(void);
 
+/* Applies a full set of presentation settings to the running game: a change
+ * to anything but the renderer choice rebuilds the presentation targets
+ * (the asset session is kept), and the renderer choice itself is a switch.
+ * Call between presentations. Returns 0 if the settings could not be applied. */
+int ModernApplyConfig(const RagePortConfig *config);
+
 /* Frame-sync wait hook: presents interpolated frames between logic ticks
  * when an FPS mode is configured. No-op otherwise. */
 void ModernFrameWaitTick(int frameLimit);

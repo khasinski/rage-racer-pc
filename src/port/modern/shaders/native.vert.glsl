@@ -1,6 +1,6 @@
 #version 450
 #extension GL_GOOGLE_include_directive : require
-#define LOCAL_BINDING 3
+#define LOCAL_BINDING 2
 #include "native_local.glsl"
 
 layout(location = 0) in vec3 inPosition;
@@ -20,15 +20,7 @@ layout(set = 1, binding = 0, std140) uniform NativeCamera {
     vec4 fogRange;
 } camera;
 
-layout(set = 1, binding = 1, std140) uniform NativeShadowCamera {
-    vec4 position;
-    vec4 viewRow0;
-    vec4 viewRow1;
-    vec4 viewRow2;
-    vec4 projection;
-} shadow;
-
-layout(set = 1, binding = 2, std140) uniform NativeInstance {
+layout(set = 1, binding = 1, std140) uniform NativeInstance {
     vec4 environmentLight;
     vec4 properties; // lighting influence, shadow reception, scroll U, reserved
 } instance;
@@ -39,7 +31,6 @@ layout(location = 2) out vec3 normal;
 layout(location = 3) out vec4 fog;
 layout(location = 4) out float lighting;
 layout(location = 5) out vec3 environmentLight;
-layout(location = 6) out vec3 shadowCoord;
 layout(location = 7) out float shadowReception;
 layout(location = 8) out vec3 viewDirection;
 layout(location = 9) out vec3 worldPositionOut;
@@ -88,16 +79,6 @@ void main() {
     }
     lighting = instance.properties.x;
     environmentLight = instance.environmentLight.xyz;
-    vec3 shadowRelative = worldPosition - shadow.position.xyz;
-    float shadowX = dot(shadow.viewRow0.xyz, shadowRelative) *
-                    shadow.projection.x;
-    float shadowY = dot(shadow.viewRow1.xyz, shadowRelative) *
-                    shadow.projection.y;
-    float shadowDepth = -dot(shadow.viewRow2.xyz, shadowRelative);
-    shadowCoord = vec3(shadowX * 0.5 + 0.5,
-                       0.5 - shadowY * 0.5,
-                       shadowDepth * shadow.projection.z +
-                           shadow.projection.w);
     shadowReception = instance.properties.y;
     viewDirection = camera.position.xyz - worldPosition;
     worldPositionOut = worldPosition;

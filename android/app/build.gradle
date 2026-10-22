@@ -1,0 +1,62 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace = "com.khasinski.rageracer"
+    compileSdkVersion 35
+    ndkVersion = "28.2.13676358"
+
+    defaultConfig {
+        applicationId "com.khasinski.rageracer"
+        minSdkVersion 26
+        targetSdkVersion 35
+        versionCode 1
+        versionName "0.6.9-android-poc"
+        externalNativeBuild {
+            cmake {
+                targets "main"
+                arguments "-DANDROID_PLATFORM=android-26",
+                        "-DANDROID_STL=c++_static",
+                        "-DRAGE_BUILD_PORT=ON",
+                        "-DRAGE_EMBED_AUTHORED_CARS=OFF",
+                        "-DBUILD_TESTING=OFF",
+                        "-DSDL_SHARED=OFF",
+                        "-DSDL_STATIC=ON",
+                        "-DSDL_TEST_LIBRARY=OFF",
+                        "-DSDL_TESTS=OFF",
+                        "-DSDL_EXAMPLES=OFF"
+                abiFilters "arm64-v8a"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    sourceSets.main {
+        java.srcDirs = [
+            'src/main/java',
+            '../../external/psyz/external/SDL/android-project/app/src/main/java'
+        ]
+    }
+
+    externalNativeBuild {
+        cmake {
+            path '../../CMakeLists.txt'
+        }
+    }
+
+    lint {
+        abortOnError false
+    }
+}

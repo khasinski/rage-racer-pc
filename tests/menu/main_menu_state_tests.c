@@ -33,6 +33,8 @@ s32 g_GrandPrixClass;
 u16 g_PadPressed;
 s16 g_SeriesSelection;
 RaceSession g_RaceSession;
+s32 g_DuelConfigEnabled;
+s32 g_DuelEnabled;
 
 static GameFrameContext s_frame;
 static s32 s_assetComplete;
@@ -157,6 +159,18 @@ int main(void) {
     UpdateMainMenuInput();
     CHECK(s_frontend.state == FRONTEND_STATE_MENU_EXIT);
     CHECK(g_RaceSession.kind == RACE_SESSION_CUSTOM);
+    CHECK(g_DuelEnabled == 0);
+    CHECK(g_RaceSession.course == 0 && g_RaceSession.classIndex == 0 &&
+          g_RaceSession.model == 3);
+    CHECK(g_CarTable == g_RaceSession.cars &&
+          g_RaceProgress == &g_TimeAttackSave);
+    CHECK(s_selectBgmRequests == 1);
+
+    ResetState(TITLE_MENU_DUEL);
+    UpdateMainMenuInput();
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_EXIT);
+    CHECK(g_RaceSession.kind == RACE_SESSION_CUSTOM);
+    CHECK(g_DuelEnabled == 1);
     CHECK(g_RaceSession.course == 0 && g_RaceSession.classIndex == 0 &&
           g_RaceSession.model == 3);
     CHECK(g_CarTable == g_RaceSession.cars &&
@@ -166,6 +180,7 @@ int main(void) {
     ResetState(TITLE_MENU_LOAD_SAVE);
     UpdateMainMenuInput();
     CHECK(s_saveRequests == 1);
+    CHECK(g_DuelEnabled == 0);
 
     ResetState(TITLE_MENU_OPTIONS);
     UpdateMainMenuInput();
@@ -181,7 +196,7 @@ int main(void) {
     s_frontend.state = FRONTEND_STATE_MENU_OPENING;
     s_frontend.menuSlide = INT_MAX;
     UpdateMainMenuOpen();
-    CHECK(s_frontend.menuSlide == 0x38);
+    CHECK(s_frontend.menuSlide == 0x40);
     CHECK(s_frontend.state == FRONTEND_STATE_MENU_INPUT);
 
     s_frontend.state = FRONTEND_STATE_MENU_OPENING;
@@ -192,8 +207,26 @@ int main(void) {
 
     ResetState(TITLE_MENU_CUSTOM);
     g_PadPressed = 0;
+    g_ExtraGrandPrixUnlocked = 0;
+    s_frontend.menuSlide = 0x40;
+    s_frontend.pulse = 0;
+    DrawMainMenuRows();
+    CHECK(s_labelCount == TITLE_MENU_ITEM_COUNT - 1);
+    CHECK(s_labelItem[0] == TITLE_MENU_GRAND_PRIX);
+    CHECK(s_labelItem[1] == TITLE_MENU_TIME_ATTACK);
+    CHECK(s_labelItem[2] == TITLE_MENU_CUSTOM);
+    CHECK(s_labelItem[3] == TITLE_MENU_DUEL);
+    CHECK(s_labelItem[4] == TITLE_MENU_LOAD_SAVE);
+    CHECK(s_labelItem[5] == TITLE_MENU_OPTIONS);
+    CHECK(s_labelY[0] == 0x64 && s_labelY[1] == 0x7C);
+    CHECK(s_labelY[2] == 0x94 && s_labelY[3] == 0xAC);
+    CHECK(s_labelY[4] == 0xC4 && s_labelY[5] == 0xDC);
+    CHECK(s_labelY[5] + s_labelHeight[5] <= 240);
+
+    ResetState(TITLE_MENU_CUSTOM);
+    g_PadPressed = 0;
     g_ExtraGrandPrixUnlocked = 1;
-    s_frontend.menuSlide = 0x38;
+    s_frontend.menuSlide = 0x40;
     s_frontend.pulse = 0;
     DrawMainMenuRows();
     CHECK(s_labelCount == TITLE_MENU_ITEM_COUNT);
@@ -201,11 +234,13 @@ int main(void) {
     CHECK(s_labelItem[1] == TITLE_MENU_EXTRA_GRAND_PRIX);
     CHECK(s_labelItem[2] == TITLE_MENU_TIME_ATTACK);
     CHECK(s_labelItem[3] == TITLE_MENU_CUSTOM);
-    CHECK(s_labelItem[4] == TITLE_MENU_LOAD_SAVE);
-    CHECK(s_labelItem[5] == TITLE_MENU_OPTIONS);
-    CHECK(s_labelY[0] == 0x64 && s_labelY[1] == 0x7C);
-    CHECK(s_labelY[2] == 0x94 && s_labelY[3] == 0xAC);
-    CHECK(s_labelY[4] == 0xC4 && s_labelY[5] == 0xDC);
+    CHECK(s_labelItem[4] == TITLE_MENU_DUEL);
+    CHECK(s_labelItem[5] == TITLE_MENU_LOAD_SAVE);
+    CHECK(s_labelItem[6] == TITLE_MENU_OPTIONS);
+    CHECK(s_labelY[0] == 0x64 && s_labelY[1] == 0x78);
+    CHECK(s_labelY[2] == 0x8C && s_labelY[3] == 0xA0);
+    CHECK(s_labelY[4] == 0xB4 && s_labelY[5] == 0xC8 && s_labelY[6] == 0xDC);
+    CHECK(s_labelY[6] + s_labelHeight[6] <= 240);
     CHECK(s_labelHeight[3] == 0x10 && s_labelSelected[3] == 1);
 
     puts("main menu state tests passed");

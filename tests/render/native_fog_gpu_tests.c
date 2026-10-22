@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
     shader.code = spirv ? native_vert_spv : native_vert_msl;
     shader.code_size = spirv ? native_vert_spv_len : native_vert_msl_len;
     shader.entrypoint = spirv ? "main" : "vs_native";
-    shader.num_uniform_buffers = 4;
+    shader.num_uniform_buffers = 3;
     if (shadowProbe) {
         shader.code = spirv ? native_shadow_vert_spv : native_shadow_vert_msl;
         shader.code_size = spirv ? native_shadow_vert_spv_len : native_shadow_vert_msl_len;
@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
         camera.fogNear = range == 1 ? 0.0f : 5.0f;
         camera.fogFar = range == 2 ? 4.0f : 20.0f;
         /* Native camera ABI: position, view rows, projection, fog colour/range. */
-        float uniform[7][4] = {{0}}, shadow[5][4] = {{0}};
+        float uniform[7][4] = {{0}};
         uniform[0][2] = camera.transform.position.z;
         uniform[1][0] = uniform[2][1] = uniform[3][2] = 1.0f;
         uniform[4][0] = uniform[4][1] = 1.0f; uniform[4][3] = 0.5f;
@@ -184,7 +184,7 @@ int main(int argc, char **argv) {
         SDL_GPUBufferRegion destination = {.buffer = buffer, .size = sizeof(packed)};
         SDL_UploadToGPUBuffer(copy, &source, &destination, true); SDL_EndGPUCopyPass(copy);
         SDL_PushGPUVertexUniformData(cmd, 0, uniform, sizeof(uniform));
-        SDL_PushGPUVertexUniformData(cmd, shadowProbe ? 2 : 3, &local, sizeof(local));
+        SDL_PushGPUVertexUniformData(cmd, 2, &local, sizeof(local));
         const float instance[2][4] = {
             {view ? 0.25f : 0.75f, (float)range * 0.25f, 1, 0},
             {depthProbe ? -1.0f : enabled ? 0.5f : 1, (float)(sample % 2), (float)(sample % 4) * 0.25f, 0}};
@@ -192,8 +192,7 @@ int main(int argc, char **argv) {
             const float offset[4] = {instance[1][2], 0, 0, 0};
             SDL_PushGPUVertexUniformData(cmd, 1, offset, sizeof(offset));
         } else {
-            SDL_PushGPUVertexUniformData(cmd, 1, shadow, sizeof(shadow));
-            SDL_PushGPUVertexUniformData(cmd, 2, instance, sizeof(instance));
+            SDL_PushGPUVertexUniformData(cmd, 1, instance, sizeof(instance));
         }
         SDL_GPUColorTargetInfo color = {0}; color.texture = target;
         color.load_op = SDL_GPU_LOADOP_CLEAR; color.store_op = SDL_GPU_STOREOP_STORE;

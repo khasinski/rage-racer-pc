@@ -7,43 +7,6 @@ set_tests_properties(car_lights PROPERTIES LABELS unit)
 target_link_libraries(native_asset_fixture PRIVATE SDL3::SDL3)
 target_compile_options(native_asset_fixture PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 
-add_executable(ray_bvh_tests ray_bvh_tests.c)
-target_link_libraries(ray_bvh_tests PRIVATE rage-ray)
-target_compile_options(ray_bvh_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
-add_test(NAME ray_bvh COMMAND ray_bvh_tests)
-set_tests_properties(ray_bvh PROPERTIES LABELS unit)
-
-add_executable(ray_mesh_import_tests ray_mesh_import_tests.c)
-target_link_libraries(ray_mesh_import_tests PRIVATE rage-ray)
-target_compile_options(ray_mesh_import_tests PRIVATE
-    ${RAGE_STRICT_WARNING_OPTIONS})
-add_test(NAME ray_mesh_import COMMAND ray_mesh_import_tests)
-set_tests_properties(ray_mesh_import PROPERTIES LABELS unit)
-
-add_executable(ray_scene_tests ray_scene_tests.c)
-target_link_libraries(ray_scene_tests PRIVATE rage-ray)
-target_compile_options(ray_scene_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
-add_test(NAME ray_scene COMMAND ray_scene_tests)
-set_tests_properties(ray_scene PROPERTIES LABELS unit)
-
-add_executable(ray_world_tests ray_world_tests.c)
-target_link_libraries(ray_world_tests PRIVATE rage-ray)
-target_compile_options(ray_world_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
-add_test(NAME ray_world COMMAND ray_world_tests)
-set_tests_properties(ray_world PROPERTIES LABELS unit)
-
-add_executable(ray_gpu_tests ray_gpu_tests.c)
-target_link_libraries(ray_gpu_tests PRIVATE rage-ray)
-target_compile_options(ray_gpu_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
-add_test(NAME ray_gpu COMMAND ray_gpu_tests)
-set_tests_properties(ray_gpu PROPERTIES LABELS unit)
-
-add_executable(ray_draws_tests ray_draws_tests.c)
-target_link_libraries(ray_draws_tests PRIVATE rage-ray)
-target_compile_options(ray_draws_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
-add_test(NAME ray_draws COMMAND ray_draws_tests)
-set_tests_properties(ray_draws PROPERTIES LABELS unit)
-
 add_executable(render_world_scene_tests render_world_scene_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/render_world_scene.c)
 target_include_directories(render_world_scene_tests PRIVATE
@@ -2053,3 +2016,11 @@ target_compile_definitions(menu_label_font_tests PRIVATE __psyz=1)
 target_compile_options(menu_label_font_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME menu_label_font COMMAND menu_label_font_tests)
 set_tests_properties(menu_label_font PROPERTIES LABELS unit TIMEOUT 30)
+
+add_executable(graphics_overlay_gpu_tests graphics_overlay_gpu_tests.c stb_truetype_implementation.c)
+target_include_directories(graphics_overlay_gpu_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/port"
+    "${PROJECT_SOURCE_DIR}/external/psyz/psyz/include")
+target_link_libraries(graphics_overlay_gpu_tests PRIVATE SDL3::SDL3)
+add_test(NAME graphics_overlay_gpu COMMAND graphics_overlay_gpu_tests)
+set_tests_properties(graphics_overlay_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)

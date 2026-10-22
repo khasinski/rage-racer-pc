@@ -24,6 +24,8 @@ int main(void) {
     CHECK(MoveTitleMenuSelection(TITLE_MENU_TIME_ATTACK, 1, 1),
           TITLE_MENU_CUSTOM);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_CUSTOM, 1, 1),
+          TITLE_MENU_DUEL);
+    CHECK(MoveTitleMenuSelection(TITLE_MENU_DUEL, 1, 1),
           TITLE_MENU_LOAD_SAVE);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_GRAND_PRIX, 1, 0),
           TITLE_MENU_TIME_ATTACK);
@@ -39,7 +41,8 @@ int main(void) {
                                  0, 1),
           TITLE_MENU_LOAD_SAVE);
     CHECK(MoveTitleMenuSelection(-1, 0, 1), TITLE_MENU_OPTIONS);
-    CHECK(MoveTitleMenuSelection(INT_MIN, 0, 1), TITLE_MENU_LOAD_SAVE);
+    CHECK(MoveTitleMenuSelection(INT_MIN, 0, 1),
+          (INT_MIN % TITLE_MENU_ITEM_COUNT) + TITLE_MENU_ITEM_COUNT);
 
     puts("title menu navigation tests passed");
     return 0;

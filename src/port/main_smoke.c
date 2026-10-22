@@ -22,6 +22,7 @@
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
+#include "graphics_overlay.h"
 #include "modern/modern_native_gpu.h"
 #include "render/render_world.h"
 #include "native_asset_importer.h"
@@ -582,6 +583,7 @@ int main(int argc, char **argv) {
     PortConfigSetActive(&portConfig);
     TimingInit();
     if (!ModernInit(&portConfig)) return EXIT_FAILURE;
+    PortGraphicsOverlayInstall();
     MainLoop();
     if (!DumpSpuRam()) {
         fprintf(stderr, "failed to dump SPU RAM\n");

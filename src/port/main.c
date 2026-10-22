@@ -1,3 +1,6 @@
+#ifdef __ANDROID__
+#include <SDL3/SDL_main.h>
+#endif
 #include <psyz.h>
 #include <psyz/video.h>
 #include <psyz/audio.h>
@@ -18,12 +21,14 @@
 #include "runtime_config.h"
 #include "timing_control.h"
 #include "modern/modern_renderer.h"
+#include "graphics_overlay.h"
 #include "modern/modern_assets.h"
 #include "native_asset_importer.h"
 #include "track_export.h"
 #include "car_export.h"
 #include "platform_paths.h"
 #include "menu_music_runtime.h"
+#include "game/car.h"
 
 #ifndef PATH_MAX
 #define PATH_MAX 4096
@@ -69,6 +74,9 @@ static ArchiveDumpResult DumpRequestedArchive(void) {
     return ARCHIVE_DUMP_COMPLETE;
 }
 
+#ifdef __ANDROID__
+__attribute__((visibility("default")))
+#endif
 int main(int argc, char **argv) {
     RageInputConfig inputConfig;
     RagePortConfig portConfig;
@@ -135,11 +143,25 @@ int main(int argc, char **argv) {
     TimingInit();
     if (!NativeAssetImporterInit() || !ModernInit(&portConfig))
         return EXIT_FAILURE;
+    PortGraphicsOverlayInstall();
     if (!InitNativeGameData()) {
         fprintf(stderr, "failed to initialize retail game data\n");
         return EXIT_FAILURE;
     }
     ContentOptionsApply();
+    g_DuelConfigEnabled = RuntimeConfigEnabled("duel.enabled");
+    g_DuelEnabled = g_DuelConfigEnabled;
+    g_DuelRivalCar = RuntimeConfigInt("duel.rival_slot", 0, 0,
+                                      RACE_CAR_SLOT_COUNT - 1);
+    g_CpuChaseMode = RuntimeConfigInt("cpu_chase.mode", 0, 0, 2);
+    g_CpuChaseRivalCar = RuntimeConfigInt("cpu_chase.rival_slot", 0, 0,
+                                          RACE_CAR_SLOT_COUNT - 1);
+    g_CpuChaseNearDistance = RuntimeConfigInt("cpu_chase.near_distance", 8,
+                                              -999, 999);
+    g_CpuChaseFarDistance = RuntimeConfigInt("cpu_chase.far_distance", 50,
+                                             1, 1000);
+    g_CpuChaseSpeedPercent = RuntimeConfigInt("cpu_chase.speed_percent", 115,
+                                              100, 300);
     CarCatalogClearOverrides();
     const char *configuredProfile = RuntimeConfigGet("cars.profile");
     if (!CarCatalogPrepareProfile(argc > 0 ? argv[0] : NULL,

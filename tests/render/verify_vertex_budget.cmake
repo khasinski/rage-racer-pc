@@ -13,7 +13,7 @@ foreach(cpu false true)
         "${GAME}" --scenario "${SOURCE}/tests/scenarios/authored_vainqure.ini"
         --set "disc.image=${disc}" --set race.class=4 --set race.car=3 --set race.variant=4
         --set start.player_track_point=150 --set start.freeze=true
-        --set video.internal_scale=1 --set video.fps=1000 --set modern.ray_tracing=off
+        --set video.internal_scale=1 --set video.fps=1000
         --set "diagnostics.modern_cpu_geometry=${cpu}" --set diagnostics.performance_trace=true
         --set diagnostics.modern_asset_trace=true
         --set stop.timer=600 --set run.frames=3000
@@ -27,8 +27,7 @@ foreach(cpu false true)
     endif()
     file(READ "${root}/${cpu}.log" log)
     string(REGEX MATCHALL "native-vertex-grow required=[0-9]+ capacity=[0-9]+ maximum=112000000" growth "${log}")
-    if(NOT growth OR NOT log MATCHES "native draws frame=[0-9]+ draws=[1-9][0-9]+"
-       OR NOT log MATCHES "ray tracing=off")
+    if(NOT growth OR NOT log MATCHES "native draws frame=[0-9]+ draws=[1-9][0-9]+")
         message(FATAL_ERROR "No actual buffer growth and rendering observed; see ${root}")
     endif()
     foreach(event IN LISTS growth)

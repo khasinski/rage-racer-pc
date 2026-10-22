@@ -1,0 +1,2 @@
+-keep,includedescriptorclasses class org.libsdl.app.** { *; }
+-keep class com.khasinski.rageracer.** { *; }

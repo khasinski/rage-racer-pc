@@ -23,6 +23,11 @@
 #define PATH_MAX 4096
 #endif
 
+#ifdef __ANDROID__
+#include <SDL3/SDL.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#endif
 #include <psyz/cd.h>
 #include <psyz/audio.h>
 
@@ -406,6 +411,61 @@ static int HostOpenAdjacentDisc(char *path, size_t pathSize) {
                              HostTryOpenAdjacentDisc, NULL);
 }
 
+#ifdef __ANDROID__
+/* The activity library is not a folder the player can write. A disc image
+ * goes in the app's external files directory, or one folder under it. */
+static int HostOpenDiscInDirectory(const char *directory, char *path,
+                                   size_t pathSize) {
+    DIR *handle;
+    struct dirent *entry;
+
+    if (directory == NULL || directory[0] == '\0') return 0;
+    if (DiscDiscoverImage(directory, path, pathSize, HostTryOpenAdjacentDisc,
+                          NULL)) {
+        return 1;
+    }
+    handle = opendir(directory);
+    if (handle == NULL) return 0;
+    while ((entry = readdir(handle)) != NULL) {
+        char child[PATH_MAX];
+        struct stat status;
+        int written;
+
+        if (entry->d_name[0] == '.') continue;
+        written = snprintf(child, sizeof(child), "%s/%s", directory,
+                           entry->d_name);
+        if (written < 0 || (size_t)written >= sizeof(child)) continue;
+        if (stat(child, &status) != 0 || !S_ISDIR(status.st_mode)) continue;
+        if (DiscDiscoverImage(child, path, pathSize, HostTryOpenAdjacentDisc,
+                              NULL)) {
+            closedir(handle);
+            return 1;
+        }
+    }
+    closedir(handle);
+    return 0;
+}
+
+static int HostOpenAndroidStorageDisc(char *path, size_t pathSize) {
+    const char *externalPath = SDL_GetAndroidExternalStoragePath();
+    const char *internalPath = SDL_GetAndroidInternalStoragePath();
+    const char *roots[2];
+    int index;
+
+    roots[0] = externalPath;
+    roots[1] = internalPath;
+    for (index = 0; index < 2; index++) {
+        if (HostOpenDiscInDirectory(roots[index], path, pathSize)) return 1;
+    }
+    fprintf(stderr,
+            "rage-port: copy a .cue, .bin, or .chd into %s\n",
+            externalPath != NULL && externalPath[0] != '\0'
+                ? externalPath
+                : "(app external storage is unavailable)");
+    return 0;
+}
+#endif
+
 int HostInitDisc(void) {
     const char *configuredPath = RuntimeConfigGet("disc.image");
     char discPath[PATH_MAX];
@@ -445,6 +505,15 @@ int HostInitDisc(void) {
         HostSaveDiscPath(discPath);
         return 1;
     }
+#ifdef __ANDROID__
+    /* A desktop file dialog hands back a content URI. fopen cannot read it,
+     * so the phone build only accepts a real file in app storage. */
+    if (!choose && HostOpenAndroidStorageDisc(discPath, sizeof(discPath))) {
+        HostSaveDiscPath(discPath);
+        return 1;
+    }
+    return 0;
+#endif
     if (!HostChooseDisc(discPath, sizeof(discPath)) ||
         !HostOpenDisc(discPath)) return 0;
     HostSaveDiscPath(discPath);

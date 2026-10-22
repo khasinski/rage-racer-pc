@@ -72,6 +72,7 @@ int VSync(int mode) {
     return 128;
 }
 void PortDuringFrameWait(int frameLimit) { (void)frameLimit; }
+void PortHoldWhilePaused(void) {}
 void PortProfileFramePhase(const char *phase) { (void)phase; }
 void Psyz_GpuTraceContext(int scene, int timer) {
     (void)scene;

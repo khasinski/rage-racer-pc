@@ -9,12 +9,12 @@
 
 static struct {
     unsigned generation;
-    uint8_t checked[6][2],valid[6][2];
-    uint8_t pixels[6][2][MENU_IMAGE_WIDTH*MENU_IMAGE_HEIGHT*4];
+    uint8_t checked[7][2],valid[7][2];
+    uint8_t pixels[7][2][MENU_IMAGE_WIDTH*MENU_IMAGE_HEIGHT*4];
 } images;
-static const char *names[]={"grand-prix","extra-grand-prix","time-attack","custom","load-save","options"};
+static const char *names[]={"grand-prix","extra-grand-prix","time-attack","custom","duel","load-save","options"};
 const uint8_t *MenuImage(int item,int selected){
-    if(item<0||item>=6)return NULL;
+    if(item<0||item>=7)return NULL;
     selected=selected!=0;
     unsigned generation=ModAssetsGeneration();
     if(generation!=images.generation){memset(&images,0,sizeof(images));images.generation=generation;}

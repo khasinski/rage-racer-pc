@@ -27,6 +27,10 @@
 #define Mkdir(path) mkdir(path, 0755)
 #endif
 
+#ifdef __ANDROID__
+#include <SDL3/SDL.h>
+#endif
+
 static int FileExists(const char *path) {
 #ifdef _WIN32
     DWORD attributes;
@@ -254,12 +258,34 @@ int PlatformExistingPortableStateDirectory(
     return 1;
 }
 
-int PlatformUserConfigDirectory(char *out, size_t outSize) {
-    const char *base;
-    int written;
+#ifdef __ANDROID__
+/* SDL returns the app files directory. Strip a trailing slash so later
+ * joins do not depend on which storage call produced the path. */
+static int CopyAndroidStoragePath(const char *source, char *out,
+                                  size_t outSize) {
+    size_t length;
 
+    if (source == NULL || source[0] == '\0' || out == NULL || outSize == 0) {
+        return 0;
+    }
+    length = strlen(source);
+    while (length > 1 && source[length - 1] == '/') length--;
+    if (length + 1 > outSize) return 0;
+    memcpy(out, source, length);
+    out[length] = '\0';
+    return 1;
+}
+#endif
+
+int PlatformUserConfigDirectory(char *out, size_t outSize) {
     if (out == NULL || outSize == 0) return 0;
     out[0] = '\0';
+#ifdef __ANDROID__
+    return CopyAndroidStoragePath(SDL_GetAndroidInternalStoragePath(), out,
+                                  outSize);
+#else
+    const char *base;
+    int written;
 #ifdef _WIN32
     base = getenv("APPDATA");
     if (base == NULL || base[0] == '\0') return 0;
@@ -284,14 +310,13 @@ int PlatformUserConfigDirectory(char *out, size_t outSize) {
         return 0;
     }
     return 1;
+#endif
 }
 
 int PlatformUserStateDirectory(char *out, size_t outSize) {
     if (out == NULL || outSize == 0) return 0;
     out[0] = '\0';
-#ifdef _WIN32
-    return PlatformUserConfigDirectory(out, outSize);
-#elif defined(__APPLE__)
+#if defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__)
     return PlatformUserConfigDirectory(out, outSize);
 #else
     const char *base;

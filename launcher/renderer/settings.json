@@ -135,6 +135,46 @@
     ]
   },
   {
+    "group": "video",
+    "key": "video.ssao",
+    "label": "Ambient occlusion",
+    "help": "Soft contact shading in creases and under cars. Costs some GPU time.",
+    "type": "select",
+    "default": "on",
+    "options": [
+      [
+        "off",
+        "Off"
+      ],
+      [
+        "on",
+        "On"
+      ]
+    ]
+  },
+  {
+    "group": "video",
+    "key": "video.shadows",
+    "label": "Shadows",
+    "help": "Detail of sun shadows on the track and cars. High uses the sharpest shadow maps.",
+    "type": "select",
+    "default": "high",
+    "options": [
+      [
+        "off",
+        "Off"
+      ],
+      [
+        "standard",
+        "Standard"
+      ],
+      [
+        "high",
+        "High"
+      ]
+    ]
+  },
+  {
     "group": "hud",
     "key": "hud.anchor",
     "label": "HUD placement",
@@ -426,31 +466,5 @@
     "help": "PlayStation button binding",
     "type": "key",
     "default": "2"
-  },
-  {
-    "group": "video",
-    "key": "modern.ray_tracing",
-    "label": "Experimental ray tracing",
-    "help": "Optional sun shadows and reflections. May reduce performance or show rendering artifacts; disabled by default.",
-    "type": "select",
-    "default": "off",
-    "options": [
-      [
-        "off",
-        "Off"
-      ],
-      [
-        "shadows",
-        "Shadows"
-      ],
-      [
-        "reflections",
-        "Reflections"
-      ],
-      [
-        "full",
-        "Shadows and reflections"
-      ]
-    ]
   }
 ]

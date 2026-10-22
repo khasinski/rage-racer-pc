@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "port/modern/modern_assets.h"
+#include "render/render_shadow.h"
 #include "port/modern/modern_native_gpu.h"
 #include "port/modern/modern_texture_dump.h"
 #include "port/runtime_config.h"
@@ -297,7 +298,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-render-stage: GPU: %s\n", SDL_GetError());
         return EXIT_FAILURE;
     }
-    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device, 1)) {
+    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device, 1, RAGE_RENDER_SHADOW_TILE_HIGH)) {
         fprintf(stderr, "rage-render-stage: cannot open %s\n", assetsPath);
         goto release_gpu;
     }

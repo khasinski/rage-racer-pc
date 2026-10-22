@@ -136,3 +136,55 @@ void RenderProjectShadowPoint(const RenderShadowMap *shadow,
     if (!RenderShadowVec3IsFinite(*out))
         *out = (Vec3){0.0f, 0.0f, 0.0f};
 }
+
+/* Half-widths of the nested cascades in world units. With 2048 texels per
+ * tile these resolve a half, two, six and sixteen units per texel; 1024
+ * halves each resolution. */
+static const float SHADOW_CASCADE_EXTENT[RAGE_RENDER_SHADOW_CASCADES] = {
+    512.0f, 2048.0f, 6144.0f, 16384.0f};
+
+static void PackCascadeRows(const RenderShadowMap *shadow, unsigned cascade,
+                            float rows[3][4]) {
+    const float tileU = (float)(cascade & 1u);
+    const float tileV = (float)(cascade >> 1);
+    const float quarterX = 0.25f * shadow->scaleX;
+    const float quarterY = 0.25f * shadow->scaleY;
+    const Vec3 *position = &shadow->position;
+    rows[0][0] = shadow->row0.x * quarterX;
+    rows[0][1] = shadow->row0.y * quarterX;
+    rows[0][2] = shadow->row0.z * quarterX;
+    rows[0][3] = (tileU + 0.5f) * 0.5f -
+                 RenderShadowDot(shadow->row0, *position) * quarterX;
+    rows[1][0] = -shadow->row1.x * quarterY;
+    rows[1][1] = -shadow->row1.y * quarterY;
+    rows[1][2] = -shadow->row1.z * quarterY;
+    rows[1][3] = (tileV + 0.5f) * 0.5f +
+                 RenderShadowDot(shadow->row1, *position) * quarterY;
+    rows[2][0] = -shadow->row2.x * shadow->depthScale;
+    rows[2][1] = -shadow->row2.y * shadow->depthScale;
+    rows[2][2] = -shadow->row2.z * shadow->depthScale;
+    rows[2][3] = RenderShadowDot(shadow->row2, *position) *
+                     shadow->depthScale + shadow->depthOffset;
+}
+
+float RenderShadowCasterRadius(void) {
+    return SHADOW_CASCADE_EXTENT[RAGE_RENDER_SHADOW_CASCADES - 1];
+}
+
+int RenderBuildShadowCascades(const Vec3 *center, const Vec3 *lightDirection,
+                              uint32_t tileResolution,
+                              RenderShadowCascades *out) {
+    if (out == NULL) return 0;
+    memset(out, 0, sizeof(*out));
+    for (unsigned cascade = 0; cascade < RAGE_RENDER_SHADOW_CASCADES;
+         ++cascade) {
+        if (!RenderBuildDirectionalShadowMap(
+                center, lightDirection, SHADOW_CASCADE_EXTENT[cascade],
+                tileResolution, &out->map[cascade])) {
+            memset(out, 0, sizeof(*out));
+            return 0;
+        }
+        PackCascadeRows(&out->map[cascade], cascade, out->rows[cascade]);
+    }
+    return 1;
+}

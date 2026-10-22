@@ -38,6 +38,8 @@ typedef struct RagePortConfig {
     int modernTextureFilterLinear; /* 0 nearest, 1 linear */
     RageModernPost modernPost;
     int modernGrading;          /* 0 off, 1 vibrant */
+    int modernSsao;             /* 0 off, 1 ambient occlusion */
+    int modernShadows;          /* 0 off, 1 standard, 2 high shadow-map detail */
 } RagePortConfig;
 
 void PortConfigDefaults(RagePortConfig *config);

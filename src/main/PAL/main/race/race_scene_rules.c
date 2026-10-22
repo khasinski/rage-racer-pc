@@ -49,6 +49,11 @@ s32 CanPauseRace(s16 phase) {
     return phase == RACE_PHASE_COUNTDOWN || phase == RACE_PHASE_ACTIVE;
 }
 
+s32 ShouldPauseForDrivingDeviceLoss(s16 phase, s32 alreadyPaused,
+                                    s32 deviceLost) {
+    return deviceLost && !alreadyPaused && CanPauseRace(phase);
+}
+
 s32 CanToggleRaceCamera(s16 phase) {
     return phase >= RACE_PHASE_ACTIVE && phase < RACE_PHASE_FINISHED;
 }
@@ -59,7 +64,7 @@ s32 RaceLookBehindActive(u16 held, s16 phase, CameraViewMode selectedView) {
 }
 
 s32 LastRacePauseOption(s16 grandPrixMode) {
-    return grandPrixMode != 0 ? 3 : 4;
+    return grandPrixMode != 0 ? 2 : 3;
 }
 
 RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
@@ -70,9 +75,6 @@ RacePauseAction DecideRacePauseAction(s16 phase, s16 grandPrixMode,
         return RACE_PAUSE_TOGGLE_FFB;
     }
     if (cursor == lastOption - 1) {
-        return RACE_PAUSE_TOGGLE_RENDERER;
-    }
-    if (cursor == lastOption - 2) {
         if (grandPrixMode == 0 || phase < RACE_PHASE_ACTIVE) {
             return RACE_PAUSE_QUIT;
         }
@@ -102,8 +104,7 @@ RacePauseToggleResult DecideRacePauseToggle(s16 phase, s32 paused,
     if (!result.paused) {
         result.action =
             DecideRacePauseAction(phase, grandPrixMode, cursor);
-        if (result.action == RACE_PAUSE_TOGGLE_RENDERER ||
-            result.action == RACE_PAUSE_TOGGLE_FFB) {
+        if (result.action == RACE_PAUSE_TOGGLE_FFB) {
             result.paused = 1;
         }
     }

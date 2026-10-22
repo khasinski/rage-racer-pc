@@ -817,15 +817,62 @@ static void test_directional_shadow_map_is_texel_stable(void) {
     EXPECT_EQ(50, (int)(projected.z * 100.0f));
 }
 
-static void test_high_resolution_vehicle_shadow_density(void) {
+static void test_shadow_cascades_nest_and_coarsen_resolution(void) {
     Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
-    Vec3 center = {0.0f, 0.0f, 0.0f};
-    RenderShadowMap shadow;
+    Vec3 center = {1000.0f, 200.0f, -500.0f};
+    RenderShadowCascades cascades;
 
-    EXPECT_EQ(1, RenderBuildDirectionalShadowMap(
-                     &center, &light, RAGE_RENDER_VEHICLE_SHADOW_EXTENT,
-                     RAGE_RENDER_VEHICLE_SHADOW_RESOLUTION, &shadow));
-    EXPECT_EQ(200, (int)(shadow.texelWorldSize * 100.0f));
+    EXPECT_EQ(1, RenderBuildShadowCascades(&center, &light, RAGE_RENDER_SHADOW_TILE_HIGH, &cascades));
+    EXPECT_EQ(50, (int)(cascades.map[0].texelWorldSize * 100.0f));
+    for (unsigned cascade = 1; cascade < RAGE_RENDER_SHADOW_CASCADES;
+         ++cascade)
+        EXPECT_EQ(1, cascades.map[cascade].texelWorldSize >
+                     cascades.map[cascade - 1].texelWorldSize);
+    EXPECT_EQ(1, RenderBuildShadowCascades(&center, &light,
+                                           RAGE_RENDER_SHADOW_TILE_STANDARD,
+                                           &cascades));
+    EXPECT_EQ(100, (int)(cascades.map[0].texelWorldSize * 100.0f));
+}
+
+static void test_shadow_cascade_rows_match_projection_in_atlas_tile(void) {
+    Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    Vec3 center = {1000.0f, 200.0f, -500.0f};
+    Vec3 point = {1010.0f, 205.0f, -480.0f};
+    RenderShadowCascades cascades;
+
+    EXPECT_EQ(1, RenderBuildShadowCascades(&center, &light, RAGE_RENDER_SHADOW_TILE_HIGH, &cascades));
+    for (unsigned cascade = 0; cascade < RAGE_RENDER_SHADOW_CASCADES;
+         ++cascade) {
+        Vec3 projected;
+        float u, v, depth, expectedU, expectedV;
+        const float (*rows)[4] = cascades.rows[cascade];
+
+        RenderProjectShadowPoint(&cascades.map[cascade], &point, &projected);
+        u = rows[0][0] * point.x + rows[0][1] * point.y +
+            rows[0][2] * point.z + rows[0][3];
+        v = rows[1][0] * point.x + rows[1][1] * point.y +
+            rows[1][2] * point.z + rows[1][3];
+        depth = rows[2][0] * point.x + rows[2][1] * point.y +
+                rows[2][2] * point.z + rows[2][3];
+        expectedU = ((float)(cascade & 1u) +
+                     (projected.x * 0.5f + 0.5f)) * 0.5f;
+        expectedV = ((float)(cascade >> 1) +
+                     (0.5f - projected.y * 0.5f)) * 0.5f;
+        EXPECT_EQ(1, fabsf(u - expectedU) < 0.0005f);
+        EXPECT_EQ(1, fabsf(v - expectedV) < 0.0005f);
+        EXPECT_EQ(1, fabsf(depth - projected.z) < 0.0005f);
+    }
+}
+
+static void test_shadow_cascades_reject_unusable_input(void) {
+    Vec3 center = {0.0f, 0.0f, 0.0f};
+    Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    RenderShadowCascades cascades;
+
+    memset(&cascades, 0x7f, sizeof(cascades));
+    center.x = NAN;
+    EXPECT_EQ(0, RenderBuildShadowCascades(&center, &light, RAGE_RENDER_SHADOW_TILE_HIGH, &cascades));
+    EXPECT_EQ(0, (int)cascades.map[0].texelWorldSize);
 }
 
 static void test_shadow_map_rejects_non_finite_geometry(void) {
@@ -950,7 +997,9 @@ int main(void) {
     test_default_shadow_light_exposes_vehicle_footprint();
     test_psx_rotation_uses_the_same_basis_as_imported_positions();
     test_directional_shadow_map_is_texel_stable();
-    test_high_resolution_vehicle_shadow_density();
+    test_shadow_cascades_nest_and_coarsen_resolution();
+    test_shadow_cascade_rows_match_projection_in_atlas_tile();
+    test_shadow_cascades_reject_unusable_input();
     test_shadow_map_rejects_non_finite_geometry();
     if (failures != 0) return EXIT_FAILURE;
     puts("render world tests passed");

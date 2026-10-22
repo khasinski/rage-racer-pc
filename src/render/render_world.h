@@ -168,17 +168,13 @@ enum {
      * This is ordinary material geometry semantics, not a source-format
      * workaround: importers for richer formats can keep authored normals. */
     RAGE_RENDER_INSTANCE_FLAT_SHADED = 1u << 6,
-    /* Occluder needed by ray queries but deliberately absent from raster
-     * visibility. This keeps the ray scene complete without reviving distant
-     * course geometry in the color pass. */
-    RAGE_RENDER_INSTANCE_RAY_ONLY = 1u << 7,
-    /* Keep rapidly rotating detail geometry in reflection queries while the
-     * stable body silhouette casts the vehicle's direct-light shadow. */
-    RAGE_RENDER_INSTANCE_RAY_NO_SHADOW = 1u << 8,
-    /* Published only for its lamps: neither drawn nor part of the ray scene.
+    /* Published only for its lamps: neither drawn nor a shadow caster.
      * The in-car view keeps the player's headlights this way without the
-     * invisible body casting a shadow or showing up in reflections. */
+     * invisible body casting a shadow. */
     RAGE_RENDER_INSTANCE_LAMPS_ONLY = 1u << 9,
+    /* Hidden from the camera by the course's own visibility masks, yet
+     * still in reach of the sun: built only as a shadow caster. */
+    RAGE_RENDER_INSTANCE_SHADOW_ONLY = 1u << 10,
 };
 
 enum { RENDER_SPOT_LIGHT_CAPACITY = 72 }; /* Twelve cars, up to six lamps each. */

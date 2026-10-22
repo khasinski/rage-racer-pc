@@ -72,6 +72,18 @@ if [ "${1:-}" = "composite" ]; then
     exit 0
 fi
 
+if [ "${1:-}" = "overlay" ]; then
+    build_shader overlay.vert overlay_vert vert vs_overlay
+    build_shader overlay.frag overlay_frag frag fs_overlay
+    exit 0
+fi
+
+if [ "${1:-}" = "ssao" ]; then
+    build_shader ssao.frag ssao_frag frag fs_ssao
+    build_shader ssao_blur.frag ssao_blur_frag frag fs_ssao_blur
+    exit 0
+fi
+
 build_shader modern.vert modern_vert vert vs_main
 build_shader modern.frag modern_frag frag fs_main
 build_shader post.vert post_vert vert vs_post
@@ -89,3 +101,7 @@ build_shader fog_probe.frag fog_probe_frag frag fs_fog_probe
 build_shader shadow_uv_probe.frag shadow_uv_probe_frag frag fs_shadow_uv_probe
 build_shader lamp_glow.vert lamp_glow_vert vert vs_lamp_glow
 build_shader lamp_glow.frag lamp_glow_frag frag fs_lamp_glow
+build_shader overlay.vert overlay_vert vert vs_overlay
+build_shader overlay.frag overlay_frag frag fs_overlay
+build_shader ssao.frag ssao_frag frag fs_ssao
+build_shader ssao_blur.frag ssao_blur_frag frag fs_ssao_blur

@@ -30,6 +30,7 @@ static const char *kLabels[MENU_LABEL_COUNT] = {
     "EXTRA GP",
     "TIME ATTACK",
     "CUSTOM",
+    "DUEL",
     "SAVE&LOAD",
     "OPTION",
 };

@@ -6,7 +6,8 @@
 
 #include "render/render_world.h"
 
-int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter);
+int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter,
+                        int shadowTileResolution);
 void ModernNativeGpuShutdown(void);
 /* world->frame is a presentation revision, not necessarily a simulation tick.
  * Callers must advance it when camera/instance/environment contents change.
@@ -31,6 +32,12 @@ int ModernNativeGpuWriteProbe(FILE *file, int x, int y,
 int ModernNativeGpuHasDraws(void);
 int ModernNativeGpuWorldComplete(void);
 int ModernNativeGpuHasMirrorDraws(void);
+
+/* Keep the main view's depth buffer after drawing, for screen-space effects. */
+void ModernNativeGpuKeepDepth(int keep);
+/* Projection terms of the main view; returns 0 when there is no camera. */
+struct ModernSsaoView;
+int ModernNativeGpuMainView(struct ModernSsaoView *view);
 float ModernNativeGpuMirrorPanelY(void);
 void ModernNativeGpuDraw(SDL_GPUCommandBuffer *command,
                          SDL_GPUTexture *colorTarget,

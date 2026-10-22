@@ -1,5 +1,6 @@
 #include "game/asset.h"
 #include "game/audio.h"
+#include "game/car.h"
 #include "game/frontend_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
@@ -19,6 +20,7 @@ void DrawMainMenuRows(void) {
     const Frontend *frontend = MenuFrontend();
     GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
     u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
+    s32 rowStep = g_ExtraGrandPrixUnlocked != 0 ? 0x14 : 0x18;
     s32 row = 0;
     s32 item = 0;
 
@@ -42,7 +44,7 @@ void DrawMainMenuRows(void) {
         if (height < 0) height = 0;
 
         packet = DrawTitleMenuLabel(
-            ot, packet, (TitleMenuItem)item, 0x68, 0x64 + row * 0x18,
+            ot, packet, (TitleMenuItem)item, 0x68, 0x64 + row * rowStep,
             height, clut == 0x7E86);
         item++;
         row++;
@@ -103,6 +105,7 @@ void UpdateMainMenuInput(void) {
         if (!AssetLoadCompletedSuccessfully()) ResetAssetLoader();
         ShuffleBgmOrder();
         g_RaceSession.kind = RACE_SESSION_STANDARD;
+        g_DuelEnabled = g_DuelConfigEnabled;
         switch (frontend->selection) {
         case TITLE_MENU_GRAND_PRIX:
             SelectGrandPrixSave(g_GrandPrixCars, &g_GrandPrixSave,
@@ -113,12 +116,14 @@ void UpdateMainMenuInput(void) {
                                 &g_ExtraGrandPrixCourseProgress, 1);
             break;
         case TITLE_MENU_TIME_ATTACK:
+            g_DuelEnabled = 0;
             g_CarTable = g_TimeAttackCars;
             g_RaceProgress = &g_TimeAttackSave;
             g_SeriesSelection = 0;
             RequestSelectBgmAssetsKeepAudioSlots();
             break;
         case TITLE_MENU_CUSTOM:
+        case TITLE_MENU_DUEL:
             g_RaceSession.kind = RACE_SESSION_CUSTOM;
             g_RaceSession.course = 0;
             g_RaceSession.classIndex = 0;
@@ -132,6 +137,9 @@ void UpdateMainMenuInput(void) {
             g_RaceProgress = &g_TimeAttackSave;
             g_CourseProgress = NULL;
             g_SeriesSelection = 0;
+            if (frontend->selection == TITLE_MENU_DUEL) {
+                g_DuelEnabled = 1;
+            }
             RequestSelectBgmAssetsKeepAudioSlots();
             break;
         case TITLE_MENU_LOAD_SAVE:

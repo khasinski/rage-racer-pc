@@ -1,6 +1,7 @@
 #include "modern_renderer.h"
 #include "modern_assets.h"
 #include "modern_native_gpu.h"
+#include "modern_ssao.h"
 #include "modern_sky_geometry.h"
 #include "modern_sky_reprojection.h"
 #include "modern_overlay_state.h"
@@ -8,6 +9,7 @@
 #include "modern_presentation_clock.h"
 #include "modern_fmv_zoom.h"
 #include "../classic_motion.h"
+#include "../graphics_overlay.h"
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
 
@@ -319,6 +321,14 @@ static SDL_GPUGraphicsPipeline *ModernCreateOverlayPipeline(
     return SDL_CreateGPUGraphicsPipeline(s_device, &info);
 }
 
+static int ModernShadowTileResolution(void) {
+    switch (s_config.modernShadows) {
+    case 0: return 0;
+    case 1: return 1024;
+    default: return 2048;
+    }
+}
+
 static void ModernDestroyResources(void) {
     int hadResources = s_resourcesReady;
     if (s_device != NULL) {
@@ -342,6 +352,7 @@ static void ModernDestroyResources(void) {
         RAGE_RELEASE(Texture, s_finalTarget);
         RAGE_RELEASE(Texture, s_ownedSampledVram);
         RAGE_RELEASE(GraphicsPipeline, s_pipeComposite);
+        ModernSsaoDestroy();
 #undef RAGE_RELEASE
     }
     ModernDisableFrameHistory();
@@ -392,7 +403,8 @@ static int ModernEnsureResources(void) {
         info.num_levels = 1;
         s_target = SDL_CreateGPUTexture(s_device, &info);
         info.format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
-        info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET;
+        info.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET |
+                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
         s_depth = SDL_CreateGPUTexture(s_device, &info);
         info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
         info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
@@ -442,7 +454,8 @@ static int ModernEnsureResources(void) {
         return 0;
     }
     if (s_enabled &&
-        !ModernNativeGpuInit(s_device, s_config.modernTextureFilterLinear)) {
+        !ModernNativeGpuInit(s_device, s_config.modernTextureFilterLinear,
+                          ModernShadowTileResolution())) {
         ModernDestroyResources();
         return 0;
     }
@@ -499,6 +512,20 @@ static int ModernEnsureResources(void) {
             s_config.modernPost = RAGE_MODERN_POST_NONE;
         }
     }
+    if (s_config.modernSsao) {
+        SDL_GPUShader *fullscreen = ModernCreateShader(
+            post_vert_spv, post_vert_spv_len, (const char *)post_vert_msl,
+            post_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX, "vs_post", 0);
+        int created = fullscreen != NULL &&
+            ModernSsaoCreate(s_device, fullscreen, s_targetW, s_targetH);
+
+        if (fullscreen != NULL) SDL_ReleaseGPUShader(s_device, fullscreen);
+        if (!created) {
+            fprintf(stderr, "rage-port: ambient occlusion unavailable, disabling\n");
+            s_config.modernSsao = 0;
+        }
+    }
+    ModernNativeGpuKeepDepth(s_config.modernSsao);
     if (s_config.modernGrading) {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -1314,6 +1341,12 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         ModernRenderOverlaySelection(cmd, vram, 0,
                                      1u << MODERN_LAYER_SKY, 1);
         ModernNativeGpuDraw(cmd, s_target, s_depth, 0, 0, s_targetH);
+        if (s_config.modernSsao && ModernSsaoReady()) {
+            ModernSsaoView view;
+
+            if (ModernNativeGpuMainView(&view))
+                ModernSsaoApply(cmd, s_target, s_depth, &view);
+        }
         if (!ModernNativeGpuWorldComplete() &&
             reportedIncompleteFrame != snapshot->frameCounter) {
             reportedIncompleteFrame = snapshot->frameCounter;
@@ -1544,6 +1577,7 @@ static void ModernMarkerCheck(const RageSceneSnapshot *snapshot,
 /* ---- hooks ---- */
 
 static void ModernReleaseDevice(void) {
+    PortGraphicsOverlayReleaseGpu();
     if (s_device != NULL) SDL_WaitForGPUIdle(s_device);
     ModernDestroyResources();
     s_device = NULL;
@@ -1893,6 +1927,37 @@ int ModernRestartPresentation(const RagePortConfig *config) {
     return ModernInit(&next);
 }
 
+static int ModernPresentationSettingsDiffer(const RagePortConfig *a,
+                                            const RagePortConfig *b) {
+    return a->modernInternalScale != b->modernInternalScale ||
+           a->modernAspect != b->modernAspect ||
+           a->modernFps != b->modernFps ||
+           a->modernDrawDistance != b->modernDrawDistance ||
+           a->modernTextureFilterLinear != b->modernTextureFilterLinear ||
+           a->modernPost != b->modernPost ||
+           a->modernGrading != b->modernGrading ||
+           a->modernSsao != b->modernSsao ||
+           a->modernShadows != b->modernShadows;
+}
+
+int ModernApplyConfig(const RagePortConfig *requested) {
+    RagePortConfig next;
+    int wantModern;
+
+    if (requested == NULL || !s_initialized) return 0;
+    next = *requested;
+    wantModern = next.renderer == RAGE_RENDERER_MODERN;
+    /* The renderer choice is a switch, not a restart: keep the running one
+     * through any rebuild and flip it afterwards. */
+    next.renderer = s_enabled ? RAGE_RENDERER_MODERN : RAGE_RENDERER_CLASSIC;
+    if (ModernPresentationSettingsDiffer(&next, &s_config)) {
+        if (!ModernRestartPresentation(&next)) return 0;
+        PortConfigSetActive(&s_config);
+    }
+    if (wantModern != s_enabled) ModernToggle();
+    return 1;
+}
+
 void ModernShutdown(void) {
     if (!s_shutdownNeeded) return;
     s_shutdownNeeded = 0;
@@ -1920,7 +1985,8 @@ void ModernToggle(void) {
         return;
     }
     if (!s_enabled && s_resourcesReady && !s_nativeGpuReady &&
-        !ModernNativeGpuInit(s_device, s_config.modernTextureFilterLinear)) {
+        !ModernNativeGpuInit(s_device, s_config.modernTextureFilterLinear,
+                          ModernShadowTileResolution())) {
         fprintf(stderr,
                 "rage-port: renderer switch to modern refused: native GPU "
                 "setup failed\n");

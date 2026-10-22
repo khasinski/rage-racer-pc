@@ -19,11 +19,14 @@ void PortBeforeSceneHandler(void);
 void PortAfterSceneHandler(void);
 void PortAfterFrameTransfers(void);
 void PortDuringFrameWait(int frameLimit);
+/* Holds the game while the host has paused it (the graphics panel). Returns
+ * once the game may run again; presentation continues meanwhile. */
+void PortHoldWhilePaused(void);
 void PortProfileFramePhase(const char *phase);
 int PortMirrorFarDepth(int retailFar);
 void PortSampleAnalogPad(void);
-int PortModernRendererEnabled(void);
-void PortToggleRenderer(void);
+/* One-shot. The driving pad or wheel disappeared during a race. */
+int PortTakeDrivingControlLoss(void);
 void PortUpdateForceFeedback(void);
 void PortToggleForceFeedback(void);
 int PortAdjustForceFeedbackGain(int direction);

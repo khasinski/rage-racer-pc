@@ -5,7 +5,11 @@
 #include "mod_assets.h"
 #include "timing_control.h"
 #include "game/asset.h"
+#include "game/audio.h"
 #include "game/race.h"
+#include "game/state.h"
+#include "graphics_overlay.h"
+#include <libetc.h>
 #include <libgte.h>
 
 extern int32_t g_FrameCounter;
@@ -92,14 +96,6 @@ void PortDuringFrameWait(int frameLimit) {
     ModernFrameWaitTick(frameLimit);
 }
 
-int PortModernRendererEnabled(void) {
-    return ModernIsEnabled();
-}
-
-void PortToggleRenderer(void) {
-    ModernToggle();
-}
-
 void PortAfterFrameTransfers(void) {
     ModernFrameTexturesReady();
 }
@@ -108,4 +104,30 @@ long SpuTransferStatus(void *address, long mode) {
     (void)address;
     (void)mode;
     return 0;
+}
+
+void PortHoldWhilePaused(void) {
+    int muted = 0;
+
+    if (!PortGraphicsOverlayActive()) return;
+    /* Music is left running; the engine and effect voices would otherwise
+     * drone on over a frozen race. A race pause has already silenced them. */
+    if (g_RacePaused == 0) {
+        ForceAllEffectVoicesEnabled(0);
+        muted = 1;
+    }
+    while (PortGraphicsOverlayActive()) {
+        PortGraphicsOverlayTick();
+        VSync(0);
+    }
+    PortGraphicsOverlayTick();
+    if (muted) ForceAllEffectVoicesEnabled(1);
+    if (PortGraphicsOverlayTakeClosed()) {
+        /* Keys used inside the panel are latched for the pad. Read them out
+         * now so the game sees neither a stray press nor a stale one. */
+        UpdatePadState();
+        UpdatePadState();
+    }
+    /* VSync counts the time spent here as one very long frame. */
+    VSync(0);
 }

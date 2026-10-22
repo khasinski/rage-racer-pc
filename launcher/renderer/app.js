@@ -177,8 +177,9 @@ function renderSettingsView() {
             ${renderRowSetting('video.post', 'Anti-Aliasing')}
             ${renderRowSetting('video.texture_filter', 'Texture Filtering')}
             ${renderRowSetting('video.grading', 'Color Grading')}
+            ${renderRowSetting('video.ssao', 'Ambient Occlusion')}
+            ${renderRowSetting('video.shadows', 'Shadows')}
             ${renderRowSetting('modern.authored_cars', '3D Car Models')}
-            ${renderRowSetting('modern.ray_tracing', 'Ray Tracing (experimental)')}
           </section>
 
           <section style="padding:18px 20px;background:var(--studio-panel);border:1px solid var(--studio-border);border-radius:10px">

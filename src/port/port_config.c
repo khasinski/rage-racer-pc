@@ -29,6 +29,8 @@ void PortConfigDefaults(RagePortConfig *config) {
     config->modernTextureFilterLinear = 1;
     config->modernPost = RAGE_MODERN_POST_FXAA;
     config->modernGrading = 1;
+    config->modernSsao = 1;
+    config->modernShadows = 2;
 }
 
 static int ParseFloat(const char *value, float *out, float min, float max) {
@@ -117,6 +119,32 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         }
         return 0;
     }
+    if (strcmp(name, "modern.shadows") == 0) {
+        if (strcmp(value, "off") == 0) {
+            config->modernShadows = 0;
+            return 1;
+        }
+        if (strcmp(value, "standard") == 0) {
+            config->modernShadows = 1;
+            return 1;
+        }
+        if (strcmp(value, "high") == 0) {
+            config->modernShadows = 2;
+            return 1;
+        }
+        return 0;
+    }
+    if (strcmp(name, "modern.ssao") == 0) {
+        if (strcmp(value, "off") == 0) {
+            config->modernSsao = 0;
+            return 1;
+        }
+        if (strcmp(value, "on") == 0) {
+            config->modernSsao = 1;
+            return 1;
+        }
+        return 0;
+    }
     if (strcmp(name, "modern.texture_filter") == 0) {
         if (strcmp(value, "nearest") == 0) {
             config->modernTextureFilterLinear = 0;
@@ -141,7 +169,9 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
         {"video.texture_filter", "modern.texture_filter"},
         {"video.post", "modern.post"},
         {"video.bloom", "modern.bloom"},
-        {"video.grading", "modern.grading"}
+        {"video.grading", "modern.grading"},
+        {"video.ssao", "modern.ssao"},
+        {"video.shadows", "modern.shadows"}
     };
     int index, applied = 0;
 

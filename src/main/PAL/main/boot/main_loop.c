@@ -89,6 +89,7 @@ void MainLoop(void) {
     InitializeGameLoop();
 
     for (;;) {
+        PortHoldWhilePaused();
         PortProfileFramePhase("service");
         GameFrameContext *frame = BeginGameFrame();
         s32 elapsed;

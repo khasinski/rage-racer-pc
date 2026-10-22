@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "port/modern/scene_capture.h"
+#include "render/render_shadow.h"
 #include "port/modern/modern_assets.h"
 #include "port/modern/modern_native_gpu.h"
 #include "port/modern/modern_texture_dump.h"
@@ -254,7 +255,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "rage-frame-replay: GPU: %s\n", SDL_GetError());
         goto release_snapshot;
     }
-    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device, 1))
+    if (!ModernAssetsInitRoot(assetsPath) || !ModernNativeGpuInit(device, 1, RAGE_RENDER_SHADOW_TILE_HIGH))
         goto release_gpu;
     {
         SDL_GPUTextureCreateInfo info = {0};

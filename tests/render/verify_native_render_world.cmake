@@ -124,7 +124,7 @@ foreach(suffix .ppm .ppm.draws.txt)
         message(FATAL_ERROR "Draw batching changed ${suffix}: ${root}")
     endif()
 endforeach()
-run(attract --set video.renderer=modern --set modern.ray_tracing=off --set race.enabled=false --set boot.direct=false
+run(attract --set video.renderer=modern --set race.enabled=false --set boot.direct=false
     --set run.frames=2500 --set stop.scene=30 --set stop.timer=200)
 require("scene=30 timer=200")
 require("native shadow map frame=[0-9]+ draws=[1-9][0-9]* masked=[1-9][0-9]*")

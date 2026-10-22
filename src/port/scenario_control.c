@@ -400,7 +400,7 @@ static void ScenarioSelectDirectSeries(void) {
         : selection->series);
     g_GrandPrixClass = selection->classIndex;
     g_CourseIndex = selection->course >= 8
-        ? 8 + (selection->course - 8) * 2 + selection->series
+        ? selection->course
         : selection->course + selection->series * 4;
 
     if (!selection->mode) {
@@ -563,7 +563,7 @@ static void ScenarioApplyLaunchSelection(void) {
     /* Menu course indices retain the series in bit 2 until car select starts
      * the round; car_select.c then converts it to the physical course index. */
     g_CourseIndex = selection->course >= 8
-        ? selection->course
+        ? selection->course + selection->series * EXTRA_COURSE_SLOT_COUNT
         : selection->course + selection->series * 4;
     if (g_CarTable != NULL && selection->transmission >= 0)
         g_CarTable[selection->car].transmission =

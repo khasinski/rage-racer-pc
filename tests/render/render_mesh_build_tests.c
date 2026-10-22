@@ -128,13 +128,6 @@ static void test_native_draw_builder_uses_render_world_and_imported_mesh(void) {
     EXPECT_EQ(0, (int)(vertices[0].fog[3] * 100.0f));
     EXPECT_EQ(0, (int)(vertices[0].lighting * 100.0f));
 
-    storage[0].flags |= RAGE_RENDER_INSTANCE_RAY_ONLY;
-    EXPECT_EQ(0, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
-                                        &mesh, vertices, 3, spans, 1,
-                                        &spanCount));
-    EXPECT_EQ(0, spanCount);
-    storage[0].flags &= ~RAGE_RENDER_INSTANCE_RAY_ONLY;
-
     /* Quaternion normalization must not overflow for a perfectly valid
      * orientation whose components happen to use a large common scale. */
     storage[0].transform.rotation.y = 0.0f;
@@ -902,6 +895,74 @@ static void test_native_draw_builder_culls_fully_offscreen_instance(void) {
     EXPECT_EQ(0, spanCount);
 }
 
+static void test_shadow_casters_include_only_unseen_instances_in_reach(void) {
+    unsigned char bytes[164] = {0};
+    RageRuntimeMesh mesh;
+    RenderMeshInstance storage[2] = {{0}, {0}};
+    RenderWorld world;
+    RageNativeGpuVertex vertices[6];
+    RageNativeDrawSpan spans[2];
+    /* One triangle in front of the camera and the same one behind it. */
+    float positions[3][3] = {{-1.0f, 0.0f, 10.0f}, {1.0f, 0.0f, 10.0f},
+                             {0.0f, 1.0f, 10.0f}};
+    RenderShadowCasterVolume reach = {{0.0f, 0.0f, 0.0f}, 500.0f};
+    uint32_t spanCount;
+    unsigned i;
+    memcpy(bytes, "RRMESH1", 7);
+    write_u32(bytes + 8, 1); write_u32(bytes + 12, 1);
+    write_u32(bytes + 16, 3); write_u32(bytes + 20, 3);
+    write_u32(bytes + 24, 0); write_u32(bytes + 28, 3);
+    for (i = 0; i < 3; i++) {
+        memcpy(bytes + 32 + i * 40, positions[i], sizeof(positions[i]));
+        bytes[32 + i * 40 + 27] = 255; write_u32(bytes + 152 + i * 4, i);
+    }
+    EXPECT_EQ(1, RuntimeMeshOpen(&mesh, bytes, sizeof(bytes)));
+    RenderWorldInit(&world, storage, 2);
+    world.camera.verticalFovDegrees = 90.0f;
+    world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    for (i = 0; i < 2; i++) {
+        storage[i].flags = RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL;
+        storage[i].transform.scale.x = storage[i].transform.scale.y =
+            storage[i].transform.scale.z = 1.0f;
+    }
+    /* The second instance sits in view, 20 units in front of the camera. */
+    storage[1].transform.position.z = -30.0f;
+    world.instanceCount = 2;
+    EXPECT_EQ(3, RenderBuildNativeLocalCompactPassDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, test_mesh_lookup,
+        &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(1, spanCount);
+    /* The one the camera cannot see still shadows; the visible one is not
+     * drawn a second time. */
+    EXPECT_EQ(3, RenderBuildNativeLocalCompactShadowCasterDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, &reach,
+        test_mesh_lookup, &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(1, spanCount);
+    /* Out of reach of the volume it casts nothing. */
+    reach.radius = 5.0f;
+    EXPECT_EQ(0, RenderBuildNativeLocalCompactShadowCasterDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, &reach,
+        test_mesh_lookup, &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(0, spanCount);
+    /* An instance the course hid is never drawn, wherever it lies, but it
+     * still casts when it reaches the volume. */
+    storage[1].flags |= RAGE_RENDER_INSTANCE_SHADOW_ONLY;
+    reach.radius = 500.0f;
+    EXPECT_EQ(0, RenderBuildNativeLocalCompactPassDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, test_mesh_lookup,
+        &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(0, spanCount);
+    EXPECT_EQ(6, RenderBuildNativeLocalCompactShadowCasterDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, &reach,
+        test_mesh_lookup, &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(2, spanCount);
+    /* Later ordinary builds are unaffected by a caster build. */
+    storage[1].flags &= ~RAGE_RENDER_INSTANCE_SHADOW_ONLY;
+    EXPECT_EQ(3, RenderBuildNativeLocalCompactPassDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, test_mesh_lookup,
+        &mesh, vertices, 6, spans, 2, &spanCount));
+}
+
 static void test_native_draw_builder_keeps_large_instance_crossing_frustum(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
@@ -1662,6 +1723,7 @@ int main(void) {
     test_native_draw_builder_keeps_terrain_detail_at_long_range();
     test_native_draw_builder_culls_fully_offscreen_instance();
     test_native_draw_builder_keeps_large_instance_crossing_frustum();
+    test_shadow_casters_include_only_unseen_instances_in_reach();
     test_native_draw_builder_keeps_instance_in_frustum_guard_band();
     if (failures != 0) return EXIT_FAILURE;
     puts("render mesh build tests passed");

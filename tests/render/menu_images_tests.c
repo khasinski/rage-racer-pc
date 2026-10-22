@@ -27,7 +27,7 @@ static void WriteImage(const char *path,int width){
 int main(int argc,char **argv){
     assert(argc==2);root=argv[1];assert(SDL_CreateDirectory(root));char path[1024];
     snprintf(path,sizeof(path),"%s/custom.png",root);WriteImage(path,112);
-    assert(MenuImage(-1,0)==NULL);assert(MenuImage(6,0)==NULL);assert(MenuImage(3,0)==NULL);
+    assert(MenuImage(-1,0)==NULL);assert(MenuImage(7,0)==NULL);assert(MenuImage(3,0)==NULL);
     const char text[]="[textures]\n\"ui.title.custom\" = \"custom.png\"\n";
     assert(ModManifestParse(text,strlen(text),&manifest));generation++;
     const uint8_t *p=MenuImage(3,0);assert(p&&p[0]==17&&p[1]==34&&p[2]==51&&p[3]==0);
