@@ -65,6 +65,42 @@ int ChaseCameraPitchOffset(void) {
         s_pitchDegrees * (float)RAGE_ANGLE_UNITS_PER_TURN / 360.0f);
 }
 
+float ChaseCameraDistanceScale(void) {
+    ChaseCameraInit();
+    return s_distanceScale;
+}
+
+float ChaseCameraHeightScale(void) {
+    ChaseCameraInit();
+    return s_heightScale;
+}
+
+float ChaseCameraLookahead(void) {
+    ChaseCameraInit();
+    return s_lookahead;
+}
+
+static float ClampScale(float scale, float minimum, float maximum) {
+    if (scale < minimum) return minimum;
+    if (scale > maximum) return maximum;
+    return scale;
+}
+
+void ChaseCameraSetDistanceScale(float scale) {
+    ChaseCameraInit();
+    s_distanceScale = ClampScale(scale, 0.25f, 4.0f);
+}
+
+void ChaseCameraSetHeightScale(float scale) {
+    ChaseCameraInit();
+    s_heightScale = ClampScale(scale, 0.25f, 4.0f);
+}
+
+void ChaseCameraSetLookahead(float lookahead) {
+    ChaseCameraInit();
+    s_lookahead = ClampScale(lookahead, 0.0f, 1.0f);
+}
+
 int ChaseCameraYawOffset(int steeringAngle) {
     int offset;
 

@@ -188,3 +188,17 @@ int RenderBuildShadowCascades(const Vec3 *center, const Vec3 *lightDirection,
     }
     return 1;
 }
+
+int RenderShadowMapSeesSphere(const RenderShadowMap *shadow, const Vec3 *center,
+                              float radius) {
+    enum { FILTER_MARGIN_TEXELS = 4 };
+    Vec3 projected;
+    float reach;
+
+    if (shadow == NULL || center == NULL || !RenderShadowMapIsFinite(shadow) ||
+        !isfinite(radius) || radius < 0.0f) return 1;
+    RenderProjectShadowPoint(shadow, center, &projected);
+    reach = radius + (float)FILTER_MARGIN_TEXELS * shadow->texelWorldSize;
+    return fabsf(projected.x) <= 1.0f + reach * shadow->scaleX &&
+           fabsf(projected.y) <= 1.0f + reach * shadow->scaleY;
+}

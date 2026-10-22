@@ -62,7 +62,7 @@ void main() {
     /* Authored vertex colours keep some baked brightness even on lit terrain,
      * so a shadow that only removes the sun term looks washed out. Darken the
      * blended result as well. */
-    light *= mix(1.0, mix(0.60, 1.0, visibility), materialLighting);
+    light *= mix(1.0, mix(0.66, 1.0, visibility), materialLighting);
     // Preserve texture contrast, but keep indirect light readable in tunnels.
     light = max(light, vec3(0.18));
     light = mix(light, vec3(1.0), fog.a);

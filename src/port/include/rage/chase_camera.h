@@ -7,5 +7,11 @@ int ChaseCameraYawOffset(int steeringAngle);
 int ChaseCameraHeight(int authoredHeight);
 int ChaseCameraDistance(int authoredDistance);
 int ChaseCameraPitchOffset(void);
+float ChaseCameraDistanceScale(void);
+float ChaseCameraHeightScale(void);
+float ChaseCameraLookahead(void);
+void ChaseCameraSetDistanceScale(float scale);
+void ChaseCameraSetHeightScale(float scale);
+void ChaseCameraSetLookahead(float lookahead);
 
 #endif

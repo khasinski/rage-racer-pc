@@ -29,6 +29,9 @@ Casters are the spans drawn in the main view plus shadow-only spans: scenery
 and terrain outside the camera frustum (behind it, beside it or past the far
 plane) whose bounds reach the outer cascade. They are drawn into the shadow
 map alone, so a shadow does not pop in when its caster enters the frame.
+Terrain and shadow-only instances are built whole (no camera-dependent
+back-face or hidden-quad culling), and each span carries a bounding sphere so
+a cascade draws only the spans that reach it.
 
 ## Ray tracing
 
@@ -42,10 +45,15 @@ scene contract.
 
 ## In-game options
 
-`Esc` opens the graphics panel (`graphics_overlay.c`), which pauses the game
-and lists the renderer, resolution, aspect ratio, frame rate, texture
-filtering, anti-aliasing, colour grading, shadows, ambient occlusion and draw
-distance. Changes apply at once: anything but the renderer choice rebuilds the
+`Esc` pauses the game and opens settings (`graphics_overlay.c`). Graphics
+lists the renderer, resolution, aspect ratio, frame rate, texture filtering,
+anti-aliasing, colour grading, shadows, ambient occlusion and draw distance.
+Controls covers analog steering, the wheel, steering feel and force feedback.
+Audio covers music and effects. View covers the HUD and the chase camera.
+Graphics changes apply at once: anything but the renderer choice rebuilds the
 presentation targets through `ModernApplyConfig` while the game is held, and
-the renderer choice is a switch. They last until the game closes; `[video]` in
-`rage-port.ini` sets the values used at start-up.
+the renderer choice is a switch. Graphics, steering, the HUD and the chase
+camera last until the game closes. Music and effects are the save-game
+volumes, and force feedback is the choice the pause menu remembers. `[video]`
+in `rage-port.ini` sets the values used at start-up. Keyboard bindings stay
+there.

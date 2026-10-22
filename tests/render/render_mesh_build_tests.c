@@ -956,6 +956,26 @@ static void test_shadow_casters_include_only_unseen_instances_in_reach(void) {
         NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, &reach,
         test_mesh_lookup, &mesh, vertices, 6, spans, 2, &spanCount));
     EXPECT_EQ(2, spanCount);
+    /* An instance the view draws with facing culling is not built again for
+     * the faces it kept: the caster build adds only the ones it culled. */
+    storage[1].flags &= ~RAGE_RENDER_INSTANCE_SHADOW_ONLY;
+    storage[1].flags |= RAGE_RENDER_INSTANCE_CULL_BACKFACES;
+    EXPECT_EQ(3, RenderBuildNativeLocalCompactShadowCasterDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, &reach,
+        test_mesh_lookup, &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(1, spanCount);
+    /* Mirrored, the same face turns from the camera: the view drops it and
+     * the caster build picks it up. */
+    storage[1].transform.scale.x = -1.0f;
+    EXPECT_EQ(0, RenderBuildNativeLocalCompactPassDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, test_mesh_lookup,
+        &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(6, RenderBuildNativeLocalCompactShadowCasterDraws(
+        NULL, &world, RAGE_RENDER_PASS_MAIN, 1.0f, 0, 1, &reach,
+        test_mesh_lookup, &mesh, vertices, 6, spans, 2, &spanCount));
+    EXPECT_EQ(2, spanCount);
+    storage[1].transform.scale.x = 1.0f;
+    storage[1].flags &= ~RAGE_RENDER_INSTANCE_CULL_BACKFACES;
     /* Later ordinary builds are unaffected by a caster build. */
     storage[1].flags &= ~RAGE_RENDER_INSTANCE_SHADOW_ONLY;
     EXPECT_EQ(3, RenderBuildNativeLocalCompactPassDraws(

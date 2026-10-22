@@ -20,6 +20,7 @@
 #include "runtime_config.h"
 #include "scenario_control.h"
 #include "modern/modern_renderer.h"
+#include "port_config.h"
 
 typedef struct RageSmokeInput {
     int firstFrame;
@@ -539,6 +540,32 @@ static void SmokeInitialize(void) {
     free(copy);
 }
 
+/* Rebuilds the presentation the way the settings panel does, alternating two
+ * render scales, so a test can watch what a restart leaves behind. */
+static void SmokeCycleRenderScale(void) {
+    RagePortConfig config = *PortActiveConfig();
+
+    config.modernInternalScale = config.modernInternalScale > 3.0f ? 3.0f : 4.0f;
+    fprintf(stderr, "smoke apply config scale=%.0f\n", config.modernInternalScale);
+    ModernApplyConfig(&config);
+}
+
+/* Switches every screen effect the way the settings panel does: all off, then
+ * all on, so a test can check they change without the device being rebuilt. */
+static void SmokeToggleEffects(void) {
+    static int on = 1;
+    RagePortConfig config = *PortActiveConfig();
+
+    on = !on;
+    config.modernPost = on ? RAGE_MODERN_POST_FXAA : RAGE_MODERN_POST_NONE;
+    config.modernSsao = on;
+    config.modernGrading = on;
+    ModernApplyConfig(&config);
+    fprintf(stderr, "smoke effects requested=%d post=%d ssao=%d grading=%d\n", on,
+            PortActiveConfig()->modernPost, PortActiveConfig()->modernSsao,
+            PortActiveConfig()->modernGrading);
+}
+
 int PortShouldExit(int frame_number) {
     static int lastScene = -1;
     static int lastFrontend = -1;
@@ -564,6 +591,14 @@ int PortShouldExit(int frame_number) {
         toggleRendererFrame = RuntimeConfigGet("hooks.toggle_renderer_frame");
     if (SmokeFrameListContains(toggleRendererFrame, frame_number)) {
         ModernToggle();
+    }
+    if (SmokeFrameListContains(RuntimeConfigGet("hooks.apply_config_frames"),
+                               frame_number)) {
+        SmokeCycleRenderScale();
+    }
+    if (SmokeFrameListContains(RuntimeConfigGet("hooks.toggle_effects_frames"),
+                               frame_number)) {
+        SmokeToggleEffects();
     }
     restartRaceFrames = RuntimeConfigGet("hooks.restart_race_frames");
     /* A raw script drives the pad by writing its buffer and letting the game

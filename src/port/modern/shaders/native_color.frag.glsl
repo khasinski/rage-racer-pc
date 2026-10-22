@@ -31,7 +31,7 @@ void main() {
             sceneLight.diffuse.rgb * diffuse * shadow),
         lighting);
     /* See native_texture.frag.glsl: baked vertex colours need the extra term. */
-    light *= mix(1.0, mix(0.60, 1.0, visibility), lighting);
+    light *= mix(1.0, mix(0.66, 1.0, visibility), lighting);
     // Preserve texture contrast, but keep indirect light readable in tunnels.
     light = max(light, vec3(0.18));
     light = mix(light, vec3(1.0), fog.a);

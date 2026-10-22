@@ -39,6 +39,11 @@ if(TARGET rage-racer-smoke)
         -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_renderer_toggle_cycles.cmake)
     set_tests_properties(renderer_toggle_cycles PROPERTIES LABELS e2e TIMEOUT 195)
+    add_test(NAME live_effects COMMAND ${CMAKE_COMMAND}
+        -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_live_effects.cmake)
+    set_tests_properties(live_effects PROPERTIES LABELS e2e TIMEOUT 195)
     add_test(NAME native_render_world COMMAND ${CMAKE_COMMAND}
         -DFIXTURE=$<TARGET_FILE:native_asset_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
         -DSOURCE=${PROJECT_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
@@ -2017,10 +2022,31 @@ target_compile_options(menu_label_font_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIO
 add_test(NAME menu_label_font COMMAND menu_label_font_tests)
 set_tests_properties(menu_label_font PROPERTIES LABELS unit TIMEOUT 30)
 
-add_executable(graphics_overlay_gpu_tests graphics_overlay_gpu_tests.c stb_truetype_implementation.c)
+add_executable(graphics_overlay_gpu_tests graphics_overlay_gpu_tests.c
+    "${PROJECT_SOURCE_DIR}/src/port/overlay_model.c"
+    "${PROJECT_SOURCE_DIR}/src/port/overlay_raster.c"
+    stb_truetype_implementation.c)
 target_include_directories(graphics_overlay_gpu_tests PRIVATE
     "${PROJECT_SOURCE_DIR}/src/port"
     "${PROJECT_SOURCE_DIR}/external/psyz/psyz/include")
 target_link_libraries(graphics_overlay_gpu_tests PRIVATE SDL3::SDL3)
 add_test(NAME graphics_overlay_gpu COMMAND graphics_overlay_gpu_tests)
 set_tests_properties(graphics_overlay_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
+
+add_executable(overlay_model_tests overlay_model_tests.c
+    "${PROJECT_SOURCE_DIR}/src/port/overlay_model.c")
+target_include_directories(overlay_model_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/port"
+    "${PROJECT_SOURCE_DIR}/src/port/include"
+    "${PROJECT_SOURCE_DIR}/external/psyz/psyz/include")
+add_test(NAME overlay_model COMMAND overlay_model_tests)
+set_tests_properties(overlay_model PROPERTIES LABELS unit TIMEOUT 30)
+
+add_executable(ssao_gpu_tests ssao_gpu_tests.c
+    "${PROJECT_SOURCE_DIR}/src/port/modern/modern_ssao.c")
+target_include_directories(ssao_gpu_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/port/modern"
+    "${PROJECT_SOURCE_DIR}/src/port/modern/shaders")
+target_link_libraries(ssao_gpu_tests PRIVATE SDL3::SDL3)
+add_test(NAME ssao_gpu COMMAND ssao_gpu_tests)
+set_tests_properties(ssao_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)

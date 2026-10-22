@@ -54,6 +54,13 @@ int RenderBuildShadowCascades(const Vec3 *center, const Vec3 *lightDirection,
  * outer cascade; objects farther out are clipped by every cascade anyway. */
 float RenderShadowCasterRadius(void);
 
+/* Whether a sphere can put depth into the map. Only the lateral extent is
+ * tested: geometry nearer the light than the map is clamped onto its near
+ * plane and still casts. A few texels of margin keep the filter's edge taps
+ * sampling what a neighbouring caster drew. */
+int RenderShadowMapSeesSphere(const RenderShadowMap *shadow, const Vec3 *center,
+                              float radius);
+
 void RenderProjectShadowPoint(const RenderShadowMap *shadow,
                                   const Vec3 *point,
                                   Vec3 *out);

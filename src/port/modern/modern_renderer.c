@@ -371,6 +371,99 @@ static void ModernDestroyResources(void) {
     }
 }
 
+/* The screen effects are created and released one by one, so the settings
+ * panel can switch them without rebuilding the device. Each Enable keeps the
+ * config honest: an effect that fails to come up is switched off in it. */
+static SDL_GPUTexture *ModernCreateEffectTarget(void) {
+    SDL_GPUTextureCreateInfo info = {0};
+
+    info.type = SDL_GPU_TEXTURETYPE_2D;
+    info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+    info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER;
+    info.width = (Uint32)s_targetW;
+    info.height = (Uint32)s_targetH;
+    info.layer_count_or_depth = 1;
+    info.num_levels = 1;
+    return SDL_CreateGPUTexture(s_device, &info);
+}
+
+static void ModernEnsureLinearSampler(void) {
+    SDL_GPUSamplerCreateInfo samplerInfo = {0};
+
+    if (s_samplerLinear != NULL) return;
+    samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
+    samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+    s_samplerLinear = SDL_CreateGPUSampler(s_device, &samplerInfo);
+}
+
+static void ModernReleaseLinearSamplerIfUnused(void) {
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE || s_config.modernGrading ||
+        s_samplerLinear == NULL) return;
+    SDL_ReleaseGPUSampler(s_device, s_samplerLinear);
+    s_samplerLinear = NULL;
+}
+
+static void ModernEnablePost(void) {
+    ModernEnsureLinearSampler();
+    if (s_postTarget == NULL) s_postTarget = ModernCreateEffectTarget();
+    if (s_pipePost == NULL) s_pipePost = ModernCreatePostPipeline();
+    if (!s_postTarget || !s_pipePost || !s_samplerLinear) {
+        fprintf(stderr, "rage-port: post-process setup failed, disabling: %s\n",
+                SDL_GetError());
+        s_config.modernPost = RAGE_MODERN_POST_NONE;
+    }
+}
+
+static void ModernDisablePost(void) {
+    if (s_postTarget != NULL) SDL_ReleaseGPUTexture(s_device, s_postTarget);
+    if (s_pipePost != NULL) SDL_ReleaseGPUGraphicsPipeline(s_device, s_pipePost);
+    s_postTarget = NULL;
+    s_pipePost = NULL;
+}
+
+static void ModernEnableSsao(void) {
+    SDL_GPUShader *fullscreen;
+    int created;
+
+    if (!ModernSsaoReady()) {
+        fullscreen = ModernCreateShader(
+            post_vert_spv, post_vert_spv_len, (const char *)post_vert_msl,
+            post_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX, "vs_post", 0);
+        created = fullscreen != NULL &&
+            ModernSsaoCreate(s_device, fullscreen, s_targetW, s_targetH);
+        if (fullscreen != NULL) SDL_ReleaseGPUShader(s_device, fullscreen);
+        if (!created) {
+            fprintf(stderr, "rage-port: ambient occlusion unavailable, disabling\n");
+            s_config.modernSsao = 0;
+        }
+    }
+    ModernNativeGpuKeepDepth(s_config.modernSsao);
+}
+
+static void ModernDisableSsao(void) {
+    ModernNativeGpuKeepDepth(0);
+    ModernSsaoDestroy();
+}
+
+static void ModernEnableGrading(void) {
+    ModernEnsureLinearSampler();
+    if (s_finalTarget == NULL) s_finalTarget = ModernCreateEffectTarget();
+    if (s_pipeComposite == NULL) s_pipeComposite = ModernCreateCompositePipeline();
+    if (!s_finalTarget || !s_pipeComposite || !s_samplerLinear) {
+        fprintf(stderr, "rage-port: grading setup failed, disabling: %s\n",
+                SDL_GetError());
+        s_config.modernGrading = 0;
+    }
+}
+
+static void ModernDisableGrading(void) {
+    if (s_finalTarget != NULL) SDL_ReleaseGPUTexture(s_device, s_finalTarget);
+    if (s_pipeComposite != NULL)
+        SDL_ReleaseGPUGraphicsPipeline(s_device, s_pipeComposite);
+    s_finalTarget = NULL;
+    s_pipeComposite = NULL;
+}
+
 static int ModernEnsureResources(void) {
     SDL_GPUShader *vs;
     SDL_GPUShader *fs;
@@ -487,64 +580,9 @@ static int ModernEnsureResources(void) {
         }
     }
 
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE || s_config.modernGrading) {
-        SDL_GPUSamplerCreateInfo samplerInfo = {0};
-        samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
-        samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
-        s_samplerLinear = SDL_CreateGPUSampler(s_device, &samplerInfo);
-    }
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE) {
-        SDL_GPUTextureCreateInfo info = {0};
-        info.type = SDL_GPU_TEXTURETYPE_2D;
-        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        info.width = (Uint32)s_targetW;
-        info.height = (Uint32)s_targetH;
-        info.layer_count_or_depth = 1;
-        info.num_levels = 1;
-        s_postTarget = SDL_CreateGPUTexture(s_device, &info);
-        s_pipePost = ModernCreatePostPipeline();
-        if (!s_postTarget || !s_pipePost || !s_samplerLinear) {
-            fprintf(stderr,
-                    "rage-port: post-process setup failed, disabling: %s\n",
-                    SDL_GetError());
-            s_config.modernPost = RAGE_MODERN_POST_NONE;
-        }
-    }
-    if (s_config.modernSsao) {
-        SDL_GPUShader *fullscreen = ModernCreateShader(
-            post_vert_spv, post_vert_spv_len, (const char *)post_vert_msl,
-            post_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX, "vs_post", 0);
-        int created = fullscreen != NULL &&
-            ModernSsaoCreate(s_device, fullscreen, s_targetW, s_targetH);
-
-        if (fullscreen != NULL) SDL_ReleaseGPUShader(s_device, fullscreen);
-        if (!created) {
-            fprintf(stderr, "rage-port: ambient occlusion unavailable, disabling\n");
-            s_config.modernSsao = 0;
-        }
-    }
-    ModernNativeGpuKeepDepth(s_config.modernSsao);
-    if (s_config.modernGrading) {
-        SDL_GPUTextureCreateInfo info = {0};
-        info.type = SDL_GPU_TEXTURETYPE_2D;
-        info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
-        info.usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET |
-                     SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        info.width = (Uint32)s_targetW;
-        info.height = (Uint32)s_targetH;
-        info.layer_count_or_depth = 1;
-        info.num_levels = 1;
-        s_finalTarget = SDL_CreateGPUTexture(s_device, &info);
-        s_pipeComposite = ModernCreateCompositePipeline();
-        if (!s_finalTarget || !s_pipeComposite || !s_samplerLinear) {
-            fprintf(stderr,
-                    "rage-port: grading setup failed, disabling: %s\n",
-                    SDL_GetError());
-            s_config.modernGrading = 0;
-        }
-    }
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE) ModernEnablePost();
+    if (s_config.modernSsao) ModernEnableSsao();
+    if (s_config.modernGrading) ModernEnableGrading();
 
     if (!s_target || !s_depth || !s_mirrorTarget || !s_mirrorDepth ||
         !s_sampler || !s_pipe2d || !s_pipe2dSub ||
@@ -1927,17 +1965,51 @@ int ModernRestartPresentation(const RagePortConfig *config) {
     return ModernInit(&next);
 }
 
+/* Every field but the renderer choice, the draw distance and the screen
+ * effects shapes the presentation targets, so a field added to the config is
+ * covered without being listed here. The struct
+ * holds only 4-byte members, hence no padding to disturb the comparison. */
 static int ModernPresentationSettingsDiffer(const RagePortConfig *a,
                                             const RagePortConfig *b) {
-    return a->modernInternalScale != b->modernInternalScale ||
-           a->modernAspect != b->modernAspect ||
-           a->modernFps != b->modernFps ||
-           a->modernDrawDistance != b->modernDrawDistance ||
-           a->modernTextureFilterLinear != b->modernTextureFilterLinear ||
-           a->modernPost != b->modernPost ||
-           a->modernGrading != b->modernGrading ||
-           a->modernSsao != b->modernSsao ||
-           a->modernShadows != b->modernShadows;
+    RagePortConfig left = *a;
+    RagePortConfig right = *b;
+
+    left.renderer = right.renderer;
+    left.modernDrawDistance = right.modernDrawDistance;
+    left.modernPost = right.modernPost;
+    left.modernSsao = right.modernSsao;
+    left.modernGrading = right.modernGrading;
+    return memcmp(&left, &right, sizeof(left)) != 0;
+}
+
+/* Switches the screen effects the running device already supports. Resources
+ * exist only while an effect is on, so this creates or releases them between
+ * frames and leaves the targets and the device alone. */
+static void ModernApplyEffects(const RagePortConfig *next) {
+    const int live = s_resourcesReady;
+
+    if (next->modernPost != s_config.modernPost) {
+        s_config.modernPost = next->modernPost;
+        if (live) {
+            if (s_config.modernPost == RAGE_MODERN_POST_NONE) ModernDisablePost();
+            else ModernEnablePost();
+        }
+    }
+    if (next->modernSsao != s_config.modernSsao) {
+        s_config.modernSsao = next->modernSsao;
+        if (live) {
+            if (s_config.modernSsao) ModernEnableSsao();
+            else ModernDisableSsao();
+        }
+    }
+    if (next->modernGrading != s_config.modernGrading) {
+        s_config.modernGrading = next->modernGrading;
+        if (live) {
+            if (s_config.modernGrading) ModernEnableGrading();
+            else ModernDisableGrading();
+        }
+    }
+    if (live) ModernReleaseLinearSamplerIfUnused();
 }
 
 int ModernApplyConfig(const RagePortConfig *requested) {
@@ -1950,10 +2022,14 @@ int ModernApplyConfig(const RagePortConfig *requested) {
     /* The renderer choice is a switch, not a restart: keep the running one
      * through any rebuild and flip it afterwards. */
     next.renderer = s_enabled ? RAGE_RENDERER_MODERN : RAGE_RENDERER_CLASSIC;
+    /* Draw distance is read per frame by ModernDepthLimit: no rebuild. */
+    s_config.modernDrawDistance = next.modernDrawDistance;
     if (ModernPresentationSettingsDiffer(&next, &s_config)) {
         if (!ModernRestartPresentation(&next)) return 0;
-        PortConfigSetActive(&s_config);
+    } else {
+        ModernApplyEffects(&next);
     }
+    PortConfigSetActive(&s_config);
     if (wantModern != s_enabled) ModernToggle();
     return 1;
 }

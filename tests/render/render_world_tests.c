@@ -817,6 +817,26 @@ static void test_directional_shadow_map_is_texel_stable(void) {
     EXPECT_EQ(50, (int)(projected.z * 100.0f));
 }
 
+static void test_shadow_map_sees_only_spheres_that_reach_it(void) {
+    Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
+    Vec3 center = {1000.0f, 200.0f, -500.0f};
+    Vec3 far = center;
+    RenderShadowMap shadow;
+
+    EXPECT_EQ(1, RenderBuildDirectionalShadowMap(
+                     &center, &light, 4096.0f, 2048, &shadow));
+    EXPECT_EQ(1, RenderShadowMapSeesSphere(&shadow, &center, 0.0f));
+    far.x += 40000.0f;
+    EXPECT_EQ(0, RenderShadowMapSeesSphere(&shadow, &far, 100.0f));
+    /* A sphere wide enough to overlap the map is seen from afar. */
+    EXPECT_EQ(1, RenderShadowMapSeesSphere(&shadow, &far, 60000.0f));
+    /* Unusable input is kept rather than culled. */
+    EXPECT_EQ(1, RenderShadowMapSeesSphere(NULL, &far, 1.0f));
+    EXPECT_EQ(1, RenderShadowMapSeesSphere(&shadow, NULL, 1.0f));
+    EXPECT_EQ(1, RenderShadowMapSeesSphere(&shadow, &far, -1.0f));
+    EXPECT_EQ(1, RenderShadowMapSeesSphere(&shadow, &far, NAN));
+}
+
 static void test_shadow_cascades_nest_and_coarsen_resolution(void) {
     Vec3 light = RAGE_RENDER_DEFAULT_LIGHT_DIRECTION;
     Vec3 center = {1000.0f, 200.0f, -500.0f};
@@ -1000,6 +1020,7 @@ int main(void) {
     test_shadow_cascades_nest_and_coarsen_resolution();
     test_shadow_cascade_rows_match_projection_in_atlas_tile();
     test_shadow_cascades_reject_unusable_input();
+    test_shadow_map_sees_only_spheres_that_reach_it();
     test_shadow_map_rejects_non_finite_geometry();
     if (failures != 0) return EXIT_FAILURE;
     puts("render world tests passed");

@@ -137,6 +137,7 @@ static uint32_t s_skyRetryFrames;
 static SDL_GPUGraphicsPipeline *s_lampGlow;
 static SDL_GPUGraphicsPipeline *s_shadowDepth;
 static SDL_GPUGraphicsPipeline *s_shadowMasked;
+static ModernNativeShadowStats s_shadowStats;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
 static uint32_t s_vertexTransferBytes;
@@ -941,7 +942,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
 void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
     const int trace = RuntimeConfigEnabled("diagnostics.performance_trace");
     Uint64 started = 0, copied = 0, lookupFinished = 0, mainStarted = 0;
-    Uint64 mainFinished = 0, mirrorFinished = 0;
+    Uint64 mainFinished = 0, mirrorFinished = 0, casterStarted = 0;
     uint32_t instance;
     uint32_t mirrorFirstVertex;
     Vec3 shadowCenter;
@@ -1013,6 +1014,7 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
         MODERN_NATIVE_MAX_VERTICES_PER_VIEW, s_spans, MODERN_NATIVE_MAX_SPANS,
         &s_spanCount);
     s_visibleSpanCount = s_spanCount;
+    if (trace) casterStarted = SDL_GetTicksNS();
     if (s_haveShadowMap && s_spanCount < MODERN_NATIVE_MAX_SPANS &&
         s_vertexCount < MODERN_NATIVE_MAX_VERTICES_PER_VIEW) {
         const RenderShadowCasterVolume casters = {
@@ -1072,18 +1074,25 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
             break;
         }
     }
+    uint32_t shadowOnlyInstances = 0;
+    if (trace)
+        for (instance = 0; instance < world->instanceCount; instance++)
+            if (world->instances[instance].flags & RAGE_RENDER_INSTANCE_SHADOW_ONLY)
+                shadowOnlyInstances++;
     if (trace) {
         fprintf(stderr,
-                "native-geometry-prepare frame=%llu instances=%u "
+                "native-geometry-prepare frame=%llu instances=%u shadow_only=%u "
                 "main_vertices=%u mirror_vertices=%u "
                 "snapshot_ms=%.3f resident_lookup_ms=%.3f shadow_setup_ms=%.3f "
-                "main_ms=%.3f mirror_ms=%.3f completeness_ms=%.3f\n",
+                "main_ms=%.3f caster_ms=%.3f mirror_ms=%.3f completeness_ms=%.3f\n",
                 (unsigned long long)world->frame, world->instanceCount,
+                shadowOnlyInstances,
                 s_vertexCount, s_mirrorVertexCount,
                 (double)(copied - started) / 1000000.0,
                 (double)(lookupFinished - copied) / 1000000.0,
                 (double)(mainStarted - lookupFinished) / 1000000.0,
-                (double)(mainFinished - mainStarted) / 1000000.0,
+                (double)(casterStarted - mainStarted) / 1000000.0,
+                (double)(mainFinished - casterStarted) / 1000000.0,
                 (double)(mirrorFinished - mainFinished) / 1000000.0,
                 (double)(SDL_GetTicksNS() - mirrorFinished) / 1000000.0);
     }
@@ -1870,6 +1879,65 @@ static int ModernNativeSpanCastsShadow(const RageNativeDrawSpan *span) {
            (span->instanceFlags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) == 0;
 }
 
+/* One cascade only draws what can reach its tile. */
+static int ModernNativeSpanInCascade(const RenderShadowMap *map,
+                                     const RageNativeDrawSpan *span) {
+    const Vec3 center = {span->boundsCenter[0], span->boundsCenter[1],
+                         span->boundsCenter[2]};
+
+    return !span->hasBounds ||
+           RenderShadowMapSeesSphere(map, &center, span->boundsRadius);
+}
+
+static int ModernNativeSpanInAnyCascade(const RageNativeDrawSpan *span) {
+    for (unsigned cascade = 0; cascade < RAGE_RENDER_SHADOW_CASCADES; ++cascade) {
+        if (ModernNativeSpanInCascade(&s_shadowCascades.map[cascade], span))
+            return 1;
+    }
+    return 0;
+}
+
+/* The texture a caster samples for its alpha, or NULL when it has none. Sets
+ * `usable` to zero for a caster whose texture is not resident. */
+static ModernNativeTexture *ModernNativeShadowTexture(
+    const RageNativeDrawSpan *span, int *usable) {
+    ModernNativeTexture *texture = NULL;
+
+    *usable = 1;
+    if (span->material != UINT32_MAX) {
+        texture = ModernNativeFindTexture(span);
+        *usable = texture != NULL;
+    }
+    return texture;
+}
+
+/* Whether span `next` can join the draw that began at span `first` and has
+ * gathered `vertexCount` vertices: same texture, same scroll, and a vertex
+ * range that continues it in the same buffers. */
+static int ModernNativeShadowDrawContinues(
+    const RenderShadowMap *map, uint32_t first, uint32_t next,
+    uint32_t vertexCount, const ModernNativeTexture *texture) {
+    const RageNativeDrawSpan *head = &s_spans[first];
+    const RageNativeDrawSpan *tail = &s_spans[next];
+    const ModernGeometryBinding *geometry = &s_mainGeometry[first];
+    const ModernGeometryBinding *binding = &s_mainGeometry[next];
+    int usable;
+
+    if (vertexCount % 3 != 0 || !ModernNativeSpanCastsShadow(tail) ||
+        !ModernNativeSpanInCascade(map, tail)) return 0;
+    if (ModernNativeShadowTexture(tail, &usable) != texture || !usable) return 0;
+    return tail->instanceState.textureScrollU ==
+               head->instanceState.textureScrollU &&
+           binding->buffer == geometry->buffer &&
+           binding->indices == geometry->indices &&
+           binding->local == geometry->local &&
+           geometry->first <= UINT32_MAX - vertexCount &&
+           binding->first == geometry->first + vertexCount &&
+           tail->vertexCount <= UINT32_MAX - vertexCount &&
+           RenderNativeLocalStateEqual(geometry->local ? head : NULL,
+                                       binding->local ? tail : NULL);
+}
+
 static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
     SDL_GPUDepthStencilTargetInfo depth = {
         .texture = s_shadowTexture,
@@ -1879,24 +1947,26 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
     };
     SDL_GPURenderPass *pass;
     ModernGeometryState geometryState = {0};
-    SDL_GPUGraphicsPipeline *boundPipeline = NULL;
-    ModernNativeTexture *boundTexture = NULL;
     uint32_t spanIndex;
     uint32_t drawCount = 0;
     uint32_t maskedDrawCount = 0;
+    uint32_t culledCount = 0;
+    const int batchDraws = !RuntimeConfigEnabled("diagnostics.modern_unbatched_draws");
     if (!s_haveShadowMap) return;
     /* Texture uploads must finish before the render pass that samples them.
      * Every textured caster uses its alpha channel so empty atlas texels do
      * not turn the source mesh's triangles into visible shadow geometry. */
     for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
         const RageNativeDrawSpan *span = &s_spans[spanIndex];
-        if (ModernNativeSpanCastsShadow(span) && span->material != UINT32_MAX)
+        if (ModernNativeSpanCastsShadow(span) && span->material != UINT32_MAX &&
+            ModernNativeSpanInAnyCascade(span))
             (void)ModernNativeLoadTexture(command, span);
     }
     pass = SDL_BeginGPURenderPass(command, NULL, 0, &depth);
     if (pass == NULL) return;
     for (unsigned cascade = 0; cascade < RAGE_RENDER_SHADOW_CASCADES;
          ++cascade) {
+        const RenderShadowMap *map = &s_shadowCascades.map[cascade];
         const int tile = s_shadowTile;
         const SDL_GPUViewport viewport = {
             (float)((int)(cascade & 1u) * tile),
@@ -1905,22 +1975,29 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
         const SDL_Rect scissor = {
             (int)(cascade & 1u) * tile, (int)(cascade >> 1) * tile,
             tile, tile};
+        SDL_GPUGraphicsPipeline *boundPipeline = NULL;
+        ModernNativeTexture *boundTexture = NULL;
+        float boundScroll = -1.0f;
         ModernNativeCameraUniform camera;
         SDL_SetGPUViewport(pass, &viewport);
         SDL_SetGPUScissor(pass, &scissor);
-        ModernNativeBuildShadowCamera(&s_shadowCascades.map[cascade], &camera);
+        ModernNativeBuildShadowCamera(map, &camera);
         SDL_PushGPUVertexUniformData(command, 0, &camera, sizeof(camera));
         for (spanIndex = 0; spanIndex < s_spanCount; spanIndex++) {
             const RageNativeDrawSpan *span = &s_spans[spanIndex];
-            SDL_GPUGraphicsPipeline *pipeline = s_shadowDepth;
-            ModernNativeTexture *texture = NULL;
+            SDL_GPUGraphicsPipeline *pipeline;
+            ModernNativeTexture *texture;
+            const uint32_t first = spanIndex;
+            uint32_t vertexCount;
+            int usable;
             if (!ModernNativeSpanCastsShadow(span)) continue;
-            if (span->material != UINT32_MAX) {
-                texture = ModernNativeFindTexture(span);
-                if (texture == NULL) continue;
-                pipeline = s_shadowMasked;
-                maskedDrawCount++;
+            if (!ModernNativeSpanInCascade(map, span)) {
+                culledCount++;
+                continue;
             }
+            texture = ModernNativeShadowTexture(span, &usable);
+            if (!usable) continue;
+            pipeline = texture != NULL ? s_shadowMasked : s_shadowDepth;
             if (pipeline != boundPipeline) {
                 SDL_BindGPUGraphicsPipeline(pass, pipeline);
                 boundPipeline = pipeline;
@@ -1933,19 +2010,39 @@ static void ModernNativeDrawShadowMap(SDL_GPUCommandBuffer *command) {
                 SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
                 boundTexture = texture;
             }
-            const float uvOffset[4] = {span->instanceState.textureScrollU, 0, 0, 0};
-            SDL_PushGPUVertexUniformData(command, 1, uvOffset, sizeof(uvOffset));
-            ModernNativeBindGeometry(command, pass, span, &s_mainGeometry[spanIndex], 2, &geometryState);
-            ModernNativeDrawGeometry(pass, &s_mainGeometry[spanIndex], span->vertexCount);
+            if (span->instanceState.textureScrollU != boundScroll) {
+                const float uvOffset[4] = {span->instanceState.textureScrollU,
+                                           0, 0, 0};
+                SDL_PushGPUVertexUniformData(command, 1, uvOffset,
+                                             sizeof(uvOffset));
+                boundScroll = span->instanceState.textureScrollU;
+            }
+            ModernNativeBindGeometry(command, pass, span,
+                                     &s_mainGeometry[spanIndex], 2,
+                                     &geometryState);
+            vertexCount = span->vertexCount;
+            while (batchDraws && spanIndex + 1 < s_spanCount &&
+                   ModernNativeShadowDrawContinues(map, first, spanIndex + 1,
+                                                   vertexCount, texture)) {
+                vertexCount += s_spans[++spanIndex].vertexCount;
+            }
+            ModernNativeDrawGeometry(pass, &s_mainGeometry[first], vertexCount);
             drawCount++;
+            if (texture != NULL) maskedDrawCount++;
         }
     }
     SDL_EndGPURenderPass(pass);
+    s_shadowStats = (ModernNativeShadowStats){
+        s_worldFrame, s_spanCount, s_spanCount - s_visibleSpanCount, drawCount,
+        maskedDrawCount, culledCount, geometryState.bufferBinds,
+        geometryState.uniformUpdates, geometryState.indexBinds};
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
         fprintf(stderr,
-                "rage-port: native shadow map frame=%llu draws=%u masked=%u geometry_binds=%u local_uniforms=%u index_binds=%u\n",
-                (unsigned long long)s_worldFrame, drawCount, maskedDrawCount,
-                geometryState.bufferBinds, geometryState.uniformUpdates, geometryState.indexBinds);
+                "rage-port: native shadow map frame=%llu spans=%u casters=%u draws=%u masked=%u culled=%u geometry_binds=%u local_uniforms=%u index_binds=%u\n",
+                (unsigned long long)s_shadowStats.frame, s_shadowStats.spans,
+                s_shadowStats.casters, s_shadowStats.draws, s_shadowStats.masked,
+                s_shadowStats.culled, s_shadowStats.geometryBinds,
+                s_shadowStats.localUniforms, s_shadowStats.indexBinds);
     }
 }
 
@@ -2208,6 +2305,8 @@ static void ModernNativeGpuDrawSet(
 
 
 void ModernNativeGpuKeepDepth(int keep) { s_keepMainDepth = keep != 0; }
+
+ModernNativeShadowStats ModernNativeGpuShadowStats(void) { return s_shadowStats; }
 
 int ModernNativeGpuMainView(ModernSsaoView *view) {
     ModernNativeCameraUniform camera;

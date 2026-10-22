@@ -66,6 +66,12 @@ typedef struct RageNativeDrawSpan {
     const struct RageNativeMeshTemplateView *localGeometry;
     uint32_t localFirstVertex;
     RenderTransform localTransform;
+    /* Scene-space sphere around the instance the span belongs to, so a view
+     * other than the camera's (a shadow cascade) can skip the span without
+     * reading its vertices. Meaningless unless hasBounds. */
+    uint8_t hasBounds;
+    float boundsCenter[3];
+    float boundsRadius;
 } RageNativeDrawSpan;
 
 typedef const RageRuntimeMesh *(*RageRenderMeshLookup)(

@@ -55,3 +55,23 @@ int HudShowTimeLimit(void) {
     HudConfigInit();
     return s_showTimeLimit;
 }
+
+int HudAnchorEdges(void) {
+    HudConfigInit();
+    return s_anchorEdges;
+}
+
+void HudSetAnchorEdges(int edges) {
+    HudConfigInit();
+    s_anchorEdges = edges != 0;
+}
+
+void HudSetShowLapTimes(int show) {
+    HudConfigInit();
+    s_showLapTimes = show != 0;
+}
+
+void HudSetShowTimeLimit(int show) {
+    HudConfigInit();
+    s_showTimeLimit = show != 0;
+}

@@ -3,6 +3,7 @@
  * dim what is behind the panel, and the panel itself must land centred, at
  * one texel per pixel, with its own text and rows drawn in. */
 #include <SDL3/SDL.h>
+#include "session_options.h"
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -41,6 +42,33 @@ const char *RuntimeConfigGet(const char *key) {
     (void)key;
     return NULL;
 }
+static PortSessionOptions s_storedSession;
+static int s_haveSession;
+
+void PortSessionOptionsRead(PortSessionOptions *options) {
+    if (!s_haveSession) {
+        memset(&s_storedSession, 0, sizeof(s_storedSession));
+        s_storedSession.analog = 1;
+        s_storedSession.wheel = 1;
+        s_storedSession.steeringLinearity = 0.5f;
+        s_storedSession.forceFeedback = 1;
+        s_storedSession.forceFeedbackGain = 55;
+        s_storedSession.music = 15;
+        s_storedSession.effects = 15;
+        s_storedSession.hudEdges = 1;
+        s_storedSession.showLapTimes = 1;
+        s_storedSession.showTimeLimit = 1;
+        s_storedSession.chaseDistance = 1.0f;
+        s_storedSession.chaseHeight = 1.0f;
+        s_haveSession = 1;
+    }
+    *options = s_storedSession;
+}
+
+void PortSessionOptionsApply(const PortSessionOptions *options) {
+    s_storedSession = *options;
+    s_haveSession = 1;
+}
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s: %s\n", \
     __LINE__, #x, SDL_GetError()); return 1; } } while (0)
@@ -56,6 +84,23 @@ static void Press(SDL_Scancode key) {
     OnEvent(&event);
 }
 
+static void Repeat(SDL_Scancode key) {
+    SDL_Event event;
+
+    SDL_zero(event);
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.scancode = key;
+    event.key.repeat = true;
+    OnEvent(&event);
+}
+
+static int ScaleIndex(void) {
+    return OverlayPageSettings(OVERLAY_PAGE_GRAPHICS, &(int){0})[1].get(
+        &s_model.values);
+}
+
+/* The adapter turns events into model actions and applies what the model says
+ * is due. The rules themselves are tested without SDL in overlay_model_tests. */
 static int TestPanelControls(void) {
     int scale;
     int scaleAfter;
@@ -66,30 +111,57 @@ static int TestPanelControls(void) {
 
     CHECK(!PortGraphicsOverlayActive());
     Press(SDL_SCANCODE_DOWN);
-    CHECK(!PortGraphicsOverlayActive() && s_selected == 0);
+    CHECK(!PortGraphicsOverlayActive() && s_model.selected == 0);
     Press(SDL_SCANCODE_ESCAPE);
     CHECK(PortGraphicsOverlayActive());
-    CHECK(s_config.renderer == RAGE_RENDERER_CLASSIC);
+    CHECK(s_model.values.config.renderer == RAGE_RENDERER_CLASSIC);
 
     Press(SDL_SCANCODE_RIGHT);
-    CHECK(s_config.renderer == RAGE_RENDERER_MODERN && s_applyPending);
+    CHECK(s_model.values.config.renderer == RAGE_RENDERER_MODERN &&
+          s_model.configPending);
     Press(SDL_SCANCODE_LEFT);
-    CHECK(s_config.renderer == RAGE_RENDERER_CLASSIC);
+    CHECK(s_model.values.config.renderer == RAGE_RENDERER_CLASSIC);
     Press(SDL_SCANCODE_UP);
-    CHECK(s_selected == ROW_COUNT - 1);
+    CHECK(s_model.selected == OverlayModelRowCount(&s_model) - 1);
     Press(SDL_SCANCODE_DOWN);
     Press(SDL_SCANCODE_DOWN);
-    CHECK(s_selected == 1);
-    scale = GetScale(&s_config);
+    CHECK(s_model.selected == 1);
+    scale = ScaleIndex();
     Press(SDL_SCANCODE_RIGHT);
-    scaleAfter = GetScale(&s_config);
+    scaleAfter = ScaleIndex();
     CHECK(scaleAfter == (scale + 1) % 6);
 
-    /* Changes reach the renderer from the main loop, not from the event. */
+    /* A held key steps once: each value can rebuild the presentation. */
+    Repeat(SDL_SCANCODE_RIGHT);
+    CHECK(ScaleIndex() == scaleAfter);
+
+    /* Changes reach the renderer from the main loop once the player has
+     * stopped stepping, not from the event and not at once. */
     s_active.modernInternalScale = 0.0f;
     PortGraphicsOverlayTick();
-    CHECK(s_active.modernInternalScale == kScales[scaleAfter]);
-    CHECK(!s_applyPending);
+    CHECK(s_active.modernInternalScale == 0.0f && s_model.configPending);
+    s_model.changedAtMs -= OVERLAY_APPLY_DELAY_MS;
+    PortGraphicsOverlayTick();
+    CHECK(s_active.modernInternalScale == 3.0f * 0.0f + (scaleAfter == 0 ? 1.0f :
+          scaleAfter == 1 ? 2.0f : scaleAfter == 2 ? 3.0f : scaleAfter == 3 ? 4.0f :
+          scaleAfter == 4 ? 6.0f : 8.0f));
+    CHECK(!s_model.configPending);
+
+    /* Page Down leaves graphics for controls; a session option applies from
+     * the next tick without waiting. */
+    Press(SDL_SCANCODE_PAGEDOWN);
+    CHECK(s_model.page == OVERLAY_PAGE_CONTROLS && s_model.selected == 0);
+    Press(SDL_SCANCODE_RIGHT);
+    CHECK(s_model.values.session.analog == 0 && s_model.sessionPending);
+    PortGraphicsOverlayTick();
+    CHECK(s_storedSession.analog == 0 && !s_model.sessionPending);
+    Press(SDL_SCANCODE_PAGEDOWN);
+    CHECK(s_model.page == OVERLAY_PAGE_AUDIO);
+    Press(SDL_SCANCODE_LEFT);
+    CHECK(s_model.values.session.music == 14);
+    Press(SDL_SCANCODE_PAGEUP);
+    Press(SDL_SCANCODE_PAGEUP);
+    CHECK(s_model.page == OVERLAY_PAGE_GRAPHICS && s_model.selected == 0);
 
     /* Closing and then reading the close flag happens exactly once. */
     Press(SDL_SCANCODE_ESCAPE);
@@ -99,7 +171,7 @@ static int TestPanelControls(void) {
 
     /* The resume row closes it as well. */
     Press(SDL_SCANCODE_ESCAPE);
-    s_selected = ACTION_RESUME;
+    s_model.selected = OverlayModelSettingCount(&s_model);
     Press(SDL_SCANCODE_RETURN);
     CHECK(!PortGraphicsOverlayActive() && PortGraphicsOverlayTakeClosed());
     s_presentationAvailable = 0;
@@ -128,25 +200,26 @@ int main(void) {
     int panelPixels = 0, rowHighlight = 0, x, y;
 
     if (TestPanelControls()) return 1;
-    s_selected = 0;
     if (!SDL_Init(SDL_INIT_VIDEO)) return 77;
     device = SDL_CreateGPUDevice(
         SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_MSL, false, NULL);
     if (device == NULL) { SDL_Quit(); return 77; }
 
-    s_config.renderer = RAGE_RENDERER_MODERN;
+    {
+        PortSessionOptions session;
+
+        PortSessionOptionsRead(&session);
+        s_active.renderer = RAGE_RENDERER_MODERN;
+        OverlayModelOpen(&s_model, &s_active, &session);
+    }
     s_windowW = TARGET_W;
     s_windowH = TARGET_H;
-    ComputeLayout(TARGET_W, TARGET_H, &s_layout);
+    OverlayComputeLayout(OverlayModelRowCount(&s_model), TARGET_W, TARGET_H,
+                         &s_layout);
     CHECK(s_layout.scale >= 0.99f && s_layout.scale <= 1.01f);
-    CHECK(FontReady());
-    CHECK(ResizeSurface(s_layout.w, s_layout.h));
-    PaintPanel();
-    {
-        uint8_t *solid = s_pixels +
-                         (size_t)(s_surfaceH - 1) * (size_t)s_surfaceW * 4u;
-        solid[3] = 255;
-    }
+    CHECK(OverlayFontReady());
+    CHECK(OverlaySurfaceResize(&s_surface, s_layout.w, s_layout.h));
+    OverlayPaint(&s_surface, &s_model, &s_layout);
     CHECK(EnsurePipeline(device, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM));
     CHECK(UploadSurface(device));
 

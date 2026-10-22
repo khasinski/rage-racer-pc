@@ -217,6 +217,59 @@ static unsigned int GamepadButtons(SDL_Gamepad *pad) {
 static float s_steeringDeflection;
 static int s_wheelActive;
 static SDL_Joystick *s_wheel;
+static int s_inputReady;
+static int s_analogEnabled;
+static int s_wheelEnabled;
+static AxisSetup s_steering;
+static AxisSetup s_throttle;
+static AxisSetup s_brake;
+static WheelSetup s_wheelSetup;
+
+static void EnsureInputOptions(void) {
+    if (s_inputReady) return;
+    s_inputReady = 1;
+    s_analogEnabled = RuntimeConfigGet("input.analog") == NULL
+                          ? 1
+                          : RuntimeConfigEnabled("input.analog");
+    s_wheelEnabled = RuntimeConfigGet("input.wheel") == NULL ||
+                     RuntimeConfigEnabled("input.wheel");
+    AxisSetupLoad(&s_steering, "steering");
+    AxisSetupLoad(&s_throttle, "throttle");
+    AxisSetupLoad(&s_brake, "brake");
+    WheelSetupLoad(&s_wheelSetup);
+}
+
+int PortAnalogEnabled(void) {
+    EnsureInputOptions();
+    return s_analogEnabled;
+}
+
+void PortSetAnalogEnabled(int enabled) {
+    EnsureInputOptions();
+    s_analogEnabled = enabled != 0;
+}
+
+int PortWheelEnabled(void) {
+    EnsureInputOptions();
+    return s_wheelEnabled;
+}
+
+void PortSetWheelEnabled(int enabled) {
+    EnsureInputOptions();
+    s_wheelEnabled = enabled != 0;
+}
+
+float PortSteeringLinearity(void) {
+    EnsureInputOptions();
+    return s_steering.linearity;
+}
+
+void PortSetSteeringLinearity(float linearity) {
+    EnsureInputOptions();
+    if (linearity < -2.0f) linearity = -2.0f;
+    if (linearity > 2.0f) linearity = 2.0f;
+    s_steering.linearity = linearity;
+}
 static SDL_Gamepad *s_pad;
 static SDL_JoystickID s_drivingId;
 static int s_controlLost;
@@ -343,11 +396,8 @@ static float WheelPedal(SDL_Joystick *wheel, int axis, int inverted) {
 }
 
 void PortSampleAnalogPad(void) {
-    static int enabled = -1;
     static int wheelAnnounced;
     static SDL_JoystickID announcedPadId;
-    static AxisSetup steering, throttle, brake;
-    static WheelSetup wheelSetup;
     SDL_Gamepad *pad;
     SDL_Joystick *wheel;
     unsigned int released;
@@ -356,25 +406,14 @@ void PortSampleAnalogPad(void) {
     int twist, range;
     int lx;
 
-    if (enabled < 0) {
-        enabled = RuntimeConfigGet("input.analog") == NULL
-                      ? 1
-                      : RuntimeConfigEnabled("input.analog");
-        AxisSetupLoad(&steering, "steering");
-        AxisSetupLoad(&throttle, "throttle");
-        AxisSetupLoad(&brake, "brake");
-        WheelSetupLoad(&wheelSetup);
-    }
-    if (!enabled) {
+    EnsureInputOptions();
+    if (!s_analogEnabled) {
         PublishAnalogInput(NULL, NULL, 0.0f);
         ObserveDrivingDevice();
         return;
     }
 
-    wheel = RuntimeConfigGet("input.wheel") == NULL ||
-                    RuntimeConfigEnabled("input.wheel")
-                ? AnalogFindWheel()
-                : NULL;
+    wheel = s_wheelEnabled ? AnalogFindWheel() : NULL;
     pad = wheel == NULL ? AnalogFindGamepad() : NULL;
     if (pad == NULL && wheel == NULL) {
         PublishAnalogInput(NULL, NULL, 0.0f);
@@ -401,15 +440,15 @@ void PortSampleAnalogPad(void) {
      * the play from the result, the smallest range with the largest play left
      * 11 of a possible 113 units of lock. The stick therefore reports full
      * deflection and lets the game's own calibration do its job. */
-    lx = wheel != NULL ? WheelAxis(wheel, wheelSetup.steeringAxis)
+    lx = wheel != NULL ? WheelAxis(wheel, s_wheelSetup.steeringAxis)
                        : SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
-    if (wheel != NULL && wheelSetup.steeringInverted) lx = -lx;
+    if (wheel != NULL && s_wheelSetup.steeringInverted) lx = -lx;
     released = ((unsigned int)g_PadBuffers[2] << 8) | g_PadBuffers[3];
     held = ~released;
-    if (wheel != NULL) held |= WheelButtons(wheel, &wheelSetup);
+    if (wheel != NULL) held |= WheelButtons(wheel, &s_wheelSetup);
     if (pad != NULL) held |= GamepadButtons(pad);
     range = GetNegconSteerRange();
-    twist = NegconTwist(AxisShaped(lx, &steering),
+    twist = NegconTwist(AxisShaped(lx, &s_steering),
                         (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
                         range);
 
@@ -422,21 +461,23 @@ void PortSampleAnalogPad(void) {
      * while the face buttons still work as full on. */
     if (wheel != NULL) {
         analogI = (int)(AxisCurve(
-            WheelPedal(wheel, wheelSetup.throttleAxis,
-                       wheelSetup.pedalsInverted),
-            throttle.deadzone, throttle.saturation, throttle.linearity,
-            throttle.scaling) * (float)NEGCON_ANALOG_MAX);
+            WheelPedal(wheel, s_wheelSetup.throttleAxis,
+                       s_wheelSetup.pedalsInverted),
+            s_throttle.deadzone, s_throttle.saturation, s_throttle.linearity,
+            s_throttle.scaling) * (float)NEGCON_ANALOG_MAX);
         analogII = (int)(AxisCurve(
-            WheelPedal(wheel, wheelSetup.brakeAxis,
-                       wheelSetup.pedalsInverted),
-            brake.deadzone, brake.saturation, brake.linearity, brake.scaling) *
+            WheelPedal(wheel, s_wheelSetup.brakeAxis,
+                       s_wheelSetup.pedalsInverted),
+            s_brake.deadzone, s_brake.saturation, s_brake.linearity,
+            s_brake.scaling) *
             (float)NEGCON_ANALOG_MAX);
     } else {
         analogI = (int)(AxisShaped(
-            SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER), &throttle) *
+            SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
+            &s_throttle) *
             (float)NEGCON_ANALOG_MAX);
         analogII = (int)(AxisShaped(
-            SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), &brake) *
+            SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), &s_brake) *
             (float)NEGCON_ANALOG_MAX);
     }
     analogL = 0;
@@ -455,6 +496,6 @@ void PortSampleAnalogPad(void) {
     g_PadBuffers[5] = (u8)(g_NegconNeutralI + analogI);
     g_PadBuffers[6] = (u8)(g_NegconNeutralII + analogII);
     g_PadBuffers[7] = (u8)(g_NegconNeutralL + analogL);
-    PublishAnalogInput(wheel, pad, AxisShaped(lx, &steering));
+    PublishAnalogInput(wheel, pad, AxisShaped(lx, &s_steering));
     ObserveDrivingDevice();
 }

@@ -18,5 +18,9 @@ int HudRightX(int x);
 int HudAnchorX(int x);
 int HudShowLapTimes(void);
 int HudShowTimeLimit(void);
+int HudAnchorEdges(void);
+void HudSetAnchorEdges(int edges);
+void HudSetShowLapTimes(int show);
+void HudSetShowTimeLimit(int show);
 
 #endif

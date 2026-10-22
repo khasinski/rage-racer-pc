@@ -18,9 +18,13 @@ obtained Rage Racer CUE (with its BIN tracks alongside it), Track 01 BIN, or
 CHD when prompted. Native assets are imported automatically and the game starts
 with the modern renderer. No separate launcher or extractor is required.
 
-Press **Esc** at any time to pause the game and open the graphics options:
-renderer, resolution, aspect ratio, frame rate, texture filtering, anti-aliasing,
-colour grading, ambient occlusion, shadow detail and draw distance (arrow keys, mouse or gamepad). **F10** still
+Press **Esc** at any time to pause the game and open settings. Graphics covers
+the renderer, resolution, aspect ratio, frame rate, texture filtering,
+anti-aliasing, colour grading, ambient occlusion, shadow detail and draw
+distance. Controls covers analog steering, the wheel, steering feel and force
+feedback. Audio covers music and effects. View covers the HUD and the chase
+camera. Arrow keys, mouse or a gamepad change them, and Page Up / Page Down or
+the shoulder buttons change page. **F10** still
 switches renderer directly. Defaults are in
 `rage-port.ini`; see the [classic renderer guide](docs/classic-renderer.md) for
 resolution, widescreen and FPS examples. No game data is supplied in the archive.
@@ -330,10 +334,13 @@ Press `F10` while playing to switch between classic and modern rendering
 without restarting the race; the key is configurable as
 `[video] toggle_renderer_key`. `F4` goes full screen and back.
 
-`Esc` opens the in-game graphics panel, which pauses the game. Changes apply
-immediately and last until the game is closed; `rage-port.ini` (or the
-launcher) holds the values used at start-up. The panel has Resume and Quit
-rows, so Esc no longer closes the game.
+`Esc` opens the in-game settings panel, which pauses the game. Graphics, analog
+steering, the wheel, steering feel, the HUD and the chase camera apply
+immediately and last until the game is closed. Music and effects are the
+save-game volumes. Force feedback is the choice the pause menu remembers.
+`rage-port.ini` (or the launcher) holds the values used at start-up. Keyboard
+button bindings stay there. The panel has Resume and Quit rows, so Esc no
+longer closes the game.
 
 In the modern renderer the rear-view mirror is a native second camera. It
 renders the complete semantic track and traffic scene into its own small color
@@ -635,15 +642,15 @@ say what they wanted. Nothing else in the suite needs the disc.
 
 ## Known limitations
 
-For the current experimental release, see the [0.6.8-alpha-raytracer release notes](docs/release-0.6.8-alpha-raytracer.md)
+For the current experimental release, see the [0.6.9-alpha release notes](docs/release-0.6.9-alpha.md)
 and [enhanced classic renderer settings](docs/classic-renderer.md). Outstanding
 work remains tracked in the GitHub issue list.
 
 - Controller configuration currently retains the original preset-oriented
   UI. Full per-action controller remapping is still to come.
-- Release builds are unsigned; macOS archives may carry only an ad-hoc
-  signature. Operating systems may require the user to explicitly allow the
-  downloaded application.
+- macOS release archives are Developer ID signed and notarized. Windows and
+  Linux archives are unsigned, so those systems may ask before a downloaded
+  application runs.
 - The legally obtained PAL/Europe disc (`SCES-006.50`) is the reference
   release. A Japanese (NTSC-J) disc runs, without the messages described above.
   No game data is included in release archives.

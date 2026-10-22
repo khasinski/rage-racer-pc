@@ -33,8 +33,27 @@ int ModernNativeGpuHasDraws(void);
 int ModernNativeGpuWorldComplete(void);
 int ModernNativeGpuHasMirrorDraws(void);
 
-/* Keep the main view's depth buffer after drawing, for screen-space effects. */
+/* Keep the main view's depth buffer after drawing, for screen-space effects.
+ * A setter rather than an init argument: the effect can be switched on and off
+ * while the module runs, and whether it exists is known only after the
+ * renderer has tried to create it. */
 void ModernNativeGpuKeepDepth(int keep);
+
+/* Counters of the last shadow pass, for diagnostics and tests that must not
+ * depend on how the trace line is laid out. */
+typedef struct ModernNativeShadowStats {
+    uint64_t frame;
+    uint32_t spans;
+    uint32_t casters;
+    uint32_t draws;
+    uint32_t masked;
+    uint32_t culled;
+    uint32_t geometryBinds;
+    uint32_t localUniforms;
+    uint32_t indexBinds;
+} ModernNativeShadowStats;
+
+ModernNativeShadowStats ModernNativeGpuShadowStats(void);
 /* Projection terms of the main view; returns 0 when there is no camera. */
 struct ModernSsaoView;
 int ModernNativeGpuMainView(struct ModernSsaoView *view);

@@ -298,22 +298,39 @@ static RageInstanceFrustum PrepareInstanceFrustum(
     return result;
 }
 
-static int InstanceOutsideFrustum(const RenderWorld *world,
-                                      const RenderViewTransform *viewTransform,
-                                      const RageInstanceFrustum *frustum,
-                                      const RageTransformBasis *basis,
-                                      const RageRuntimeMesh *mesh,
-                                      uint32_t meshIndex) {
-    float center[3], radius, maxScale, depth;
-    float horizontalRadius, verticalRadius;
-    Vec3 worldCenter, view;
-    if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
-    worldCenter = TransformPoint(basis, center);
-    RenderWorldToViewPrepared(viewTransform, &worldCenter, &view);
-    depth = -view.z;
+/* The sphere that bounds an instance in the scene. `valid` is zero for a mesh
+ * whose producer supplied no bounds, which then can never be culled by them. */
+typedef struct RageWorldSphere {
+    int valid;
+    Vec3 center;
+    float radius;
+} RageWorldSphere;
+
+static RageWorldSphere InstanceWorldSphere(const RageTransformBasis *basis,
+                                           const RageRuntimeMesh *mesh,
+                                           uint32_t meshIndex) {
+    RageWorldSphere sphere = {0};
+    float center[3], radius, maxScale;
+
+    if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return sphere;
     maxScale = fmaxf(fabsf(basis->scale.x),
                      fmaxf(fabsf(basis->scale.y), fabsf(basis->scale.z)));
-    radius *= maxScale;
+    sphere.valid = 1;
+    sphere.center = TransformPoint(basis, center);
+    sphere.radius = radius * maxScale;
+    return sphere;
+}
+
+static int InstanceOutsideFrustum(const RenderWorld *world,
+                                  const RenderViewTransform *viewTransform,
+                                  const RageInstanceFrustum *frustum,
+                                  const RageWorldSphere *sphere) {
+    float radius = sphere->radius, depth;
+    float horizontalRadius, verticalRadius;
+    Vec3 view;
+    if (!sphere->valid) return 0;
+    RenderWorldToViewPrepared(viewTransform, &sphere->center, &view);
+    depth = -view.z;
     if (depth + radius < world->camera.nearPlane ||
         depth - radius > world->camera.farPlane) return 1;
     /* Keep a small guard band around the visible frustum. In a low cockpit
@@ -330,26 +347,40 @@ static int InstanceOutsideFrustum(const RenderWorld *world,
            fabsf(view.y) > depth * frustum->tanY + verticalRadius;
 }
 
-/* While set, the builders emit only what the camera cannot see but a sun
- * shadow still can: instances outside the frustum whose bounds reach the
- * volume. Set by RenderBuildNativeLocalCompactShadowCasterDraws alone. */
-static const RenderShadowCasterVolume *s_casterVolume;
-
 static int InstanceReachesCasterVolume(const RenderShadowCasterVolume *volume,
-                                       const RageTransformBasis *basis,
-                                       const RageRuntimeMesh *mesh,
-                                       uint32_t meshIndex) {
-    float center[3], radius, maxScale, dx, dy, dz;
-    Vec3 worldCenter;
-    if (!RuntimeMeshBounds(mesh, meshIndex, center, &radius)) return 0;
-    worldCenter = TransformPoint(basis, center);
-    maxScale = fmaxf(fabsf(basis->scale.x),
-                     fmaxf(fabsf(basis->scale.y), fabsf(basis->scale.z)));
-    dx = worldCenter.x - volume->center.x;
-    dy = worldCenter.y - volume->center.y;
-    dz = worldCenter.z - volume->center.z;
-    return sqrtf(dx * dx + dy * dy + dz * dz) - radius * maxScale <=
-           volume->radius;
+                                       const RageWorldSphere *sphere) {
+    float dx, dy, dz;
+
+    if (!sphere->valid) return 0;
+    dx = sphere->center.x - volume->center.x;
+    dy = sphere->center.y - volume->center.y;
+    dz = sphere->center.z - volume->center.z;
+    return sqrtf(dx * dx + dy * dy + dz * dz) - sphere->radius <= volume->radius;
+}
+
+/* Whether a build takes the instance. A view takes what its frustum holds.
+ * A caster build takes what the view leaves out: what is outside the frustum,
+ * what the course hid from the camera, which is never drawn there, and what
+ * the view culls by facing. Terrain and one-sided scenery lose the faces
+ * turned from the camera, yet those faces shade the road, and the loss would
+ * follow the camera round a bend. Those are casters wherever they lie. */
+static int InstanceSelected(const RenderWorld *world,
+                            const RenderViewTransform *viewTransform,
+                            const RageInstanceFrustum *frustum,
+                            const RenderShadowCasterVolume *casters,
+                            const RenderMeshInstance *instance,
+                            const RageWorldSphere *sphere) {
+    const int cullable =
+        (instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) != 0;
+    const int outside =
+        InstanceOutsideFrustum(world, viewTransform, frustum, sphere);
+
+    if (casters == NULL) return !cullable || !outside;
+    if ((instance->flags & (RAGE_RENDER_INSTANCE_SHADOW_ONLY |
+                            RAGE_RENDER_INSTANCE_CULL_BACKFACES)) == 0 &&
+        instance->assetSet != RAGE_RENDER_ASSET_TERRAIN &&
+        (!cullable || !outside)) return 0;
+    return InstanceReachesCasterVolume(casters, sphere);
 }
 
 /* These values belong to an instance, not its immutable source vertices or
@@ -555,9 +586,18 @@ int RenderExpandNativeLocalDraw(const RageNativeDrawSpan *span,
     return 1;
 }
 
+static void SetSpanBounds(RageNativeDrawSpan *span, const RageWorldSphere *sphere) {
+    span->hasBounds = (uint8_t)sphere->valid;
+    span->boundsCenter[0] = sphere->center.x;
+    span->boundsCenter[1] = sphere->center.y;
+    span->boundsCenter[2] = sphere->center.z;
+    span->boundsRadius = sphere->radius;
+}
+
 static int AppendMeshTemplate(const RageNativeMeshTemplateView *source, int localDraws,
     const RenderMeshInstance *instance, const RageTransformBasis *basis,
-    const RageNativeInstanceState *state, RageNativeGpuVertex *vertices, uint32_t capacity,
+    const RageNativeInstanceState *state, const RageWorldSphere *sphere,
+    RageNativeGpuVertex *vertices, uint32_t capacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *vertexCount, uint32_t *spanCount) {
     for (uint32_t s = 0; s < source->spanCount; ++s) {
         const RageNativeDrawSpan *input = &source->spans[s];
@@ -582,6 +622,7 @@ static int AppendMeshTemplate(const RageNativeMeshTemplateView *source, int loca
             output->component = instance->component;
             output->pass = instance->pass;
             output->instanceState = *state;
+            SetSpanBounds(output, sphere);
             if (localDraws) {
                 output->localGeometry = source;
                 output->localFirstVertex = input->firstVertex;
@@ -602,7 +643,8 @@ static uint32_t RenderBuildNativeDrawsFiltered(
     const RenderWorld *world, int passFilter, float aspect, int gpuFog,
     RageRenderMeshLookup lookup, void *context,
     RageNativeDrawVertex *vertices, RageNativeGpuVertex *compactVertices, uint32_t vertexCapacity,
-    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
+    RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount,
+    const RenderShadowCasterVolume *casters) {
     uint32_t instanceIndex, vertexCount = 0, spansUsed = 0;
     /* One view/build invocation only. Epochs isolate transforms, colours and
      * scroll state of different instances sharing the same source mesh.
@@ -622,14 +664,16 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         const RageRuntimeMesh *mesh;
         RageTransformBasis basis;
         RageNativeInstanceState instanceState;
+        RageWorldSphere sphere;
         uint32_t first, count, offset;
         int terrainQuadHidden = 0;
+        int viewDraws;
         RagePreparedTerrainQuad terrainQuad;
         terrainQuad.indicesValid = terrainQuad.positionsValid = 0;
         if (passFilter >= 0 && instance->pass != (RenderPass)passFilter)
             continue;
         if (instance->flags & RAGE_RENDER_INSTANCE_LAMPS_ONLY) continue;
-        if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_ONLY) && s_casterVolume == NULL)
+        if ((instance->flags & RAGE_RENDER_INSTANCE_SHADOW_ONLY) && casters == NULL)
             continue;
         /* Excluded passes must not consult (or trigger work in) the asset
          * provider. Both cameras may consume only the main semantic scene. */
@@ -638,22 +682,15 @@ static uint32_t RenderBuildNativeDrawsFiltered(
             continue;
         }
         basis = RenderPrepareInstanceTransform(&instance->transform);
-        if (s_casterVolume != NULL) {
-            /* Everything the camera sees is already in the view's draws,
-             * except what the course hid from it: that is never drawn
-             * there, so it is a caster wherever it lies. */
-            const int hidden =
-                (instance->flags & RAGE_RENDER_INSTANCE_SHADOW_ONLY) != 0;
-            if (!hidden &&
-                (!(instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) ||
-                 !InstanceOutsideFrustum(world, &viewTransform, &frustum,
-                                         &basis, mesh, instance->mesh)))
-                continue;
-            if (!InstanceReachesCasterVolume(s_casterVolume, &basis, mesh,
-                                             instance->mesh)) continue;
-        } else if ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) &&
-            InstanceOutsideFrustum(world, &viewTransform, &frustum, &basis, mesh,
-                                       instance->mesh)) continue;
+        sphere = InstanceWorldSphere(&basis, mesh, instance->mesh);
+        if (!InstanceSelected(world, &viewTransform, &frustum, casters, instance,
+                              &sphere)) continue;
+        /* The view already drew an in-frustum instance, bar the quads and faces
+         * it culls: those are all a caster build adds for it. */
+        viewDraws = casters != NULL &&
+            (instance->flags & RAGE_RENDER_INSTANCE_SHADOW_ONLY) == 0 &&
+            ((instance->flags & RAGE_RENDER_INSTANCE_ENABLE_FRUSTUM_CULL) == 0 ||
+             !InstanceOutsideFrustum(world, &viewTransform, &frustum, &sphere));
         instanceState = PrepareInstanceState(instance);
         if (cache && gpuFog && compactVertices && !instance->textureScrollU &&
             (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
@@ -664,6 +701,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 cache, mesh, instance->assetSet, instance->mesh);
             if (prepared) {
                 if (!AppendMeshTemplate(prepared, localDraws, instance, &basis, &instanceState,
+                        &sphere,
                         compactVertices, vertexCapacity, spans, spanCapacity, &vertexCount, &spansUsed)) goto done;
                 continue;
             }
@@ -681,12 +719,13 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                     terrainQuad.indicesValid = terrainQuad.positionsValid = 0;
                     /* Global indices can continue into the next mesh range.
                      * They must not complete this range's trailing triangle. */
-                    if (count - offset >= 6)
+                    if (count - offset >= 6 && (casters == NULL || viewDraws))
                         terrainQuadHidden = TerrainQuadIsHidden(
                             world, &basis, &viewTransform, mesh, first + offset,
                             &terrainQuad);
                 }
-                if (terrainQuadHidden) continue;
+                if (casters == NULL ? terrainQuadHidden
+                                    : (viewDraws && !terrainQuadHidden)) continue;
             }
             for (corner = 0; corner < 3; corner++) {
                 if (terrainQuad.indicesValid) indices[corner] = terrainQuad.indices[offset % 6u + corner];
@@ -769,7 +808,9 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 depthDecals[0] = depthDecals[1] = depthDecals[2] = 1;
             }
             if ((instance->flags & RAGE_RENDER_INSTANCE_CULL_BACKFACES) != 0 &&
-                TriangleIsBackFacing(world, &viewTransform, triangle)) continue;
+                (casters == NULL || viewDraws) &&
+                (TriangleIsBackFacing(world, &viewTransform, triangle) ==
+                 (casters == NULL))) continue;
             instanceState.textureScrollU =
                 (materialFlags[0] & RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0
                 ? (float)instance->textureScrollU * (1.0f / 256.0f) : 0.0f;
@@ -807,6 +848,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                     ? instance->entity : 0;
                 spans[spansUsed].pass = instance->pass;
                 spans[spansUsed].instanceState = instanceState;
+                SetSpanBounds(&spans[spansUsed], &sphere);
                 spansUsed++;
             }
             if (compactVertices != NULL) {
@@ -940,7 +982,7 @@ const RageNativeMeshTemplateView *RenderNativeMeshTemplateAcquire(
     entry->assetSet = assetSet;
     entry->vertexCount = RenderBuildNativeDrawsFiltered(NULL, 1, 0, &world,
         RAGE_RENDER_PASS_MAIN, 1, 1, TemplateMeshLookup, (void *)mesh, NULL,
-        entry->vertices, count, entry->spans, count / 3, &entry->spanCount);
+        entry->vertices, count, entry->spans, count / 3, &entry->spanCount, NULL);
     entry->next = state->first;
     state->first = entry;
     state->bytes += bytes;
@@ -958,7 +1000,7 @@ uint32_t RenderBuildNativeDraws(const RenderWorld *world, float aspect,
                                     uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
         NULL, 0, 0, world, -1, aspect, 0, lookup, context, vertices, NULL, vertexCapacity, spans,
-        spanCapacity, spanCount);
+        spanCapacity, spanCount, NULL);
 }
 
 uint32_t RenderBuildNativePassDraws(
@@ -968,7 +1010,7 @@ uint32_t RenderBuildNativePassDraws(
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
         NULL, 0, 0, world, (int)pass, aspect, 0, lookup, context, vertices, NULL, vertexCapacity,
-        spans, spanCapacity, spanCount);
+        spans, spanCapacity, spanCount, NULL);
 }
 
 uint32_t RenderBuildNativeGpuPassDraws(
@@ -978,7 +1020,7 @@ uint32_t RenderBuildNativeGpuPassDraws(
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(
         NULL, 0, 0, world, (int)pass, aspect, 1, lookup, context, vertices, NULL, vertexCapacity,
-        spans, spanCapacity, spanCount);
+        spans, spanCapacity, spanCount, NULL);
 }
 
 uint32_t RenderBuildNativeCompactPassDraws(
@@ -987,7 +1029,7 @@ uint32_t RenderBuildNativeCompactPassDraws(
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(NULL, 0, 0, world, (int)pass, aspect, !cpuFog,
-        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount);
+        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount, NULL);
 }
 
 uint32_t RenderBuildNativeCachedCompactPassDraws(
@@ -997,7 +1039,7 @@ uint32_t RenderBuildNativeCachedCompactPassDraws(
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(cache, 0, 0, world, (int)pass, aspect, !cpuFog,
-        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount);
+        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount, NULL);
 }
 
 uint32_t RenderBuildNativeLocalCompactPassDraws(
@@ -1007,7 +1049,7 @@ uint32_t RenderBuildNativeLocalCompactPassDraws(
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
     return RenderBuildNativeDrawsFiltered(cache, 0, expandWorldVertices ? 1 : 2, world, (int)pass, aspect, !cpuFog,
-        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount);
+        lookup, context, NULL, vertices, vertexCapacity, spans, spanCapacity, spanCount, NULL);
 }
 
 uint32_t RenderBuildNativeLocalCompactShadowCasterDraws(
@@ -1017,11 +1059,7 @@ uint32_t RenderBuildNativeLocalCompactShadowCasterDraws(
     RageRenderMeshLookup lookup, void *context,
     RageNativeGpuVertex *vertices, uint32_t vertexCapacity,
     RageNativeDrawSpan *spans, uint32_t spanCapacity, uint32_t *spanCount) {
-    uint32_t vertexCount;
-    s_casterVolume = volume;
-    vertexCount = RenderBuildNativeLocalCompactPassDraws(cache, world, pass,
-        aspect, cpuFog, expandWorldVertices, lookup, context, vertices,
-        vertexCapacity, spans, spanCapacity, spanCount);
-    s_casterVolume = NULL;
-    return vertexCount;
+    return RenderBuildNativeDrawsFiltered(cache, 0, expandWorldVertices ? 1 : 2,
+        world, (int)pass, aspect, !cpuFog, lookup, context, NULL, vertices,
+        vertexCapacity, spans, spanCapacity, spanCount, volume);
 }

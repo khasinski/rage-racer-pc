@@ -732,8 +732,8 @@ void GameRenderWorldPublishTerrainGrid(void) {
                          & 0x3FF;
             int allowed = (trace || mesh != 0x3FF) &&
                           NativeRegionAllowsCell(grid_x, grid_z);
-            if (trace && allowed) cells[grid_z]             /* Masked-out cells are not drawn, only cast shadows. */
-|= UINT32_C(1) << grid_x;
+            if (trace && allowed) cells[grid_z] |= UINT32_C(1) << grid_x;
+            /* Masked-out cells are not drawn, only cast shadows. */
             if (mesh != 0x3FF)
                 SubmitTerrainCell(grid_x, grid_z, mesh, 0, !allowed);
         }

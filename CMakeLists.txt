@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(rage_racer_port VERSION 0.6.9 LANGUAGES C)
 
-set(RAGE_RACER_RELEASE_VERSION "nightly")
+set(RAGE_RACER_RELEASE_VERSION "0.6.9-alpha")
 
 # Native game, runtime, tools, and tests use the same portable C17 dialect.
 # Vendored projects select their own lower standard where required.
@@ -385,6 +385,9 @@ if(RAGE_BUILD_PORT)
         src/port/menu_images.c
         src/port/menu_label_font.c
         src/port/graphics_overlay.c
+        src/port/overlay_model.c
+        src/port/overlay_raster.c
+        src/port/session_options.c
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c

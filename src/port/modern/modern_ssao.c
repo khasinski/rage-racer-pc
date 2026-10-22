@@ -20,6 +20,9 @@ typedef struct SsaoUniform {
     float sampling[4];
     float screen[4];
 } SsaoUniform;
+/* Three std140 vec4s, as the shaders declare them. */
+_Static_assert(sizeof(SsaoUniform) == 3 * 4 * sizeof(float),
+               "SsaoUniform must match the Ssao uniform block");
 
 static SDL_GPUDevice *s_device;
 static SDL_GPUGraphicsPipeline *s_occlusionPipeline;

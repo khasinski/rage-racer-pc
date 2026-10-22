@@ -368,6 +368,38 @@ void PortUpdateForceFeedback(void) {
     SendRumble(output.lowRumble, output.highRumble);
 }
 
+int PortForceFeedbackEnabled(void) {
+    LoadSettings();
+    return s_enabled;
+}
+
+void PortSetForceFeedbackEnabled(int enabled) {
+    LoadSettings();
+    if (s_harnessLock) return;
+    enabled = enabled != 0;
+    if (enabled == s_enabled) return;
+    s_enabled = enabled;
+    s_pulseFrames = s_enabled ? FFB_PULSE_FRAMES : 0;
+    WritePlayerFile();
+    fprintf(stderr, "rage-port: force feedback %s\n",
+            s_enabled ? "on" : "off");
+}
+
+int PortForceFeedbackGainPercent(void) {
+    LoadSettings();
+    return s_gainPercent;
+}
+
+void PortSetForceFeedbackGainPercent(int percent) {
+    LoadSettings();
+    if (s_harnessLock) return;
+    if (percent < 0) percent = 0;
+    if (percent > 100) percent = 100;
+    if (percent == s_gainPercent) return;
+    s_gainPercent = percent;
+    WritePlayerFile();
+}
+
 void PortToggleForceFeedback(void) {
     LoadSettings();
     s_enabled = !s_enabled;

@@ -1,9 +1,10 @@
 #ifndef RAGE_PORT_GRAPHICS_OVERLAY_H
 #define RAGE_PORT_GRAPHICS_OVERLAY_H
 
-/* In-game graphics options. Escape opens a panel over the frozen game; the
- * game is held for as long as the panel is up. The panel draws through the
- * presentation device, so it appears over either renderer. */
+/* In-game settings. Escape opens a panel over the frozen game; the game is
+ * held for as long as the panel is up. The panel draws through the
+ * presentation device, so it appears over either renderer. Pages cover
+ * graphics, controls, audio and the view. */
 
 /* Registers the input and swapchain hooks. Safe before platform start-up. */
 void PortGraphicsOverlayInstall(void);
