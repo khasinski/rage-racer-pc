@@ -26,10 +26,13 @@ void ModernPresentationClockObserveFrame(ModernPresentationClock *clock,
 float ModernPresentationClockFraction(const ModernPresentationClock *clock,
                                       uint64_t now) {
     double fraction;
-    if (clock == NULL || clock->tickTimeNs == 0 ||
-        clock->tickIntervalNs == 0 || now <= clock->tickTimeNs) {
+    /* No measured interval yet: hold the only pose available. Once an
+     * interval exists, the tick itself is the start of the blend from the
+     * previous pose toward the frame just completed. Reporting the end
+     * there made the next presentation jump backward. */
+    if (clock == NULL || clock->tickTimeNs == 0 || clock->tickIntervalNs == 0)
         return 1.0f;
-    }
+    if (now <= clock->tickTimeNs) return 0.0f;
     fraction = (double)(now - clock->tickTimeNs) /
                (double)clock->tickIntervalNs;
     return fraction >= 1.0 ? 1.0f : (float)fraction;
