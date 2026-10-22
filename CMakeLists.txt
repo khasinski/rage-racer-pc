@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 project(rage_racer_port VERSION 0.6.10 LANGUAGES C)
 
-set(RAGE_RACER_RELEASE_VERSION "0.6.10-alpha")
+set(RAGE_RACER_RELEASE_VERSION "nightly")
 
 # Native game, runtime, tools, and tests use the same portable C17 dialect.
 # Vendored projects select their own lower standard where required.
