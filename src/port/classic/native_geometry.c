@@ -109,6 +109,149 @@ static void StoreBilerpUv(
         BilerpByte(uv[1], uv[3], uv[5], uv[7], u, v, uSteps, vSteps);
 }
 
+/* The GTE divide overflows once a vertex is nearer than half the projection
+ * distance and every overflowing corner clamps to the same screen edge.
+ * NCLIP then discards the nearest road quad, so a logic frame shows the
+ * clear colour through the bottom of the cockpit. Project that piece in
+ * software and keep it on the side of the screen it actually occupies. */
+enum {
+    GTE_FLAG_SY_SAT = 1 << 13,
+    GTE_FLAG_SX_SAT = 1 << 14,
+    GTE_FLAG_DIV_OVF = 1 << 17,
+    GTE_FLAG_SZ_SAT = 1 << 18,
+    TERRAIN_NEAR_Z = 8
+};
+
+static int GteNearSaturation(int flag) {
+    return (flag & (GTE_FLAG_SY_SAT | GTE_FLAG_SX_SAT | GTE_FLAG_DIV_OVF |
+                    GTE_FLAG_SZ_SAT)) != 0;
+}
+
+static int VertexCameraZ(const SVECTOR *vertex) {
+    VECTOR camera;
+    int flag;
+    RotTrans((SVECTOR *)vertex, &camera, &flag);
+    return camera.vz;
+}
+
+static int PackClampedSxy(int64_t x, int64_t y) {
+    if (x < -1024) x = -1024;
+    if (x > 1023) x = 1023;
+    if (y < -1024) y = -1024;
+    if (y > 1023) y = 1023;
+    return (int)((uint16_t)(int16_t)x |
+                 ((uint32_t)(uint16_t)(int16_t)y << 16));
+}
+
+static int SoftwareProjectSxy(const SVECTOR *vertex, int *packed) {
+    VECTOR camera;
+    int flag;
+    int height;
+    int ofx, ofy;
+    if (vertex == NULL || packed == NULL) return 0;
+    RotTrans((SVECTOR *)vertex, &camera, &flag);
+    if (camera.vz < 1) return 0;
+    height = (int)ReadGeomScreen();
+    if (height <= 0) return 0;
+    ReadGeomOffset(&ofx, &ofy);
+    *packed = PackClampedSxy(
+        (int64_t)ofx + ((int64_t)height * camera.vx) / camera.vz,
+        (int64_t)ofy + ((int64_t)height * camera.vy) / camera.vz);
+    return 1;
+}
+
+static int TerrainQuadKept(const int sxy[4]) {
+    int clip0 = NormalClip(sxy[0], sxy[1], sxy[2]);
+    int clip1 = NormalClip(sxy[1], sxy[2], sxy[3]);
+    if ((!g_RenderState.pass.orderingFlag && clip0 <= 0 && clip1 >= 0) ||
+        (g_RenderState.pass.orderingFlag && clip0 >= 0 && clip1 <= 0))
+        return 0;
+    return !ScreenQuadOutsideBounds(
+        sxy, g_RenderState.draw.clipX0, g_RenderState.draw.clipX1,
+        g_RenderState.draw.clipY0, g_RenderState.draw.clipY1,
+        g_RenderState.pass.mode == GAME_RENDER_PASS_MIRROR
+            ? 0 : ModernCullMarginX());
+}
+
+typedef struct TerrainPiece {
+    int sxy[4];
+    uint8_t uv[8];
+} TerrainPiece;
+
+static int StorePieceVertex(TerrainPiece *piece, int slot, const int16_t pos[3],
+                            uint8_t u, uint8_t v) {
+    SVECTOR vertex;
+    vertex.vx = pos[0];
+    vertex.vy = pos[1];
+    vertex.vz = pos[2];
+    vertex.pad = 0;
+    piece->uv[slot * 2] = u;
+    piece->uv[slot * 2 + 1] = v;
+    return SoftwareProjectSxy(&vertex, &piece->sxy[slot]);
+}
+
+/* 0 when the quad is not a near-camera survivor. 1 or 2 is the visible
+ * piece, with a pentagon split into a quad and a triangle. */
+static int RescueNearTerrain(const SVECTOR *v0, const SVECTOR *v1,
+                             const SVECTOR *v2, const SVECTOR *v3,
+                             const uint8_t uv[8], TerrainPiece out[2]) {
+    const SVECTOR *verts[4];
+    int16_t pos[4][3];
+    int z[4];
+    int16_t clipped[5][3];
+    uint8_t clippedUv[10];
+    int count, corner, limit, anyFront = 0, anyClose = 0;
+    if (v0 == NULL || v1 == NULL || v2 == NULL || v3 == NULL || uv == NULL ||
+        out == NULL) return 0;
+    verts[0] = v0;
+    verts[1] = v1;
+    verts[2] = v2;
+    verts[3] = v3;
+    limit = (int)ReadGeomScreen() / 2 + 1;
+    if (limit < TERRAIN_NEAR_Z + 1) limit = TERRAIN_NEAR_Z + 1;
+    for (corner = 0; corner < 4; corner++) {
+        pos[corner][0] = verts[corner]->vx;
+        pos[corner][1] = verts[corner]->vy;
+        pos[corner][2] = verts[corner]->vz;
+        z[corner] = VertexCameraZ(verts[corner]);
+        if (z[corner] >= TERRAIN_NEAR_Z) anyFront = 1;
+        if (z[corner] < limit) anyClose = 1;
+    }
+    if (!anyFront || !anyClose) return 0;
+    count = ClipQuadToCameraNear(pos, z, uv, TERRAIN_NEAR_Z, clipped, clippedUv);
+    if (count < 3) return 0;
+    memset(out, 0, sizeof(TerrainPiece) * 2);
+    if (count == 5) {
+        int keep0, keep1;
+        for (corner = 0; corner < 4; corner++) {
+            if (!StorePieceVertex(&out[0], corner, clipped[corner],
+                                  clippedUv[corner * 2],
+                                  clippedUv[corner * 2 + 1]))
+                return 0;
+        }
+        if (!StorePieceVertex(&out[1], 0, clipped[0], clippedUv[0], clippedUv[1]) ||
+            !StorePieceVertex(&out[1], 1, clipped[3], clippedUv[6], clippedUv[7]) ||
+            !StorePieceVertex(&out[1], 2, clipped[4], clippedUv[8], clippedUv[9]) ||
+            !StorePieceVertex(&out[1], 3, clipped[4], clippedUv[8], clippedUv[9]))
+            return 0;
+        keep0 = TerrainQuadKept(out[0].sxy);
+        keep1 = TerrainQuadKept(out[1].sxy);
+        if (!keep0 && keep1) {
+            out[0] = out[1];
+            return 1;
+        }
+        if (keep0 && keep1) return 2;
+        return keep0 ? 1 : 0;
+    }
+    for (corner = 0; corner < 4; corner++) {
+        int source = corner < count ? corner : count - 1;
+        if (!StorePieceVertex(&out[0], corner, clipped[source],
+                              clippedUv[source * 2], clippedUv[source * 2 + 1]))
+            return 0;
+    }
+    return TerrainQuadKept(out[0].sxy) ? 1 : 0;
+}
+
 static int ProjectQuad(
     const SVECTOR *v0, const SVECTOR *v1, const SVECTOR *v2,
     const SVECTOR *v3, int sxy[4], int *depth, int *fog, int *rawDepth,
@@ -968,7 +1111,7 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                 const SVECTOR *v1 = &vertices[RageReadU16(stream + 2)];
                 const SVECTOR *v2 = &vertices[RageReadU16(stream + 4)];
                 const SVECTOR *v3 = &vertices[RageReadU16(stream + 6)];
-                int sxy[4], depth, fog, rawDepth;
+                int sxy[4], depth = 0, fog = 0, rawDepth = 0;
                 int uLevel, vLevel, uSteps, vSteps;
                 uint8_t baseUv[8] = {
                     stream[8], stream[9], stream[12], stream[13],
@@ -981,6 +1124,9 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                     ? RageReadU32(stream + 32) : 0;
                 int bias;
                 int extendedDepth = 0;
+                int rescueNear = 0;
+                TerrainPiece rescuedParent[2];
+                int rescuedParentCount = 0;
                 if (farCell && (stream[20] & 2) != 0) {
                     /* Retail's far-cell path skips these records entirely;
                      * capture them for the modern renderer's continuous far
@@ -992,6 +1138,30 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                     int projected = ProjectQuad(
                         v0, v1, v2, v3, sxy, &depth, &fog, &rawDepth, 1);
 
+                    if (!projected) {
+                        int reject = g_RageProjectionReject;
+                        int tooClose = reject == 3 && depth <= 0;
+                        int saturated = GteNearSaturation(g_RageProjectionFlag);
+                        /* Bucket 0 is the retail near reject. A quad that
+                         * still faces the camera is the road under the
+                         * cockpit; keep it in the first 3D slot. A saturated
+                         * projection is not usable, so replace it only when
+                         * a software near clip still covers the view. */
+                        if (tooClose && !saturated) {
+                            depth = 1;
+                            rescueNear = 1;
+                            projected = 1;
+                        } else if (tooClose || saturated) {
+                            rescuedParentCount = RescueNearTerrain(
+                                v0, v1, v2, v3, baseUv, rescuedParent);
+                            if (rescuedParentCount > 0) {
+                                memcpy(sxy, rescuedParent[0].sxy, sizeof(sxy));
+                                if (depth < 1) depth = 1;
+                                rescueNear = 1;
+                                projected = 1;
+                            }
+                        }
+                    }
                     if (!projected) {
                         /* Faces beyond the retail depth cutoff are captured
                          * for the modern renderer's extended draw distance
@@ -1070,6 +1240,9 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                     }
                     capture.bias = bias;
                     capture.otDepth = depth + bias;
+                    if (rescueNear && capture.otDepth < 1) capture.otDepth = 1;
+                    if (rescueNear && capture.otDepth >= 448)
+                        capture.otDepth = 447;
                     capture.fog = fog;
                     capture.cellSlot = cell;
                     capture.v[0] = v0;
@@ -1089,22 +1262,36 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                 if (extendedDepth) continue;
                 if (uSteps == 1 && vSteps == 1) {
                     uint8_t *next;
-                    depth += bias;
-                    next = EmitTerrainFt4(cursor, ot, depth, fog, dispatch,
-                                              sxy, baseUv, clut, tpage, color,
-                                              textureWindow, 0);
-                    if (next == NULL) goto terrain_buffer_full;
-                    cursor = next;
-                    emittedFaces++;
+                    int slot = depth + bias;
+                    int piece;
+                    if (rescueNear && slot < 1) slot = 1;
+                    if (rescueNear && slot >= 448) slot = 447;
+                    if (rescuedParentCount <= 0) {
+                        rescuedParentCount = 1;
+                        memcpy(rescuedParent[0].sxy, sxy, sizeof(sxy));
+                        memcpy(rescuedParent[0].uv, baseUv, sizeof(baseUv));
+                    }
+                    for (piece = 0; piece < rescuedParentCount; piece++) {
+                        next = EmitTerrainFt4(
+                            cursor, ot, slot, fog, dispatch,
+                            rescuedParent[piece].sxy, rescuedParent[piece].uv,
+                            clut, tpage, color, textureWindow, 0);
+                        if (next == NULL) goto terrain_buffer_full;
+                        cursor = next;
+                        emittedFaces++;
+                    }
                 } else {
                     int sy, sx;
                     DR_TWIN *subdivisionWindow = NULL;
                     uint32_t lineCommand = RageReadU32(stream + 24);
+                    int windowDepth = depth + bias;
+                    if (rescueNear && windowDepth < 1) windowDepth = 1;
+                    if (rescueNear && windowDepth >= 448) windowDepth = 447;
 
                     if ((((uint32_t)g_RageProjectionFlag | lineCommand) &
                          0x80000000u) == 0) {
                         uint8_t *next = EmitTerrainSubdivisionLines(
-                            cursor, ot, depth + bias, sxy, lineCommand);
+                            cursor, ot, windowDepth, sxy, lineCommand);
                         if (next == NULL) goto terrain_buffer_full;
                         cursor = next;
                     }
@@ -1114,11 +1301,14 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                     for (sy = 0; sy < uSteps; sy++) {
                         for (sx = 0; sx < vSteps; sx++) {
                             int subSxy[4];
-                            int subDepth = depth + bias;
+                            int subDepth = windowDepth;
                             int childDepth, childFog, childRawDepth;
                             SVECTOR child[4];
                             uint8_t uv[8];
                             uint8_t *next;
+                            TerrainPiece rescuedChild[2];
+                            int rescuedChildCount = 0;
+                            int piece;
                             child[0] = BilerpVertex(
                                 v0, v1, v2, v3, sy, sx, uSteps, vSteps);
                             child[1] = BilerpVertex(
@@ -1130,13 +1320,29 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                             child[3] = BilerpVertex(
                                 v0, v1, v2, v3, sy + 1, sx + 1,
                                 uSteps, vSteps);
+                            StoreBilerpUv(
+                                uv, 0, baseUv, sy, sx, uSteps, vSteps);
+                            StoreBilerpUv(
+                                uv, 1, baseUv, sy + 1, sx, uSteps, vSteps);
+                            StoreBilerpUv(
+                                uv, 2, baseUv, sy, sx + 1, uSteps, vSteps);
+                            StoreBilerpUv(
+                                uv, 3, baseUv, sy + 1, sx + 1,
+                                uSteps, vSteps);
                             {
                                 int childVisible = ProjectQuad(
                                     &child[0], &child[1], &child[2], &child[3],
                                     subSxy, &childDepth, &childFog,
                                     &childRawDepth, 2);
 
-                                if (!childVisible) continue;
+                                if (!childVisible) {
+                                    if (!GteNearSaturation(g_RageProjectionFlag))
+                                        continue;
+                                    rescuedChildCount = RescueNearTerrain(
+                                        &child[0], &child[1], &child[2],
+                                        &child[3], uv, rescuedChild);
+                                    if (rescuedChildCount <= 0) continue;
+                                }
                             }
                             /* The retail emitter brackets the complete set of
                              * visible children with one texture-window pair.
@@ -1160,29 +1366,26 @@ void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, int count) {
                                 subdivisionWindow->code[1] = 0;
                                 AddPrim(&ot[subDepth], reset);
                             }
-                            StoreBilerpUv(
-                                uv, 0, baseUv, sy, sx, uSteps, vSteps);
-                            StoreBilerpUv(
-                                uv, 1, baseUv, sy + 1, sx, uSteps, vSteps);
-                            StoreBilerpUv(
-                                uv, 2, baseUv, sy, sx + 1, uSteps, vSteps);
-                            StoreBilerpUv(
-                                uv, 3, baseUv, sy + 1, sx + 1,
-                                uSteps, vSteps);
-                            {
-
+                            for (piece = 0;
+                                 piece < (rescuedChildCount > 0
+                                              ? rescuedChildCount : 1);
+                                 piece++) {
+                                const int *emitSxy = rescuedChildCount > 0
+                                    ? rescuedChild[piece].sxy : subSxy;
+                                const uint8_t *emitUv = rescuedChildCount > 0
+                                    ? rescuedChild[piece].uv : uv;
+                                next = EmitTerrainFt4(
+                                    cursor, ot, subDepth, fog, dispatch,
+                                    emitSxy, emitUv, clut, tpage, color,
+                                    textureWindow, 1);
+                                if (next == NULL) goto terrain_buffer_full;
+                                cursor = next;
+                                emittedFaces++;
                             }
-                            next = EmitTerrainFt4(cursor,ot,subDepth,fog,
-                                                      dispatch,subSxy,uv,clut,
-                                                      tpage,color,textureWindow,
-                                                      1);
-                            if (next == NULL) goto terrain_buffer_full;
-                            cursor = next;
-                            emittedFaces++;
                         }
                     }
                     if (subdivisionWindow != NULL)
-                        AddPrim(&ot[depth + bias], subdivisionWindow);
+                        AddPrim(&ot[windowDepth], subdivisionWindow);
                 }
             }
         }

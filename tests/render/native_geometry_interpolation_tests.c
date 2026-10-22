@@ -106,6 +106,27 @@ int main(void) {
     CHECK(rotating[1][1] == 4096);
     CHECK(rotating[2][0] == -rotating[0][0]);
     CHECK(rotating[2][2] == rotating[0][0]);
+    {
+        int16_t pos[4][3] = {
+            {0, 0, 0}, {100, 0, 0}, {0, 0, 100}, {100, 0, 100}};
+        int z[4] = {100, 120, 140, 160};
+        uint8_t uv[8] = {0, 0, 10, 0, 0, 10, 10, 10};
+        int16_t out[5][3];
+        uint8_t outUv[10];
+        CHECK(ClipQuadToCameraNear(NULL, z, uv, 8, out, outUv) == 0);
+        CHECK(ClipQuadToCameraNear(pos, z, uv, 0, out, outUv) == 0);
+        CHECK(ClipQuadToCameraNear(pos, z, uv, 8, out, outUv) == 4);
+        CHECK(out[1][0] == 100 && outUv[2] == 10);
+        z[0] = z[1] = -10;
+        CHECK(ClipQuadToCameraNear(pos, z, uv, 8, out, outUv) == 4);
+        /* Edge from (100, z=-10) to (0, z=140) crosses 8 at x = 88. */
+        CHECK(out[0][0] == 88 && outUv[0] == 9);
+        z[0] = -10;
+        z[1] = z[2] = z[3] = 100;
+        CHECK(ClipQuadToCameraNear(pos, z, uv, 8, out, outUv) == 5);
+        z[0] = z[1] = z[2] = z[3] = -5;
+        CHECK(ClipQuadToCameraNear(pos, z, uv, 8, out, outUv) == 0);
+    }
     return 0;
 }
 

@@ -223,18 +223,38 @@ static int Barycentric(const float triangle[3][2], float x, float y,
     return weight[0] >= -0.01f && weight[1] >= -0.01f && weight[2] >= -0.01f;
 }
 
+/* A behind-camera corner clamps to the opposite side of the screen. Holding
+ * that corner keeps the quad on the side it left through. A corner that keeps
+ * the same sign is still leaving through that edge and may move. */
+static int ProjectionFlipped(int previous, int target) {
+    if (abs(target) < 1000 || abs(target - previous) <= 160) return 0;
+    return (previous >= 0 && target < 0) || (previous <= 0 && target > 0);
+}
+
 static int FaceMotionCoordinates(int faceIndex, float fraction,
                                  float x[4], float y[4]) {
     if (!s_previous || !s_current || faceIndex < 0 ||
         faceIndex >= s_previous->faceCount) return 0;
     int currentFace = s_faceMatches[faceIndex];
     if (currentFace < 0 || !s_faceProjectable[faceIndex]) return 0;
-    float from[4][2], to[4][2];
+    float from[4][2], to[4][2], movedX[4], movedY[4];
     for (int vertex = 0; vertex < 4; ++vertex) {
-        from[vertex][0] = s_previous->faces[faceIndex].screen[vertex][0];
-        from[vertex][1] = s_previous->faces[faceIndex].screen[vertex][1];
-        to[vertex][0] = s_current->faces[currentFace].screen[vertex][0];
-        to[vertex][1] = s_current->faces[currentFace].screen[vertex][1];
+        for (int axis = 0; axis < 2; ++axis) {
+            int previous = axis == 0
+                ? s_previous->faces[faceIndex].screen[vertex][0]
+                : s_previous->faces[faceIndex].screen[vertex][1];
+            int target = axis == 0
+                ? s_current->faces[currentFace].screen[vertex][0]
+                : s_current->faces[currentFace].screen[vertex][1];
+            if (ProjectionFlipped(previous, target)) target = previous;
+            if (axis == 0) {
+                from[vertex][0] = (float)previous;
+                to[vertex][0] = (float)target;
+            } else {
+                from[vertex][1] = (float)previous;
+                to[vertex][1] = (float)target;
+            }
+        }
     }
     for (int vertex = 0; vertex < 4; ++vertex) {
         float previousTriangle[3][2], currentTriangle[3][2], weight[3];
@@ -260,8 +280,12 @@ static int FaceMotionCoordinates(int faceIndex, float fraction,
             targetX += weight[corner] * currentTriangle[corner][0];
             targetY += weight[corner] * currentTriangle[corner][1];
         }
-        x[vertex] += fraction * (targetX - x[vertex]);
-        y[vertex] += fraction * (targetY - y[vertex]);
+        movedX[vertex] = x[vertex] + fraction * (targetX - x[vertex]);
+        movedY[vertex] = y[vertex] + fraction * (targetY - y[vertex]);
+    }
+    for (int vertex = 0; vertex < 4; ++vertex) {
+        x[vertex] = movedX[vertex];
+        y[vertex] = movedY[vertex];
     }
     return 1;
 }
@@ -454,8 +478,34 @@ int ClassicMotionCoordinates(int packetIndex, float fraction,
         !isfinite(fraction)) return 0;
     if (fraction < 0) fraction = 0;
     if (fraction > 1) fraction = 1;
-    if (s_matches[packetIndex] < 0 && s_packetFaceMotion[packetIndex])
-        return FaceMotionCoordinates(s_packetFaces[packetIndex], fraction, x, y);
+    if (s_matches[packetIndex] < 0 && s_packetFaceMotion[packetIndex]) {
+        /* Replay adds the GPU draw offset before this call. Parent screens
+         * are stored without it, so the barycentric test has to run in the
+         * packet's own space. The second page draws at y=240. */
+        int xy[4][2];
+        int count = PolygonCoordinates(&s_previous->packets[packetIndex], xy);
+        int vertex;
+        float offX, offY;
+        if (count <= 0) return 0;
+        offX = x[0] - (float)xy[0][0];
+        offY = y[0] - (float)xy[0][1];
+        for (vertex = 0; vertex < count; ++vertex) {
+            x[vertex] -= offX;
+            y[vertex] -= offY;
+        }
+        if (!FaceMotionCoordinates(s_packetFaces[packetIndex], fraction, x, y)) {
+            for (vertex = 0; vertex < count; ++vertex) {
+                x[vertex] += offX;
+                y[vertex] += offY;
+            }
+            return 0;
+        }
+        for (vertex = 0; vertex < count; ++vertex) {
+            x[vertex] += offX;
+            y[vertex] += offY;
+        }
+        return 1;
+    }
     if (s_matches[packetIndex] < 0) return 0;
     int xy[4][2], target[4][2];
     int count = PolygonCoordinates(&s_previous->packets[packetIndex], xy);

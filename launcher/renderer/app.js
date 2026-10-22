@@ -178,6 +178,7 @@ function renderSettingsView() {
             ${renderRowSetting('video.texture_filter', 'Texture Filtering')}
             ${renderRowSetting('video.grading', 'Color Grading')}
             ${renderRowSetting('video.ssao', 'Ambient Occlusion')}
+            ${renderRowSetting('video.car_lights', 'Car Lights')}
             ${renderRowSetting('video.shadows', 'Shadows')}
             ${renderRowSetting('modern.authored_cars', '3D Car Models')}
           </section>

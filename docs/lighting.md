@@ -47,12 +47,15 @@ scene contract.
 
 `Esc` pauses the game and opens settings (`graphics_overlay.c`). Graphics
 lists the renderer, resolution, aspect ratio, frame rate, texture filtering,
-anti-aliasing, colour grading, shadows, ambient occlusion and draw distance.
+anti-aliasing, colour grading, shadows, ambient occlusion, car lights and draw
+distance. Car lights follow day, night and tunnels when on, and off removes
+the headlights, tail lamps and brake lights.
 Controls covers analog steering, the wheel, steering feel and force feedback.
 Audio covers music and effects. View covers the HUD and the chase camera.
-Graphics changes apply at once: anything but the renderer choice rebuilds the
-presentation targets through `ModernApplyConfig` while the game is held, and
-the renderer choice is a switch. Graphics, steering, the HUD and the chase
+Graphics changes apply at once: anything but the renderer choice, the draw
+distance and car lights rebuilds the presentation targets through
+`ModernApplyConfig` while the game is held, and the renderer choice is a
+switch. Graphics, steering, the HUD and the chase
 camera last until the game closes. Music and effects are the save-game
 volumes, and force feedback is the choice the pause menu remembers. `[video]`
 in `rage-port.ini` sets the values used at start-up. Keyboard bindings stay

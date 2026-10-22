@@ -1965,9 +1965,9 @@ int ModernRestartPresentation(const RagePortConfig *config) {
     return ModernInit(&next);
 }
 
-/* Every field but the renderer choice, the draw distance and the screen
- * effects shapes the presentation targets, so a field added to the config is
- * covered without being listed here. The struct
+/* Every field but the renderer choice, the draw distance, the car lights and
+ * the screen effects shapes the presentation targets, so a field added to the
+ * config is covered without being listed here. The struct
  * holds only 4-byte members, hence no padding to disturb the comparison. */
 static int ModernPresentationSettingsDiffer(const RagePortConfig *a,
                                             const RagePortConfig *b) {
@@ -1979,6 +1979,7 @@ static int ModernPresentationSettingsDiffer(const RagePortConfig *a,
     left.modernPost = right.modernPost;
     left.modernSsao = right.modernSsao;
     left.modernGrading = right.modernGrading;
+    left.carLights = right.carLights;
     return memcmp(&left, &right, sizeof(left)) != 0;
 }
 
@@ -2022,8 +2023,10 @@ int ModernApplyConfig(const RagePortConfig *requested) {
     /* The renderer choice is a switch, not a restart: keep the running one
      * through any rebuild and flip it afterwards. */
     next.renderer = s_enabled ? RAGE_RENDERER_MODERN : RAGE_RENDERER_CLASSIC;
-    /* Draw distance is read per frame by ModernDepthLimit: no rebuild. */
+    /* Draw distance is read per frame by ModernDepthLimit: no rebuild.
+     * Car lights are read when the race world publishes its lamps. */
     s_config.modernDrawDistance = next.modernDrawDistance;
+    s_config.carLights = next.carLights ? 1 : 0;
     if (ModernPresentationSettingsDiffer(&next, &s_config)) {
         if (!ModernRestartPresentation(&next)) return 0;
     } else {

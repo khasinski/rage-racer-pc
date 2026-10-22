@@ -83,6 +83,42 @@ int main(void) {
     CHECK(ClassicMotionCoordinates(0,0.5f,x,y));
     CHECK(x[0] == 5 && x[1] == 13 && x[2] == 5 && x[3] == 13);
 
+    /* The second draw page offsets every coordinate by its buffer origin.
+     * Parent screens do not include that offset. */
+    Reset();
+    PacketQuad(&a, 0, 0, 0); PacketQuad(&b, 0, 10, 0);
+    sb[0].bytes *= 2;
+    Prepare();
+    x[0]=240; x[1]=248; x[2]=240; x[3]=248;
+    y[0]=240; y[1]=240; y[2]=248; y[3]=248;
+    CHECK(ClassicMotionCoordinates(0,0.5f,x,y));
+    CHECK(x[0] == 245 && x[1] == 253 && x[2] == 245 && x[3] == 253);
+    CHECK(y[0] == 240 && y[2] == 248);
+
+    /* A behind-camera clamp that jumps to the opposite side stays put.
+     * Continuing off the same side still follows the corner. */
+    Reset();
+    PacketQuad(&a, 0, 100, 200); PacketQuad(&b, 0, 110, 210);
+    sb[0].bytes *= 2;
+    b.faces[0].screen[2][1] = -1024;
+    b.faces[0].screen[3][1] = -1024;
+    Prepare();
+    x[0]=100; x[1]=108; x[2]=100; x[3]=108;
+    y[0]=200; y[1]=200; y[2]=208; y[3]=208;
+    CHECK(ClassicMotionCoordinates(0,1.0f,x,y));
+    CHECK(y[0] == 210 && y[1] == 210);
+    CHECK(y[2] == 208 && y[3] == 208);
+    Reset();
+    PacketQuad(&a, 0, 100, 200); PacketQuad(&b, 0, 110, 210);
+    sb[0].bytes *= 2;
+    b.faces[0].screen[2][1] = 1023;
+    b.faces[0].screen[3][1] = 1023;
+    Prepare();
+    x[0]=100; x[1]=108; x[2]=100; x[3]=108;
+    y[0]=200; y[1]=200; y[2]=208; y[3]=208;
+    CHECK(ClassicMotionCoordinates(0,1.0f,x,y));
+    CHECK(y[2] == 1023 && y[3] == 1023);
+
     Reset(); b.sceneId++; Prepare(); CHECK(ClassicMotionMatchCount()==0);
     Reset(); b.sceneTimer=a.sceneTimer; Prepare(); CHECK(ClassicMotionMatchCount()==0);
     Reset(); b.frameCounter++; Prepare(); CHECK(ClassicMotionMatchCount()==0);

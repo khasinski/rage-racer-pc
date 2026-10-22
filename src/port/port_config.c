@@ -31,6 +31,7 @@ void PortConfigDefaults(RagePortConfig *config) {
     config->modernGrading = 1;
     config->modernSsao = 1;
     config->modernShadows = 2;
+    config->carLights = 1;
 }
 
 static int ParseFloat(const char *value, float *out, float min, float max) {
@@ -145,6 +146,17 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         }
         return 0;
     }
+    if (strcmp(name, "modern.car_lights") == 0) {
+        if (strcmp(value, "off") == 0) {
+            config->carLights = 0;
+            return 1;
+        }
+        if (strcmp(value, "on") == 0) {
+            config->carLights = 1;
+            return 1;
+        }
+        return 0;
+    }
     if (strcmp(name, "modern.texture_filter") == 0) {
         if (strcmp(value, "nearest") == 0) {
             config->modernTextureFilterLinear = 0;
@@ -171,7 +183,8 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
         {"video.bloom", "modern.bloom"},
         {"video.grading", "modern.grading"},
         {"video.ssao", "modern.ssao"},
-        {"video.shadows", "modern.shadows"}
+        {"video.shadows", "modern.shadows"},
+        {"video.car_lights", "modern.car_lights"}
     };
     int index, applied = 0;
 

@@ -337,5 +337,21 @@ int main(void) {
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 72);
     CHECK(world.spotLights[71].position.x > 10000);
+    /* The player switch kills every lamp, including the daylight tail, and
+     * leaves the day/night latch running so they return when it is turned on. */
+    car = (CarLights){.headlights = 1.0f, .tail = 0.4f, .stop = 1.0f, .automatic = 1};
+    CarLightsSetEnabled(0);
+    UpdateCarLights(&car, 1, 1, 1, 0);
+    CHECK(car.headlights == 0 && car.tail == 0 && car.stop == 0 && car.automatic);
+    UpdateCarLights(&car, 0.1f, 1, 1, 1);
+    CHECK(car.headlights == 0 && car.tail == 0 && car.stop == 0 && car.automatic);
+    CarLightsSetEnabled(1);
+    UpdateCarLights(&car, 0.1f, 1, 1, 1);
+    CHECK(car.headlights == 1 && car.stop == 1 && car.tail == 0.4f);
+    car = (CarLights){0};
+    CarLightsSetEnabled(0);
+    UpdateCarLights(&car, 1, 1, 0, 1);
+    CHECK(car.headlights == 0 && car.tail == 0 && car.stop == 0 && !car.automatic);
+    CarLightsSetEnabled(1);
     return failures != 0;
 }

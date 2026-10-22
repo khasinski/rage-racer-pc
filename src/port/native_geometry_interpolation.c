@@ -98,6 +98,74 @@ int CourseQuadVisible(int mirror, int clip0, int clip1) {
     return mirror ? (clip0 < 0 || clip1 > 0) : (clip0 > 0 || clip1 < 0);
 }
 
+static int ClipCoord(int start, int end, int zStart, int zEnd, int nearZ) {
+    int64_t span = (int64_t)zEnd - zStart;
+    int64_t along = (int64_t)nearZ - zStart;
+    if (span == 0) return start;
+    return ClampInt16(start + (int64_t)(end - start) * along / span);
+}
+
+static uint8_t ClipUv(int start, int end, int zStart, int zEnd, int nearZ) {
+    int64_t span = (int64_t)zEnd - zStart;
+    int64_t along = (int64_t)nearZ - zStart;
+    int value;
+    if (span == 0) return (uint8_t)start;
+    value = (int)(start + (int64_t)(end - start) * along / span);
+    if (value < 0) return 0;
+    if (value > 255) return 255;
+    return (uint8_t)value;
+}
+
+int ClipQuadToCameraNear(const int16_t inPos[4][3], const int inZ[4],
+                         const uint8_t inUv[8], int nearZ,
+                         int16_t outPos[5][3], uint8_t outUv[10]) {
+    int inside[4];
+    int front = 0;
+    int count = 0;
+    int corner;
+    if (inPos == NULL || inZ == NULL || inUv == NULL || outPos == NULL ||
+        outUv == NULL || nearZ <= 0) return 0;
+    for (corner = 0; corner < 4; corner++) {
+        inside[corner] = inZ[corner] >= nearZ;
+        front += inside[corner];
+    }
+    if (front == 0) return 0;
+    if (front == 4) {
+        for (corner = 0; corner < 4; corner++) {
+            int axis;
+            for (axis = 0; axis < 3; axis++)
+                outPos[corner][axis] = inPos[corner][axis];
+            outUv[corner * 2] = inUv[corner * 2];
+            outUv[corner * 2 + 1] = inUv[corner * 2 + 1];
+        }
+        return 4;
+    }
+    for (corner = 0; corner < 4; corner++) {
+        int next = (corner + 1) & 3;
+        int axis;
+        if (inside[corner] != inside[next] && count < 5) {
+            for (axis = 0; axis < 3; axis++)
+                outPos[count][axis] = (int16_t)ClipCoord(
+                    inPos[corner][axis], inPos[next][axis],
+                    inZ[corner], inZ[next], nearZ);
+            outUv[count * 2] = ClipUv(inUv[corner * 2], inUv[next * 2],
+                                      inZ[corner], inZ[next], nearZ);
+            outUv[count * 2 + 1] = ClipUv(inUv[corner * 2 + 1],
+                                          inUv[next * 2 + 1],
+                                          inZ[corner], inZ[next], nearZ);
+            count++;
+        }
+        if (inside[next] && count < 5) {
+            for (axis = 0; axis < 3; axis++)
+                outPos[count][axis] = inPos[next][axis];
+            outUv[count * 2] = inUv[next * 2];
+            outUv[count * 2 + 1] = inUv[next * 2 + 1];
+            count++;
+        }
+    }
+    return count >= 3 ? count : 0;
+}
+
 int ScreenQuadOutsideBounds(const int sxy[4], int left, int right, int top,
                             int bottom, int horizontalMargin) {
     int allLeft = 1;

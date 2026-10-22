@@ -71,6 +71,7 @@ static const char *const kShadowNames[] = {"Off", "Standard", "High"};
 ACCESSORS(Shadows, v->config.modernShadows, v->config.modernShadows = i)
 
 ACCESSORS(Ssao, v->config.modernSsao != 0, v->config.modernSsao = i)
+ACCESSORS(CarLights, v->config.carLights != 0, v->config.carLights = i)
 
 static const float kDistances[] = {0.5f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f};
 static const char *const kDistanceNames[] = {"0.5x", "1x", "1.5x",
@@ -94,6 +95,8 @@ static const OverlaySetting kGraphics[] = {
             kShadowNames, Shadows),
     SETTING("Ambient occlusion", "Soft contact shadows in creases and under cars.",
             kSwitchNames, Ssao),
+    SETTING("Car lights", "Headlights, tail lamps and brake lights. On follows day, night and tunnels.",
+            kSwitchNames, CarLights),
     SETTING("Draw distance", "Values above 1x may expose unfinished track geometry.",
             kDistanceNames, Distance),
 };
@@ -162,7 +165,9 @@ static const char *const kChaseHeightNames[] = {"0.75x", "1x", "1.25x", "1.5x", 
 ACCESSORS(ChaseHeight, NearestIndex(kChaseHeight, COUNT_OF(kChaseHeight), v->session.chaseHeight),
           v->session.chaseHeight = kChaseHeight[i])
 
-static const float kLookahead[] = {0.0f, 0.5f, 1.0f};
+/* Lookahead 1 is about 30 degrees at full lock. These steps keep a tenth of
+ * that and a twentieth of the old half step, about 3 and 0.7 degrees. */
+static const float kLookahead[] = {0.0f, 0.025f, 0.1f};
 static const char *const kLookaheadNames[] = {"Off", "Half", "Full"};
 ACCESSORS(Lookahead, NearestIndex(kLookahead, COUNT_OF(kLookahead), v->session.chaseLookahead),
           v->session.chaseLookahead = kLookahead[i])
@@ -178,7 +183,7 @@ static const OverlaySetting kView[] = {
             kChaseDistanceNames, ChaseDistance),
     SETTING("Chase height", "How high above the car the chase camera sits.",
             kChaseHeightNames, ChaseHeight),
-    SETTING("Corner look", "Turns the chase camera into the steering.",
+    SETTING("Corner look", "Slightly turns the chase camera into the steering.",
             kLookaheadNames, Lookahead),
 };
 

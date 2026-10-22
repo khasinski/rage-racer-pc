@@ -154,6 +154,24 @@
   },
   {
     "group": "video",
+    "key": "video.car_lights",
+    "label": "Car lights",
+    "help": "Headlights, tail lamps and brake lights. On follows day, night and tunnels.",
+    "type": "select",
+    "default": "on",
+    "options": [
+      [
+        "off",
+        "Off"
+      ],
+      [
+        "on",
+        "On"
+      ]
+    ]
+  },
+  {
+    "group": "video",
     "key": "video.shadows",
     "label": "Shadows",
     "help": "Detail of sun shadows on the track and cars. High uses the sharpest shadow maps.",

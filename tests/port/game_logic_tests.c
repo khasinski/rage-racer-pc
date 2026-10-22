@@ -297,6 +297,7 @@ static void test_port_config(void) {
     PortConfigDefaults(&config);
     EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_VSYNC, config.modernFps);
+    EXPECT_EQ(1, config.carLights);
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
         failures++;
@@ -364,6 +365,26 @@ static void test_port_config(void) {
         EXPECT_EQ(0, PortConfigApplyRuntime(&invalidFloat));
         EXPECT_EQ(40, (s32)(invalidFloat.modernInternalScale * 10.0f));
         EXPECT_EQ(10, (s32)(invalidFloat.modernDrawDistance * 10.0f));
+        unlink(emptyPath);
+    }
+    {
+        RagePortConfig lights;
+        char emptyPath[] = TEST_TEMP_PREFIX "rage-lights-XXXXXX";
+        int emptyFd = mkstemp(emptyPath);
+        char *off[] = {
+            "rage-test", "--config", emptyPath, "--set", "video.car_lights=off"};
+        char *bad[] = {
+            "rage-test", "--config", emptyPath, "--set", "video.car_lights=sometimes"};
+
+        PortConfigDefaults(&lights);
+        if (emptyFd >= 0) close(emptyFd);
+        EXPECT_EQ(1, RuntimeConfigInit(5, off));
+        EXPECT_EQ(1, PortConfigApplyRuntime(&lights));
+        EXPECT_EQ(0, lights.carLights);
+        PortConfigDefaults(&lights);
+        EXPECT_EQ(1, RuntimeConfigInit(5, bad));
+        EXPECT_EQ(0, PortConfigApplyRuntime(&lights));
+        EXPECT_EQ(1, lights.carLights);
         unlink(emptyPath);
     }
     EXPECT_EQ(0x14000, PortMirrorFarDepth(INT_MAX));

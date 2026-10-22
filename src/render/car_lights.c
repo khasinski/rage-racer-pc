@@ -2,15 +2,36 @@
 
 #include <math.h>
 
+static int s_enabled = 1;
+
 static float Unit(float value) {
     if (!isfinite(value)) return 1.0f;
     return value < 0.0f ? 0.0f : value > 1.0f ? 1.0f : value;
 }
 
+void CarLightsSetEnabled(int enabled) {
+    s_enabled = enabled ? 1 : 0;
+}
+
+static void ForceLampsOff(CarLights *lights) {
+    lights->headlights = 0.0f;
+    lights->tail = 0.0f;
+    lights->stop = 0.0f;
+}
+
 void UpdateCarLights(CarLights *lights, float daylight, float shelter,
                      int braking, float seconds) {
     float brightness, step, target;
-    if (!lights || !isfinite(seconds) || seconds <= 0.0f) return;
+    if (!lights) return;
+    if (!s_enabled && !isfinite(seconds)) {
+        ForceLampsOff(lights);
+        return;
+    }
+    if (s_enabled && (!isfinite(seconds) || seconds <= 0.0f)) return;
+    if (!s_enabled && seconds <= 0.0f) {
+        ForceLampsOff(lights);
+        return;
+    }
     brightness = Unit(daylight) * Unit(shelter);
     /* A bridge shadow must not flash the headlights. Require continuous
      * darkness; separate thresholds retain the latch around twilight. */
@@ -23,6 +44,10 @@ void UpdateCarLights(CarLights *lights, float daylight, float shelter,
     } else {
         lights->darkSeconds = 0;
         if (brightness > 0.36f) lights->automatic = 0;
+    }
+    if (!s_enabled) {
+        ForceLampsOff(lights);
+        return;
     }
 
     target = lights->automatic ? 1.0f : 0.0f;

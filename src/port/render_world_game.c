@@ -4,6 +4,7 @@
 
 #include "course_coordinate.h"
 #include "sky_panorama_layout.h"
+#include "port_config.h"
 #include "runtime_config.h"
 #include "native_visibility.h"
 #include "timing_control.h"
@@ -339,6 +340,7 @@ void GameRenderWorldBeginFrame(uint64_t frame) {
 static void PublishCarLights(void) {
     RenderWorld *world = GameRenderWorldMutable();
     const RenderWorld *previous = GameRenderWorldCurrent();
+    CarLightsSetEnabled(PortActiveConfig()->carLights);
     if (!GameSceneUsesRaceWorld()) return;
     float daylight = CarLightDaylight(world->camera.skyTopColor,
                                       world->camera.skyHorizonColor);
