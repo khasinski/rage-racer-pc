@@ -19,7 +19,8 @@ int main(void) {
 
     ModernPresentationClockObserveFrame(&clock, 41, 30000000u);
     assert(clock.tickIntervalNs == 20000000u);
-    assert(ModernPresentationClockFraction(&clock, 30000000u) == 1.0f);
+    /* The tick instant is the start of this interval, not its end. */
+    assert(ModernPresentationClockFraction(&clock, 30000000u) == 0.0f);
     assert(ModernPresentationClockFraction(&clock, 35000000u) == 0.25f);
     assert(ModernPresentationClockFraction(&clock, 50000000u) == 1.0f);
     assert(ModernPresentationClockFraction(&clock, 90000000u) == 1.0f);
