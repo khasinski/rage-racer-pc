@@ -138,7 +138,8 @@ int OverlayFontReady(void) {
 
     if (s_fontState != 0) return s_fontState > 0;
     offset = stbtt_GetFontOffsetForIndex(ibm_plex_sans_ttf, 0);
-    if (offset < 0 || !stbtt_InitFont(&s_font, ibm_plex_sans_ttf, offset)) {
+    if (offset < 0 || (size_t)offset >= ibm_plex_sans_ttf_len ||
+        !stbtt_InitFont(&s_font, ibm_plex_sans_ttf, offset)) {
         s_fontState = -1;
         return 0;
     }
