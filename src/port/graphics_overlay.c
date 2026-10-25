@@ -16,6 +16,7 @@
 #include "modern/shaders/overlay_vert_spv.h"
 #include "overlay_model.h"
 #include "overlay_raster.h"
+#include "touch_model.h"
 #include "port_config.h"
 #include "runtime_config.h"
 #include "session_options.h"
@@ -90,6 +91,9 @@ static OverlayAction ButtonAction(SDL_GamepadButton button) {
     }
 }
 
+static int TouchEnabled(void);
+static void OnTouchEvent(const SDL_Event *event);
+
 static void OnMouse(float windowX, float windowY, int click) {
     float density = s_window != NULL ? SDL_GetWindowPixelDensity(s_window) : 1.0f;
     float x = (windowX * density - (float)s_layout.x) / s_layout.scale;
@@ -100,6 +104,10 @@ static void OnMouse(float windowX, float windowY, int click) {
 
 static void OnEvent(const SDL_Event *event) {
     if (s_prevEvent != NULL) s_prevEvent(event);
+    if (event->type >= SDL_EVENT_FINGER_DOWN && event->type <= SDL_EVENT_FINGER_CANCELED &&
+        TouchEnabled()) {
+        OnTouchEvent(event);
+    }
     if (event->type == SDL_EVENT_KEY_DOWN) {
         SDL_Scancode key = event->key.scancode;
 
@@ -137,12 +145,24 @@ static SDL_GPUSampler *s_sampler;
 static SDL_GPUTexture *s_texture;
 static int s_textureW, s_textureH;
 
+static TouchState s_touch;
+static TouchLayout s_touchLayout;
+static OverlaySurface s_atlas;
+static SDL_GPUTexture *s_atlasTexture;
+static int s_atlasW, s_atlasH;
+static int s_touchW, s_touchH;
+static SDL_Rect s_touchSafe;
+static int s_touchEnabled = -1;
+
 void PortGraphicsOverlayReleaseGpu(void) {
     if (s_device != NULL) {
         if (s_texture != NULL) SDL_ReleaseGPUTexture(s_device, s_texture);
+        if (s_atlasTexture != NULL) SDL_ReleaseGPUTexture(s_device, s_atlasTexture);
         if (s_sampler != NULL) SDL_ReleaseGPUSampler(s_device, s_sampler);
         if (s_pipeline != NULL) SDL_ReleaseGPUGraphicsPipeline(s_device, s_pipeline);
     }
+    s_atlasTexture = NULL;
+    s_touchW = s_touchH = 0;
     s_texture = NULL;
     s_sampler = NULL;
     s_pipeline = NULL;
@@ -235,33 +255,35 @@ static int EnsurePipeline(SDL_GPUDevice *device, SDL_GPUTextureFormat format) {
     return 1;
 }
 
-static int UploadSurface(SDL_GPUDevice *device) {
+static int UploadTo(SDL_GPUDevice *device, SDL_GPUTexture **texture,
+                    int *textureW, int *textureH,
+                    const OverlaySurface *surface) {
     SDL_GPUTransferBufferCreateInfo transferInfo;
     SDL_GPUTransferBuffer *transfer;
     SDL_GPUCommandBuffer *command;
     SDL_GPUCopyPass *copy;
     SDL_GPUTextureTransferInfo source;
     SDL_GPUTextureRegion destination;
-    Uint32 bytes = (Uint32)((size_t)s_surface.w * (size_t)s_surface.h * 4u);
+    Uint32 bytes = (Uint32)((size_t)surface->w * (size_t)surface->h * 4u);
     void *mapped;
 
-    if (s_texture == NULL || s_textureW != s_surface.w ||
-        s_textureH != s_surface.h) {
+    if (*texture == NULL || *textureW != surface->w ||
+        *textureH != surface->h) {
         SDL_GPUTextureCreateInfo info;
 
-        if (s_texture != NULL) SDL_ReleaseGPUTexture(device, s_texture);
+        if (*texture != NULL) SDL_ReleaseGPUTexture(device, *texture);
         SDL_zero(info);
         info.type = SDL_GPU_TEXTURETYPE_2D;
         info.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
         info.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
-        info.width = (Uint32)s_surface.w;
-        info.height = (Uint32)s_surface.h;
+        info.width = (Uint32)surface->w;
+        info.height = (Uint32)surface->h;
         info.layer_count_or_depth = 1;
         info.num_levels = 1;
-        s_texture = SDL_CreateGPUTexture(device, &info);
-        s_textureW = s_surface.w;
-        s_textureH = s_surface.h;
-        if (s_texture == NULL) return 0;
+        *texture = SDL_CreateGPUTexture(device, &info);
+        *textureW = surface->w;
+        *textureH = surface->h;
+        if (*texture == NULL) return 0;
     }
     SDL_zero(transferInfo);
     transferInfo.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
@@ -273,7 +295,7 @@ static int UploadSurface(SDL_GPUDevice *device) {
         SDL_ReleaseGPUTransferBuffer(device, transfer);
         return 0;
     }
-    memcpy(mapped, s_surface.pixels, bytes);
+    memcpy(mapped, surface->pixels, bytes);
     SDL_UnmapGPUTransferBuffer(device, transfer);
     command = SDL_AcquireGPUCommandBuffer(device);
     if (command == NULL) {
@@ -283,18 +305,22 @@ static int UploadSurface(SDL_GPUDevice *device) {
     copy = SDL_BeginGPUCopyPass(command);
     SDL_zero(source);
     source.transfer_buffer = transfer;
-    source.pixels_per_row = (Uint32)s_surface.w;
-    source.rows_per_layer = (Uint32)s_surface.h;
+    source.pixels_per_row = (Uint32)surface->w;
+    source.rows_per_layer = (Uint32)surface->h;
     SDL_zero(destination);
-    destination.texture = s_texture;
-    destination.w = (Uint32)s_surface.w;
-    destination.h = (Uint32)s_surface.h;
+    destination.texture = *texture;
+    destination.w = (Uint32)surface->w;
+    destination.h = (Uint32)surface->h;
     destination.d = 1;
     SDL_UploadToGPUTexture(copy, &source, &destination, false);
     SDL_EndGPUCopyPass(copy);
     SDL_SubmitGPUCommandBuffer(command);
     SDL_ReleaseGPUTransferBuffer(device, transfer);
     return 1;
+}
+
+static int UploadSurface(SDL_GPUDevice *device) {
+    return UploadTo(device, &s_texture, &s_textureW, &s_textureH, &s_surface);
 }
 
 /* Repaints and uploads the panel when the model or the window changed. */
@@ -325,6 +351,129 @@ static void RefreshSurface(SDL_GPUDevice *device, SDL_Window *window) {
     s_model.dirty = 0;
 }
 
+/* ---- touch pad ---- */
+
+/* The phone build always has it; elsewhere it is for trying the pad out. */
+static int TouchEnabled(void) {
+    if (s_touchEnabled < 0) {
+#ifdef __ANDROID__
+        s_touchEnabled = 1;
+#else
+        s_touchEnabled = RuntimeConfigEnabled("controls.touch");
+#endif
+    }
+    return s_touchEnabled;
+}
+
+uint32_t PortTouchHeldControls(void) {
+    return TouchEnabled() && !s_model.open ? TouchHeldMask(&s_touch) : 0u;
+}
+
+static void OnTouchPressed(uint32_t pressed) {
+    if (pressed & (1u << TOUCH_SETTINGS)) {
+        TouchReleaseAll(&s_touch);
+        OpenPanel();
+    }
+}
+
+static void OnTouchEvent(const SDL_Event *event) {
+    const float x = event->tfinger.x * (float)s_touchW;
+    const float y = event->tfinger.y * (float)s_touchH;
+    const int64_t id = (int64_t)event->tfinger.fingerID;
+
+    if (s_model.open || s_touchW <= 0) {
+        TouchReleaseAll(&s_touch);
+        return;
+    }
+    switch (event->type) {
+    case SDL_EVENT_FINGER_DOWN:
+        OnTouchPressed(TouchFingerDown(&s_touch, &s_touchLayout, id, x, y));
+        break;
+    case SDL_EVENT_FINGER_MOTION:
+        OnTouchPressed(TouchFingerMove(&s_touch, &s_touchLayout, id, x, y));
+        break;
+    case SDL_EVENT_FINGER_UP:
+    case SDL_EVENT_FINGER_CANCELED:
+        TouchFingerUp(&s_touch, id);
+        break;
+    default:
+        break;
+    }
+}
+
+/* Lays the pad out for the window and repaints its atlas when that changed. */
+static void RefreshTouch(SDL_GPUDevice *device, SDL_Window *window) {
+    int w = 0, h = 0, atlasW, atlasH;
+
+    SDL_GetWindowSizeInPixels(window, &w, &h);
+    if (w <= 0 || h <= 0 || !OverlayFontReady()) return;
+    if (w != s_touchW || h != s_touchH) {
+        SDL_Rect safe = {0};
+        int lw = 0, lh = 0;
+
+        SDL_GetWindowSafeArea(window, &safe);
+        SDL_GetWindowSize(window, &lw, &lh);
+        fprintf(stderr, "rage-port: touch pad window=%dx%d logical=%dx%d safe=%d,%d %dx%d\n",
+                w, h, lw, lh, safe.x, safe.y, safe.w, safe.h);
+    }
+    {
+        SDL_Rect safe = {0, 0, w, h};
+
+        SDL_GetWindowSafeArea(window, &safe);
+        if (safe.w <= 0 || safe.h <= 0) safe = (SDL_Rect){0, 0, w, h};
+        if (w == s_touchW && h == s_touchH && s_atlasTexture != NULL &&
+            memcmp(&safe, &s_touchSafe, sizeof(safe)) == 0) return;
+        s_touchSafe = safe;
+        s_touchW = w;
+        s_touchH = h;
+        TouchComputeLayout(safe.x, safe.y, safe.w, safe.h, &s_touchLayout);
+    }
+    TouchAtlasSize(&s_touchLayout, &atlasW, &atlasH);
+    if (!OverlaySurfaceResize(&s_atlas, atlasW, atlasH)) return;
+    OverlayPaintTouchAtlas(&s_atlas, &s_touchLayout);
+    if (EnsurePipeline(device, SDL_GetGPUSwapchainTextureFormat(device, window))) {
+        UploadTo(device, &s_atlasTexture, &s_atlasW, &s_atlasH, &s_atlas);
+    }
+}
+
+static void DrawTouch(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
+    const uint32_t held = TouchHeldMask(&s_touch);
+    SDL_GPUTextureSamplerBinding binding;
+    SDL_GPUViewport viewport;
+    SDL_Rect scissor;
+    int control;
+
+    if (s_pipeline == NULL || s_atlasTexture == NULL || s_touchW <= 0) return;
+    viewport = (SDL_GPUViewport){0.0f, 0.0f, (float)s_touchW, (float)s_touchH,
+                                 0.0f, 1.0f};
+    scissor = (SDL_Rect){0, 0, s_touchW, s_touchH};
+    SDL_SetGPUViewport(pass, &viewport);
+    SDL_SetGPUScissor(pass, &scissor);
+    SDL_BindGPUGraphicsPipeline(pass, s_pipeline);
+    binding.texture = s_atlasTexture;
+    binding.sampler = s_sampler;
+    SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
+    for (control = 0; control < TOUCH_CONTROL_COUNT; control++) {
+        const TouchRect *rect = &s_touchLayout.rect[control];
+        OverlayQuad quad;
+        int ox, oy;
+
+        TouchAtlasOrigin(&s_touchLayout, control, (held >> control) & 1u, &ox,
+                         &oy);
+        quad.rect[0] = rect->x / (float)s_touchW * 2.0f - 1.0f;
+        quad.rect[1] = 1.0f - rect->y / (float)s_touchH * 2.0f;
+        quad.rect[2] = (rect->x + rect->w) / (float)s_touchW * 2.0f - 1.0f;
+        quad.rect[3] = 1.0f - (rect->y + rect->h) / (float)s_touchH * 2.0f;
+        quad.uv[0] = (float)ox / (float)s_atlasW;
+        quad.uv[1] = (float)oy / (float)s_atlasH;
+        quad.uv[2] = ((float)ox + rect->w) / (float)s_atlasW;
+        quad.uv[3] = ((float)oy + rect->h) / (float)s_atlasH;
+        quad.tint[0] = quad.tint[1] = quad.tint[2] = quad.tint[3] = 1.0f;
+        SDL_PushGPUVertexUniformData(command, 0, &quad, sizeof(quad));
+        SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
+    }
+}
+
 void PortGraphicsOverlayTick(void) {
     SDL_GPUDevice *device = NULL;
     SDL_Window *window = NULL;
@@ -342,8 +491,12 @@ void PortGraphicsOverlayTick(void) {
         quit.type = SDL_EVENT_QUIT;
         SDL_PushEvent(&quit);
     }
-    if (!s_model.open) return;
+    if (!s_model.open && !TouchEnabled()) return;
     if (!Psyz_VideoGetPresentationDevice_SDL3GPU(&window, &device)) return;
+    if (!s_model.open) {
+        RefreshTouch(device, window);
+        return;
+    }
     s_window = window;
     RefreshSurface(device, window);
 }
@@ -396,6 +549,7 @@ static void DrawPanel(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
 static void OnRender(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
     if (s_prevRender != NULL) s_prevRender(command, pass);
     if (s_model.open) DrawPanel(command, pass);
+    else if (TouchEnabled()) DrawTouch(command, pass);
 }
 
 void PortGraphicsOverlayInstall(void) {

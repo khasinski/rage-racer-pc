@@ -208,3 +208,13 @@ for(const key of ['track.big1.course.material.3','car.0.material.3','track.big1.
  async function manifest(){const pointer=JSON.parse(await fs.readFile(path.join(s.modsRoot,'active.json')));return JSON.parse(await run(s.tool('rage-mod-cli'),[path.join(s.modsRoot,'builds',pointer.build,'mod.toml')]));}
  const properties='lit opaque 0.8 0.2 0.5 0.6 0.7 1 0 0 0';p=await s.editProject([{kind:'car',id:key,field:'material',value:'lit opaque 0.3 0 1 1 1 1 0 0 0'}],p.revision);p=await s.saveMaterial('',key,properties,p.revision);assert.equal(p.changes.filter(c=>c.field==='material').length,1);assert.equal(p.changes.find(c=>c.field==='material').kind,materialKind);await s.applyProject(p.revision);let built=await manifest();assert.equal(built.materials[key],properties);assert.equal(built.materials[key+'.variant.0'],properties);assert.equal(built.materials[key+'.variant.2'],properties);assert.equal(built.textures[key],built.textures[key+'.variant.0']);assert.equal(built.textures[key],built.textures[key+'.variant.2']);assert.notEqual(built.textures[key],built.textures[other+'.variant.0']);p=await s.editProject([{kind:materialKind,id:key,field:'texture',value:null},{kind:materialKind,id:key,field:'material',value:null}],p.revision);await s.applyProject(p.revision);built=await manifest();assert.equal(built.materials[key],undefined);assert.equal(built.materials[key+'.variant.0'],'lit opaque 0.4 0 1 1 1 1 0 0 0');assert.equal(built.materials[key+'.variant.2'],'lit opaque 0.6 0 1 1 1 1 0 0 0');assert.equal(built.textures[key],undefined);assert.ok(built.textures[key+'.variant.0']);assert.equal(built.textures[key+'.variant.0'],built.textures[key+'.variant.2']);assert.equal(await fs.readFile(path.join(folder,'textures/original.png'),'base64'),png.toString('base64'));
 });
+test('fitment axle deltas read the fields in the order the editor saves them',()=>{
+ const {axleDeltas}=require('../main/project-build.cjs');
+ // [frontWidth,frontY,frontZ,frontScale,rearWidth,rearY,rearZ,rearScale,bodyY,bodyZ,bodyScale]
+ assert.deepEqual(axleDeltas([8,40,60,100,16,10,20,100,0,0,100]),{dx:2,dy:30,dz:40,rearScalePct:100});
+ // Body height and scale must not leak into the rear scale.
+ assert.equal(axleDeltas([0,0,0,100,0,0,0,100,70,0,120]).rearScalePct,100);
+ assert.equal(axleDeltas([0,0,0,100,0,0,0,80,0,0,100]).rearScalePct,80);
+ // A body-only edit leaves the axle record alone.
+ assert.deepEqual(axleDeltas([0,0,0,100,0,0,0,100,50,50,100]),{dx:0,dy:0,dz:0,rearScalePct:100});
+});

@@ -361,3 +361,132 @@ int OverlaySurfaceDump(const OverlaySurface *surface, const char *path) {
     fclose(file);
     return 1;
 }
+
+/* ---- the touch pad ---- */
+
+static void StrokePolygon(OverlaySurface *s, const float *points, int count,
+                          float width, Color c) {
+    int i;
+
+    for (i = 0; i < count; i++) {
+        const float *a = &points[i * 2];
+        const float *b = &points[((i + 1) % count) * 2];
+
+        DrawSegment(s, a[0], a[1], b[0], b[1], width, c);
+    }
+}
+
+static void StrokeCircle(OverlaySurface *s, float cx, float cy, float radius,
+                         float width, Color c) {
+    enum { SEGMENTS = 28 };
+    float points[SEGMENTS * 2];
+    int i;
+
+    for (i = 0; i < SEGMENTS; i++) {
+        float angle = (float)i * 6.2831853f / (float)SEGMENTS;
+
+        points[i * 2] = cx + cosf(angle) * radius;
+        points[i * 2 + 1] = cy + sinf(angle) * radius;
+    }
+    StrokePolygon(s, points, SEGMENTS, width, c);
+}
+
+static void PaintTouchSymbol(OverlaySurface *s, int control, float cx, float cy,
+                             float size, Color c) {
+    const float stroke = size * 0.1f;
+    const float r = size * 0.28f;
+
+    switch (control) {
+    case TOUCH_UP:
+    case TOUCH_DOWN:
+    case TOUCH_LEFT:
+    case TOUCH_RIGHT: {
+        float dx = control == TOUCH_LEFT ? -1.0f : control == TOUCH_RIGHT ? 1.0f : 0.0f;
+        float dy = control == TOUCH_UP ? -1.0f : control == TOUCH_DOWN ? 1.0f : 0.0f;
+        float tipX = cx + dx * r, tipY = cy + dy * r;
+        float backX = cx - dx * r, backY = cy - dy * r;
+
+        DrawSegment(s, backX - dy * r, backY + dx * r, tipX, tipY, stroke, c);
+        DrawSegment(s, backX + dy * r, backY - dx * r, tipX, tipY, stroke, c);
+        break;
+    }
+    case TOUCH_CROSS:
+        DrawSegment(s, cx - r, cy - r, cx + r, cy + r, stroke, c);
+        DrawSegment(s, cx - r, cy + r, cx + r, cy - r, stroke, c);
+        break;
+    case TOUCH_SQUARE: {
+        const float p[8] = {cx - r, cy - r, cx + r, cy - r, cx + r, cy + r,
+                            cx - r, cy + r};
+
+        StrokePolygon(s, p, 4, stroke, c);
+        break;
+    }
+    case TOUCH_CIRCLE:
+        StrokeCircle(s, cx, cy, r * 1.1f, stroke, c);
+        break;
+    case TOUCH_TRIANGLE: {
+        const float p[6] = {cx, cy - r * 1.15f, cx + r * 1.1f, cy + r * 0.8f,
+                            cx - r * 1.1f, cy + r * 0.8f};
+
+        StrokePolygon(s, p, 3, stroke, c);
+        break;
+    }
+    default:
+        break;
+    }
+}
+
+static const char *TouchLabel(int control) {
+    switch (control) {
+    case TOUCH_L1: return "L1";
+    case TOUCH_R1: return "R1";
+    case TOUCH_START: return "START";
+    case TOUCH_SETTINGS: return "MENU";
+    default: return NULL;
+    }
+}
+
+static Color TouchTint(int control) {
+    switch (control) {
+    case TOUCH_CROSS: return (Color){0.55f, 0.72f, 1.0f, 1.0f};
+    case TOUCH_SQUARE: return (Color){1.0f, 0.62f, 0.82f, 1.0f};
+    case TOUCH_CIRCLE: return (Color){1.0f, 0.5f, 0.48f, 1.0f};
+    case TOUCH_TRIANGLE: return (Color){0.5f, 0.9f, 0.62f, 1.0f};
+    default: return (Color){1.0f, 1.0f, 1.0f, 1.0f};
+    }
+}
+
+void OverlayPaintTouchAtlas(OverlaySurface *surface, const TouchLayout *layout) {
+    int control, pressed;
+
+    memset(surface->pixels, 0, (size_t)surface->w * (size_t)surface->h * 4u);
+    for (control = 0; control < TOUCH_CONTROL_COUNT; control++) {
+        for (pressed = 0; pressed < 2; pressed++) {
+            const TouchRect *rect = &layout->rect[control];
+            const Color tint = TouchTint(control);
+            const float w = rect->w, h = rect->h;
+            const char *label = TouchLabel(control);
+            int ox, oy;
+            Color fill = WithAlpha(tint, pressed ? 0.55f : 0.14f);
+            Color edge = WithAlpha(tint, pressed ? 0.95f : 0.45f);
+            Color ink = WithAlpha(tint, pressed ? 1.0f : 0.7f);
+            float radius = label != NULL ? h * 0.5f : w * 0.5f;
+            float em = h * 0.42f;
+
+            TouchAtlasOrigin(layout, control, pressed, &ox, &oy);
+            FillRoundRect(surface, (float)ox, (float)oy, w, h, radius, fill);
+            if (label == NULL) {
+                StrokeCircle(surface, (float)ox + w * 0.5f, (float)oy + h * 0.5f,
+                             w * 0.5f - 1.0f, 2.0f, edge);
+            }
+            if (label != NULL) {
+                DrawText(surface, (float)ox + w * 0.5f,
+                         (float)oy + h * 0.5f + em * 0.35f, em, label, ink,
+                         ALIGN_CENTRE);
+            } else {
+                PaintTouchSymbol(surface, control, (float)ox + w * 0.5f,
+                                 (float)oy + h * 0.5f, w, ink);
+            }
+        }
+    }
+}

@@ -1,4 +1,5 @@
 #ifdef __ANDROID__
+#include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #endif
 #include <psyz.h>
@@ -97,6 +98,11 @@ int main(int argc, char **argv) {
     }
 
     Psyz_SetTitle("Rage Racer");
+#ifdef __ANDROID__
+    /* The game is landscape only. Without this SDL picks the orientation from
+     * the window shape and a phone held upright gets a portrait game. */
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+#endif
     if (!HostInitStorage()) {
         fprintf(stderr, "failed to initialize user save storage\n");
         return EXIT_FAILURE;

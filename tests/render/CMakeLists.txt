@@ -2050,3 +2050,12 @@ target_include_directories(ssao_gpu_tests PRIVATE
 target_link_libraries(ssao_gpu_tests PRIVATE SDL3::SDL3)
 add_test(NAME ssao_gpu COMMAND ssao_gpu_tests)
 set_tests_properties(ssao_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
+
+add_executable(touch_model_tests touch_model_tests.c
+    "${PROJECT_SOURCE_DIR}/src/port/touch_model.c")
+target_include_directories(touch_model_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/port")
+if(NOT MSVC)
+    target_link_libraries(touch_model_tests PRIVATE m)
+endif()
+add_test(NAME touch_model COMMAND touch_model_tests)
+set_tests_properties(touch_model PROPERTIES LABELS unit TIMEOUT 30)

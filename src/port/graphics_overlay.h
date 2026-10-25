@@ -1,6 +1,8 @@
 #ifndef RAGE_PORT_GRAPHICS_OVERLAY_H
 #define RAGE_PORT_GRAPHICS_OVERLAY_H
 
+#include <stdint.h>
+
 /* In-game settings. Escape opens a panel over the frozen game; the game is
  * held for as long as the panel is up. The panel draws through the
  * presentation device, so it appears over either renderer. Pages cover
@@ -22,5 +24,9 @@ void PortGraphicsOverlayTick(void);
 
 /* Drops GPU objects ahead of device destruction or presentation restart. */
 void PortGraphicsOverlayReleaseGpu(void);
+
+/* The controls the player holds on the on-screen pad, bit n for TouchControl n
+ * (touch_model.h). Zero when the pad is off or the panel is up. */
+uint32_t PortTouchHeldControls(void);
 
 #endif

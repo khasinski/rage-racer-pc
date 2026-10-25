@@ -387,6 +387,7 @@ if(RAGE_BUILD_PORT)
         src/port/graphics_overlay.c
         src/port/overlay_model.c
         src/port/overlay_raster.c
+    src/port/touch_model.c
         src/port/session_options.c
         src/port/texture_patch.c
         src/port/port_config.c

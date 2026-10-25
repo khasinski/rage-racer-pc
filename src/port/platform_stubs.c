@@ -109,6 +109,8 @@ long SpuTransferStatus(void *address, long mode) {
 void PortHoldWhilePaused(void) {
     int muted = 0;
 
+    /* Lays out the on-screen pad when there is one; a no-op otherwise. */
+    PortGraphicsOverlayTick();
     if (!PortGraphicsOverlayActive()) return;
     /* Music is left running; the engine and effect voices would otherwise
      * drone on over a frozen race. A race pause has already silenced them. */

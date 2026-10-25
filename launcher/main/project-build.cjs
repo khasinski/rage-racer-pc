@@ -9,6 +9,13 @@ function value(v){
   if(typeof v==='string'&&!/[\x00-\x1f"\\#]/.test(v))return '"'+v+'"';
   throw Error('This value cannot be represented by the car profile format');
 }
+// Fitment is [frontWidth,frontY,frontZ,frontScale,rearWidth,rearY,rearZ,rearScale,
+// bodyY,bodyZ,bodyScale], the order saveCarFitment writes. The car record keeps
+// the front axle relative to the rear one.
+function axleDeltas(fitment){
+ const [frontWidth,frontY,frontZ,,,rearY,rearZ,rearScalePct]=fitment;
+ return {dx:Math.round(frontWidth/4),dy:frontY-rearY,dz:frontZ-rearZ,rearScalePct};
+}
 async function apply(service,activeCustomBank){
   const {run,atomic,source}=require('./service.cjs');
   const editor=service.editor,snapshot=editor.project.snapshot();
@@ -75,8 +82,7 @@ async function apply(service,activeCustomBank){
       if(c.kind==='car'&&c.field==='fitment'){
         const m=/^car\.(player|rival)\.(\d+)\.part\.(\d+)$/.exec(c.id);
         if(!m||!Array.isArray(c.value)||c.value.length!==11)continue;
-        const [frontWidth,frontY,frontZ,,,,rearY,rearZ,rearScalePct]=c.value;
-        const dx=Math.round(frontWidth/4),dy=frontY-rearY,dz=frontZ-rearZ;
+        const {dx,dy,dz,rearScalePct}=axleDeltas(c.value);
         if(dx||dy||dz||rearScalePct!==100){
           const bank=Number(m[2]);
           const relative=`raw/asset_${String(bank).padStart(3,'0')}.bin`,target=path.join(staging,relative);
@@ -192,4 +198,4 @@ async function activeBuild(service){
   return result.active?{...result,directory:path.normalize(result.directory),profile:path.normalize(result.profile)}:null;
 }
 async function activeProfile(service){return (await activeBuild(service))?.profile||'';}
-module.exports={apply,activeBuild,activeProfile};
+module.exports={apply,activeBuild,activeProfile,axleDeltas};

@@ -12,8 +12,10 @@
 #include "analog_pad.h"
 #include "axis_curve.h"
 #include "force_feedback_device.h"
+#include "graphics_overlay.h"
 #include "input_device_select.h"
 #include "runtime_config.h"
+#include "touch_model.h"
 
 /*
  * Analog gamepad support, presented to the game as a NeGcon.
@@ -395,6 +397,24 @@ static float WheelPedal(SDL_Joystick *wheel, int axis, int inverted) {
     return JoystickPedalAxis(SDL_GetJoystickAxis(wheel, axis), inverted);
 }
 
+/* The pad buttons the on-screen controls stand for. */
+static unsigned int TouchButtons(uint32_t controls) {
+    static const struct { int control; unsigned int button; } map[] = {
+        {TOUCH_UP, PAD_UP}, {TOUCH_DOWN, PAD_DOWN}, {TOUCH_LEFT, PAD_LEFT},
+        {TOUCH_RIGHT, PAD_RIGHT}, {TOUCH_CROSS, PAD_CROSS},
+        {TOUCH_SQUARE, PAD_SQUARE}, {TOUCH_CIRCLE, PAD_CIRCLE},
+        {TOUCH_TRIANGLE, PAD_TRIANGLE}, {TOUCH_L1, PAD_L1}, {TOUCH_R1, PAD_R1},
+        {TOUCH_START, PAD_START},
+    };
+    unsigned int held = 0;
+    size_t i;
+
+    for (i = 0; i < sizeof(map) / sizeof(map[0]); i++) {
+        if (controls & (1u << map[i].control)) held |= map[i].button;
+    }
+    return held;
+}
+
 void PortSampleAnalogPad(void) {
     static int wheelAnnounced;
     static SDL_JoystickID announcedPadId;
@@ -405,17 +425,13 @@ void PortSampleAnalogPad(void) {
     int analogI, analogII, analogL;
     int twist, range;
     int lx;
+    uint32_t touch;
 
+    touch = PortTouchHeldControls();
     EnsureInputOptions();
-    if (!s_analogEnabled) {
-        PublishAnalogInput(NULL, NULL, 0.0f);
-        ObserveDrivingDevice();
-        return;
-    }
-
-    wheel = s_wheelEnabled ? AnalogFindWheel() : NULL;
-    pad = wheel == NULL ? AnalogFindGamepad() : NULL;
-    if (pad == NULL && wheel == NULL) {
+    wheel = s_analogEnabled && s_wheelEnabled ? AnalogFindWheel() : NULL;
+    pad = s_analogEnabled && wheel == NULL ? AnalogFindGamepad() : NULL;
+    if (pad == NULL && wheel == NULL && touch == 0) {
         PublishAnalogInput(NULL, NULL, 0.0f);
         ObserveDrivingDevice();
         return;
@@ -441,12 +457,13 @@ void PortSampleAnalogPad(void) {
      * 11 of a possible 113 units of lock. The stick therefore reports full
      * deflection and lets the game's own calibration do its job. */
     lx = wheel != NULL ? WheelAxis(wheel, s_wheelSetup.steeringAxis)
-                       : SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX);
+         : pad != NULL ? SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFTX) : 0;
     if (wheel != NULL && s_wheelSetup.steeringInverted) lx = -lx;
     released = ((unsigned int)g_PadBuffers[2] << 8) | g_PadBuffers[3];
     held = ~released;
     if (wheel != NULL) held |= WheelButtons(wheel, &s_wheelSetup);
     if (pad != NULL) held |= GamepadButtons(pad);
+    held |= TouchButtons(touch);
     range = GetNegconSteerRange();
     twist = NegconTwist(AxisShaped(lx, &s_steering),
                         (held & PAD_LEFT) != 0, (held & PAD_RIGHT) != 0,
@@ -471,7 +488,7 @@ void PortSampleAnalogPad(void) {
             s_brake.deadzone, s_brake.saturation, s_brake.linearity,
             s_brake.scaling) *
             (float)NEGCON_ANALOG_MAX);
-    } else {
+    } else if (pad != NULL) {
         analogI = (int)(AxisShaped(
             SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER),
             &s_throttle) *
@@ -479,6 +496,8 @@ void PortSampleAnalogPad(void) {
         analogII = (int)(AxisShaped(
             SDL_GetGamepadAxis(pad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER), &s_brake) *
             (float)NEGCON_ANALOG_MAX);
+    } else {
+        analogI = analogII = 0;
     }
     analogL = 0;
     if (held & PAD_CROSS) analogI = NEGCON_ANALOG_MAX;
