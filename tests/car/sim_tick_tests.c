@@ -66,6 +66,32 @@ static void RetailStep(PlayerCarRuntime *car) {
     car->drive.jumpTimer--;
     car->bodyYaw = (car->bodyYaw + 16) & ANGLE_MASK;
     car->drive.gear = 3;
+    car->tiltCounter -= 4;
+    if (car->motionActive) {
+        if (car->motionTimer <= 1) {
+            car->motionActive = 0;
+            car->motionTimer = 0;
+        } else {
+            car->motionTimer--;
+        }
+        car->x -= car->velocityX;
+        car->velocityX = (s16)(car->velocityX * 7 / 8);
+    }
+    if (car->motionMode != CAR_BODY_KICK_INACTIVE) {
+        if (car->motionModeTimer <= 1) {
+            car->motionMode = CAR_BODY_KICK_INACTIVE;
+            car->motionModeTimer = 0;
+        } else {
+            car->motionModeTimer--;
+        }
+    }
+    if (car->verticalMotionState != CAR_VERTICAL_GROUNDED) {
+        s16 tick = (s16)(car->verticalMotionTimer + 1);
+        car->verticalMotionTimer = tick;
+        car->y = car->verticalTargetY + tick * tick;
+        car->verticalPitch = (s16)(car->verticalPitch + 6);
+        car->bodyPitch = car->verticalPitch;
+    }
     g_GripLossTimer--;
 }
 
@@ -217,15 +243,39 @@ static void TestDoubleTracksRetail(void) {
 
     memset(&retail, 0, sizeof(retail));
     retail.drive.jumpTimer = 400;
+    retail.motionActive = 1;
+    retail.motionTimer = 15;
+    retail.velocityX = 64;
+    retail.motionMode = CAR_BODY_KICK_CORNERING;
+    retail.motionModeTimer = 16;
+    retail.verticalMotionState = CAR_VERTICAL_RISING;
+    retail.verticalTargetY = 100;
     for (step = 0; step < 60; step++) RetailStep(&retail);
 
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     g_PlayerCar.drive.jumpTimer = 400;
+    g_PlayerCar.motionActive = 1;
+    g_PlayerCar.motionTimer = 15;
+    g_PlayerCar.velocityX = 64;
+    g_PlayerCar.motionMode = CAR_BODY_KICK_CORNERING;
+    g_PlayerCar.motionModeTimer = 16;
+    g_PlayerCar.verticalMotionState = CAR_VERTICAL_RISING;
+    g_PlayerCar.verticalTargetY = 100;
     g_GripLossTimer = 400;
     SimTickSetMultiplier(2);
     for (step = 0; step < 120; step++) {
         BeginLiveFrame();
         SimUpdatePlayerCar(&g_PlayerCar);
+        if (step == 28) {
+            /* Mid-last-frame of the 15-frame knockback: still active on substep 0. */
+            EXPECT_EQ(1, g_PlayerCar.motionActive);
+            EXPECT_EQ(1, g_PlayerCar.motionTimer);
+        }
+        if (step == 30) {
+            /* Mid-last-frame of the 16-frame body kick: still active on substep 0. */
+            EXPECT_EQ(CAR_BODY_KICK_CORNERING, g_PlayerCar.motionMode);
+            EXPECT_EQ(1, g_PlayerCar.motionModeTimer);
+        }
     }
     /* Same time, same place, within a percent. */
     EXPECT_NEAR(retail.x, g_PlayerCar.x, retail.x / 100);
@@ -233,6 +283,14 @@ static void TestDoubleTracksRetail(void) {
     /* A countdown covers the same number of retail steps. */
     EXPECT_EQ(retail.drive.jumpTimer, g_PlayerCar.drive.jumpTimer);
     EXPECT_EQ(400 - 60, g_GripLossTimer);
+    EXPECT_EQ(0, g_PlayerCar.motionActive);
+    EXPECT_EQ(0, g_PlayerCar.motionTimer);
+    EXPECT_EQ(CAR_BODY_KICK_INACTIVE, g_PlayerCar.motionMode);
+    EXPECT_EQ(0, g_PlayerCar.motionModeTimer);
+    EXPECT_EQ(retail.tiltCounter, g_PlayerCar.tiltCounter);
+    EXPECT_EQ(retail.verticalMotionTimer, g_PlayerCar.verticalMotionTimer);
+    EXPECT_EQ(retail.y, g_PlayerCar.y);
+    EXPECT_EQ(retail.verticalPitch, g_PlayerCar.verticalPitch);
     /* The angle advanced by the same amount, and values the retail step
      * assigns outright keep that value. */
     EXPECT_EQ(retail.bodyYaw, g_PlayerCar.bodyYaw & ANGLE_MASK);

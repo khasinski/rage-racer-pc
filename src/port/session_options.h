@@ -8,6 +8,7 @@
  * choice the pause menu already uses. */
 
 typedef struct PortSessionOptions {
+    int tickMultiplier;
     int analog;
     int wheel;
     float steeringLinearity;

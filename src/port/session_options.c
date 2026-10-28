@@ -5,9 +5,11 @@
 #include "game/audio.h"
 #include "rage/chase_camera.h"
 #include "rage/hud_config.h"
+#include "rage/sim_tick.h"
 
 void PortSessionOptionsRead(PortSessionOptions *options) {
     if (options == NULL) return;
+    options->tickMultiplier = SimTickMultiplier();
     options->analog = PortAnalogEnabled();
     options->wheel = PortWheelEnabled();
     options->steeringLinearity = PortSteeringLinearity();
@@ -28,6 +30,10 @@ void PortSessionOptionsApply(const PortSessionOptions *options) {
     int effects;
 
     if (options == NULL) return;
+    if (options->tickMultiplier > 0 &&
+        options->tickMultiplier != SimTickMultiplier()) {
+        SimTickSetMultiplier(options->tickMultiplier);
+    }
     PortSetAnalogEnabled(options->analog);
     PortSetWheelEnabled(options->wheel);
     PortSetSteeringLinearity(options->steeringLinearity);

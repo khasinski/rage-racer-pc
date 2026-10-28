@@ -52,6 +52,7 @@ static int s_haveSession;
 void PortSessionOptionsRead(PortSessionOptions *options) {
     if (!s_haveSession) {
         memset(&s_storedSession, 0, sizeof(s_storedSession));
+        s_storedSession.tickMultiplier = 1;
         s_storedSession.analog = 1;
         s_storedSession.wheel = 1;
         s_storedSession.steeringLinearity = 0.5f;

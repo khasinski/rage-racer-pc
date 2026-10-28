@@ -2,6 +2,7 @@
 
 #include <math.h>
 #include <stddef.h>
+#include <string.h>
 
 /* ---- settings ---- */
 
@@ -118,6 +119,10 @@ ACCESSORS(Gain, ClampIndex((v->session.forceFeedbackGain + 2) / 5, COUNT_OF(kGai
           v->session.forceFeedbackGain = i * 5)
 ACCESSORS(Feedback, v->session.forceFeedback != 0, v->session.forceFeedback = i)
 
+static const char *const kTickRateNames[] = {"30 Hz", "60 Hz"};
+ACCESSORS(TickRate, v->session.tickMultiplier >= 2,
+          v->session.tickMultiplier = i ? 2 : 1)
+
 static const OverlaySetting kControls[] = {
     SETTING("Analog steering", "Use a gamepad stick or wheel. Keyboard bindings stay in rage-port.ini.",
             kSwitchNames, Analog),
@@ -129,6 +134,8 @@ static const OverlaySetting kControls[] = {
             kSwitchNames, Feedback),
     SETTING("Feedback strength", "Remembered with the pause-menu force feedback switch.",
             kGainNames, Gain),
+    SETTING("Race physics rate", "30 Hz is the original PlayStation cadence; 60 Hz steps race physics every field.",
+            kTickRateNames, TickRate),
 };
 
 /* audio */
@@ -259,11 +266,12 @@ static void Step(OverlayModel *model, int row, int direction, unsigned nowMs) {
     int count = 0;
     const OverlaySetting *setting =
         OverlayPageSettings(model->page, &count) + row;
+    RagePortConfig beforeConfig = model->values.config;
     int index = setting->get(&model->values);
 
     index = (index + direction + setting->count) % setting->count;
     setting->set(&model->values, index);
-    if (model->page == OVERLAY_PAGE_GRAPHICS) {
+    if (memcmp(&beforeConfig, &model->values.config, sizeof(beforeConfig)) != 0) {
         model->configPending = 1;
         model->changedAtMs = nowMs;
     } else {

@@ -17,6 +17,7 @@ static void Defaults(RagePortConfig *config, PortSessionOptions *session) {
     config->modernInternalScale = 4.0f;
     config->modernDrawDistance = 1.0f;
     config->modernShadows = 2;
+    session->tickMultiplier = 1;
     session->steeringLinearity = 0.5f;
     session->forceFeedbackGain = 55;
     session->music = 15;
@@ -132,6 +133,17 @@ static int TestStepsAndPending(void) {
     CHECK(model.sessionPending && !model.configPending);
     due = OverlayModelTakePending(&model, 7000);
     CHECK(due.session && !due.config && !model.sessionPending);
+
+    /* Race physics rate toggles between 30 Hz (1x) and 60 Hz (2x). */
+    model.selected = 5;
+    CHECK(model.values.session.tickMultiplier == 1);
+    OverlayModelDo(&model, OVERLAY_RIGHT, 7100);
+    CHECK(model.values.session.tickMultiplier == 2 &&
+          model.sessionPending && !model.configPending);
+    due = OverlayModelTakePending(&model, 7100);
+    CHECK(due.session && !due.config && !model.sessionPending);
+    OverlayModelDo(&model, OVERLAY_LEFT, 7200);
+    CHECK(model.values.session.tickMultiplier == 1 && model.sessionPending);
     return 0;
 }
 

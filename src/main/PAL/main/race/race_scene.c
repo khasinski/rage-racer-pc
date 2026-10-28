@@ -569,10 +569,8 @@ void UpdateRaceScene(void) {
     s32 substep;
 
     SimRaceFrameBegin(g_RacePhase == RACE_PHASE_ACTIVE && g_RacePaused == 0);
-    if (SimTickMultiplier() > 1) {
-        g_FrameSyncThreshold =
-            SimRaceFrameSyncThreshold(RACE_FRAME_SYNC_THRESHOLD);
-    }
+    g_FrameSyncThreshold =
+        SimRaceFrameSyncThreshold(RACE_FRAME_SYNC_THRESHOLD);
     SimRaceCarryPadEdges(&g_PadPressed);
     substep = SimRaceSubstep();
 

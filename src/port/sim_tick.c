@@ -185,6 +185,7 @@ void SimRaceCarryPadEdges(unsigned short *pressed) {
     {offsetof(T, modelRoll), SIM_FIELD_ANGLE32},                         \
     {offsetof(T, modelY), SIM_FIELD_S32},                                \
     {offsetof(T, bodyRollVelocity), SIM_FIELD_S32},                      \
+    {offsetof(T, tiltCounter), SIM_FIELD_S16},                           \
     {offsetof(T, verticalPitch), SIM_FIELD_S16},                         \
     {offsetof(T, bodyKickOffset), SIM_FIELD_S16},                        \
     {offsetof(T, verticalRoll), SIM_FIELD_S16},                          \
@@ -269,9 +270,66 @@ static void BlendCounters(const CounterSnapshot *before) {
         SimHalfDelta(g_SteerHoldFrames - before->steerHoldFrames, parity));
 }
 
+static void SimBlendCarSubsystems(GameCarRuntime *after,
+                                  const GameCarRuntime *before,
+                                  s32 unblendedY, s32 unblendedBodyPitch,
+                                  s32 unblendedBodyRoll, unsigned parity) {
+    /* Knockback: decay velocity and countdown timer at retail rate while
+     * preserving newly triggered knockback impulses intact. Hold the timer on
+     * substep 0 and decrement on substep 1 so both half-steps of the final
+     * active frame execute. */
+    if (before->motionActive != 0 &&
+        after->motionTimer < before->motionTimer) {
+        int32_t timerDelta =
+            (int32_t)after->motionTimer - (int32_t)before->motionTimer;
+        after->motionTimer = (u16)((int32_t)before->motionTimer +
+                                   SimHalfDelta(timerDelta, parity ^ 1u));
+        after->motionActive = after->motionTimer > 0 ? 1 : 0;
+        after->velocityX = (s16)(before->velocityX +
+            SimHalfDelta(after->velocityX - before->velocityX, parity));
+        after->velocityZ = (s16)(before->velocityZ +
+            SimHalfDelta(after->velocityZ - before->velocityZ, parity));
+    }
+
+    /* Body kick: step countdown timer at retail rate (hold on substep 0,
+     * decrement on substep 1) and keep motionMode active until zero. */
+    if (before->motionMode != CAR_BODY_KICK_INACTIVE &&
+        after->motionModeTimer < before->motionModeTimer) {
+        after->motionModeTimer = (s16)(before->motionModeTimer +
+            SimHalfDelta(after->motionModeTimer - before->motionModeTimer,
+                         parity ^ 1u));
+        if (after->motionModeTimer > 0) {
+            after->motionMode = before->motionMode;
+        }
+    }
+
+    /* Crest hop / airborne jump arc: preserve initial pitch/roll seed on
+     * takeoff, and step the airborne parabola tick at retail rate. */
+    if (before->verticalMotionState == CAR_VERTICAL_GROUNDED &&
+        after->verticalMotionState != CAR_VERTICAL_GROUNDED) {
+        after->verticalPitch = (s16)unblendedBodyPitch;
+        after->verticalRoll = (s16)unblendedBodyRoll;
+    } else if (before->verticalMotionState != CAR_VERTICAL_GROUNDED &&
+               after->verticalMotionState != CAR_VERTICAL_GROUNDED) {
+        int32_t tickDelta =
+            (int32_t)after->verticalMotionTimer -
+            (int32_t)before->verticalMotionTimer;
+        after->verticalMotionTimer = (s16)(before->verticalMotionTimer +
+            SimHalfDelta(tickDelta, parity));
+        if (parity & 1u) {
+            after->y = unblendedY;
+        }
+        after->bodyPitch = after->verticalPitch;
+        after->bodyRoll = after->verticalRoll;
+    }
+}
+
 void SimUpdatePlayerCar(PlayerCarRuntime *car) {
     PlayerCarRuntime before;
     CounterSnapshot counters;
+    s32 unblendedY;
+    s32 unblendedBodyPitch;
+    s32 unblendedBodyRoll;
 
     if (!s_scaled) {
         UpdatePlayerCar(car);
@@ -280,9 +338,15 @@ void SimUpdatePlayerCar(PlayerCarRuntime *car) {
     before = *car;
     counters = TakeCounters();
     UpdatePlayerCar(car);
+    unblendedY = car->y;
+    unblendedBodyPitch = car->bodyPitch;
+    unblendedBodyRoll = car->bodyRoll;
     SimBlendFields(car, &before, kPlayerFields,
                    sizeof(kPlayerFields) / sizeof(kPlayerFields[0]),
                    s_parity);
+    SimBlendCarSubsystems(AsRivalCar(car),
+                          (const GameCarRuntime *)&before, unblendedY,
+                          unblendedBodyPitch, unblendedBodyRoll, s_parity);
     BlendCounters(&counters);
 }
 
@@ -297,10 +361,19 @@ void SimUpdateRaceCars(void) {
     memcpy(before, g_Cars, sizeof(before));
     UpdateRaceCars();
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        s32 unblendedY;
+        s32 unblendedBodyPitch;
+        s32 unblendedBodyRoll;
+
         if (before[index].activeFlag == -1) continue;
+        unblendedY = g_Cars[index].y;
+        unblendedBodyPitch = g_Cars[index].bodyPitch;
+        unblendedBodyRoll = g_Cars[index].bodyRoll;
         SimBlendFields(&g_Cars[index], &before[index], kRivalFields,
                        sizeof(kRivalFields) / sizeof(kRivalFields[0]),
                        s_parity);
+        SimBlendCarSubsystems(&g_Cars[index], &before[index], unblendedY,
+                              unblendedBodyPitch, unblendedBodyRoll, s_parity);
     }
 }
 
