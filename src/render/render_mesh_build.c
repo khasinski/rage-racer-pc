@@ -787,9 +787,12 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 vertexCount > vertexCapacity ||
                 vertexCapacity - vertexCount < 3) continue;
             RageTriangleGeometry geometry = {0};
-            if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
-                ApplyFlatTriangleNormal(triangle, &geometry);
+            int flatApplied = 0;
             if (depthDecals[0] && !localSource) {
+                if ((instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0) {
+                    ApplyFlatTriangleNormal(triangle, &geometry);
+                    flatApplied = 1;
+                }
                 /* Explicit screen/art layers are semantic overlays. Give them
                  * real separation from their backing mesh instead of changing
                  * their depth value in the rasterizer. */
@@ -811,6 +814,9 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                 (casters == NULL || viewDraws) &&
                 (TriangleIsBackFacing(world, &viewTransform, triangle) ==
                  (casters == NULL))) continue;
+            if (!flatApplied &&
+                (instance->flags & RAGE_RENDER_INSTANCE_FLAT_SHADED) != 0)
+                ApplyFlatTriangleNormal(triangle, &geometry);
             instanceState.textureScrollU =
                 (materialFlags[0] & RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0
                 ? (float)instance->textureScrollU * (1.0f / 256.0f) : 0.0f;

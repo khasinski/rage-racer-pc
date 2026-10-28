@@ -18,14 +18,18 @@ module.exports=async function textures(service,key,geometry,metadata,staging,sig
  }
  if(kind==='rival')uploads.push(raw(bank-1),'-3','0','0','1','1');
  const used=new Set();for(let i=6;i<geometry.vertices.length;i+=9)used.add((geometry.vertices[i]&0xffff)%64);
+ const activeMaterials=metadata.materials.filter(m=>used.has(m.source));
  const result={};
- for(const material of metadata.materials){
-  if(!used.has(material.source))continue;
-  const file=path.join(staging,'texture-'+material.source+'.'+format);
-  await run(service.tool('rage-mod-cli'),['--texture',String(material.page),String(material.clut),file,...uploads],{signal});
-  const bytes=await fs.readFile(file);
-  if(format!=='png'&&bytes.length!==256*256*4+(format==='tga'?18:0))throw Error('Incomplete texture preview');
-  result[material.source]=format!=='rgba'?path.basename(file):bytes.toString('base64');
+ const toolPath=service.tool('rage-mod-cli');
+ for(let i=0;i<activeMaterials.length;i+=8){
+  const batch=await Promise.all(activeMaterials.slice(i,i+8).map(async material=>{
+   const file=path.join(staging,'texture-'+material.source+'.'+format);
+   await run(toolPath,['--texture',String(material.page),String(material.clut),file,...uploads],{signal});
+   const bytes=await fs.readFile(file);
+   if(format!=='png'&&bytes.length!==256*256*4+(format==='tga'?18:0))throw Error('Incomplete texture preview');
+   return [material.source,format!=='rgba'?path.basename(file):bytes.toString('base64')];
+  }));
+  for(const [src,val]of batch)result[src]=val;
  }
  return result;
 };

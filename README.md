@@ -227,6 +227,7 @@ Display, content and storage settings:
 | `hud` | `show_lap_times` | `true`, `false` | `true` |
 | `hud` | `show_time_limit` | `true`, `false` | `true` |
 | `camera` | `chase_turn_lookahead` | `0` to `1`; `0` is retail | `0` |
+| `game` | `tick_rate` | `retail`, or `double` (experimental): step the car physics, rivals and chase camera once per video field instead of once per two, keeping the retail handling; lap timing, cues and replays stay at the retail rate | `retail` |
 | `modern` | `assets` | Optional explicit prebuilt native-asset cache for renderer development, or `disc`; omitted always imports from the selected disc | omitted |
 | `modern` | `mirror_distance` | `0.25` to `8`, capped at the main view distance | `1` |
 | `timing` | `standard` | `auto`, `pal`, `ntsc` | `auto` |

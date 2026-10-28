@@ -3,15 +3,22 @@
 export function pickScene(data,frame,view,x,y){
  const {yaw,pitch,zoom,aspect,target=[0,0,0]}=view,c=Math.cos(yaw),s=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
  const projected=new Map();
+ const cx=frame.center[0],cy=frame.center[1],cz=frame.center[2],sc=frame.scale;
+ const tx=target[0]||0,ty=target[1]||0,tz=target[2]||0;
  const project=index=>{
-  if(projected.has(index))return projected.get(index);
-  const at=index*9,p=[0,1,2].map(a=>(data.vertices[at+a]-frame.center[a])*frame.scale-(target[a]||0));
-  const rx=c*p[0]+s*p[2],rz=-s*p[0]+c*p[2];
-  const point=[rx*zoom/aspect,(cp*p[1]-sp*rz)*zoom,(sp*p[1]+cp*rz)*.2];projected.set(index,point);return point;
+  let point=projected.get(index);
+  if(point!==undefined)return point;
+  const at=index*9;
+  const px=(data.vertices[at]-cx)*sc-tx,py=(data.vertices[at+1]-cy)*sc-ty,pz=(data.vertices[at+2]-cz)*sc-tz;
+  const rx=c*px+s*pz,rz=-s*px+c*pz;
+  point=[rx*zoom/aspect,(cp*py-sp*rz)*zoom,(sp*py+cp*rz)*.2];
+  projected.set(index,point);
+  return point;
  };
  let nearest=Infinity,hit=null,nearestRoad=Infinity,hitRoad=null;
  for(const entity of data.entities||[])for(let i=entity.firstIndex;i<entity.firstIndex+entity.indexCount;i+=3){
-  const [a,b,d]=data.indices.slice(i,i+3).map(project);
+  const a=project(data.indices[i]),b=project(data.indices[i+1]),d=project(data.indices[i+2]);
+  if((x<a[0]&&x<b[0]&&x<d[0])||(x>a[0]&&x>b[0]&&x>d[0])||(y<a[1]&&y<b[1]&&y<d[1])||(y>a[1]&&y>b[1]&&y>d[1]))continue;
   const det=(b[1]-d[1])*(a[0]-d[0])+(d[0]-b[0])*(a[1]-d[1]);
   if(Math.abs(det)<1e-12)continue;
   const u=((b[1]-d[1])*(x-d[0])+(d[0]-b[0])*(y-d[1]))/det;

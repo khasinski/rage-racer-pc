@@ -66,15 +66,18 @@ async function createNew(service,options,revision){
   const project=await service.project();
   let targetBank;
   if(options.targetBank==='new'||options.targetBank===undefined||options.targetBank===null||Number(options.targetBank)>=200){
-    if(Number.isInteger(Number(options.targetBank))&&Number(options.targetBank)>=200&&Number(options.targetBank)%2===0){
+    if(Number.isInteger(Number(options.targetBank))&&Number(options.targetBank)>=200&&Number(options.targetBank)<=998&&Number(options.targetBank)%2===0){
       targetBank=Number(options.targetBank);
-    }else{
+    }else if(options.targetBank==='new'||options.targetBank===undefined||options.targetBank===null){
       let maxBank=198;
       for(const c of project.changes||[]){
         const m=/^custom_car_(\d+)$/.exec(c.id);
         if(m){const b=Number(m[1]);if(b>maxBank&&b%2===0)maxBank=b;}
       }
       targetBank=maxBank+2;
+      if(targetBank>998)throw Error('Maximum number of custom car slots reached');
+    }else{
+      throw Error('Invalid custom car bank');
     }
     const recordId=`custom_car_${targetBank}`;
     await service.editProject([{kind:'car',id:recordId,field:'donor_bank',value:sourceBank}],revision);

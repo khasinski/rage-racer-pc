@@ -1035,6 +1035,11 @@ set_tests_properties(scenario_car_setup PROPERTIES LABELS e2e)
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_retire_camera.cmake)
 set_tests_properties(retire_camera PROPERTIES LABELS e2e)
     set_tests_properties(retire_camera PROPERTIES TIMEOUT 165)
+    add_test(NAME double_tick_race COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${CMAKE_SOURCE_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_double_tick_race.cmake)
+    set_tests_properties(double_tick_race PROPERTIES LABELS e2e TIMEOUT 240)
 endif()
 
 add_executable(traffic_avoidance_tests
@@ -1271,3 +1276,23 @@ endif()
 target_link_libraries(rival_track_placement_tests PRIVATE psyz)
 add_test(NAME rival_track_placement COMMAND rival_track_placement_tests)
 set_tests_properties(rival_track_placement PROPERTIES LABELS unit)
+
+add_executable(sim_tick_tests
+    sim_tick_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/sim_tick.c)
+target_include_directories(sim_tick_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    ${CMAKE_SOURCE_DIR}/include)
+target_compile_definitions(sim_tick_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(sim_tick_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(sim_tick_tests PRIVATE
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME sim_tick COMMAND sim_tick_tests)
+set_tests_properties(sim_tick PROPERTIES LABELS unit)

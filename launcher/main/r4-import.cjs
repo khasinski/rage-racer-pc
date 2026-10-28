@@ -1934,6 +1934,7 @@ async function importR4Tracks(service, inputPath) {
           service.busy.label = `Importing R4 Track ${spec.slot}/8: ${spec.name}`;
           await service.update();
         }
+        await new Promise(resolve => setImmediate(resolve));
         const pair = coursePairs[spec.course];
         const [texEntryBuf, trackEntryBuf] = await Promise.all([
           reader.readSectors(pair.texStart, pair.texCount),
@@ -2014,15 +2015,28 @@ async function importR4Tracks(service, inputPath) {
       const existingMods = service.state.mods.filter(m => m.packageId === 'r4-tracks');
       const removeIds = new Set(existingMods.map(m => m.id));
       const validIds = new Set(service.state.mods.filter(m => !removeIds.has(m.id)).map(m => m.id));
+      const sanitizeSelection = sel => {
+        if (!sel || typeof sel !== 'object') return;
+        sel.packages = (sel.packages || []).filter(id => validIds.has(id));
+        for (const k of Object.keys(sel.resolutions || {})) {
+          if (!validIds.has(sel.resolutions[k]?.winner) ||
+              sel.resolutions[k]?.candidates?.some(id => !validIds.has(id))) {
+            delete sel.resolutions[k];
+          }
+        }
+      };
       const curSel = structuredClone(service.editor.project.snapshot().selection);
-      curSel.packages = (curSel.packages || []).filter(id => validIds.has(id));
-      for (const k of Object.keys(curSel.resolutions || {})) {
-        if (!validIds.has(curSel.resolutions[k]?.winner) ||
-            curSel.resolutions[k]?.candidates?.some(id => !validIds.has(id))) {
-          delete curSel.resolutions[k];
+      sanitizeSelection(curSel);
+      await service.changeModSelection(curSel, service.editor.project.revision);
+      for (const stack of [service.editor.project.undoStack, service.editor.project.redoStack]) {
+        if (!Array.isArray(stack)) continue;
+        for (const entry of stack) {
+          if (entry?.value?.selection) {
+            sanitizeSelection(entry.value.selection);
+            entry.bytes = Buffer.byteLength(JSON.stringify(entry.value));
+          }
         }
       }
-      await service.changeModSelection(curSel, service.editor.project.revision);
       if (existingMods.length) {
         service.state.mods = service.state.mods.filter(m => !removeIds.has(m.id));
         for (const m of existingMods) {

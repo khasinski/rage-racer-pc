@@ -11,16 +11,34 @@ async function atomic(file, text) {
   try { await fs.writeFile(temp,text);await fs.rename(temp,file); }
   finally { await fs.rm(temp,{force:true}); }
 }
+const sourceFingerprintCache=new Map();
+const trackPackCache=new Map();
+async function readTrackPack(toolPath,file,signal) {
+  const st=await fs.stat(file);
+  const key=`${file}:${st.size}:${st.mtimeMs}`;
+  const cached=trackPackCache.get(key);
+  if(cached)return cached;
+  const pack=JSON.parse(await run(toolPath,['--track-pack',file],{signal}));
+  trackPackCache.set(key,pack);
+  return pack;
+}
 async function source(disc) {
-  const hash=createHash('sha256'),handle=await fs.open(disc.archive,'r');
-  let before,after;
+  const handle=await fs.open(disc.archive,'r');
+  let before,after,fingerprint;
   try{
-    before=await handle.stat();
-    for await(const bytes of handle.createReadStream({autoClose:false}))hash.update(bytes);
-    after=await handle.stat();
+    before=await handle.stat({bigint:true});
+    const cached=before.size>=65536n?sourceFingerprintCache.get(disc.archive):null;
+    if(cached&&cached.size===before.size&&cached.mtimeNs===before.mtimeNs&&cached.ctimeNs===before.ctimeNs&&cached.ino===before.ino&&(!disc.fingerprint||disc.fingerprint===cached.fingerprint)){
+      fingerprint=cached.fingerprint;
+    }else{
+      const hash=createHash('sha256');
+      for await(const bytes of handle.createReadStream({autoClose:false}))hash.update(bytes);
+      after=await handle.stat({bigint:true});
+      if(before.size!==after.size||before.mtimeNs!==after.mtimeNs)throw Error('Source archive changed while reading it');
+      fingerprint='sha256:'+hash.digest('hex');
+      if(after.size>=65536n)sourceFingerprintCache.set(disc.archive,{size:after.size,mtimeNs:after.mtimeNs,ctimeNs:after.ctimeNs,ino:after.ino,fingerprint});
+    }
   }finally{await handle.close();}
-  if(before.size!==after.size||before.mtimeMs!==after.mtimeMs)throw Error('Source archive changed while reading it');
-  const fingerprint='sha256:'+hash.digest('hex');
   if(disc.fingerprint&&disc.fingerprint!==fingerprint)throw Error('Source archive changed since extraction; import the disc again');
   return {region:disc.region,fingerprint};
 }
@@ -163,7 +181,7 @@ class LauncherService {
     if(this.game)throw Error('Close the game before applying project changes');
     if(!this.editor||this.editor.disc!==this.state.disc)throw Error('Open the project first');
     this.editor.project.checkRevision(revision);
-    return this.operation('Building and applying project',async()=>{const result=await require('./project-build.cjs').apply(this);this.projectError=null;return result;},false);
+    return this.operation('Building and applying project',async()=>{const result=await require('./project-build.cjs').apply(this);this.activeCustomCarBank=null;this.projectError=null;return result;},false);
   }
   trackPrefix(bank) {
     if(!Number.isInteger(bank)||bank<88||bank>198||bank%2)throw Error('Invalid track');
@@ -177,35 +195,45 @@ class LauncherService {
     this.requireReady();
     return this.operation('Reading original tracks',async signal=>{
       const names=['Mythical Coast','Over Pass City','Lakeside Gate','The Extreme Oval'];
+      const toolPath=this.tool('rage-mod-cli');
+      const retailSpecs=[];
+      for(let grade=1;grade<=6;grade++)for(let course=0;course<4;course++)retailSpecs.push({grade,course});
       const tracks=[];
-      for(let grade=1;grade<=6;grade++)for(let course=0;course<4;course++) {
-        const bank=88+(grade-1)*8+course*2;
-        const file=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
-        const pack=JSON.parse(await run(this.tool('rage-mod-cli'),['--track-pack',file],{signal}));
-        tracks.push({id:`track/${['mythical-coast','over-pass-city','lakeside-gate','extreme-oval'][course]}/class/${grade}`,
-          name:names[course],grade,bank,origin:'disc',available:course!==3||grade>=3,
-          directions:['forward','reverse'],blocks:pack.blocks});
+      for(let i=0;i<retailSpecs.length;i+=8){
+        const batch=await Promise.all(retailSpecs.slice(i,i+8).map(async({grade,course})=>{
+          const bank=88+(grade-1)*8+course*2;
+          const file=path.join(this.state.disc.data,'raw',`asset_${String(bank).padStart(3,'0')}.bin`);
+          const pack=await readTrackPack(toolPath,file,signal);
+          return {id:`track/${['mythical-coast','over-pass-city','lakeside-gate','extreme-oval'][course]}/class/${grade}`,
+            name:names[course],grade,bank,origin:'disc',available:course!==3||grade>=3,
+            directions:['forward','reverse'],blocks:pack.blocks};
+        }));
+        tracks.push(...batch);
       }
       await this.loadProject();
       const snapshot=this.editor?.project.snapshot(),selection=snapshot?.selection||this.modSelection();
       const activeMods=selection?.packages?.length?this.modsForSelection(selection):this.state.mods.filter(m=>m.enabled);
-      for(let slot=1;slot<=32;slot++){
-        const bank=136+(slot-1)*2;
-        const rawTrack=`raw/asset_${String(bank).padStart(3,'0')}.bin`;
-        const rawName=`raw/course_${String(slot).padStart(2,'0')}.txt`;
-        const winnerId=selection?.resolutions?.[rawTrack]?.winner;
-        const mod=(winnerId&&activeMods.find(m=>m.id===winnerId&&m.files?.includes(rawTrack)))||[...activeMods].reverse().find(m=>m.files?.includes(rawTrack));
-        const modRoot=mod?path.join(this.root,'mods',mod.id):this.state.disc.data;
-        const file=path.join(modRoot,rawTrack);
-        const exists=mod?true:await fs.stat(file).then(s=>s.isFile()).catch(()=>false);
-        if(!exists)continue;
-        const pack=JSON.parse(await run(this.tool('rage-mod-cli'),['--track-pack',file],{signal}));
-        const nameMod=activeMods.find(m=>m.id===mod?.id&&m.files?.includes(rawName))||[...activeMods].reverse().find(m=>m.files?.includes(rawName));
-        const nameRoot=nameMod?path.join(this.root,'mods',nameMod.id):modRoot;
-        const label=(await fs.readFile(path.join(nameRoot,rawName),'utf8').catch(()=>`CUSTOM ${slot}`)).split(/\r?\n/)[0].trim()||`CUSTOM ${slot}`;
-        tracks.push({id:`track/custom-${slot}/class/custom`,
-          name:label,grade:'Custom',slot,bank,origin:'custom',available:true,
-          directions:['forward','reverse'],blocks:pack.blocks});
+      const customSlots=Array.from({length:32},(_,idx)=>idx+1);
+      for(let i=0;i<customSlots.length;i+=8){
+        const batch=await Promise.all(customSlots.slice(i,i+8).map(async slot=>{
+          const bank=136+(slot-1)*2;
+          const rawTrack=`raw/asset_${String(bank).padStart(3,'0')}.bin`;
+          const rawName=`raw/course_${String(slot).padStart(2,'0')}.txt`;
+          const winnerId=selection?.resolutions?.[rawTrack]?.winner;
+          const mod=(winnerId&&activeMods.find(m=>m.id===winnerId&&m.files?.includes(rawTrack)))||[...activeMods].reverse().find(m=>m.files?.includes(rawTrack));
+          const modRoot=mod?path.join(this.root,'mods',mod.id):this.state.disc.data;
+          const file=path.join(modRoot,rawTrack);
+          const exists=mod?true:await fs.stat(file).then(s=>s.isFile()).catch(()=>false);
+          if(!exists)return null;
+          const pack=await readTrackPack(toolPath,file,signal);
+          const nameMod=activeMods.find(m=>m.id===mod?.id&&m.files?.includes(rawName))||[...activeMods].reverse().find(m=>m.files?.includes(rawName));
+          const nameRoot=nameMod?path.join(this.root,'mods',nameMod.id):modRoot;
+          const label=(await fs.readFile(path.join(nameRoot,rawName),'utf8').catch(()=>`CUSTOM ${slot}`)).split(/\r?\n/)[0].trim()||`CUSTOM ${slot}`;
+          return {id:`track/custom-${slot}/class/custom`,
+            name:label,grade:'Custom',slot,bank,origin:'custom',available:true,
+            directions:['forward','reverse'],blocks:pack.blocks};
+        }));
+        for(const item of batch)if(item)tracks.push(item);
       }
       return {tracks};
     });
@@ -495,11 +523,13 @@ class LauncherService {
           inst.position[2]+=fit.frontZ;
         }
       }
-      const parts=new Map();
-      for(const {part}of layout.instances)if(!parts.has(part)){
+      const uniqueParts=[];
+      for(const {part}of layout.instances)if(!uniqueParts.includes(part))uniqueParts.push(part);
+      const loadedParts=await Promise.all(uniqueParts.map(async part=>{
         const key=`car.${rival?'rival':'player'}.${bank}.part.${part}`;
-        parts.set(part,await this.previewCarData(key,mod?.manifest.meshes?.[key]?modId:undefined,signal,modId,view));
-      }
+        return [part,await this.previewCarData(key,mod?.manifest.meshes?.[key]?modId:undefined,signal,modId,view)];
+      }));
+      const parts=new Map(loadedParts);
       const geometry=require('./assemble-preview.cjs')(layout,parts);
       geometry.fitment=fit;
       geometry.partRanges=[];
@@ -757,12 +787,17 @@ class LauncherService {
     });
   }
   async saveSettings(values) {
-    this.requireReady();
-    await this.operation('Saving settings',async()=>{
-      const previous=this.state.settings;
-      this.state.settings={...previous,...validate(values)};
-      try{await this.persist();}catch(e){this.state.settings=previous;throw e;}
-    },false);
+    if(this.busy&&!this.busy.preview)throw Error('Wait for the current operation to finish');
+    const previous=this.state.settings,validated=validate(values);
+    this.state.settings={...previous,...validated};
+    try{
+      await this.operation('Saving settings',async()=>{
+        await this.persist();
+      },false);
+    }catch(e){
+      this.state.settings=previous;
+      throw e;
+    }
     return this.snapshot();
   }
   async configuration(modDirectory='', ownedJob=false) {

@@ -994,6 +994,8 @@ void ModernAssetsFreeMaterialImage(ModernAssetImage *image) {
 static void ModernAssetsPrepareInstance(const RenderMeshInstance *instance) {
     const RageRuntimeCachedMesh *cached = ModernAssetsFind(instance);
     uint32_t first, count;
+    uint32_t previousRawMaterial = UINT32_MAX;
+    int havePrevious = 0;
     if (cached == NULL || instance->pass != RAGE_RENDER_PASS_MAIN ||
         !RuntimeMeshRange(&cached->mesh, instance->mesh, &first, &count)) return;
     /* Geometry must become resident even after the texture-preparation budget
@@ -1009,6 +1011,9 @@ static void ModernAssetsPrepareInstance(const RenderMeshInstance *instance) {
             ModernAssetImage image = {0};
             if (!RuntimeMeshIndex(&cached->mesh, first + offset, &index) ||
                 !RuntimeMeshVertex(&cached->mesh, index, &vertex)) continue;
+            if (havePrevious && vertex.material == previousRawMaterial) continue;
+            previousRawMaterial = vertex.material;
+            havePrevious = 1;
             material = vertex.material;
             if (material == UINT32_MAX) continue;
             material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
@@ -1022,6 +1027,7 @@ static void ModernAssetsPrepareInstance(const RenderMeshInstance *instance) {
             if (ModernPreparedMaterialsContains(&s_preparedMaterials, instance,
                                                 material, variant))
                 continue;
+            if (ModernPreparedMaterialsBudgetReached(&s_preparedMaterials)) return;
             if (ModernAssetsLoadMaterial(instance, material, variant,
                     &definition, &image, &storage))
                 ModernAssetsFreeMaterialImage(&image);

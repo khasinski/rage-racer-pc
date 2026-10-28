@@ -245,12 +245,18 @@ int RenderWorldTryBuildSynchronizedPresentation(
     uint32_t outputCount = 0;
     uint32_t currentIndex;
     uint8_t matched[RAGE_RENDER_PRESENTATION_MAX_INSTANCES];
+    uint16_t syncIndices[RAGE_RENDER_PRESENTATION_MAX_INSTANCES];
+    uint32_t syncCount = 0;
 
     if (!RenderWorldInstancesAreValid(previous) ||
         !RenderWorldInstancesAreValid(current) || out == NULL || count == NULL) return 0;
     uint32_t required = 0;
-    for (uint32_t i = 0; i < current->instanceCount; ++i)
-        if (!RenderInstanceNeedsSynchronizedMatch(&current->instances[i])) required++;
+    for (uint32_t i = 0; i < current->instanceCount; ++i) {
+        if (!RenderInstanceNeedsSynchronizedMatch(&current->instances[i]))
+            required++;
+        else
+            syncIndices[syncCount++] = (uint16_t)i;
+    }
     for (uint32_t i = 0; i < previous->instanceCount; ++i)
         if (RenderInstanceNeedsSynchronizedMatch(&previous->instances[i])) required++;
     if (required > capacity) return 0;
@@ -266,9 +272,12 @@ int RenderWorldTryBuildSynchronizedPresentation(
             &current->instances[currentIndex];
         if (RenderInstanceNeedsSynchronizedMatch(instance)) continue;
         out[outputCount] = *instance;
-        RenderInterpolateTransform(&instance->previousTransform,
+        if (memcmp(&instance->previousTransform, &instance->transform,
+                   sizeof(RenderTransform)) != 0) {
+            RenderInterpolateTransform(&instance->previousTransform,
                                        &instance->transform, t,
                                        &out[outputCount].transform);
+        }
         outputCount++;
     }
 
@@ -286,8 +295,8 @@ int RenderWorldTryBuildSynchronizedPresentation(
         float bestDistance = 0.0f;
 
         if (!RenderInstanceNeedsSynchronizedMatch(base)) continue;
-        for (currentIndex = 0; currentIndex < current->instanceCount;
-             currentIndex++) {
+        for (uint32_t k = 0; k < syncCount; k++) {
+            currentIndex = syncIndices[k];
             const RenderMeshInstance *candidate =
                 &current->instances[currentIndex];
             float distance;

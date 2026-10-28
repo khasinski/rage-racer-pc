@@ -48,6 +48,7 @@ static void OpenPanel(void) {
     const RagePortConfig *active = PortActiveConfig();
     PortSessionOptions session;
     SDL_GPUDevice *device = NULL;
+    int w = 0, h = 0;
 
     s_window = NULL;
     if (active == NULL ||
@@ -56,6 +57,15 @@ static void OpenPanel(void) {
     }
     PortSessionOptionsRead(&session);
     OverlayModelOpen(&s_model, active, &session);
+    if (s_window != NULL) {
+        SDL_GetWindowSizeInPixels(s_window, &w, &h);
+        if (w > 0 && h > 0) {
+            s_windowW = w;
+            s_windowH = h;
+            OverlayComputeLayout(OverlayModelRowCount(&s_model), w, h,
+                                 &s_layout);
+        }
+    }
 }
 
 /* Keys that change a value or move between pages act once per press: each
@@ -95,9 +105,13 @@ static int TouchEnabled(void);
 static void OnTouchEvent(const SDL_Event *event);
 
 static void OnMouse(float windowX, float windowY, int click) {
-    float density = s_window != NULL ? SDL_GetWindowPixelDensity(s_window) : 1.0f;
-    float x = (windowX * density - (float)s_layout.x) / s_layout.scale;
-    float y = (windowY * density - (float)s_layout.y) / s_layout.scale;
+    float density;
+    float x, y;
+
+    if (!s_model.open || s_layout.scale <= 0.0f) return;
+    density = s_window != NULL ? SDL_GetWindowPixelDensity(s_window) : 1.0f;
+    x = (windowX * density - (float)s_layout.x) / s_layout.scale;
+    y = (windowY * density - (float)s_layout.y) / s_layout.scale;
 
     OverlayModelPointer(&s_model, x, y, click, NowMs());
 }
@@ -107,6 +121,7 @@ static void OnEvent(const SDL_Event *event) {
     if (event->type >= SDL_EVENT_FINGER_DOWN && event->type <= SDL_EVENT_FINGER_CANCELED &&
         TouchEnabled()) {
         OnTouchEvent(event);
+        return;
     }
     if (event->type == SDL_EVENT_KEY_DOWN) {
         SDL_Scancode key = event->key.scancode;
@@ -122,9 +137,11 @@ static void OnEvent(const SDL_Event *event) {
     } else if (!s_model.open) {
         return;
     } else if (event->type == SDL_EVENT_MOUSE_MOTION) {
+        if (TouchEnabled() && event->motion.which == SDL_TOUCH_MOUSEID) return;
         OnMouse(event->motion.x, event->motion.y, 0);
     } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                event->button.button == SDL_BUTTON_LEFT) {
+        if (TouchEnabled() && event->button.which == SDL_TOUCH_MOUSEID) return;
         OnMouse(event->button.x, event->button.y, 1);
     } else if (event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
         OverlayModelDo(&s_model, ButtonAction(event->gbutton.button), NowMs());
@@ -381,7 +398,21 @@ static void OnTouchEvent(const SDL_Event *event) {
     const float y = event->tfinger.y * (float)s_touchH;
     const int64_t id = (int64_t)event->tfinger.fingerID;
 
-    if (s_model.open || s_touchW <= 0) {
+    if (s_model.open) {
+        TouchReleaseAll(&s_touch);
+        if ((event->type == SDL_EVENT_FINGER_DOWN ||
+             event->type == SDL_EVENT_FINGER_MOTION) &&
+            s_windowW > 0 && s_windowH > 0 && s_layout.scale > 0.0f) {
+            float px = event->tfinger.x * (float)s_windowW;
+            float py = event->tfinger.y * (float)s_windowH;
+            OverlayModelPointer(&s_model,
+                                (px - (float)s_layout.x) / s_layout.scale,
+                                (py - (float)s_layout.y) / s_layout.scale,
+                                event->type == SDL_EVENT_FINGER_DOWN, NowMs());
+        }
+        return;
+    }
+    if (s_touchW <= 0) {
         TouchReleaseAll(&s_touch);
         return;
     }
@@ -403,31 +434,33 @@ static void OnTouchEvent(const SDL_Event *event) {
 
 /* Lays the pad out for the window and repaints its atlas when that changed. */
 static void RefreshTouch(SDL_GPUDevice *device, SDL_Window *window) {
-    int w = 0, h = 0, atlasW, atlasH;
+    int w = 0, h = 0, lw = 0, lh = 0, atlasW, atlasH;
+    SDL_Rect safe = {0};
 
     SDL_GetWindowSizeInPixels(window, &w, &h);
     if (w <= 0 || h <= 0 || !OverlayFontReady()) return;
+    SDL_GetWindowSize(window, &lw, &lh);
+    SDL_GetWindowSafeArea(window, &safe);
     if (w != s_touchW || h != s_touchH) {
-        SDL_Rect safe = {0};
-        int lw = 0, lh = 0;
-
-        SDL_GetWindowSafeArea(window, &safe);
-        SDL_GetWindowSize(window, &lw, &lh);
         fprintf(stderr, "rage-port: touch pad window=%dx%d logical=%dx%d safe=%d,%d %dx%d\n",
                 w, h, lw, lh, safe.x, safe.y, safe.w, safe.h);
     }
-    {
-        SDL_Rect safe = {0, 0, w, h};
-
-        SDL_GetWindowSafeArea(window, &safe);
-        if (safe.w <= 0 || safe.h <= 0) safe = (SDL_Rect){0, 0, w, h};
-        if (w == s_touchW && h == s_touchH && s_atlasTexture != NULL &&
-            memcmp(&safe, &s_touchSafe, sizeof(safe)) == 0) return;
-        s_touchSafe = safe;
-        s_touchW = w;
-        s_touchH = h;
-        TouchComputeLayout(safe.x, safe.y, safe.w, safe.h, &s_touchLayout);
+    if (safe.w > 0 && safe.h > 0 && lw > 0 && lh > 0 &&
+        (w != lw || h != lh)) {
+        float sx = (float)w / (float)lw;
+        float sy = (float)h / (float)lh;
+        safe.x = (int)((float)safe.x * sx + 0.5f);
+        safe.y = (int)((float)safe.y * sy + 0.5f);
+        safe.w = (int)((float)safe.w * sx + 0.5f);
+        safe.h = (int)((float)safe.h * sy + 0.5f);
     }
+    if (safe.w <= 0 || safe.h <= 0) safe = (SDL_Rect){0, 0, w, h};
+    if (w == s_touchW && h == s_touchH && s_atlasTexture != NULL &&
+        memcmp(&safe, &s_touchSafe, sizeof(safe)) == 0) return;
+    s_touchSafe = safe;
+    s_touchW = w;
+    s_touchH = h;
+    TouchComputeLayout(safe.x, safe.y, safe.w, safe.h, &s_touchLayout);
     TouchAtlasSize(&s_touchLayout, &atlasW, &atlasH);
     if (!OverlaySurfaceResize(&s_atlas, atlasW, atlasH)) return;
     OverlayPaintTouchAtlas(&s_atlas, &s_touchLayout);

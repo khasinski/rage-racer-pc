@@ -4,6 +4,7 @@
 #include "game/render_internal.h"
 #include "game/race_hud_internal.h"
 #include "game/state.h"
+#include "rage/sim_tick.h"
 
 enum {
     COUNTDOWN_LAMP_COUNT = 6,
@@ -52,7 +53,9 @@ void DrawStartCountdown(s32 sceneTimer) {
         }
     }
 
-    s_BoardOffset = AdvanceStartCountdownBoard(phase, s_BoardOffset);
+    if (!SimRaceSubstep()) {
+        s_BoardOffset = AdvanceStartCountdownBoard(phase, s_BoardOffset);
+    }
 
     packet = QueueDrawModePrim(
         orderingTable, RENDER_PRIM_CURSOR_AS(u8), 9);

@@ -1867,13 +1867,15 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
  * present every VBlank. Calling the platform present directly skips the
  * BIOS pad refresh, so input edge semantics are untouched. */
 void ModernFrameWaitTick(int frameLimit) {
+    static int s_hasModernDump = -1;
     if (!ModernPresentationActive() || s_device == NULL) return;
     /* A short bounded sleep yields the CPU without tying emulated VBlank
      * to the monitor. The caller rechecks its original logic deadline. */
     SDL_DelayNS(100000u);
     if (!ModernShouldInterpolate(CaptureCurrent())) return;
-    if (ModernWindowOccluded() &&
-        RuntimeConfigGet("diagnostics.modern_dump") == NULL) return;
+    if (s_hasModernDump < 0)
+        s_hasModernDump = RuntimeConfigGet("diagnostics.modern_dump") != NULL;
+    if (ModernWindowOccluded() && !s_hasModernDump) return;
     if (frameLimit < 0x180) return;
     if (CaptureCurrent()->faceCount == 0) return;
     if (!ModernPresentationClockDue(&s_presentationClock, SDL_GetTicksNS(),

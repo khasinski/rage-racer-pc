@@ -431,7 +431,18 @@ void PortSampleAnalogPad(void) {
     EnsureInputOptions();
     wheel = s_analogEnabled && s_wheelEnabled ? AnalogFindWheel() : NULL;
     pad = s_analogEnabled && wheel == NULL ? AnalogFindGamepad() : NULL;
-    if (pad == NULL && wheel == NULL && touch == 0) {
+    if (pad == NULL && wheel == NULL) {
+        if (touch != 0) {
+            released = g_PadBuffers[0] == 0
+                           ? (((unsigned int)g_PadBuffers[2] << 8) |
+                              g_PadBuffers[3])
+                           : 0xFFFFU;
+            released &= ~TouchButtons(touch) & 0xFFFFU;
+            g_PadBuffers[0] = 0;
+            if (g_PadBuffers[1] == 0) g_PadBuffers[1] = 0x41;
+            g_PadBuffers[2] = (u8)(released >> 8);
+            g_PadBuffers[3] = (u8)released;
+        }
         PublishAnalogInput(NULL, NULL, 0.0f);
         ObserveDrivingDevice();
         return;

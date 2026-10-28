@@ -272,6 +272,24 @@
   },
   {
     "group": "hud",
+    "key": "game.tick_rate",
+    "label": "Race physics rate (experimental)",
+    "help": "Retail runs the race at half the video rate (30 Hz NTSC, 25 Hz PAL). Double steps the car physics, rivals and chase camera once per video field instead (60 Hz NTSC, 50 Hz PAL), keeping the retail handling.",
+    "type": "select",
+    "default": "retail",
+    "options": [
+      [
+        "retail",
+        "Retail"
+      ],
+      [
+        "double",
+        "Double (experimental)"
+      ]
+    ]
+  },
+  {
+    "group": "hud",
     "key": "modern.mirror_distance",
     "label": "Mirror view distance",
     "help": "Rear-view distance multiplier, capped by the main camera range.",

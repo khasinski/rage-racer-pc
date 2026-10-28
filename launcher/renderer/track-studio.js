@@ -2134,6 +2134,13 @@ document.addEventListener('click', e => {
       }
       if (b.dataset.openStudio) {
         if ($('#dialog')?.open) $('#dialog').close();
+        if (roadDraft && trackScene?.road) {
+          const {entries} = diffRoadDraft(trackScene.road, roadDraft);
+          if (entries.length) {
+            project = await request('saveRoadBatch', trackBank, entries, trackScene.revision).catch(() => project);
+          }
+          roadDraft = null;
+        }
         await cancelPreview();
         await request('openStudio', b.dataset.openStudio);
         return;

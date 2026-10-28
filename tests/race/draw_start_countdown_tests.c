@@ -28,6 +28,8 @@ static GameOrderingTableEntry *s_lastOrderingTable;
 static void *s_firstTile;
 static void *s_lastTile;
 
+int SimRaceSubstep(void) { return 0; }
+
 void SetSprt(SPRT *sprite) {
     memset(sprite, 0, sizeof(*sprite));
     sprite->code = 0x64;

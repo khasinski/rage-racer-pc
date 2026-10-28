@@ -11,6 +11,7 @@
 
 enum {
     MODERN_PREPARED_MATERIAL_LIMIT = 128,
+    MODERN_PREPARED_MATERIAL_BUCKETS = 256,
     MODERN_PREPARED_MATERIAL_BYTE_LIMIT = 32 * 1024 * 1024,
 };
 
@@ -29,6 +30,7 @@ typedef struct ModernPreparedMaterialEntry {
 
 typedef struct ModernPreparedMaterials {
     ModernPreparedMaterialEntry entries[MODERN_PREPARED_MATERIAL_LIMIT];
+    uint16_t buckets[MODERN_PREPARED_MATERIAL_BUCKETS];
     uint32_t count;
     size_t bytes;
     int budgetReached;

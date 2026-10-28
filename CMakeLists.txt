@@ -373,6 +373,7 @@ if(RAGE_BUILD_PORT)
         src/port/axis_curve.c
         src/port/timing_restore.c
         src/port/chase_camera.c
+        src/port/sim_tick.c
         src/port/content_options.c
         src/port/car_catalog_profile.c
         src/port/car_catalog.c

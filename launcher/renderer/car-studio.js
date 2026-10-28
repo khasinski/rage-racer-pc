@@ -929,16 +929,22 @@ function summarizeProjectChanges() {
         else g.tags.add(c.field || 'Modified');
       }
     } else if (c.kind === 'track') {
-      const m = /^track\.(\d+)/.exec(String(c.id || ''));
-      const bank = m ? Number(m[1]) : Number(c.bank || 88);
+      const m = /^track\.(?:(big|mid|hi|oval)([1-6])|custom(\d+)|(\d+))/.exec(String(c.id || ''));
+      const bank = m
+        ? (m[1] ? 88 + (Number(m[2]) - 1) * 8 + ['big', 'mid', 'hi', 'oval'].indexOf(m[1]) * 2
+          : m[3] ? 136 + (Number(m[3]) - 1) * 2
+          : Number(m[4]))
+        : Number(c.bank || 88);
       const trackKey = `track.${bank}`;
       if (!groups.has(trackKey)) {
+        const isCustom = bank >= 136;
+        const customSlot = isCustom ? Math.floor((bank - 136) / 2) + 1 : 0;
         const grade = Math.floor((bank - 88) / 8) + 1;
         const courseIdx = Math.floor(((bank - 88) % 8) / 2);
         groups.set(trackKey, {
           id: trackKey,
           kind: 'track',
-          title: `Class ${grade} · ${COURSE_NAMES[courseIdx] || 'Course'}`,
+          title: isCustom ? `Custom #${customSlot} · Track Bank ${bank}` : `Class ${grade} · ${COURSE_NAMES[courseIdx] || 'Course'}`,
           subtitle: `Track Bank ${bank}`,
           bank,
           canRestore: true,

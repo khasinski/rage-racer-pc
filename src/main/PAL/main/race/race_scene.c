@@ -3,6 +3,7 @@
 
 #include "game/audio.h"
 #include "rage/render_world_game.h"
+#include "rage/sim_tick.h"
 #include <psyz/audio.h>
 #include "game/car.h"
 #include "game/cd.h"
@@ -375,39 +376,56 @@ static void UpdatePausedRaceScene(RaceScene *state) {
     DrawRaceWorld(0);
 }
 
-static void UpdateActiveRaceScene(RaceScene *state) {
+/* Everything below that counts frames (the clock, laps, cues, the wrong-way
+ * timer, the replay) runs once per retail step. With double-rate ticks the
+ * second field of each pair is a substep: only the car physics, the chase
+ * camera and the drawing run. */
+static void UpdateActiveRaceScene(RaceScene *state, s32 substep) {
+    static s32 s_LastLapUpdateResult;
+    static WrongWayUpdate s_LastWrongWay;
     s32 lapUpdateResult;
     s32 textureSection;
-    RaceClockUpdate raceClock;
+    RaceClockUpdate raceClock = {0};
     RaceStartUpdate raceStart;
     RaceViewSelection raceView;
     TrackZoneEffect zone;
     WrongWayUpdate wrongWay;
 
     lapUpdateResult = 0;
-    g_AnimTimer = NextRaceAnimationTimer(g_AnimTimer);
-    raceClock = UpdateRaceClock(state->timeRemaining, g_RacePhase,
-                                g_GrandPrixMode);
-    state->timeRemaining = raceClock.remaining;
+    if (!substep) {
+        g_AnimTimer = NextRaceAnimationTimer(g_AnimTimer);
+        raceClock = UpdateRaceClock(state->timeRemaining, g_RacePhase,
+                                    g_GrandPrixMode);
+        state->timeRemaining = raceClock.remaining;
 
-    raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
-    g_RacePhase = raceStart.phase;
-    if (raceStart.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA) {
-        RunRaceIntroCamera(&g_Camera, &g_PlayerCar, g_SceneTimer);
-    } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
-        BeginCarStandingStart(&g_PlayerCar);
-        StartCdAudio();
-        state->pauseDelay = 0x1E;
+        raceStart = UpdateRaceStartState(g_RacePhase, g_SceneTimer);
+        g_RacePhase = raceStart.phase;
+        if (raceStart.action == RACE_START_ACTION_UPDATE_INTRO_CAMERA) {
+            RunRaceIntroCamera(&g_Camera, &g_PlayerCar, g_SceneTimer);
+        } else if (raceStart.action == RACE_START_ACTION_BEGIN) {
+            BeginCarStandingStart(&g_PlayerCar);
+            StartCdAudio();
+            state->pauseDelay = 0x1E;
+        }
     }
 
     if (g_RacePhase < RACE_PHASE_FINISHED) {
         DrawStartCountdown(g_SceneTimer);
-        PlayCountdownCues(g_SceneTimer);
+        if (!substep) {
+            PlayCountdownCues(g_SceneTimer);
+        }
     }
 
     if (g_RacePhase < RACE_PHASE_RETIRED) {
-        lapUpdateResult = UpdateLapAndFinish(state, &g_PlayerCar, g_GrandPrixMode);
-        UpdateSplitTimes(&state->timing, &g_PlayerCar, g_GrandPrixMode, lapUpdateResult);
+        if (!substep) {
+            lapUpdateResult =
+                UpdateLapAndFinish(state, &g_PlayerCar, g_GrandPrixMode);
+            UpdateSplitTimes(&state->timing, &g_PlayerCar, g_GrandPrixMode,
+                             lapUpdateResult);
+            s_LastLapUpdateResult = lapUpdateResult;
+        } else {
+            lapUpdateResult = s_LastLapUpdateResult;
+        }
         if (!RaceHasRivals() && lapUpdateResult != 2) {
             DrawSplitTimes(&state->timing);
         }
@@ -434,7 +452,9 @@ static void UpdateActiveRaceScene(RaceScene *state) {
 
     if (RaceHasRivals()) {
         if (g_RacePhase < RACE_PHASE_FINISHED) {
-            UpdateRacePosition();
+            if (!substep) {
+                UpdateRacePosition();
+            }
             DrawRacePosition();
         }
     }
@@ -444,16 +464,17 @@ static void UpdateActiveRaceScene(RaceScene *state) {
 
     if (g_RacePhase > RACE_PHASE_INTRO) {
         if (!g_DebugPlayerUpdate || !g_DebugPlayerUpdate(&g_PlayerCar))
-            UpdatePlayerCar(&g_PlayerCar);
+            SimUpdatePlayerCar(&g_PlayerCar);
     } else if (g_RacePhase == RACE_PHASE_INTRO) {
         UpdateLoadedAudioVoices(0, 0);
     }
 
     if ((g_RacePhase >= RACE_PHASE_ACTIVE) && RaceHasRivals()) {
-        UpdateRaceCars();
+        SimUpdateRaceCars();
     }
 
-    if ((g_PadPressed &
+    if (!substep &&
+        (g_PadPressed &
          RaceCameraButtonMask(g_PadType, g_PadButtonMapping)) &&
         CanToggleRaceCamera(g_RacePhase)) {
         g_Camera.mode ^= 1;
@@ -471,7 +492,7 @@ static void UpdateActiveRaceScene(RaceScene *state) {
                                  raceView.cameraView)) {
             UpdateLookBehindCamera(&g_Camera, player);
         } else {
-            UpdateCamera(&g_Camera, raceView.cameraView, player);
+            SimUpdateCamera(&g_Camera, raceView.cameraView, player);
             if (raceView.cameraView == CAMERA_VIEW_CAR) {
                 GameRenderWorldSubmitPlayerCar(player, 0, 1);
             }
@@ -488,24 +509,29 @@ static void UpdateActiveRaceScene(RaceScene *state) {
         DrawCars();
     }
     PortProfileFramePhase("scene_environment");
-    UpdateEnvironment();
+    if (!substep) {
+        UpdateEnvironment();
+    }
     PortProfileFramePhase("scene_sky");
     DrawSkyBackground(&g_Camera.view);
     PortProfileFramePhase("scene");
 
-    wrongWay = UpdateWrongWayState(
-        g_WrongWayTimer,
-        g_PlayerCar.facingBackwards != g_RaceSeries, g_RacePhase,
-        g_SceneTimer);
-    g_WrongWayTimer = wrongWay.timer;
+    if (!substep) {
+        s_LastWrongWay = UpdateWrongWayState(
+            g_WrongWayTimer,
+            g_PlayerCar.facingBackwards != g_RaceSeries, g_RacePhase,
+            g_SceneTimer);
+        g_WrongWayTimer = s_LastWrongWay.timer;
+    }
+    wrongWay = s_LastWrongWay;
     if (wrongWay.drawWarning) {
         DrawWrongWayWarning();
     }
-    if (wrongWay.playCue) {
+    if (!substep && wrongWay.playCue) {
         PlaySoundCue(0x2C);
     }
 
-    DrawRaceWorld(1);
+    DrawRaceWorld(!substep);
 
     zone = GetTrackZoneEffect(g_PlayerCar.trackProgress);
     if (g_RacePhase >= RACE_PHASE_FINISHED) {
@@ -517,6 +543,10 @@ static void UpdateActiveRaceScene(RaceScene *state) {
         DrawPlayerTachometer(zone.dark);
     }
 
+    if (substep) {
+        SimRaceTrace();
+        return;
+    }
     if (g_RacePhase < RACE_PHASE_FINISHED) {
         UpdateZoneAmbience(g_PlayerCar.trackProgress);
         UpdatePointAmbience(&g_Camera.view, g_PlayerCar.trackProgress);
@@ -530,34 +560,48 @@ static void UpdateActiveRaceScene(RaceScene *state) {
         SetStereoSoundCue(1, 0, 0);
     }
     RecordReplayFrame();
+    SimRaceTrace();
 }
 
 void UpdateRaceScene(void) {
     RaceScene *state = SceneRuntimeRace();
     s32 frameStartTimer = NormalizeRaceSceneTimer(g_SceneTimer);
+    s32 substep;
 
-    g_SceneTimer = NextRaceSceneTimer(frameStartTimer);
-    UpdateFinishFollowupCue();
+    SimRaceFrameBegin(g_RacePhase == RACE_PHASE_ACTIVE && g_RacePaused == 0);
+    if (SimTickMultiplier() > 1) {
+        g_FrameSyncThreshold =
+            SimRaceFrameSyncThreshold(RACE_FRAME_SYNC_THRESHOLD);
+    }
+    SimRaceCarryPadEdges(&g_PadPressed);
+    substep = SimRaceSubstep();
+
+    if (!substep) {
+        g_SceneTimer = NextRaceSceneTimer(frameStartTimer);
+        UpdateFinishFollowupCue();
+    }
     if (g_SceneTimer < 0x3D) {
         DrawRoundScreen();
         DrawFullscreenFadeTile(0xFF - ((g_SceneTimer - 6) * 0xB), 0x49);
     }
 
-    if (state->pauseDelay > 0) {
-        state->pauseDelay--;
-    }
+    if (!substep) {
+        if (state->pauseDelay > 0) {
+            state->pauseDelay--;
+        }
 
-    if (UpdateRacePause(state)) {
-        return;
-    }
-    if (UpdateRaceEndState(state)) {
-        return;
+        if (UpdateRacePause(state)) {
+            return;
+        }
+        if (UpdateRaceEndState(state)) {
+            return;
+        }
     }
 
     if (g_RacePaused != 0) {
         g_SceneTimer = frameStartTimer;
         UpdatePausedRaceScene(state);
     } else {
-        UpdateActiveRaceScene(state);
+        UpdateActiveRaceScene(state, substep);
     }
 }

@@ -191,6 +191,7 @@ function renderSettingsView() {
             ${renderRowSetting('camera.chase_height', 'Chase Camera Height')}
             ${renderRowSetting('camera.chase_distance', 'Chase Camera Distance')}
             ${renderRowSetting('camera.chase_pitch', 'Chase Camera Pitch (°)')}
+            ${renderRowSetting('game.tick_rate', 'Race Physics Rate (experimental)')}
           </section>
         </div>
 
@@ -640,13 +641,19 @@ document.addEventListener('change', e => {
       if (e.target.dataset.ownedField) {
         edits[e.target.dataset.ownedField] = e.target.checked ? 1 : 0;
         saveDirty = true;
-        render();
+        const saveBtn = document.querySelector('[data-action="save-copy"]');
+        if (saveBtn) saveBtn.textContent = '💾 Save Changes *';
+        const statusEl = document.querySelector('.studio-statusbar span:last-child');
+        if (statusEl && page === 'saves') statusEl.textContent = 'Unsaved save file edits';
         return;
       }
       if (e.target.dataset.field) {
         edits[e.target.dataset.field] = e.target.value;
         saveDirty = true;
-        render();
+        const saveBtn = document.querySelector('[data-action="save-copy"]');
+        if (saveBtn) saveBtn.textContent = '💾 Save Changes *';
+        const statusEl = document.querySelector('.studio-statusbar span:last-child');
+        if (statusEl && page === 'saves') statusEl.textContent = 'Unsaved save file edits';
       }
     } catch (err) {
       showError(err);

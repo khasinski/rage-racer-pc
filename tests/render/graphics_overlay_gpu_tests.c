@@ -42,6 +42,10 @@ const char *RuntimeConfigGet(const char *key) {
     (void)key;
     return NULL;
 }
+int RuntimeConfigEnabled(const char *key) {
+    (void)key;
+    return 0;
+}
 static PortSessionOptions s_storedSession;
 static int s_haveSession;
 

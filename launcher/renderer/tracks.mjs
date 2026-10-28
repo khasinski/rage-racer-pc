@@ -873,7 +873,7 @@ export function trackWorkspace(tracks,bank,scene,selected=0,objectIndex=0,option
 
   const arcPanel=arc?`<details class="inspector-subdrawer" open><summary>Curve center ${arcIndex+1}</summary><p class="muted">Shared by every segment referencing this center. Changing it affects the driveable curve, not scenery or asphalt geometry.</p><form id="road-arc-form" data-bank="${bank}" data-index="${arcIndex}" data-revision="${scene.revision}"><div class="compact-field-grid">${['x','z'].map(field=>`<div class="setting"><label for="arc-${field}">Center ${field.toUpperCase()}</label><input id="arc-${field}" data-arc-field="${field}" type="number" step="1" min="-2147483648" max="2147483647" value="${arc[field]}" data-original="${arc[field]}" required></div>`).join('')}</div><button type="submit" class="primary">Save curve center to project</button></form></details>`:'';
 
-  const trackId='track.'+['big','mid','hi','oval'][((bank-88)/2)%4]+(Math.floor((bank-88)/8)+1);
+  const trackId=bank>=136?'track.custom'+((bank-136)/2+1):'track.'+['big','mid','hi','oval'][((bank-88)/2)%4]+(Math.floor((bank-88)/8)+1);
   const input=(field,label,min=-2147483648,max=2147483647)=>{
     const value=field==='yaw'?(((object.yaw+2048)%4096+4096)%4096-2048)*360/4096:object[field];
     return `<div class="setting"><label for="object-${field}">${label}</label><input id="object-${field}" data-object-field="${field}" type="number" step="${field==='yaw'?'any':'1'}" min="${min}" max="${max}" value="${value}" data-original="${value}" required></div>`;
@@ -915,7 +915,7 @@ export function terrainCellEditor(scene,bank,cell=0){
  const terrain=scene?.terrain;if(!terrain?.cells?.length)return '';
  if(!Number.isInteger(cell)||cell<0||cell>=terrain.cells.length)cell=0;
  const model=terrain.cells[cell]&1023,row=cell>>5,column=cell&31;
- const id='track.'+['big','mid','hi','oval'][((bank-88)/2)%4]+(Math.floor((bank-88)/8)+1)+'.terrain';
+ const id=(bank>=136?'track.custom'+((bank-136)/2+1):'track.'+['big','mid','hi','oval'][((bank-88)/2)%4]+(Math.floor((bank-88)/8)+1))+'.terrain';
  const coordinate=(name,value)=>`<label>${name==='row'?'Row':'Column'} <select data-terrain-${name}>${Array.from({length:32},(_,i)=>`<option value="${i}" ${i===value?'selected':''}>${i+1}</option>`).join('')}</select></label>`;
  const actions=`<button type="button" data-track-textures="${id}" data-terrain-model-action data-part="${model}" ${model===1023?'hidden':''}>🎨 Textures</button>`+['preview','export','import'].map(action=>`<button type="button" data-${action}-track-part="${id}" data-format="glb" data-terrain-model-action data-part="${model}" data-revision="${scene.revision}" ${model===1023?'hidden':''}>${action==='preview'?'👁 Preview model':action==='export'?'⬇ Export model GLB':'⬆ Import model'}</button>`).join('');
  const visualGrid=terrain.cells.length===1024?`<div class="terrain-grid-wrap"><div class="row between"><small class="eyebrow">Interactive 32×32 Terrain Tile Map</small><small class="muted">Click any cell to inspect or replace its 3D terrain tile</small></div><div class="terrain-grid-map" role="grid" aria-label="32 by 32 terrain cell grid">${terrain.cells.map((raw,idx)=>{const m=raw&1023,empty=m===1023,active=idx===cell;const hue=(m*47)%360;return `<button type="button" class="terrain-tile ${empty?'empty':'filled'} ${active?'active':''}" data-select-terrain-cell="${idx}" style="${empty?'':`background:hsl(${hue},55%,38%)`}" title="Col ${(idx&31)+1}, Row ${(idx>>5)+1} · ${empty?'Empty':'Model '+m}"></button>`;}).join('')}</div></div>`:'';

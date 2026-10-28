@@ -2025,6 +2025,7 @@ set_tests_properties(menu_label_font PROPERTIES LABELS unit TIMEOUT 30)
 add_executable(graphics_overlay_gpu_tests graphics_overlay_gpu_tests.c
     "${PROJECT_SOURCE_DIR}/src/port/overlay_model.c"
     "${PROJECT_SOURCE_DIR}/src/port/overlay_raster.c"
+    "${PROJECT_SOURCE_DIR}/src/port/touch_model.c"
     stb_truetype_implementation.c)
 target_include_directories(graphics_overlay_gpu_tests PRIVATE
     "${PROJECT_SOURCE_DIR}/src/port"

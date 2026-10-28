@@ -37,9 +37,11 @@ export async function mountModelPreview(dialog,data,options={}){
  for(let a=0;a<3;a++)out.push((v[at+a]-center[a])*scale);out.push(v[at+3],v[at+4],v[at+5],...col,v[at+7],v[at+8]);}
  const triangles=[],lines=[],groups=[],byMaterial=new Map();
  const groupBias=m=>data.worldScene&&(m&0xffff)===65535?-128:((m<<8)>>24);
- for(let i=0;i<data.indices.length;i+=3){const material=v[data.indices[i]*9+6]>>>0;const list=byMaterial.get(material)||[];list.push(...data.indices.slice(i,i+3));byMaterial.set(material,list);}
- for(const [material,ids]of [...byMaterial.entries()].sort((a,b)=>groupBias(b[0])-groupBias(a[0]))){const start=triangles.length/11;ids.forEach(id=>vertex(id,triangles));groups.push({material,start,count:ids.length});}
- for(let i=0;i<data.indices.length;i+=3){const ids=data.indices.slice(i,i+3);for(let e=0;e<3;e++){vertex(ids[e],lines);vertex(ids[(e+1)%3],lines);}}
+ for(let i=0;i<data.indices.length;i+=3){const material=v[data.indices[i]*9+6]>>>0;let list=byMaterial.get(material);if(!list){list=[];byMaterial.set(material,list);}list.push(data.indices[i],data.indices[i+1],data.indices[i+2]);}
+ const sortedMaterials=[...byMaterial.entries()].sort((a,b)=>groupBias(b[0])-groupBias(a[0]));
+ for(const [material,ids]of sortedMaterials){const start=triangles.length/11;for(let j=0;j<ids.length;j++)vertex(ids[j],triangles);groups.push({material,start,count:ids.length});}
+ for(let i=0;i<data.indices.length;i+=3){const i0=data.indices[i],i1=data.indices[i+1],i2=data.indices[i+2];vertex(i0,lines);vertex(i1,lines);vertex(i1,lines);vertex(i2,lines);vertex(i2,lines);vertex(i0,lines);}
+ let linesDirty=false;
  const buffers=[triangles,lines].map(values=>{const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(values),gl.STATIC_DRAW);return b;});
  const guideBuffer=gl.createBuffer(),ghostBuffer=gl.createBuffer();
  buffers.push(guideBuffer,ghostBuffer);
@@ -109,13 +111,20 @@ export async function mountModelPreview(dialog,data,options={}){
   guideCount=guides.length/11;
  }
  updateStatsAndGuides();
+ function ensureWireLines(){
+  if(!linesDirty)return;
+  lines.length=0;
+  for(let i=0;i<data.indices.length;i+=3){const i0=data.indices[i],i1=data.indices[i+1],i2=data.indices[i+2];vertex(i0,lines);vertex(i1,lines);vertex(i1,lines);vertex(i2,lines);vertex(i2,lines);vertex(i0,lines);}
+  gl.bindBuffer(gl.ARRAY_BUFFER,buffers[1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(lines),gl.DYNAMIC_DRAW);
+  linesDirty=false;
+ }
  dialog.updateVertices=nextVertices=>{
   v=nextVertices;
-  triangles.length=0;lines.length=0;groups.length=0;
-  for(const [material,ids]of [...byMaterial.entries()].sort((a,b)=>groupBias(b[0])-groupBias(a[0]))){const start=triangles.length/11;ids.forEach(id=>vertex(id,triangles));groups.push({material,start,count:ids.length});}
-  for(let i=0;i<data.indices.length;i+=3){const ids=data.indices.slice(i,i+3);for(let e=0;e<3;e++){vertex(ids[e],lines);vertex(ids[(e+1)%3],lines);}}
+  triangles.length=0;groups.length=0;
+  for(const [material,ids]of sortedMaterials){const start=triangles.length/11;for(let j=0;j<ids.length;j++)vertex(ids[j],triangles);groups.push({material,start,count:ids.length});}
   gl.bindBuffer(gl.ARRAY_BUFFER,buffers[0]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(triangles),gl.DYNAMIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER,buffers[1]);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(lines),gl.DYNAMIC_DRAW);
+  linesDirty=true;
+  if(wire)ensureWireLines();
   updateStatsAndGuides();
   draw();
  };
@@ -344,7 +353,7 @@ export async function mountModelPreview(dialog,data,options={}){
   else if(k==='3'){e.preventDefault();exitDriveCamera();yaw=Math.PI/2;pitch=0;draw();}
   else if(k==='9'){e.preventDefault();exitDriveCamera();yaw=0;pitch=0;draw();}
   else if(k==='7'){e.preventDefault();exitDriveCamera();yaw=0;pitch=-Math.PI/2;draw();}
-  else if(k==='w'){e.preventDefault();wire=!wire;wireInput.checked=wire;draw();}
+  else if(k==='w'){e.preventDefault();wire=!wire;if(wire)ensureWireLines();wireInput.checked=wire;draw();}
   else if(k==='g'&&gridInput){e.preventDefault();showGrid=!showGrid;gridInput.checked=showGrid;updateStatsAndGuides();draw();}
   else if(k==='b'&&bboxInput){e.preventDefault();showBox=!showBox;bboxInput.checked=showBox;updateStatsAndGuides();draw();}
   else if(k==='o'&&ghostInput){e.preventDefault();showGhost=!showGhost;ghostInput.checked=showGhost;draw();}
@@ -357,7 +366,7 @@ export async function mountModelPreview(dialog,data,options={}){
  for(const button of dialog.querySelectorAll('[data-model-view]'))button.onclick=()=>{exitDriveCamera();const preset={front:[Math.PI,0],side:[Math.PI/2,0],rear:[0,0],top:[0,-Math.PI/2]}[button.dataset.modelView];[yaw,pitch]=preset;draw();};
  if(focusBtn)focusBtn.onclick=()=>focusSelectedEntity();
  if(driveBtn)driveBtn.onclick=()=>dialog.setDriveView();
- wireInput.onchange=e=>{wire=e.target.checked;draw();};
+ wireInput.onchange=e=>{wire=e.target.checked;if(wire)ensureWireLines();draw();};
  if(gridInput)gridInput.onchange=e=>{showGrid=e.target.checked;updateStatsAndGuides();draw();};
  if(bboxInput)bboxInput.onchange=e=>{showBox=e.target.checked;updateStatsAndGuides();draw();};
  if(ghostInput)ghostInput.onchange=e=>{showGhost=e.target.checked;draw();};

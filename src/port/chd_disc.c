@@ -12,26 +12,69 @@
 enum { RAGE_CHD_MAX_TRACKS = 99, RAGE_CHD_RAW_SECTOR = 2352 };
 
 static chd_file *s_chd;
+static chd_file *s_audioChd;
 static unsigned char *s_hunk;
+static unsigned char *s_audioHunk;
 static uint32_t s_hunkBytes;
 static uint32_t s_unitBytes;
 static uint32_t s_cachedHunk = UINT32_MAX;
+static uint32_t s_audioCachedHunk = UINT32_MAX;
 static RageChdTrack s_tracks[RAGE_CHD_MAX_TRACKS];
 static int s_trackCount;
 
+static int ChdReadRawSectorFrom(chd_file *chd, unsigned char *hunk,
+                                uint32_t *cachedHunk, unsigned int sector,
+                                unsigned char *raw) {
+    const RageChdTrack *track = NULL;
+    uint32_t storedFrame;
+    uint32_t framesPerHunk;
+    uint32_t hunkNumber;
+    uint32_t hunkOffset;
+    int index;
+
+    if (chd == NULL || hunk == NULL || raw == NULL) return 0;
+    for (index = 0; index < s_trackCount; index++) {
+        if (sector >= (uint32_t)s_tracks[index].sector &&
+            sector < (uint32_t)s_tracks[index].endSector) {
+            track = &s_tracks[index];
+            break;
+        }
+    }
+    if (track == NULL) return 0;
+    storedFrame = track->frameOffset + sector - (uint32_t)track->sector;
+    framesPerHunk = s_hunkBytes / s_unitBytes;
+    hunkNumber = storedFrame / framesPerHunk;
+    hunkOffset = storedFrame % framesPerHunk;
+    if (hunkNumber != *cachedHunk) {
+        if (chd_read(chd, hunkNumber, hunk) != CHDERR_NONE) return 0;
+        *cachedHunk = hunkNumber;
+    }
+    memcpy(raw, hunk + hunkOffset * s_unitBytes, RAGE_CHD_RAW_SECTOR);
+    return 1;
+}
+
 static int ChdReadCallback(unsigned int sector, void *buffer, void *user) {
     (void)user;
-    return ChdReadRawSector(sector, buffer) ? RAGE_CHD_RAW_SECTOR : -1;
+    return ChdReadRawSectorFrom(s_audioChd, s_audioHunk, &s_audioCachedHunk,
+                                sector, buffer)
+               ? RAGE_CHD_RAW_SECTOR
+               : -1;
 }
 
 void ChdClose(void) {
+    Psyz_CdSetSectorBackend(NULL, 0, 0, NULL, NULL);
     free(s_hunk);
     s_hunk = NULL;
+    free(s_audioHunk);
+    s_audioHunk = NULL;
     if (s_chd != NULL) chd_close(s_chd);
     s_chd = NULL;
+    if (s_audioChd != NULL) chd_close(s_audioChd);
+    s_audioChd = NULL;
     s_hunkBytes = 0;
     s_unitBytes = 0;
     s_cachedHunk = UINT32_MAX;
+    s_audioCachedHunk = UINT32_MAX;
     s_trackCount = 0;
     memset(s_tracks, 0, sizeof(s_tracks));
 }
@@ -123,7 +166,10 @@ int ChdOpen(const char *path) {
     s_hunkBytes = header->hunkbytes;
     s_unitBytes = header->unitbytes;
     s_hunk = malloc(s_hunkBytes);
-    if (s_hunk == NULL || !ChdLoadToc(tracks, &leadOut) ||
+    s_audioHunk = malloc(s_hunkBytes);
+    if (s_hunk == NULL || s_audioHunk == NULL ||
+        chd_open(path, CHD_OPEN_READ, NULL, &s_audioChd) != CHDERR_NONE ||
+        !ChdLoadToc(tracks, &leadOut) ||
         Psyz_CdSetSectorBackend(tracks, s_trackCount, leadOut,
                                 ChdReadCallback, NULL) != 0) {
         fprintf(stderr, "rage-port: invalid or unsupported CD CHD metadata\n");
@@ -135,30 +181,5 @@ int ChdOpen(const char *path) {
 }
 
 int ChdReadRawSector(unsigned int sector, unsigned char *raw) {
-    const RageChdTrack *track = NULL;
-    uint32_t storedFrame;
-    uint32_t framesPerHunk;
-    uint32_t hunkNumber;
-    uint32_t hunkOffset;
-    int index;
-
-    if (s_chd == NULL || raw == NULL) return 0;
-    for (index = 0; index < s_trackCount; index++) {
-        if (sector >= (uint32_t)s_tracks[index].sector &&
-            sector < (uint32_t)s_tracks[index].endSector) {
-            track = &s_tracks[index];
-            break;
-        }
-    }
-    if (track == NULL) return 0;
-    storedFrame = track->frameOffset + sector - (uint32_t)track->sector;
-    framesPerHunk = s_hunkBytes / s_unitBytes;
-    hunkNumber = storedFrame / framesPerHunk;
-    hunkOffset = storedFrame % framesPerHunk;
-    if (hunkNumber != s_cachedHunk) {
-        if (chd_read(s_chd, hunkNumber, s_hunk) != CHDERR_NONE) return 0;
-        s_cachedHunk = hunkNumber;
-    }
-    memcpy(raw, s_hunk + hunkOffset * s_unitBytes, RAGE_CHD_RAW_SECTOR);
-    return 1;
+    return ChdReadRawSectorFrom(s_chd, s_hunk, &s_cachedHunk, sector, raw);
 }

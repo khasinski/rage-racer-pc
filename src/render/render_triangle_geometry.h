@@ -32,17 +32,18 @@ static inline RageTriangleGeometry RenderTriangleGeometry(
  * scaling and terrain snapping, never blindly cache it in source-mesh space. */
 static inline int RenderTriangleIsRoadDecal(
     const Vec3 positions[3], RageTriangleGeometry *geometry) {
-    float edge[3];
+    float edgeSq[3];
     for (unsigned corner = 0; corner < 3; ++corner) {
         unsigned next = (corner + 1) % 3;
         float x = positions[next].x - positions[corner].x;
         float y = positions[next].y - positions[corner].y;
         float z = positions[next].z - positions[corner].z;
-        edge[corner] = sqrtf(x * x + y * y + z * z);
+        edgeSq[corner] = x * x + y * y + z * z;
     }
-    float shortest = fminf(edge[0], fminf(edge[1], edge[2]));
-    float longest = fmaxf(edge[0], fmaxf(edge[1], edge[2]));
-    if (shortest > 16.0f || longest < 64.0f || longest < shortest * 8.0f)
+    float shortestSq = fminf(edgeSq[0], fminf(edgeSq[1], edgeSq[2]));
+    float longestSq = fmaxf(edgeSq[0], fmaxf(edgeSq[1], edgeSq[2]));
+    if (shortestSq > 256.0f || longestSq < 4096.0f ||
+        longestSq < shortestSq * 64.0f)
         return 0;
     if (!geometry->prepared) *geometry = RenderTriangleGeometry(positions);
     return geometry->length > 0.0f &&
