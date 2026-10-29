@@ -3,6 +3,9 @@
 #include <string.h>
 #include "port/modern/modern_assets.h"
 #include "port/runtime_config.h"
+#include "render/car_paint.h"
+#include "../../launcher/native/preview_png.h"
+#include "../../launcher/native/texture_upscale_cli.h"
 
 size_t PortAssetRoomAt(const void *at) { (void)at; return 0; }
 
@@ -258,6 +261,132 @@ int main(int argc, char **argv) {
     if(!resident||!RuntimeMeshVertex(&resident->mesh,0,&vertex)||vertex.position[0]!=1.f)return 62;
     ModernAssetsShutdown();
     if(!SDL_RemovePath(overridePath)||!SDL_RemovePath(manifest)||!SDL_RemovePath(meshes)||!SDL_RemovePath(mods))return 60;
+    {
+        char texDir[4096], carPng[4096], skyPng[4096], rmatPath[4096], paintPath[4096];
+        static unsigned char paintMask[256 * 256];
+        static const char hdIndex[] = "# rage-rmesh-index v2\n10 model mesh.rmesh car.rmat\n";
+        static const char hdRmat[] = "# rage-rmat v6\n0 texture.rgba | car.paint | lit opaque 0.22 0.18 1 1 1 1 0 0 0\n";
+        static const char hdManifest[] =
+            "[mod]\nid = \"hd-test\"\n[textures]\n"
+            "\"car.0.material.0\" = \"textures/car0.png\"\n"
+            "\"track.big1.sky\" = \"textures/sky.png\"\n";
+        SDL_Surface *carSurf = SDL_CreateSurface(1024, 1024, SDL_PIXELFORMAT_RGBA32);
+        SDL_Surface *skySurf = SDL_CreateSurface(1024, 512, SDL_PIXELFORMAT_RGBA32);
+        RageRenderMaterial hdDef = {0};
+        RageRenderMaterialStorage hdStorage = {0};
+        ModernAssetImage hdImage = {0}, skyImage = {0};
+        snprintf(texDir, sizeof(texDir), "%s/textures", mods);
+        snprintf(carPng, sizeof(carPng), "%s/car0.png", texDir);
+        snprintf(skyPng, sizeof(skyPng), "%s/sky.png", texDir);
+        snprintf(rmatPath, sizeof(rmatPath), "%s/car.rmat", argv[1]);
+        snprintf(paintPath, sizeof(paintPath), "%s/car.paint", argv[1]);
+        if (!carSurf || !skySurf || !SDL_CreateDirectory(mods) || !SDL_CreateDirectory(texDir)) return 63;
+        memset(carSurf->pixels, 10, (size_t)carSurf->pitch * (size_t)carSurf->h);
+        memset(skySurf->pixels, 200, (size_t)skySurf->pitch * (size_t)skySurf->h);
+        memset(paintMask, RAGE_CAR_PAINT_NONE, sizeof(paintMask));
+        paintMask[0] = RAGE_CAR_PAINT_FIRST_PRIMARY;
+        if (!SDL_SavePNG(carSurf, carPng) || !SDL_SavePNG(skySurf, skyPng) ||
+            !SDL_SaveFile(path, hdIndex, sizeof(hdIndex) - 1) ||
+            !SDL_SaveFile(rmatPath, hdRmat, sizeof(hdRmat) - 1) ||
+            !SDL_SaveFile(paintPath, paintMask, sizeof(paintMask)) ||
+            !SDL_SaveFile(manifest, hdManifest, sizeof(hdManifest) - 1)) return 64;
+        SDL_DestroySurface(carSurf);
+        SDL_DestroySurface(skySurf);
+        if (!RuntimeConfigInit(3, trackArgs) || !ModernAssetsInitRoot(argv[1])) return 65;
+        instance = (RenderMeshInstance){
+            .assetKey = 10,
+            .assetSet = RAGE_RENDER_ASSET_MODEL_BANK,
+            .hasCarPaint = 1,
+            .carPaintColor1 = 3,
+            .carPaintColor2 = 12,
+        };
+        if (!ModernAssetsLoadMaterial(&instance, 0, 0, &hdDef, &hdImage, &hdStorage) ||
+            hdImage.width != 1024 || hdImage.height != 1024 ||
+            ((const uint8_t *)hdImage.pixels)[0] != 148 ||
+            ((const uint8_t *)hdImage.pixels)[(1 * 1024 + 1) * 4] != 148 ||
+            ((const uint8_t *)hdImage.pixels)[(2 * 1024 + 2) * 4] <= 10 ||
+            ((const uint8_t *)hdImage.pixels)[(2 * 1024 + 2) * 4] >= 148 ||
+            ((const uint8_t *)hdImage.pixels)[(8 * 1024 + 8) * 4] != 10) return 66;
+        ModernAssetsFreeMaterialImage(&hdImage);
+        if (!ModernAssetsLoadSkyImage(0x58, NULL, &skyImage) ||
+            skyImage.width != 1024 || skyImage.height != 512 ||
+            ((const uint8_t *)skyImage.pixels)[0] != 200) return 67;
+        ModernAssetsFreeMaterialImage(&skyImage);
+        /* Remove the mod override PNG and verify built-in 2x and 4x runtime upscaling on the 256x256 base texture. */
+        if (!SDL_RemovePath(carPng) || !SDL_RemovePath(skyPng) ||
+            !SDL_RemovePath(texDir) || !SDL_RemovePath(manifest) ||
+            !SDL_RemovePath(mods)) return 68;
+        ModernAssetsShutdown();
+        {
+            char texRgbaPath[4096];
+            static unsigned char basePixels[256 * 256 * 4];
+            snprintf(texRgbaPath, sizeof(texRgbaPath), "%s/texture.rgba", argv[1]);
+            memset(basePixels, 80, sizeof(basePixels));
+            if (!SDL_SaveFile(texRgbaPath, basePixels, sizeof(basePixels))) return 68;
+            if (!ModernAssetsInitRoot(argv[1])) return 68;
+            ModernAssetsSetTextureUpscale(2);
+            if (!ModernAssetsLoadMaterial(&instance, 0, 0, &hdDef, &hdImage, &hdStorage) ||
+                hdImage.width != 512 || hdImage.height != 512 ||
+                ((const uint8_t *)hdImage.pixels)[0] != 148) return 68;
+            ModernAssetsFreeMaterialImage(&hdImage);
+            ModernAssetsSetTextureUpscale(4);
+            if (!ModernAssetsLoadMaterial(&instance, 0, 0, &hdDef, &hdImage, &hdStorage) ||
+                hdImage.width != 1024 || hdImage.height != 1024 ||
+                ((const uint8_t *)hdImage.pixels)[0] != 148) return 68;
+            ModernAssetsFreeMaterialImage(&hdImage);
+            ModernAssetsSetTextureUpscale(1);
+            ModernAssetsShutdown();
+            if (!SDL_RemovePath(texRgbaPath) || !SDL_RemovePath(rmatPath) ||
+                !SDL_RemovePath(paintPath)) return 68;
+        }
+    }
+    {
+        char srcPng[4096], prepPng[4096], upPng[4096], outPng[4096];
+        SDL_Surface *srcSurf = SDL_CreateSurface(256, 256, SDL_PIXELFORMAT_RGBA32);
+        SDL_Surface *upSurf = SDL_CreateSurface(1024, 1024, SDL_PIXELFORMAT_RGBA32);
+        SDL_Surface *normRaw = NULL, *normSurf = NULL;
+        snprintf(srcPng, sizeof(srcPng), "%s/src256.png", argv[1]);
+        snprintf(prepPng, sizeof(prepPng), "%s/prep256.png", argv[1]);
+        snprintf(upPng, sizeof(upPng), "%s/up1024.png", argv[1]);
+        snprintf(outPng, sizeof(outPng), "%s/norm1024.png", argv[1]);
+        if (!srcSurf || !upSurf) return 69;
+        memset(srcSurf->pixels, 255, (size_t)srcSurf->pitch * (size_t)srcSurf->h);
+        /* Texel (64, 64) in interior tile (1, 1) is transparent; (65, 64) is bright red (200, 40, 20, 255). */
+        uint8_t *sp0 = (uint8_t *)srcSurf->pixels + (size_t)64 * (size_t)srcSurf->pitch + 64u * 4u;
+        sp0[0] = sp0[1] = sp0[2] = sp0[3] = 0;
+        uint8_t *sp1 = (uint8_t *)srcSurf->pixels + (size_t)64 * (size_t)srcSurf->pitch + 65u * 4u;
+        sp1[0] = 200; sp1[1] = 40; sp1[2] = 20; sp1[3] = 255;
+
+        memset(upSurf->pixels, 120, (size_t)upSurf->pitch * (size_t)upSurf->h);
+        /* Simulate black-bleed on the upscaled silhouette pixel at (65*4, 64*4) = (260, 256): darkened to (100, 20, 10). */
+        uint8_t *up1 = (uint8_t *)upSurf->pixels + (size_t)256 * (size_t)upSurf->pitch + 260u * 4u;
+        up1[0] = 100; up1[1] = 20; up1[2] = 10; up1[3] = 255;
+
+        if (!SDL_SavePNG(srcSurf, srcPng) || !SDL_SavePNG(upSurf, upPng)) return 70;
+        SDL_DestroySurface(srcSurf);
+        SDL_DestroySurface(upSurf);
+
+        char *prepArgs[] = {"rage-mod-cli", "--texture-upscale-prepare", srcPng, prepPng};
+        if (TextureUpscalePrepareCommand(4, prepArgs) != 0) return 70;
+        char *upCmdArgs[] = {"rage-mod-cli", "--texture-upscale", srcPng, outPng, "4", "64", "64"};
+        if (TextureUpscaleCommand(7, upCmdArgs) != 0) return 70;
+
+        char *normArgs[] = {"rage-mod-cli", "--texture-upscale-normalize", srcPng, upPng, outPng, "64", "64"};
+        if (TextureUpscaleNormalizeCommand(7, normArgs) != 0) return 71;
+        normRaw = SDL_LoadPNG(outPng);
+        if (!normRaw) return 72;
+        normSurf = SDL_ConvertSurface(normRaw, SDL_PIXELFORMAT_RGBA32);
+        SDL_DestroySurface(normRaw);
+        if (!normSurf || normSurf->w != 1024 || normSurf->h != 1024) return 73;
+        /* Canonical interior tile (1, 1) was tiled to (0, 0), so (0, 0) is transparent and (4, 0) is de-fringed to (200, 40, 20, 255). */
+        const uint8_t *np0 = (const uint8_t *)normSurf->pixels;
+        const uint8_t *np1 = (const uint8_t *)normSurf->pixels + 4u * 4u;
+        if (np0[0] != 0 || np0[1] != 0 || np0[2] != 0 || np0[3] != 0) return 74;
+        if (np1[0] != 200 || np1[1] != 40 || np1[2] != 20 || np1[3] != 255) return 75;
+        SDL_DestroySurface(normSurf);
+        if (!SDL_RemovePath(srcPng) || !SDL_RemovePath(prepPng) ||
+            !SDL_RemovePath(upPng) || !SDL_RemovePath(outPng)) return 76;
+    }
     if (!SDL_RemovePath(path)) return 7;
     if (!SDL_RemovePath(meshPath)) return 26;
     return 0;

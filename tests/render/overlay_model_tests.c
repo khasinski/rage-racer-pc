@@ -16,6 +16,7 @@ static void Defaults(RagePortConfig *config, PortSessionOptions *session) {
     config->renderer = RAGE_RENDERER_MODERN;
     config->modernInternalScale = 4.0f;
     config->modernDrawDistance = 1.0f;
+    config->modernTextureUpscale = 1;
     config->modernShadows = 2;
     session->tickMultiplier = 1;
     session->steeringLinearity = 0.5f;
@@ -125,6 +126,17 @@ static int TestStepsAndPending(void) {
     OverlayModelDo(&model, OVERLAY_CLOSE, 5001);
     due = OverlayModelTakePending(&model, 5001);
     CHECK(due.config);
+
+    /* Texture upscaling cycles through Off (1x), 2x and 4x. */
+    Open(&model);
+    model.selected = 5;
+    CHECK(model.values.config.modernTextureUpscale == 1);
+    OverlayModelDo(&model, OVERLAY_RIGHT, 6000);
+    CHECK(model.values.config.modernTextureUpscale == 2 && model.configPending);
+    OverlayModelDo(&model, OVERLAY_RIGHT, 6100);
+    CHECK(model.values.config.modernTextureUpscale == 4);
+    OverlayModelDo(&model, OVERLAY_RIGHT, 6200);
+    CHECK(model.values.config.modernTextureUpscale == 1);
 
     /* Session options apply on the next take, whatever the delay. */
     Open(&model);

@@ -73,6 +73,15 @@ int NativeAssetImporterLoadMaterial(
     return 0;
 }
 
+int NativeAssetImporterApplyCarPaint(
+    const RenderMeshInstance *instance, uint32_t material,
+    uint8_t variant, ModernAssetImage *image) {
+    (void)instance;
+    (void)material;
+    (void)variant;
+    return image != NULL && image->pixels != NULL;
+}
+
 int NativeAssetImporterLoadSky(uint32_t assetKey,
                                    const RageSkyPanoramaLayout *layout,
                                    ModernAssetImage *image) {

@@ -12,6 +12,7 @@ int AssetMaterialId(char *out, size_t capacity, uint32_t assetKey,
                         RenderAssetSet assetSet, uint32_t material);
 int AssetTrackMeshId(char *out, size_t capacity, uint32_t assetKey,
                      RenderAssetSet assetSet);
+int AssetSkyId(char *out, size_t capacity, uint32_t assetKey);
 
 /* Append an exact runtime material variant to a base material id. */
 int AssetMaterialVariantId(char *out, size_t capacity,

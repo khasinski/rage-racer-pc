@@ -61,6 +61,14 @@ static const char *const kFilterNames[] = {"Crisp pixels", "Smooth"};
 ACCESSORS(Filter, v->config.modernTextureFilterLinear != 0,
           v->config.modernTextureFilterLinear = i)
 
+static const int kTextureUpscales[] = {1, 2, 4};
+static const char *const kTextureUpscaleNames[] = {"Off", "2x", "4x"};
+ACCESSORS(TextureUpscale,
+          v->config.modernTextureUpscale >= 4
+              ? 2
+              : (v->config.modernTextureUpscale >= 2 ? 1 : 0),
+          v->config.modernTextureUpscale = kTextureUpscales[i])
+
 static const char *const kPostNames[] = {"Off", "FXAA"};
 ACCESSORS(Post, v->config.modernPost == RAGE_MODERN_POST_FXAA,
           v->config.modernPost = i ? RAGE_MODERN_POST_FXAA : RAGE_MODERN_POST_NONE)
@@ -90,6 +98,8 @@ static const OverlaySetting kGraphics[] = {
             kFpsNames, Fps),
     SETTING("Texture filtering", "Choose crisp pixels or smoother transitions.",
             kFilterNames, Filter),
+    SETTING("Texture upscaling", "Edge-directed upscaling for 3D car, track and sky textures.",
+            kTextureUpscaleNames, TextureUpscale),
     SETTING("Anti-aliasing", "FXAA softens jagged edges.", kPostNames, Post),
     SETTING("Color grading", "A more vibrant palette.", kGradingNames, Grading),
     SETTING("Shadows", "Sun shadow detail. High uses the sharpest shadow maps.",

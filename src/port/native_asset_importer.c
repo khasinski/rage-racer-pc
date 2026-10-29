@@ -420,9 +420,15 @@ int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *imag
     const uint16_t *words = (const uint16_t *)packed;
     const uint16_t *palette = (const uint16_t *)paletteStorage;
     RECT rect, paletteRect;
-    unsigned x, y, atlasX;
-    if (!image || !image->pixels || image->width != 256 || image->height != 256 ||
-        image->size != 256u * 256u * 4u) return 0;
+    unsigned x, y, atlasX, scaleX, scaleY;
+    if (!image || !image->pixels || image->width < 256u || image->height < 256u ||
+        (image->width % 256u) != 0 || (image->height % 256u) != 0 ||
+        (size_t)image->width > SIZE_MAX / 4u ||
+        (size_t)image->height > SIZE_MAX / ((size_t)image->width * 4u) ||
+        image->size != (size_t)image->width * (size_t)image->height * 4u)
+        return 0;
+    scaleX = image->width / 256u;
+    scaleY = image->height / 256u;
     if (clut == 0x7801) {
         rect = (RECT){656, 48, 16, 64};
         atlasX = 64;
@@ -438,9 +444,17 @@ int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *imag
     for (y = 0; y < (unsigned)rect.h; ++y) {
         for (x = 0; x < (unsigned)rect.w * 4u; ++x) {
             unsigned index = (words[y * rect.w + x / 4u] >> ((x & 3u) * 4u)) & 15u;
-            uint8_t *rgba = (uint8_t *)image->pixels +
-                (((unsigned)rect.y + y) * 256u + atlasX + x) * 4u;
-            ImportColor(palette[index], rgba);
+            uint8_t color[4];
+            unsigned sy, sx;
+            ImportColor(palette[index], color);
+            for (sy = 0; sy < scaleY; ++sy) {
+                size_t dstY = (size_t)((unsigned)rect.y + y) * scaleY + sy;
+                uint8_t *row = (uint8_t *)image->pixels +
+                    (dstY * (size_t)image->width +
+                     (size_t)(atlasX + x) * scaleX) * 4u;
+                for (sx = 0; sx < scaleX; ++sx)
+                    memcpy(row + (size_t)sx * 4u, color, 4u);
+            }
         }
     }
     return 1;
@@ -530,10 +544,11 @@ static uint8_t ImportCarPaintCode(uint32_t x, uint32_t y) {
 static int ImportDecodeTexture(
     const RageImportedTextureKey *texture, uint16_t clut,
     const uint16_t *vram, uint8_t **pixelsOut, uint8_t **paintOut) {
-    uint8_t *pixels = SDL_malloc(256u * 256u * 4u);
+    uint8_t *pixels = pixelsOut != NULL ? SDL_malloc(256u * 256u * 4u) : NULL;
     uint8_t *paint = paintOut != NULL ? SDL_calloc(256u * 256u, 1) : NULL;
     uint32_t y, x;
-    if (pixels == NULL || (paintOut != NULL && paint == NULL)) {
+    if ((pixelsOut != NULL && pixels == NULL) ||
+        (paintOut != NULL && paint == NULL)) {
         SDL_free(pixels);
         SDL_free(paint);
         return 0;
@@ -544,10 +559,12 @@ static int ImportDecodeTexture(
         for (x = 0; x < 256; x++) {
             uint32_t sourceU = texture->hasWindow
                 ? x % texture->windowWidthU + texture->windowOffsetU : x;
-            uint8_t *rgba = pixels + (y * 256u + x) * 4u;
-            ImportColor(ImportTextureWord(
-                                vram, texture->tpage, clut, sourceU, sourceV),
-                            rgba);
+            if (pixels != NULL) {
+                uint8_t *rgba = pixels + (y * 256u + x) * 4u;
+                ImportColor(ImportTextureWord(
+                                    vram, texture->tpage, clut, sourceU, sourceV),
+                                rgba);
+            }
             if (paint != NULL && ((texture->tpage >> 7) & 3u) <= 1) {
                 uint32_t clutX = (clut & 0x3Fu) * 16u;
                 uint32_t clutY = (clut >> 6) & 0x1FFu;
@@ -558,7 +575,7 @@ static int ImportDecodeTexture(
             }
         }
     }
-    *pixelsOut = pixels;
+    if (pixelsOut != NULL) *pixelsOut = pixels;
     if (paintOut != NULL) *paintOut = paint;
     return 1;
 }
@@ -691,6 +708,51 @@ int NativeAssetImporterLoadMaterial(
     image->width = 256;
     image->height = 256;
     return 1;
+}
+
+int NativeAssetImporterApplyCarPaint(
+    const RenderMeshInstance *instance, uint32_t material,
+    uint8_t variant, ModernAssetImage *image) {
+    RageImportedMeshEntry *entry;
+    RageImportedTextureKey *texture;
+    const uint16_t *vram;
+    RageTrackTextureGeneration *generation;
+    uint16_t clut;
+    uint8_t *paint = NULL;
+    int ok;
+    if (!s_ready || instance == NULL || image == NULL || image->pixels == NULL)
+        return 0;
+    if (!instance->hasCarPaint) return 1;
+    entry = ImportFindEntry(instance->assetKey, instance->assetSet);
+    if (entry == NULL) {
+        if (NativeAssetImporterFind(instance) == NULL) return 0;
+        entry = ImportFindEntry(instance->assetKey, instance->assetSet);
+    }
+    if (entry == NULL || material >= entry->materialCount) return 0;
+    texture = &entry->materials[material];
+    clut = ImportMaterialClut(texture, instance->assetSet, variant);
+    vram = ImportVramSnapshot(
+        instance->assetSet != RAGE_RENDER_ASSET_MODEL_BANK);
+    if (vram != NULL && (instance->assetSet == RAGE_RENDER_ASSET_TERRAIN ||
+                         instance->assetSet == RAGE_RENDER_ASSET_COURSE))
+        vram = TrackTextureSnapshotSelectPage(&s_trackImages,
+            TrackMaterialPage(instance->assetSet, variant,
+                              g_TrackTexturePageWanted));
+    generation = vram != NULL
+        ? TrackTextureSnapshotRetain(&s_trackImages) : NULL;
+    ok = generation != NULL &&
+         ImportDecodeTexture(texture, clut, vram, NULL, &paint);
+    TrackTextureGenerationRelease(generation);
+    if (!ok) {
+        SDL_free(paint);
+        return 0;
+    }
+    ok = CarPaintApplyScaled(image->pixels, image->width, image->height,
+                             paint, 256u, 256u,
+                             instance->carPaintColor1,
+                             instance->carPaintColor2);
+    SDL_free(paint);
+    return ok;
 }
 
 int NativeAssetImporterLoadSky(uint32_t assetKey,

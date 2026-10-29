@@ -78,6 +78,15 @@ int AssetTrackMeshId(char *out,size_t capacity,uint32_t assetKey,
         track,AssetSetMaterialName(assetSet)));
 }
 
+int AssetSkyId(char *out, size_t capacity, uint32_t assetKey) {
+    char track[16];
+    if (out == NULL || capacity == 0) return 0;
+    out[0] = '\0';
+    if (!TrackName(track, sizeof(track), assetKey)) return 0;
+    return AssetIdWasWritten(out, capacity,
+                             snprintf(out, capacity, "track.%s.sky", track));
+}
+
 int AssetMaterialVariantId(char *out, size_t capacity,
                            uint32_t assetKey,
                            RenderAssetSet assetSet,

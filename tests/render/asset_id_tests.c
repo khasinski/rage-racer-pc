@@ -56,5 +56,17 @@ int main(void) {
     EXPECT(!AssetTrackMeshId(id,sizeof(id),88,RAGE_RENDER_ASSET_MODEL_BANK));
     EXPECT(!AssetTrackMeshId(id,8,88,RAGE_RENDER_ASSET_COURSE));
     EXPECT_STRING("",id);
+
+    EXPECT(AssetSkyId(id, sizeof(id), 0x58));
+    EXPECT_STRING("track.big1.sky", id);
+    EXPECT(AssetSkyId(id, sizeof(id), 0x86));
+    EXPECT_STRING("track.oval6.sky", id);
+    EXPECT(AssetSkyId(id, sizeof(id), 0x88));
+    EXPECT_STRING("track.custom1.sky", id);
+    EXPECT(!AssetSkyId(id, sizeof(id), 89));
+    EXPECT_STRING("", id);
+    EXPECT(!AssetSkyId(NULL, sizeof(id), 0x58));
+    EXPECT(!AssetSkyId(id, 8, 0x58));
+    EXPECT_STRING("", id);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

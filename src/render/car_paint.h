@@ -28,5 +28,9 @@ enum {
  * texture page, CLUT or VRAM data reaches this layer. */
 int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
                       uint8_t firstColor, uint8_t secondColor);
+int CarPaintApplyScaled(uint8_t *rgba, uint32_t width, uint32_t height,
+                        const uint8_t *mask, uint32_t maskWidth,
+                        uint32_t maskHeight, uint8_t firstColor,
+                        uint8_t secondColor);
 
 #endif

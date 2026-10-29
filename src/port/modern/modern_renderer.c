@@ -1913,6 +1913,7 @@ int ModernInit(const RagePortConfig *config) {
     }
     s_shutdownNeeded = 1;
     s_config = *config;
+    ModernAssetsSetTextureUpscale(s_config.modernTextureUpscale);
     const char *classic = RuntimeConfigGet("video.classic_enhancements");
     s_classicEnhancements = classic == NULL || RuntimeConfigEnabled("video.classic_enhancements");
     s_profileTiming = RuntimeConfigEnabled("diagnostics.performance");
@@ -2029,6 +2030,7 @@ int ModernApplyConfig(const RagePortConfig *requested) {
      * Car lights are read when the race world publishes its lamps. */
     s_config.modernDrawDistance = next.modernDrawDistance;
     s_config.carLights = next.carLights ? 1 : 0;
+    ModernAssetsSetTextureUpscale(next.modernTextureUpscale);
     if (ModernPresentationSettingsDiffer(&next, &s_config)) {
         if (!ModernRestartPresentation(&next)) return 0;
     } else {

@@ -100,6 +100,28 @@
   },
   {
     "group": "video",
+    "key": "video.texture_upscale",
+    "label": "Texture upscaling",
+    "help": "Edge-directed upscaling for 3D car, track and sky textures.",
+    "type": "select",
+    "default": "off",
+    "options": [
+      [
+        "off",
+        "Off (1x)"
+      ],
+      [
+        "2x",
+        "2x (512×512)"
+      ],
+      [
+        "4x",
+        "4x (1024×1024)"
+      ]
+    ]
+  },
+  {
+    "group": "video",
     "key": "video.post",
     "label": "Anti-aliasing",
     "help": "FXAA softens jagged edges.",

@@ -27,6 +27,7 @@ void PortConfigDefaults(RagePortConfig *config) {
     config->modernFps = RAGE_MODERN_FPS_VSYNC;
     config->modernDrawDistance = 1.0f;
     config->modernTextureFilterLinear = 1;
+    config->modernTextureUpscale = 1;
     config->modernPost = RAGE_MODERN_POST_FXAA;
     config->modernGrading = 1;
     config->modernSsao = 1;
@@ -168,6 +169,22 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         }
         return 0;
     }
+    if (strcmp(name, "modern.texture_upscale") == 0) {
+        if (strcmp(value, "off") == 0 || strcmp(value, "1") == 0 ||
+            strcmp(value, "1x") == 0) {
+            config->modernTextureUpscale = 1;
+            return 1;
+        }
+        if (strcmp(value, "2") == 0 || strcmp(value, "2x") == 0) {
+            config->modernTextureUpscale = 2;
+            return 1;
+        }
+        if (strcmp(value, "4") == 0 || strcmp(value, "4x") == 0) {
+            config->modernTextureUpscale = 4;
+            return 1;
+        }
+        return 0;
+    }
     return 0;
 }
 
@@ -179,6 +196,8 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
         {"video.fps", "modern.fps"},
         {"video.draw_distance", "modern.draw_distance"},
         {"video.texture_filter", "modern.texture_filter"},
+        {"video.texture_upscale", "modern.texture_upscale"},
+        {"modern.texture_upscale", "modern.texture_upscale"},
         {"video.post", "modern.post"},
         {"video.bloom", "modern.bloom"},
         {"video.grading", "modern.grading"},

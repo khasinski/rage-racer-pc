@@ -31,6 +31,9 @@ const RageRuntimeCachedMesh *NativeAssetImporterPeek(uint32_t assetKey, RenderAs
 int NativeAssetImporterLoadMaterial(
     const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant, RageRenderMaterial *definition, ModernAssetImage *image);
+int NativeAssetImporterApplyCarPaint(
+    const RenderMeshInstance *instance, uint32_t material,
+    uint8_t variant, ModernAssetImage *image);
 int NativeAssetImporterLoadSky(uint32_t assetKey,
     const RageSkyPanoramaLayout *layout, ModernAssetImage *image);
 /* Team artwork is live game state, even when the base atlas came from disk. */

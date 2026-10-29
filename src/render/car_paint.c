@@ -39,6 +39,34 @@ static uint8_t PaintShade(uint8_t primary, uint8_t secondary,
     }
 }
 
+static int PaintTargetRGB(uint8_t code, uint8_t firstColor,
+                          uint8_t secondColor, uint8_t rgbOut[3]) {
+    const RagePaintEndpoints *paint;
+    uint8_t shade, channel;
+    if (code == RAGE_CAR_PAINT_NONE ||
+        code > RAGE_CAR_PAINT_SECOND_SECONDARY) return 0;
+    if (code >= RAGE_CAR_PAINT_SECOND_PRIMARY) {
+        paint = &s_colors[secondColor];
+        shade = (uint8_t)(code - RAGE_CAR_PAINT_SECOND_PRIMARY);
+    } else {
+        paint = &s_colors[firstColor];
+        shade = (uint8_t)(code - RAGE_CAR_PAINT_FIRST_PRIMARY);
+    }
+    for (channel = 0; channel < 3; channel++)
+        rgbOut[channel] = PaintExpand(PaintShade(
+            paint->primary[channel], paint->secondary[channel], shade));
+    return 1;
+}
+
+static void PaintPixel(uint8_t *rgba, uint8_t code, uint8_t firstColor,
+                       uint8_t secondColor) {
+    uint8_t rgb[3];
+    if (!PaintTargetRGB(code, firstColor, secondColor, rgb)) return;
+    rgba[0] = rgb[0];
+    rgba[1] = rgb[1];
+    rgba[2] = rgb[2];
+}
+
 int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
                       uint8_t firstColor, uint8_t secondColor) {
     size_t pixel;
@@ -46,22 +74,119 @@ int CarPaintApply(uint8_t *rgba, const uint8_t *mask, size_t pixelCount,
         pixelCount > SIZE_MAX / 4u ||
         firstColor >= RAGE_CAR_PAINT_COLOR_COUNT ||
         secondColor >= RAGE_CAR_PAINT_COLOR_COUNT) return 0;
-    for (pixel = 0; pixel < pixelCount; pixel++) {
-        uint8_t code = mask[pixel];
-        const RagePaintEndpoints *paint;
-        uint8_t shade, channel;
-        if (code == RAGE_CAR_PAINT_NONE ||
-            code > RAGE_CAR_PAINT_SECOND_SECONDARY) continue;
-        if (code >= RAGE_CAR_PAINT_SECOND_PRIMARY) {
-            paint = &s_colors[secondColor];
-            shade = (uint8_t)(code - RAGE_CAR_PAINT_SECOND_PRIMARY);
+    for (pixel = 0; pixel < pixelCount; pixel++)
+        PaintPixel(rgba + pixel * 4u, mask[pixel], firstColor, secondColor);
+    return 1;
+}
+
+int CarPaintApplyScaled(uint8_t *rgba, uint32_t width, uint32_t height,
+                        const uint8_t *mask, uint32_t maskWidth,
+                        uint32_t maskHeight, uint8_t firstColor,
+                        uint8_t secondColor) {
+    uint32_t y, x;
+    if (rgba == NULL || mask == NULL || width == 0 || height == 0 ||
+        maskWidth == 0 || maskHeight == 0 ||
+        (size_t)width > SIZE_MAX / 4u ||
+        (size_t)height > SIZE_MAX / ((size_t)width * 4u) ||
+        (size_t)maskHeight > SIZE_MAX / (size_t)maskWidth ||
+        firstColor >= RAGE_CAR_PAINT_COLOR_COUNT ||
+        secondColor >= RAGE_CAR_PAINT_COLOR_COUNT) return 0;
+    if (width == maskWidth && height == maskHeight)
+        return CarPaintApply(rgba, mask, (size_t)width * (size_t)height,
+                             firstColor, secondColor);
+    for (y = 0; y < height; y++) {
+        /* Map high-res pixel center to 256-fixed-point mask coordinates. */
+        int64_t fy256 =
+            (((int64_t)y * 2 + 1) * (int64_t)maskHeight * 128) / (int64_t)height -
+            128;
+        int64_t y0 = fy256 >> 8;
+        uint32_t ty = (uint32_t)(fy256 & 255);
+        uint32_t my0, my1;
+        uint8_t *rgbaRow = rgba + (size_t)y * (size_t)width * 4u;
+        if (fy256 < 0) {
+            my0 = my1 = 0;
+            ty = 0;
+        } else if ((uint64_t)y0 >= (uint64_t)(maskHeight - 1u)) {
+            my0 = my1 = maskHeight - 1u;
+            ty = 0;
         } else {
-            paint = &s_colors[firstColor];
-            shade = (uint8_t)(code - RAGE_CAR_PAINT_FIRST_PRIMARY);
+            my0 = (uint32_t)y0;
+            my1 = my0 + 1u;
         }
-        for (channel = 0; channel < 3; channel++)
-            rgba[pixel * 4u + channel] = PaintExpand(PaintShade(
-                paint->primary[channel], paint->secondary[channel], shade));
+        for (x = 0; x < width; x++) {
+            int64_t fx256 =
+                (((int64_t)x * 2 + 1) * (int64_t)maskWidth * 128) /
+                    (int64_t)width -
+                128;
+            int64_t x0 = fx256 >> 8;
+            uint32_t tx = (uint32_t)(fx256 & 255);
+            uint32_t mx0, mx1;
+            uint8_t c00, c10, c01, c11;
+            uint32_t w[4];
+            uint8_t codes[4];
+            uint32_t paintW = 0;
+            uint32_t sumR = 0, sumG = 0, sumB = 0;
+            uint8_t *px = rgbaRow + (size_t)x * 4u;
+            int i;
+            if (fx256 < 0) {
+                mx0 = mx1 = 0;
+                tx = 0;
+            } else if ((uint64_t)x0 >= (uint64_t)(maskWidth - 1u)) {
+                mx0 = mx1 = maskWidth - 1u;
+                tx = 0;
+            } else {
+                mx0 = (uint32_t)x0;
+                mx1 = mx0 + 1u;
+            }
+            c00 = mask[(size_t)my0 * (size_t)maskWidth + (size_t)mx0];
+            c10 = mask[(size_t)my0 * (size_t)maskWidth + (size_t)mx1];
+            c01 = mask[(size_t)my1 * (size_t)maskWidth + (size_t)mx0];
+            c11 = mask[(size_t)my1 * (size_t)maskWidth + (size_t)mx1];
+            if (c00 == c10 && c00 == c01 && c00 == c11) {
+                PaintPixel(px, c00, firstColor, secondColor);
+                continue;
+            }
+            w[0] = (256u - tx) * (256u - ty);
+            w[1] = tx * (256u - ty);
+            w[2] = (256u - tx) * ty;
+            w[3] = tx * ty;
+            codes[0] = c00;
+            codes[1] = c10;
+            codes[2] = c01;
+            codes[3] = c11;
+            for (i = 0; i < 4; i++) {
+                uint8_t rgb[3];
+                if (w[i] == 0) continue;
+                if (PaintTargetRGB(codes[i], firstColor, secondColor, rgb)) {
+                    paintW += w[i];
+                    sumR += w[i] * (uint32_t)rgb[0];
+                    sumG += w[i] * (uint32_t)rgb[1];
+                    sumB += w[i] * (uint32_t)rgb[2];
+                }
+            }
+            if (paintW == 0) continue;
+            {
+                uint32_t paintR = (sumR + paintW / 2u) / paintW;
+                uint32_t paintG = (sumG + paintW / 2u) / paintW;
+                uint32_t paintB = (sumB + paintW / 2u) / paintW;
+                if (paintW >= 65536u) {
+                    px[0] = (uint8_t)paintR;
+                    px[1] = (uint8_t)paintG;
+                    px[2] = (uint8_t)paintB;
+                } else {
+                    uint32_t unpW = 65536u - paintW;
+                    px[0] = (uint8_t)((paintR * paintW +
+                                       (uint32_t)px[0] * unpW + 32768u) >>
+                                      16);
+                    px[1] = (uint8_t)((paintG * paintW +
+                                       (uint32_t)px[1] * unpW + 32768u) >>
+                                      16);
+                    px[2] = (uint8_t)((paintB * paintW +
+                                       (uint32_t)px[2] * unpW + 32768u) >>
+                                      16);
+                }
+            }
+        }
     }
     return 1;
 }

@@ -191,6 +191,7 @@ add_library(rage-rmesh STATIC
     src/render/asset_path.c
     src/render/render_material.c
     src/render/texture_mipmap.c
+    src/render/texture_upscale.c
     src/render/rmesh.c
     src/render/rmesh_replace.c
     src/render/rmesh_index.c

@@ -34,6 +34,7 @@ static RageModManifest manifest;
 #include "mod_package_cli.h"
 #include "track_edit_cli.h"
 #include "texture_batch_cli.h"
+#include "texture_upscale_cli.h"
 static int ValidatePng(const char *path) {
     unsigned char header[24];
     FILE *file=fopen(path,"rb");
@@ -266,6 +267,9 @@ replaceDone:
     if(argc>1 && strcmp(argv[1],"--rival-layout")==0)return RivalLayoutCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--car-spec")==0)return CarSpecCommand(argc,argv);
     if(argc==3 && strcmp(argv[1],"--texture-batch-stdin")==0)return TextureBatchCommand(argv[2]);
+    if(argc>1 && strcmp(argv[1],"--texture-upscale")==0)return TextureUpscaleCommand(argc,argv);
+    if(argc>1 && strcmp(argv[1],"--texture-upscale-prepare")==0)return TextureUpscalePrepareCommand(argc,argv);
+    if(argc>1 && strcmp(argv[1],"--texture-upscale-normalize")==0)return TextureUpscaleNormalizeCommand(argc,argv);
     if(argc>1 && strcmp(argv[1],"--texture")==0)return TexturePreview(argc,argv);
     if(argc==3 && (strcmp(argv[1],"--mesh")==0 || strcmp(argv[1],"--mesh-bank")==0 || strcmp(argv[1],"--preview-bank")==0 || strcmp(argv[1],"--preview")==0)) {
         RageRuntimeMesh mesh;
