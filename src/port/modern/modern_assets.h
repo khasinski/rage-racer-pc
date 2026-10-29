@@ -8,8 +8,6 @@
 #include "modern_asset_image.h"
 
 int ModernAssetsInit(void);
-void ModernAssetsSetTextureUpscale(int factor);
-int ModernAssetsTextureUpscale(void);
 /* Headless workshop tools: catalog to stdout, or one authored source mesh. */
 int ModernAssetsCarCatalog(void);
 int ModernAssetsExportCar(const char *key, const char *path);

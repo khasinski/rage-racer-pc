@@ -19,7 +19,6 @@
 #include "render/authored_car_surface.h"
 #include "render/mod_manifest.h"
 #include "render/resource_provider.h"
-#include "render/texture_upscale.h"
 #include "modern_material_transaction.h"
 #include "modern_png.h"
 #include "modern_prepared_materials.h"
@@ -36,7 +35,6 @@ static RageRuntimeCachedMesh
  * file, decode an override, apply paint, or rebuild the material definition. */
 static ModernPreparedMaterials s_preparedMaterials;
 static uint64_t s_preparedTrackRevision = UINT64_MAX;
-static int s_textureUpscale;
 static char s_modRoot[1024];
 static const RageModManifest *s_modManifest;
 static int s_modReady;
@@ -521,41 +519,6 @@ int ModernAssetsInitRoot(const char *root) {
     return 0;
 }
 
-static int ParseTextureUpscaleConfig(const char *value) {
-    if (value == NULL || value[0] == '\0') return 0;
-    if (strcmp(value, "4") == 0 || strcmp(value, "4x") == 0) return 4;
-    if (strcmp(value, "2") == 0 || strcmp(value, "2x") == 0) return 2;
-    if (strcmp(value, "1") == 0 || strcmp(value, "1x") == 0 ||
-        strcmp(value, "off") == 0)
-        return 1;
-    return 0;
-}
-
-static int ModernAssetsEffectiveTextureUpscale(void) {
-    if (s_textureUpscale <= 0) {
-        int parsed =
-            ParseTextureUpscaleConfig(RuntimeConfigGet("video.texture_upscale"));
-        if (!parsed)
-            parsed = ParseTextureUpscaleConfig(
-                RuntimeConfigGet("modern.texture_upscale"));
-        s_textureUpscale = parsed > 0 ? parsed : 1;
-    }
-    return s_textureUpscale;
-}
-
-void ModernAssetsSetTextureUpscale(int factor) {
-    int normalized = factor >= 4 ? 4 : (factor >= 2 ? 2 : 1);
-    if (s_textureUpscale == normalized) return;
-    s_textureUpscale = normalized;
-    ModernPreparedMaterialsClear(&s_preparedMaterials);
-    s_preparedTrackRevision = UINT64_MAX;
-    if (s_source != MODERN_ASSET_SOURCE_NONE) ++s_generation;
-}
-
-int ModernAssetsTextureUpscale(void) {
-    return ModernAssetsEffectiveTextureUpscale();
-}
-
 uint64_t ModernAssetsGeneration(void) { return s_generation; }
 
 void ModernAssetsShutdown(void) {
@@ -563,7 +526,6 @@ void ModernAssetsShutdown(void) {
     if (s_source != MODERN_ASSET_SOURCE_NONE) ++s_generation;
     ModernPreparedMaterialsClear(&s_preparedMaterials);
     s_preparedTrackRevision = UINT64_MAX;
-    s_textureUpscale = 0;
     for(i=0;i<sizeof(s_trackMeshes)/sizeof(s_trackMeshes[0]);i++)
         RuntimeCachedMeshRelease(&s_trackMeshes[i].mesh);
     memset(s_trackMeshes,0,sizeof(s_trackMeshes));
@@ -685,28 +647,30 @@ fail:
     return 0;
 }
 
-static int ModernAssetsMaybeUpscaleSky(ModernAssetImage *image) {
-    uint32_t factor = (uint32_t)ModernAssetsEffectiveTextureUpscale();
-    RageTextureUpscaleWindow window = {0};
-    size_t upSize;
-    uint8_t *upPixels;
-    if (factor <= 1u || image->width != 512u || image->height != 256u)
+static int ModernAssetsExpandSkyStripIfNeeded(
+    ModernAssetImage *image, const RageSkyPanoramaLayout *layout) {
+    size_t expandedSize;
+    uint8_t *expanded;
+    if (image == NULL || layout == NULL) return 0;
+    if (image->width < 512u || image->height < 128u ||
+        (image->width % 8u) != 0u || image->width != image->height * 4u ||
+        image->height > MODERN_ASSET_MAX_IMAGE_DIMENSION / 2u) {
         return 1;
-    window.wrapHorizontal = 1;
-    upSize = TextureUpscaleSize(image->width, image->height, factor);
-    upPixels = upSize ? SDL_malloc(upSize) : NULL;
-    if (upPixels == NULL ||
-        !TextureUpscaleRGBA(image->pixels, image->width, image->height, factor,
-                            &window, upPixels, upSize)) {
-        SDL_free(upPixels);
-        ModernAssetsFreeMaterialImage(image);
+    }
+    expandedSize = (size_t)image->width * (size_t)image->height * 2u * 4u;
+    expanded = SDL_malloc(expandedSize);
+    if (expanded == NULL ||
+        !RageSkyExpandPanoramaLayoutScaled(expanded, expandedSize,
+                                           image->pixels, image->size,
+                                           image->width, image->height,
+                                           layout)) {
+        SDL_free(expanded);
         return 0;
     }
     ModernAssetFreeFile(NULL, image->pixels);
-    image->pixels = upPixels;
-    image->size = upSize;
-    image->width *= factor;
-    image->height *= factor;
+    image->pixels = expanded;
+    image->size = expandedSize;
+    image->height *= 2u;
     return 1;
 }
 
@@ -727,27 +691,15 @@ int ModernAssetsLoadSkyImage(uint32_t assetKey,
         if (AssetSkyId(skyId, sizeof(skyId), assetKey) &&
             (relativePath = ModManifestFindTexture(s_modManifest, skyId)) != NULL &&
             ModernAssetsLoadModPngFile(skyId, relativePath, image)) {
-            if (image->width == 512 && image->height == 128) {
-                size_t expandedSize = 512u * 256u * 4u;
-                uint8_t *expanded = SDL_malloc(expandedSize);
-                if (expanded != NULL && RageSkyExpandPanoramaLayout(
-                        expanded, expandedSize, image->pixels, image->size, &layout)) {
-                    ModernAssetFreeFile(NULL, image->pixels);
-                    image->pixels = expanded;
-                    image->size = expandedSize;
-                    image->width = 512;
-                    image->height = 256;
-                } else {
-                    SDL_free(expanded);
-                }
+            if (!ModernAssetsExpandSkyStripIfNeeded(image, &layout)) {
+                ModernAssetsFreeMaterialImage(image);
+                return 0;
             }
             return 1;
         }
     }
-    if (s_source == MODERN_ASSET_SOURCE_DISC) {
-        if (!NativeAssetImporterLoadSky(assetKey, &layout, image)) return 0;
-        return ModernAssetsMaybeUpscaleSky(image);
-    }
+    if (s_source == MODERN_ASSET_SOURCE_DISC)
+        return NativeAssetImporterLoadSky(assetKey, &layout, image);
     if (s_source == MODERN_ASSET_SOURCE_NONE || bytes == NULL) return 0;
     if (!EnvironmentIndexFind(bytes, s_environmentIndexSize, assetKey,
                                MODERN_ASSET_MAX_IMAGE_DIMENSION, &location)) return 0;
@@ -758,27 +710,15 @@ int ModernAssetsLoadSkyImage(uint32_t assetKey,
         ModernAssetFreeFile(NULL, pixels);
         return 0;
     }
-    if (location.width == 512 && location.height == 128) {
-        size_t expandedSize = 512u * 256u * 4u;
-        uint8_t *expanded = SDL_malloc(expandedSize);
-        if (expanded == NULL || !RageSkyExpandPanoramaLayout(
-                expanded, expandedSize, pixels, size, &layout)) {
-            SDL_free(expanded);
-            ModernAssetFreeFile(NULL, pixels);
-            return 0;
-        }
-        ModernAssetFreeFile(NULL, pixels);
-        image->pixels = expanded;
-        image->size = expandedSize;
-        image->width = 512;
-        image->height = 256;
-    } else {
-        image->pixels = (void *)pixels;
-        image->size = size;
-        image->width = location.width;
-        image->height = location.height;
+    image->pixels = (void *)pixels;
+    image->size = size;
+    image->width = location.width;
+    image->height = location.height;
+    if (!ModernAssetsExpandSkyStripIfNeeded(image, &layout)) {
+        ModernAssetsFreeMaterialImage(image);
+        return 0;
     }
-    return ModernAssetsMaybeUpscaleSky(image);
+    return 1;
 }
 
 uint32_t ModernAssetsCachedMeshCount(void) {
@@ -932,18 +872,27 @@ static int ModernAssetsLoadCachedImage(const RenderMeshInstance *instance,
     const char *path;
     const void *pixels = NULL;
     size_t pathLength;
+    uint32_t dimension = 0;
     path = definition->baseColorTexture.text;
     pathLength = definition->baseColorTexture.length;
-    if (
-        !ModernAssetReadFile(NULL, path, pathLength, &pixels, &image->size) ||
-        image->size != 256u * 256u * 4u) {
-        if (pixels != NULL) ModernAssetFreeFile(NULL, pixels);
+    if (!ModernAssetReadFile(NULL, path, pathLength, &pixels, &image->size)) {
+        memset(image, 0, sizeof(*image));
+        return 0;
+    }
+    for (uint32_t d = 256u; d <= MODERN_ASSET_MAX_IMAGE_DIMENSION; d *= 2u) {
+        if (image->size == (size_t)d * (size_t)d * 4u) {
+            dimension = d;
+            break;
+        }
+    }
+    if (dimension == 0u) {
+        ModernAssetFreeFile(NULL, pixels);
         memset(image, 0, sizeof(*image));
         return 0;
     }
     image->pixels = (void *)pixels;
-    image->width = 256;
-    image->height = 256;
+    image->width = dimension;
+    image->height = dimension;
     if (!ModernAssetsApplyCachedCarPaint(instance, material, definition, image)) {
         ModernAssetFreeFile(NULL, image->pixels);
         memset(image, 0, sizeof(*image));
@@ -1062,26 +1011,6 @@ static int ModernAssetsBuildMaterial(const RenderMeshInstance *instance,
         return 0;
     }
     AuthoredCarSurfaceTexture(surface, image->pixels, image->size);
-    {
-        uint32_t factor = (uint32_t)ModernAssetsEffectiveTextureUpscale();
-        if (factor > 1u && image->width == 256u && image->height == 256u) {
-            size_t upSize =
-                TextureUpscaleSize(image->width, image->height, factor);
-            uint8_t *upPixels = upSize ? SDL_malloc(upSize) : NULL;
-            if (upPixels == NULL ||
-                !TextureUpscaleRGBA(image->pixels, image->width, image->height,
-                                    factor, NULL, upPixels, upSize)) {
-                SDL_free(upPixels);
-                ModernAssetsFreeMaterialImage(image);
-                return 0;
-            }
-            ModernAssetFreeFile(NULL, image->pixels);
-            image->pixels = upPixels;
-            image->size = upSize;
-            image->width *= factor;
-            image->height *= factor;
-        }
-    }
     return 1;
 }
 

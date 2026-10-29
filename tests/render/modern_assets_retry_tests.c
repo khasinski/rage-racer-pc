@@ -5,7 +5,6 @@
 #include "port/runtime_config.h"
 #include "render/car_paint.h"
 #include "../../launcher/native/preview_png.h"
-#include "../../launcher/native/texture_upscale_cli.h"
 
 size_t PortAssetRoomAt(const void *at) { (void)at; return 0; }
 
@@ -312,80 +311,37 @@ int main(int argc, char **argv) {
             skyImage.width != 1024 || skyImage.height != 512 ||
             ((const uint8_t *)skyImage.pixels)[0] != 200) return 67;
         ModernAssetsFreeMaterialImage(&skyImage);
-        /* Remove the mod override PNG and verify built-in 2x and 4x runtime upscaling on the 256x256 base texture. */
+        /* Verify 4:1 upscaled sky strip (1024x256 -> expanded 1024x512) and 512x512 cached RGBA textures. */
+        {
+            SDL_Surface *stripSurf = SDL_CreateSurface(1024, 256, SDL_PIXELFORMAT_RGBA32);
+            if (!stripSurf) return 68;
+            memset(stripSurf->pixels, 180, (size_t)stripSurf->pitch * (size_t)stripSurf->h);
+            if (!SDL_SavePNG(stripSurf, skyPng)) return 68;
+            SDL_DestroySurface(stripSurf);
+            if (!ModernAssetsLoadSkyImage(0x58, NULL, &skyImage) ||
+                skyImage.width != 1024 || skyImage.height != 512 ||
+                ((const uint8_t *)skyImage.pixels)[0] != 180) return 68;
+            ModernAssetsFreeMaterialImage(&skyImage);
+        }
         if (!SDL_RemovePath(carPng) || !SDL_RemovePath(skyPng) ||
             !SDL_RemovePath(texDir) || !SDL_RemovePath(manifest) ||
             !SDL_RemovePath(mods)) return 68;
         ModernAssetsShutdown();
         {
             char texRgbaPath[4096];
-            static unsigned char basePixels[256 * 256 * 4];
+            static unsigned char basePixels512[512 * 512 * 4];
             snprintf(texRgbaPath, sizeof(texRgbaPath), "%s/texture.rgba", argv[1]);
-            memset(basePixels, 80, sizeof(basePixels));
-            if (!SDL_SaveFile(texRgbaPath, basePixels, sizeof(basePixels))) return 68;
+            memset(basePixels512, 80, sizeof(basePixels512));
+            if (!SDL_SaveFile(texRgbaPath, basePixels512, sizeof(basePixels512))) return 68;
             if (!ModernAssetsInitRoot(argv[1])) return 68;
-            ModernAssetsSetTextureUpscale(2);
             if (!ModernAssetsLoadMaterial(&instance, 0, 0, &hdDef, &hdImage, &hdStorage) ||
                 hdImage.width != 512 || hdImage.height != 512 ||
                 ((const uint8_t *)hdImage.pixels)[0] != 148) return 68;
             ModernAssetsFreeMaterialImage(&hdImage);
-            ModernAssetsSetTextureUpscale(4);
-            if (!ModernAssetsLoadMaterial(&instance, 0, 0, &hdDef, &hdImage, &hdStorage) ||
-                hdImage.width != 1024 || hdImage.height != 1024 ||
-                ((const uint8_t *)hdImage.pixels)[0] != 148) return 68;
-            ModernAssetsFreeMaterialImage(&hdImage);
-            ModernAssetsSetTextureUpscale(1);
             ModernAssetsShutdown();
             if (!SDL_RemovePath(texRgbaPath) || !SDL_RemovePath(rmatPath) ||
                 !SDL_RemovePath(paintPath)) return 68;
         }
-    }
-    {
-        char srcPng[4096], prepPng[4096], upPng[4096], outPng[4096];
-        SDL_Surface *srcSurf = SDL_CreateSurface(256, 256, SDL_PIXELFORMAT_RGBA32);
-        SDL_Surface *upSurf = SDL_CreateSurface(1024, 1024, SDL_PIXELFORMAT_RGBA32);
-        SDL_Surface *normRaw = NULL, *normSurf = NULL;
-        snprintf(srcPng, sizeof(srcPng), "%s/src256.png", argv[1]);
-        snprintf(prepPng, sizeof(prepPng), "%s/prep256.png", argv[1]);
-        snprintf(upPng, sizeof(upPng), "%s/up1024.png", argv[1]);
-        snprintf(outPng, sizeof(outPng), "%s/norm1024.png", argv[1]);
-        if (!srcSurf || !upSurf) return 69;
-        memset(srcSurf->pixels, 255, (size_t)srcSurf->pitch * (size_t)srcSurf->h);
-        /* Texel (64, 64) in interior tile (1, 1) is transparent; (65, 64) is bright red (200, 40, 20, 255). */
-        uint8_t *sp0 = (uint8_t *)srcSurf->pixels + (size_t)64 * (size_t)srcSurf->pitch + 64u * 4u;
-        sp0[0] = sp0[1] = sp0[2] = sp0[3] = 0;
-        uint8_t *sp1 = (uint8_t *)srcSurf->pixels + (size_t)64 * (size_t)srcSurf->pitch + 65u * 4u;
-        sp1[0] = 200; sp1[1] = 40; sp1[2] = 20; sp1[3] = 255;
-
-        memset(upSurf->pixels, 120, (size_t)upSurf->pitch * (size_t)upSurf->h);
-        /* Simulate black-bleed on the upscaled silhouette pixel at (65*4, 64*4) = (260, 256): darkened to (100, 20, 10). */
-        uint8_t *up1 = (uint8_t *)upSurf->pixels + (size_t)256 * (size_t)upSurf->pitch + 260u * 4u;
-        up1[0] = 100; up1[1] = 20; up1[2] = 10; up1[3] = 255;
-
-        if (!SDL_SavePNG(srcSurf, srcPng) || !SDL_SavePNG(upSurf, upPng)) return 70;
-        SDL_DestroySurface(srcSurf);
-        SDL_DestroySurface(upSurf);
-
-        char *prepArgs[] = {"rage-mod-cli", "--texture-upscale-prepare", srcPng, prepPng};
-        if (TextureUpscalePrepareCommand(4, prepArgs) != 0) return 70;
-        char *upCmdArgs[] = {"rage-mod-cli", "--texture-upscale", srcPng, outPng, "4", "64", "64"};
-        if (TextureUpscaleCommand(7, upCmdArgs) != 0) return 70;
-
-        char *normArgs[] = {"rage-mod-cli", "--texture-upscale-normalize", srcPng, upPng, outPng, "64", "64"};
-        if (TextureUpscaleNormalizeCommand(7, normArgs) != 0) return 71;
-        normRaw = SDL_LoadPNG(outPng);
-        if (!normRaw) return 72;
-        normSurf = SDL_ConvertSurface(normRaw, SDL_PIXELFORMAT_RGBA32);
-        SDL_DestroySurface(normRaw);
-        if (!normSurf || normSurf->w != 1024 || normSurf->h != 1024) return 73;
-        /* Canonical interior tile (1, 1) was tiled to (0, 0), so (0, 0) is transparent and (4, 0) is de-fringed to (200, 40, 20, 255). */
-        const uint8_t *np0 = (const uint8_t *)normSurf->pixels;
-        const uint8_t *np1 = (const uint8_t *)normSurf->pixels + 4u * 4u;
-        if (np0[0] != 0 || np0[1] != 0 || np0[2] != 0 || np0[3] != 0) return 74;
-        if (np1[0] != 200 || np1[1] != 40 || np1[2] != 20 || np1[3] != 255) return 75;
-        SDL_DestroySurface(normSurf);
-        if (!SDL_RemovePath(srcPng) || !SDL_RemovePath(prepPng) ||
-            !SDL_RemovePath(upPng) || !SDL_RemovePath(outPng)) return 76;
     }
     if (!SDL_RemovePath(path)) return 7;
     if (!SDL_RemovePath(meshPath)) return 26;

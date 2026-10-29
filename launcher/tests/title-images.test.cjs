@@ -29,4 +29,7 @@ test('title image export/import/reset uses shared project history, selected stat
  assert.equal(packageImage.origin,'selected packages');assert.equal(packageImage.png,normal.png);
  await s.toggleMod(s.state.mods[0].id,false);assert.equal((await s.titleImages()).images.find(i=>i.id===normal.id).origin,'built-in');
  const output=path.join(root,'exclusive.png');await run(s.tool('rage-mod-cli'),['--title-image','3','0',output]);const prior=await fs.readFile(output);await assert.rejects(run(s.tool('rage-mod-cli'),['--title-image','3','1',output]));assert.deepEqual(await fs.readFile(output),prior);
+ const {validTitleDimensions}=require('../main/title-images.cjs');
+ assert.equal(validTitleDimensions(112,16),true);assert.equal(validTitleDimensions(224,32),true);assert.equal(validTitleDimensions(448,64),true);
+ assert.equal(validTitleDimensions(113,16),false);assert.equal(validTitleDimensions(224,16),false);
 });

@@ -97,6 +97,28 @@ int main(void) {
         assert(!memcmp(bytes,original,sizeof(bytes)));
     }
     Write("texture_patch_fixture/textures/a.json","{\"asset\":0,\"pixels_offset\":520,\"pixel_bytes\":2,\"depth\":16,\"width\":1,\"height\":1}");
+    {
+        /* 2x2 upscaled red PNG downsampled into a 1x1 16-bit texture slot. */
+        const unsigned char ihdr2x2[13]={0,0,0,2,0,0,0,2,8,6,0,0,0};
+        const unsigned char raw2x2[18]={
+            0, 255,0,0,255, 255,0,0,255,
+            0, 255,0,0,255, 255,0,0,255
+        };
+        mz_ulong adler=mz_adler32(MZ_ADLER32_INIT,raw2x2,sizeof(raw2x2));
+        unsigned char idat2x2[7+18+4]={0x78,0x01,0x01,18,0,0xed,0xff};
+        memcpy(idat2x2+7,raw2x2,18);
+        idat2x2[25]=(unsigned char)(adler>>24);idat2x2[26]=(unsigned char)(adler>>16);
+        idat2x2[27]=(unsigned char)(adler>>8);idat2x2[28]=(unsigned char)adler;
+        f=fopen("texture_patch_fixture/textures/a.png","wb");assert(f);
+        assert(fwrite("\x89PNG\r\n\x1a\n",1,8,f)==8);
+        Chunk(f,"IHDR",ihdr2x2,sizeof(ihdr2x2));Chunk(f,"IDAT",idat2x2,sizeof(idat2x2));
+        Chunk(f,"IEND",ihdr,0);assert(!fclose(f));
+        original[520]=0;original[521]=0;
+        memcpy(bytes,original,sizeof(bytes));
+        assert(TexturePatchAsset(root,0,bytes,sizeof(bytes))==1);
+        assert(bytes[520]==31&&bytes[521]==0);
+        memcpy(bytes,original,sizeof(bytes));
+    }
     f=fopen("texture_patch_fixture/textures/a.png","wb");assert(f);
     assert(fwrite("\x89PNG\r\n\x1a\n",1,8,f)==8);
     const unsigned char hugeHeader[13]={0x7f,0xff,0xff,0xff,0,0,0,1,8,6,0,0,0};

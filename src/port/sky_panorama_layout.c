@@ -31,15 +31,27 @@ void RageSkyCapturePanoramaLayout(RageSkyPanoramaLayout *out,
 static int ExpandAtlas(
     uint8_t *destination, size_t destinationSize,
     const uint8_t *source, size_t sourceSize,
+    uint32_t width, uint32_t sourceHeight,
     const RageSkyPanoramaLayout *layout, int tileColumns) {
-    enum { WIDTH = 512, SOURCE_HEIGHT = 128, TILE_WIDTH = 64, BYTES = 4 };
+    enum { BYTES = 4 };
+    uint32_t tileWidth;
+    size_t stripBytes;
     int panoramaRow;
     int column;
-    int row;
+    uint32_t row;
 
     if (destination == NULL || source == NULL || layout == NULL ||
-        destinationSize < WIDTH * SOURCE_HEIGHT * 2u * BYTES ||
-        sourceSize < WIDTH * SOURCE_HEIGHT * BYTES) {
+        width < 8u || sourceHeight == 0u || (width % 8u) != 0u ||
+        tileColumns <= 0 || (8 % tileColumns) != 0) {
+        return 0;
+    }
+    tileWidth = width / 8u;
+    if ((size_t)width > SIZE_MAX / (size_t)sourceHeight ||
+        (size_t)width * (size_t)sourceHeight > SIZE_MAX / (2u * BYTES)) {
+        return 0;
+    }
+    stripBytes = (size_t)width * (size_t)sourceHeight * BYTES;
+    if (destinationSize < stripBytes * 2u || sourceSize < stripBytes) {
         return 0;
     }
     /* Validate everything before touching output, including externally supplied
@@ -51,29 +63,38 @@ static int ExpandAtlas(
          panoramaRow++) {
         for (column = 0; column < 8; column++) {
             int tile = layout->tiles[panoramaRow][column];
-            for (row = 0; row < SOURCE_HEIGHT; row++) {
+            for (row = 0; row < sourceHeight; row++) {
                 memcpy(destination +
-                           (((size_t)panoramaRow * SOURCE_HEIGHT + row) *
-                                WIDTH +
-                            (size_t)column * TILE_WIDTH) * BYTES,
-                       source + (((size_t)(tile / tileColumns) * SOURCE_HEIGHT + row) *
-                                     ((size_t)tileColumns * TILE_WIDTH) +
-                                 (size_t)(tile % tileColumns) * TILE_WIDTH) * BYTES,
-                       TILE_WIDTH * BYTES);
+                           (((size_t)panoramaRow * sourceHeight + row) *
+                                width +
+                            (size_t)column * tileWidth) * BYTES,
+                       source + (((size_t)(tile / tileColumns) * sourceHeight + row) *
+                                     ((size_t)tileColumns * tileWidth) +
+                                 (size_t)(tile % tileColumns) * tileWidth) * BYTES,
+                       (size_t)tileWidth * BYTES);
             }
         }
     }
     return 1;
 }
 
+int RageSkyExpandPanoramaLayoutScaled(uint8_t *destination, size_t destinationSize,
+    const uint8_t *source, size_t sourceSize, uint32_t width, uint32_t sourceHeight,
+    const RageSkyPanoramaLayout *layout) {
+    return ExpandAtlas(destination, destinationSize, source, sourceSize,
+                       width, sourceHeight, layout, 8);
+}
+
 int RageSkyExpandPanoramaLayout(uint8_t *destination, size_t destinationSize,
     const uint8_t *source, size_t sourceSize, const RageSkyPanoramaLayout *layout) {
-    return ExpandAtlas(destination, destinationSize, source, sourceSize, layout, 8);
+    return ExpandAtlas(destination, destinationSize, source, sourceSize,
+                       512u, 128u, layout, 8);
 }
 
 int RageSkyExpandTexturePageLayout(uint8_t *destination, size_t destinationSize,
     const uint8_t *source, size_t sourceSize, const RageSkyPanoramaLayout *layout) {
-    return ExpandAtlas(destination, destinationSize, source, sourceSize, layout, 4);
+    return ExpandAtlas(destination, destinationSize, source, sourceSize,
+                       512u, 128u, layout, 4);
 }
 
 int RageSkyExpandPanorama(uint8_t *destination, size_t destinationSize,

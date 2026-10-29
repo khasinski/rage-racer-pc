@@ -36,7 +36,6 @@ typedef struct RagePortConfig {
     int modernFps;
     float modernDrawDistance;   /* multiplier, default 1 */
     int modernTextureFilterLinear; /* 0 nearest, 1 linear */
-    int modernTextureUpscale;   /* 1 off, 2 2x, 4 4x */
     RageModernPost modernPost;
     int modernGrading;          /* 0 off, 1 vibrant */
     int modernSsao;             /* 0 off, 1 ambient occlusion */

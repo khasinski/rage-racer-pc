@@ -108,8 +108,11 @@ static uint8_t *ReadPng(const char *path, uint32_t expectedWidth, uint32_t expec
     }
     free(file_data);
 
-    /* Reject mismatched images before allocating/decompressing their pixels. */
-    if(w!=expectedWidth||h!=expectedHeight) {
+    /* Reject mismatched images before allocating/decompressing their pixels.
+     * Accept exact dimensions or an integer upscale factor up to 4096x4096. */
+    if(expectedWidth==0||expectedHeight==0||w<expectedWidth||h<expectedHeight||
+       w>4096u||h>4096u||(w%expectedWidth)!=0u||(h%expectedHeight)!=0u||
+       (w/expectedWidth)!=(h/expectedHeight)) {
         free(idat);*error="has the wrong dimensions; the size is fixed by the texture";return NULL;
     }
     if (depth != 8) { free(idat); *error = "is not 8 bits per channel"; return NULL; }
@@ -190,6 +193,38 @@ static uint8_t *ReadPng(const char *path, uint32_t expectedWidth, uint32_t expec
         }
     }
     free(raw);
+    if (w != expectedWidth) {
+        uint32_t scale = w / expectedWidth;
+        uint32_t area = scale * scale;
+        uint32_t ox, oy, sx, sy;
+        uint8_t *downsampled = malloc((size_t)expectedWidth * (size_t)expectedHeight * 4u);
+        if (downsampled == NULL) {
+            free(rgba);
+            *error = "is too large";
+            return NULL;
+        }
+        for (oy = 0; oy < expectedHeight; oy++) {
+            for (ox = 0; ox < expectedWidth; ox++) {
+                uint32_t sum[4] = {0, 0, 0, 0};
+                uint8_t *dst = downsampled + ((size_t)oy * expectedWidth + ox) * 4u;
+                for (sy = 0; sy < scale; sy++) {
+                    const uint8_t *srcRow = rgba + ((size_t)(oy * scale + sy) * w + (size_t)ox * scale) * 4u;
+                    for (sx = 0; sx < scale; sx++) {
+                        sum[0] += srcRow[sx * 4u + 0];
+                        sum[1] += srcRow[sx * 4u + 1];
+                        sum[2] += srcRow[sx * 4u + 2];
+                        sum[3] += srcRow[sx * 4u + 3];
+                    }
+                }
+                dst[0] = (uint8_t)((sum[0] + area / 2u) / area);
+                dst[1] = (uint8_t)((sum[1] + area / 2u) / area);
+                dst[2] = (uint8_t)((sum[2] + area / 2u) / area);
+                dst[3] = (uint8_t)((sum[3] + area / 2u) / area);
+            }
+        }
+        free(rgba);
+        return downsampled;
+    }
     return rgba;
 }
 

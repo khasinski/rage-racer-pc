@@ -3,7 +3,8 @@ const {ProjectFiles}=require('./project-files.cjs');
 const names=['grand-prix','extra-grand-prix','time-attack','custom','load-save','options'];
 const labels=['Grand Prix','Extra Grand Prix','Time Attack','Custom','Load / Save','Options'];
 function slot(id){const match=/^ui\.title\.([a-z-]+)(\.selected)?$/.exec(id),item=match?names.indexOf(match[1]):-1;if(item<0)throw Error('Unknown title menu image');return {item,selected:Boolean(match[2])};}
-async function validate(service,file,signal){const {run}=require('./service.cjs');const png=JSON.parse(await run(service.tool('rage-mod-cli'),['--png',file],{signal}));if(png.width!==112||png.height!==16)throw Error('Title menu images must be 112×16 PNGs');}
+function validTitleDimensions(w,h){return Number.isInteger(w)&&Number.isInteger(h)&&w>=112&&h>=16&&w<=4096&&h<=4096&&w%112===0&&h%16===0&&w/112===h/16;}
+async function validate(service,file,signal){const {run}=require('./service.cjs');const png=JSON.parse(await run(service.tool('rage-mod-cli'),['--png',file],{signal}));if(!validTitleDimensions(png.width,png.height))throw Error('Title menu images must be 112×16 (or integer-upscaled) PNGs');}
 async function withImages(service,work){
  service.requireReady();return service.operation('Reading title menu images',signal=>require('./car-view.cjs').withView(service,signal,undefined,async view=>{
   const temp=await fs.mkdtemp(path.join(service.root,'title-images-'));
@@ -37,4 +38,4 @@ async function exportImage(service,id,output){slot(id);return withImages(service
  const {atomic}=require('./service.cjs'),resolved=await image(service,id,view,temp,signal);await atomic(output,await fs.readFile(resolved.file));return output;
 });}
 async function reset(service,id,revision){slot(id);return service.editProject([{kind:'interface',id,field:'texture',value:null}],revision);}
-module.exports={read,importImage,exportImage,reset,slot};
+module.exports={read,importImage,exportImage,reset,slot,validTitleDimensions};

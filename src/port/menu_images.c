@@ -28,11 +28,33 @@ const uint8_t *MenuImage(int item,int selected){
     if(!AssetPathIsRelativeFile(relative,strlen(relative))||snprintf(path,sizeof(path),"%s/%s",root,relative)>=(int)sizeof(path))return NULL;
     SDL_PathInfo info;
     if(!SDL_GetPathInfo(path,&info)||info.type!=SDL_PATHTYPE_FILE||info.size>128u*1024u*1024u)return NULL;
-    SDL_Surface *loaded=ModernLoadPNG(SDL_IOFromFile(path,"rb"),MENU_IMAGE_WIDTH),*surface=NULL;
-    if(loaded&&loaded->w==MENU_IMAGE_WIDTH&&loaded->h==MENU_IMAGE_HEIGHT)surface=SDL_ConvertSurface(loaded,SDL_PIXELFORMAT_RGBA32);
+    SDL_Surface *loaded=ModernLoadPNG(SDL_IOFromFile(path,"rb"),4096),*surface=NULL;
+    if(loaded&&loaded->w>=MENU_IMAGE_WIDTH&&loaded->h>=MENU_IMAGE_HEIGHT&&
+       (loaded->w%MENU_IMAGE_WIDTH)==0&&(loaded->h%MENU_IMAGE_HEIGHT)==0&&
+       (loaded->w/MENU_IMAGE_WIDTH)==(loaded->h/MENU_IMAGE_HEIGHT))
+        surface=SDL_ConvertSurface(loaded,SDL_PIXELFORMAT_RGBA32);
     SDL_DestroySurface(loaded);
     if(!surface){fprintf(stderr,"rage-port: %s must be a valid 112x16 PNG\n",key);return NULL;}
-    for(int y=0;y<MENU_IMAGE_HEIGHT;y++)memcpy(images.pixels[item][selected]+y*MENU_IMAGE_WIDTH*4,(uint8_t*)surface->pixels+y*surface->pitch,MENU_IMAGE_WIDTH*4);
+    int scale=surface->w/MENU_IMAGE_WIDTH;
+    if(scale==1){
+        for(int y=0;y<MENU_IMAGE_HEIGHT;y++)memcpy(images.pixels[item][selected]+y*MENU_IMAGE_WIDTH*4,(uint8_t*)surface->pixels+y*surface->pitch,MENU_IMAGE_WIDTH*4);
+    }else{
+        uint32_t area=(uint32_t)scale*(uint32_t)scale;
+        for(int y=0;y<MENU_IMAGE_HEIGHT;y++){
+            for(int x=0;x<MENU_IMAGE_WIDTH;x++){
+                uint32_t sum[4]={0,0,0,0};
+                for(int sy=0;sy<scale;sy++){
+                    const uint8_t *row=(const uint8_t*)surface->pixels+(y*scale+sy)*surface->pitch+(x*scale)*4;
+                    for(int sx=0;sx<scale;sx++){
+                        sum[0]+=row[sx*4+0];sum[1]+=row[sx*4+1];
+                        sum[2]+=row[sx*4+2];sum[3]+=row[sx*4+3];
+                    }
+                }
+                uint8_t *dst=images.pixels[item][selected]+(y*MENU_IMAGE_WIDTH+x)*4;
+                for(int c=0;c<4;c++)dst[c]=(uint8_t)((sum[c]+area/2u)/area);
+            }
+        }
+    }
     SDL_DestroySurface(surface);images.valid[item][selected]=1;
     return images.pixels[item][selected];
 }

@@ -126,7 +126,7 @@ async function apply(service,activeCustomBank){
         await fs.mkdir(path.dirname(path.join(staging,relative)),{recursive:true});
         await fs.writeFile(path.join(staging,relative),bytes);
         const checked=await run(service.tool('rage-mod-cli'),[mesh?(c.kind==='track'?'--mesh-bank':'--mesh'):'--png',path.join(staging,relative)]);
-        if(c.kind==='interface'){const png=JSON.parse(checked);if(png.width!==112||png.height!==16)throw Error('Title menu images must be 112×16 PNGs');}
+        if(c.kind==='interface'){const png=JSON.parse(checked);if(!require('./title-images.cjs').validTitleDimensions(png.width,png.height))throw Error('Title menu images must be 112×16 (or integer-upscaled) PNGs');}
         (mesh?models:textures)[c.id]=relative;if(!files.includes(relative))files.push(relative);
         continue;
       }

@@ -17,6 +17,9 @@ void RageSkyCapturePanoramaLayout(RageSkyPanoramaLayout *out,
     const int16_t map[RAGE_SKY_MAP_ROWS][RAGE_SKY_MAP_COLUMNS], int rowBase);
 int RageSkyExpandPanoramaLayout(uint8_t *destination, size_t destinationSize,
     const uint8_t *source, size_t sourceSize, const RageSkyPanoramaLayout *layout);
+int RageSkyExpandPanoramaLayoutScaled(uint8_t *destination, size_t destinationSize,
+    const uint8_t *source, size_t sourceSize, uint32_t width, uint32_t sourceHeight,
+    const RageSkyPanoramaLayout *layout);
 /* Same copied layout, applied to the live importer's decoded 256x256 RGBA
  * texture page (four columns by two rows of tiles), not the 512x128 strip.
  * Source/destination must not overlap; neither buffer is retained. */
