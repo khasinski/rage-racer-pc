@@ -2040,6 +2040,9 @@ target_include_directories(overlay_model_tests PRIVATE
     "${PROJECT_SOURCE_DIR}/src/port"
     "${PROJECT_SOURCE_DIR}/src/port/include"
     "${PROJECT_SOURCE_DIR}/external/psyz/psyz/include")
+if(NOT MSVC)
+    target_link_libraries(overlay_model_tests PRIVATE m)
+endif()
 add_test(NAME overlay_model COMMAND overlay_model_tests)
 set_tests_properties(overlay_model PROPERTIES LABELS unit TIMEOUT 30)
 

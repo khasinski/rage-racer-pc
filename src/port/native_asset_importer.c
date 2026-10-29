@@ -423,8 +423,7 @@ int NativeAssetImporterApplyPlayerMarkings(uint16_t clut, ModernAssetImage *imag
     unsigned x, y, atlasX, scaleX, scaleY;
     if (!image || !image->pixels || image->width < 256u || image->height < 256u ||
         (image->width % 256u) != 0 || (image->height % 256u) != 0 ||
-        (size_t)image->width > SIZE_MAX / 4u ||
-        (size_t)image->height > SIZE_MAX / ((size_t)image->width * 4u) ||
+        (size_t)image->height > (SIZE_MAX / 4u) / (size_t)image->width ||
         image->size != (size_t)image->width * (size_t)image->height * 4u)
         return 0;
     scaleX = image->width / 256u;

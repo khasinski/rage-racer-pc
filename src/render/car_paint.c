@@ -86,8 +86,7 @@ int CarPaintApplyScaled(uint8_t *rgba, uint32_t width, uint32_t height,
     uint32_t y, x;
     if (rgba == NULL || mask == NULL || width == 0 || height == 0 ||
         maskWidth == 0 || maskHeight == 0 ||
-        (size_t)width > SIZE_MAX / 4u ||
-        (size_t)height > SIZE_MAX / ((size_t)width * 4u) ||
+        (size_t)height > (SIZE_MAX / 4u) / (size_t)width ||
         (size_t)maskHeight > SIZE_MAX / (size_t)maskWidth ||
         firstColor >= RAGE_CAR_PAINT_COLOR_COUNT ||
         secondColor >= RAGE_CAR_PAINT_COLOR_COUNT) return 0;
