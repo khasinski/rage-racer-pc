@@ -437,9 +437,9 @@ static void TestVoiceAndCarPhases(void) {
      * GP. Loading a race exercises the real catalog, not a no-op stub. */
     static const char profile[] =
         "[[cars]]\nid=\"car_02_g0\"\nmodel=2\ngrade=0\nmanual_only=false\n"
-        "shift_points=[408,544,465,621,557,743,673,898,826,1102,1008,1345]\n"
+        "shift_points=[0,650,579,757,674,915,833,1114,1025,1371,1265,1673]\n"
         "[[cars]]\nid=\"car_02_g1\"\nmodel=2\ngrade=1\nmanual_only=false\n"
-        "shift_points=[477,637,567,756,702,937,854,1139,1005,1341,1196,1595]\n";
+        "shift_points=[0,716,637,879,782,1094,996,1336,1229,1578,1456,1877]\n";
     const char *path = "race_assets_pegase.toml";
     FILE *file = fopen(path, "wb");
     char error[256];
@@ -459,9 +459,10 @@ static void TestVoiceAndCarPhases(void) {
             g_AssetLoadState = 3;
             s_uploadCount = 0;
             LoadRaceAssets();
-            Check(g_CarSpec->shiftPoints[0].upshiftSpeed == (grade ? 637 : 544),
+            Check(g_CarSpec->shiftPoints[0].downshiftSpeed == 0 &&
+                      g_CarSpec->shiftPoints[0].upshiftSpeed == (grade ? 716 : 650),
                   "GP and Extra GP select the configured Pegase grade");
-            Check(g_CarSpec->shiftPoints[5].upshiftSpeed == (grade ? 1595 : 1345),
+            Check(g_CarSpec->shiftPoints[5].upshiftSpeed == (grade ? 1877 : 1673),
                   "all Pegase gears retain catalog thresholds");
             Check(memcmp(destination + specificationOffset, &sourceSpecSnapshot,
                          sizeof(sourceSpecSnapshot)) == 0,

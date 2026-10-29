@@ -240,7 +240,7 @@ speed_drag_divisor = 2630
 base_steering_grip = 250
 torque_scale = [62, 100, 109, 100, 101, 100]
 # Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [408, 544, 465, 621, 557, 743, 673, 898, 826, 1102, 1008, 1345]
+shift_points = [0, 650, 579, 757, 674, 915, 833, 1114, 1025, 1371, 1265, 1673]
 
 [[cars]]
 id = "car_02_g1"
@@ -272,7 +272,7 @@ speed_drag_divisor = 2400
 base_steering_grip = 240
 torque_scale = [62, 100, 109, 100, 101, 100]
 # Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [477, 637, 567, 756, 702, 937, 854, 1139, 1005, 1341, 1196, 1595]
+shift_points = [0, 716, 637, 879, 782, 1094, 996, 1336, 1229, 1578, 1456, 1877]
 
 [[cars]]
 id = "car_03_g0"
@@ -664,7 +664,7 @@ speed_drag_divisor = 500
 base_steering_grip = 410
 torque_scale = [75, 100, 109, 95, 112, 100]
 # Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [414, 553, 534, 712, 678, 904, 876, 1168, 1036, 1382, 1614, 2152]
+shift_points = [0, 563, 498, 776, 695, 1005, 910, 1313, 1201, 1553, 1421, 2152]
 
 [[cars]]
 id = "car_06_g1"
@@ -696,7 +696,7 @@ speed_drag_divisor = 600
 base_steering_grip = 410
 torque_scale = [75, 100, 109, 95, 112, 100]
 # Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [433, 578, 587, 783, 753, 1005, 951, 1269, 1111, 1482, 1614, 2152]
+shift_points = [0, 599, 530, 857, 767, 1118, 1012, 1426, 1305, 1666, 1524, 2152]
 
 [[cars]]
 id = "car_07_g0"
@@ -944,7 +944,7 @@ speed_drag_divisor = 330
 base_steering_grip = 510
 torque_scale = [75, 100, 109, 95, 112, 100]
 # Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [540, 720, 672, 896, 840, 1121, 1063, 1418, 1280, 1707, 1516, 2022]
+shift_points = [0, 759, 672, 987, 883, 1254, 1135, 1598, 1462, 1934, 1785, 2291]
 
 [[cars]]
 id = "car_12_g0"

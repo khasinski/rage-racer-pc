@@ -241,8 +241,8 @@ int main(int argc, char **argv) {
     Write32(overrideBytes+32,0x40400000u);
     if(!SDL_SaveFile(path,trackIndex,sizeof(trackIndex)-1)||!SDL_SaveFile(manifest,trackManifest,sizeof(trackManifest)-1)||!SDL_SaveFile(overridePath,overrideBytes,sizeof(overrideBytes)))return 54;
     snprintf(modSetting,sizeof(modSetting),"mods.directory=%s",mods);
-    char *trackArgs[]={"test","--set",modSetting};
-    if(!RuntimeConfigInit(3,trackArgs)||!ModernAssetsInitRoot(argv[1]))return 55;
+    char *trackArgs[]={"test","--set",modSetting,"--set","modern.authored_cars=0"};
+    if(!RuntimeConfigInit(5,trackArgs)||!ModernAssetsInitRoot(argv[1]))return 55;
     instance.assetKey=88;instance.assetSet=RAGE_RENDER_ASSET_COURSE;
     resident=ModernAssetsFind(&instance);
     if(!resident||!RuntimeMeshVertex(&resident->mesh,0,&vertex)||vertex.position[0]!=3.f||ModernAssetsResidentMeshLookup(NULL,&instance)!=&resident->mesh)return 56;
@@ -291,7 +291,7 @@ int main(int argc, char **argv) {
             !SDL_SaveFile(manifest, hdManifest, sizeof(hdManifest) - 1)) return 64;
         SDL_DestroySurface(carSurf);
         SDL_DestroySurface(skySurf);
-        if (!RuntimeConfigInit(3, trackArgs) || !ModernAssetsInitRoot(argv[1])) return 65;
+        if (!RuntimeConfigInit(5, trackArgs) || !ModernAssetsInitRoot(argv[1])) return 65;
         instance = (RenderMeshInstance){
             .assetKey = 10,
             .assetSet = RAGE_RENDER_ASSET_MODEL_BANK,

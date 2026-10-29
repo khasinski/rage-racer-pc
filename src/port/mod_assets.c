@@ -285,7 +285,9 @@ void ModAssetCourseLabel(int extraCourseIndex, char *nameOut,
                 if (line[0] != '\0') {
                     snprintf(s_courseLabels[extraCourseIndex].name,
                              sizeof(s_courseLabels[extraCourseIndex].name),
-                             "%s", line);
+                             "%.*s",
+                             (int)(sizeof(s_courseLabels[extraCourseIndex].name) - 1),
+                             line);
                 }
             }
             if (fgets(line, sizeof(line), file) != NULL) {
@@ -293,7 +295,9 @@ void ModAssetCourseLabel(int extraCourseIndex, char *nameOut,
                 if (line[0] != '\0') {
                     snprintf(s_courseLabels[extraCourseIndex].length,
                              sizeof(s_courseLabels[extraCourseIndex].length),
-                             "%s", line);
+                             "%.*s",
+                             (int)(sizeof(s_courseLabels[extraCourseIndex].length) - 1),
+                             line);
                 }
             }
             fclose(file);

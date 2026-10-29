@@ -644,7 +644,7 @@ say what they wanted. Nothing else in the suite needs the disc.
 
 ## Known limitations
 
-For the current experimental release, see the [0.6.12-alpha release notes](docs/release-0.6.12-alpha.md)
+For the current experimental release, see the [0.6.13-alpha release notes](docs/release-0.6.13-alpha.md)
 and [enhanced classic renderer settings](docs/classic-renderer.md). Outstanding
 work remains tracked in the GitHub issue list.
 

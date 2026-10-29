@@ -38,12 +38,23 @@ static int VerifyRetailManualOnlyVariants(const char *path, char *error) {
         CarCatalogApplySpecification(model, variant - first[model], &specification);
         if (specification.automaticAccelerationScale < 900 ||
             specification.automaticAccelerationScale > 1000 ||
-            specification.shiftPoints[0].downshiftSpeed < 0 ||
-            specification.shiftPoints[0].upshiftSpeed <=
-                specification.shiftPoints[0].downshiftSpeed) {
+            specification.shiftPoints[0].downshiftSpeed != 0 ||
+            specification.shiftPoints[0].upshiftSpeed <= 0) {
             fprintf(stderr, "%s variant %d has no usable reconstructed automatic setup\n",
                     path, variant);
             return 0;
+        }
+        for (int g = 1; g < specification.topGear; ++g) {
+            if (specification.shiftPoints[g].downshiftSpeed <= 0 ||
+                specification.shiftPoints[g].downshiftSpeed >=
+                    specification.shiftPoints[g - 1].upshiftSpeed ||
+                specification.shiftPoints[g].upshiftSpeed <=
+                    specification.shiftPoints[g - 1].upshiftSpeed) {
+                fprintf(stderr,
+                        "%s variant %d gear %d has non-monotonic shift points\n",
+                        path, variant, g + 1);
+                return 0;
+            }
         }
         memset(&asset, 0, sizeof(asset)); /* retail: no automatic */
         g_CarTable[model].transmission = 0;
