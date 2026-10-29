@@ -82,6 +82,47 @@ void ModernPreparedMaterialsClear(ModernPreparedMaterials *cache) {
     memset(cache, 0, sizeof(*cache));
 }
 
+static uint32_t HashSubmesh(const RenderMeshInstance *instance) {
+    uint32_t h = instance->assetKey * 2654435761u;
+    h ^= (uint32_t)instance->assetSet * 2246822519u;
+    h ^= (uint32_t)instance->mesh * 3266489917u;
+    h ^= (uint32_t)instance->materialVariant * 668265263u;
+    h ^= ((uint32_t)instance->hasCarPaint << 16) |
+         ((uint32_t)instance->carPaintColor1 << 8) |
+         (uint32_t)instance->carPaintColor2;
+    return (h ^ (h >> 16)) & (MODERN_PREPARED_SUBMESH_BUCKETS - 1u);
+}
+
+int ModernPreparedMaterialsHasSubmesh(const ModernPreparedMaterials *cache,
+                                      const RenderMeshInstance *instance) {
+    const ModernPreparedSubmeshEntry *entry;
+    if (!cache || !instance) return 0;
+    entry = &cache->submeshes[HashSubmesh(instance)];
+    return entry->occupied &&
+           entry->assetKey == instance->assetKey &&
+           entry->mesh == instance->mesh &&
+           entry->assetSet == (uint8_t)instance->assetSet &&
+           entry->variant == instance->materialVariant &&
+           entry->hasCarPaint == instance->hasCarPaint &&
+           entry->color1 == instance->carPaintColor1 &&
+           entry->color2 == instance->carPaintColor2;
+}
+
+void ModernPreparedMaterialsMarkSubmesh(ModernPreparedMaterials *cache,
+                                        const RenderMeshInstance *instance) {
+    ModernPreparedSubmeshEntry *entry;
+    if (!cache || !instance) return;
+    entry = &cache->submeshes[HashSubmesh(instance)];
+    entry->assetKey = instance->assetKey;
+    entry->mesh = instance->mesh;
+    entry->assetSet = (uint8_t)instance->assetSet;
+    entry->variant = instance->materialVariant;
+    entry->hasCarPaint = instance->hasCarPaint;
+    entry->color1 = instance->carPaintColor1;
+    entry->color2 = instance->carPaintColor2;
+    entry->occupied = 1;
+}
+
 int ModernPreparedMaterialsContains(const ModernPreparedMaterials *cache,
                                     const RenderMeshInstance *instance,
                                     uint32_t material, uint8_t variant) {

@@ -330,16 +330,30 @@ int main(int argc, char **argv) {
         {
             char texRgbaPath[4096];
             static unsigned char basePixels512[512 * 512 * 4];
+            RenderMeshInstance worldInstance = instance;
+            RenderWorld world = {0};
             snprintf(texRgbaPath, sizeof(texRgbaPath), "%s/texture.rgba", argv[1]);
             memset(basePixels512, 80, sizeof(basePixels512));
-            if (!SDL_SaveFile(texRgbaPath, basePixels512, sizeof(basePixels512))) return 68;
+            if (!SDL_SaveFile(texRgbaPath, "bad", 3)) return 68;
             if (!ModernAssetsInitRoot(argv[1])) return 68;
+            worldInstance.pass = RAGE_RENDER_PASS_MAIN;
+            world.instances = &worldInstance;
+            world.instanceCapacity = 1;
+            world.instanceCount = 1;
+            /* Failed submesh preparation must not mark the submesh prepared. */
+            ModernAssetsPrepareWorld(&world);
+            if (!SDL_SaveFile(texRgbaPath, basePixels512, sizeof(basePixels512))) return 68;
+            ModernAssetsPrepareWorld(&world);
+            /* Second prepare hits the prepared-submesh fast path; prepared
+             * material remains resident even if the backing file is removed. */
+            if (!SDL_RemovePath(texRgbaPath)) return 68;
+            ModernAssetsPrepareWorld(&world);
             if (!ModernAssetsLoadMaterial(&instance, 0, 0, &hdDef, &hdImage, &hdStorage) ||
                 hdImage.width != 512 || hdImage.height != 512 ||
                 ((const uint8_t *)hdImage.pixels)[0] != 148) return 68;
             ModernAssetsFreeMaterialImage(&hdImage);
             ModernAssetsShutdown();
-            if (!SDL_RemovePath(texRgbaPath) || !SDL_RemovePath(rmatPath) ||
+            if (!SDL_RemovePath(rmatPath) ||
                 !SDL_RemovePath(paintPath)) return 68;
         }
     }

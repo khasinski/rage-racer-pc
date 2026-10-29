@@ -1862,8 +1862,8 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
 }
 
 /* Called by the main loop's frame-sync wait. When an FPS mode is selected,
- * present additional interpolated frames while race logic (threshold 0x180,
- * one tick per two VBlanks) waits out its interval; menu-rate scenes already
+ * present additional interpolated frames while race logic (threshold 0x180 at
+ * 30Hz or 0x80 at 60Hz) waits out its interval; menu-rate scenes already
  * present every VBlank. Calling the platform present directly skips the
  * BIOS pad refresh, so input edge semantics are untouched. */
 void ModernFrameWaitTick(int frameLimit) {
@@ -1876,7 +1876,9 @@ void ModernFrameWaitTick(int frameLimit) {
     if (s_hasModernDump < 0)
         s_hasModernDump = RuntimeConfigGet("diagnostics.modern_dump") != NULL;
     if (ModernWindowOccluded() && !s_hasModernDump) return;
-    if (frameLimit < 0x180) return;
+    if (frameLimit < 0x80 ||
+        !GameRenderWorldSceneHas3d((GameSceneId)CaptureCurrent()->sceneId))
+        return;
     if (CaptureCurrent()->faceCount == 0) return;
     if (!ModernPresentationClockDue(&s_presentationClock, SDL_GetTicksNS(),
                                     ModernPresentationInterval())) return;

@@ -8,7 +8,6 @@
 #include "game/race.h"
 #include "game/render.h"
 #include "game/state.h"
-#include "game/track.h"
 #include "runtime_config.h"
 
 enum {
@@ -70,7 +69,16 @@ void SimBlendFields(void *current, const void *before, const SimField *fields,
         int32_t next = ReadField(now, field);
         int64_t delta;
 
-        if (field->kind == SIM_FIELD_COUNTDOWN_S16 && next > previous) {
+        if (field->kind == SIM_FIELD_COUNTDOWN_S16) {
+            if (next > previous) {
+                continue;
+            }
+            delta = (int64_t)next - previous;
+            if (delta > INT32_MAX) delta = INT32_MAX;
+            if (delta < INT32_MIN) delta = INT32_MIN;
+            WriteField(now, field,
+                       (int32_t)((int64_t)previous +
+                                 SimHalfDelta((int32_t)delta, parity ^ 1u)));
             continue;
         }
         if (field->kind == SIM_FIELD_ANGLE32) {
@@ -195,11 +203,14 @@ void SimRaceCarryPadEdges(unsigned short *pressed) {
 
 static const SimField kRivalFields[] = {
     CAR_FIELDS(GameCarRuntime),
+    {offsetof(GameCarRuntime, targetYaw), SIM_FIELD_ANGLE32},
+    {offsetof(GameCarRuntime, baseBodyYaw), SIM_FIELD_ANGLE32},
     {offsetof(GameCarRuntime, worldVelocityX), SIM_FIELD_S32},
     {offsetof(GameCarRuntime, worldVelocityZ), SIM_FIELD_S32},
     {offsetof(GameCarRuntime, yawRate), SIM_FIELD_S32},
     {offsetof(GameCarRuntime, slideInput), SIM_FIELD_S32},
     {offsetof(GameCarRuntime, engineRpm), SIM_FIELD_S32},
+    {offsetof(GameCarRuntime, aiLateralOffset), SIM_FIELD_S16},
     {offsetof(GameCarRuntime, boostTimer), SIM_FIELD_COUNTDOWN_S16},
 };
 
@@ -213,15 +224,15 @@ static const SimField kPlayerFields[] = {
     {offsetof(PlayerCarRuntime, drive.clutch), SIM_FIELD_COUNTDOWN_S16},
     {offsetof(PlayerCarRuntime, drive.jumpTimer), SIM_FIELD_COUNTDOWN_S16},
     {offsetof(PlayerCarRuntime, drive.bodyLiftOffset), SIM_FIELD_S16},
+    {offsetof(PlayerCarRuntime, drive.trackCurveBias), SIM_FIELD_S16},
     {offsetof(PlayerCarRuntime, drive.coastFrames), SIM_FIELD_S32},
     {offsetof(PlayerCarRuntime, drive.launchEnergy), SIM_FIELD_S32},
     {offsetof(PlayerCarRuntime, drive.steeringLoadAngle), SIM_FIELD_S32},
     {offsetof(PlayerCarRuntime, drive.spinRate), SIM_FIELD_S32},
     {offsetof(PlayerCarRuntime, drive.launchSpeed), SIM_FIELD_S32},
     {offsetof(PlayerCarRuntime, drive.yawOffset), SIM_FIELD_S32},
-    {offsetof(PlayerCarRuntime, drive.standingStartBounceX), SIM_FIELD_S32},
-    {offsetof(PlayerCarRuntime, drive.standingStartBounceY), SIM_FIELD_S32},
     {offsetof(PlayerCarRuntime, drive.engineRpm), SIM_FIELD_S32},
+    {offsetof(PlayerCarRuntime, drive.targetHeading), SIM_FIELD_ANGLE32},
     {offsetof(PlayerCarRuntime, drive.drivetrainTorque), SIM_FIELD_S32},
 };
 
@@ -231,6 +242,8 @@ typedef struct CounterSnapshot {
     s32 autoShiftCooldown;
     s32 engineRpm;
     s32 standingStartSpin;
+    s32 shiftTargetRpm;
+    s32 shiftSoundLevel;
     s16 gripLossTimer;
     s16 steerHoldFrames;
 } CounterSnapshot;
@@ -242,6 +255,8 @@ static CounterSnapshot TakeCounters(void) {
     snapshot.autoShiftCooldown = g_AutoShiftCooldown;
     snapshot.engineRpm = g_EngineRpm;
     snapshot.standingStartSpin = g_StandingStartSpin;
+    snapshot.shiftTargetRpm = g_ShiftTargetRpm;
+    snapshot.shiftSoundLevel = g_ShiftSoundLevel;
     snapshot.gripLossTimer = g_GripLossTimer;
     snapshot.steerHoldFrames = g_SteerHoldFrames;
     return snapshot;
@@ -252,34 +267,60 @@ static void BlendCounters(const CounterSnapshot *before) {
 
     if (g_DriveBoostTimer <= before->driveBoostTimer) {
         g_DriveBoostTimer = before->driveBoostTimer +
-            SimHalfDelta(g_DriveBoostTimer - before->driveBoostTimer, parity);
+            SimHalfDelta(g_DriveBoostTimer - before->driveBoostTimer,
+                         parity ^ 1u);
     }
-    if (g_AutoShiftCooldown <= before->autoShiftCooldown) {
+    if (g_AutoShiftCooldown <= before->autoShiftCooldown &&
+        !(g_AutoShiftCooldown == 0 && before->autoShiftCooldown > 2)) {
         g_AutoShiftCooldown = before->autoShiftCooldown +
-            SimHalfDelta(g_AutoShiftCooldown - before->autoShiftCooldown, parity);
+            SimHalfDelta(g_AutoShiftCooldown - before->autoShiftCooldown,
+                         parity ^ 1u);
     }
     g_EngineRpm = before->engineRpm +
         SimHalfDelta(g_EngineRpm - before->engineRpm, parity);
+    g_EngineRpmSnapshot = g_EngineRpm;
     g_StandingStartSpin = before->standingStartSpin +
         SimHalfDelta(g_StandingStartSpin - before->standingStartSpin, parity);
-    if (g_GripLossTimer <= before->gripLossTimer) {
+    if (g_GripLossTimer <= before->gripLossTimer &&
+        !(g_GripLossTimer == 0 && before->gripLossTimer > 1)) {
         g_GripLossTimer = (s16)(before->gripLossTimer +
-            SimHalfDelta(g_GripLossTimer - before->gripLossTimer, parity));
+            SimHalfDelta(g_GripLossTimer - before->gripLossTimer,
+                         parity ^ 1u));
     }
-    g_SteerHoldFrames = (s16)(before->steerHoldFrames +
-        SimHalfDelta(g_SteerHoldFrames - before->steerHoldFrames, parity));
+    if (g_SteerHoldFrames > before->steerHoldFrames) {
+        g_SteerHoldFrames = (s16)(before->steerHoldFrames +
+            SimHalfDelta(g_SteerHoldFrames - before->steerHoldFrames, parity));
+    }
 }
 
 static void SimBlendCarSubsystems(GameCarRuntime *after,
                                   const GameCarRuntime *before,
                                   s32 unblendedY, s32 unblendedBodyPitch,
-                                  s32 unblendedBodyRoll, unsigned parity) {
+                                  s32 unblendedBodyRoll,
+                                  s32 unblendedWheelRotation,
+                                  unsigned parity) {
+    /* Wheel rotation: step forward in [0, ANGLE_FULL_TURN] even when the
+     * per-frame step exceeds ANGLE_HALF_TURN (speeds 683..1365), and keep
+     * CAR_WHEEL_BLUR_FLAG (0x1000) decoupled from the 12-bit angle wrap. */
+    {
+        int32_t wheelDelta = (int32_t)(((uint32_t)unblendedWheelRotation -
+                                        (uint32_t)before->wheelRotation) &
+                                       (uint32_t)ANGLE_MASK);
+        int32_t wheelAngle = ((int32_t)before->wheelRotation +
+                              SimHalfDelta(wheelDelta, parity)) &
+                             ANGLE_MASK;
+        after->wheelRotation =
+            wheelAngle | (unblendedWheelRotation & CAR_WHEEL_BLUR_FLAG);
+    }
+
     /* Knockback: decay velocity and countdown timer at retail rate while
      * preserving newly triggered knockback impulses intact. Hold the timer on
      * substep 0 and decrement on substep 1 so both half-steps of the final
      * active frame execute. */
     if (before->motionActive != 0 &&
-        after->motionTimer < before->motionTimer) {
+        (int32_t)before->motionTimer - (int32_t)after->motionTimer == 1 &&
+        after->velocityX == (s16)(before->velocityX * 7 / 8) &&
+        after->velocityZ == (s16)(before->velocityZ * 7 / 8)) {
         int32_t timerDelta =
             (int32_t)after->motionTimer - (int32_t)before->motionTimer;
         after->motionTimer = (u16)((int32_t)before->motionTimer +
@@ -300,6 +341,8 @@ static void SimBlendCarSubsystems(GameCarRuntime *after,
                          parity ^ 1u));
         if (after->motionModeTimer > 0) {
             after->motionMode = before->motionMode;
+        } else {
+            after->bodyKickOffset = 0;
         }
     }
 
@@ -307,6 +350,7 @@ static void SimBlendCarSubsystems(GameCarRuntime *after,
      * takeoff, and step the airborne parabola tick at retail rate. */
     if (before->verticalMotionState == CAR_VERTICAL_GROUNDED &&
         after->verticalMotionState != CAR_VERTICAL_GROUNDED) {
+        after->y = unblendedY;
         after->verticalPitch = (s16)unblendedBodyPitch;
         after->verticalRoll = (s16)unblendedBodyRoll;
     } else if (before->verticalMotionState != CAR_VERTICAL_GROUNDED &&
@@ -316,20 +360,52 @@ static void SimBlendCarSubsystems(GameCarRuntime *after,
             (int32_t)before->verticalMotionTimer;
         after->verticalMotionTimer = (s16)(before->verticalMotionTimer +
             SimHalfDelta(tickDelta, parity));
-        if (parity & 1u) {
+        if (after->verticalMotionTimer != before->verticalMotionTimer ||
+            after->verticalMotionState != before->verticalMotionState) {
             after->y = unblendedY;
         }
         after->bodyPitch = after->verticalPitch;
         after->bodyRoll = after->verticalRoll;
+    } else if (before->verticalMotionState != CAR_VERTICAL_GROUNDED &&
+               after->verticalMotionState == CAR_VERTICAL_GROUNDED) {
+        after->y = unblendedY;
+        after->bodyPitch = unblendedBodyPitch;
+        after->bodyRoll = unblendedBodyRoll;
+        after->verticalPitch = 0;
+        after->verticalRoll = 0;
     }
 }
 
 void SimUpdatePlayerCar(PlayerCarRuntime *car) {
+    enum {
+        STANDING_START_SPIN_THRESHOLD = 11,
+        AIRBORNE_DECAY_NUMERATOR = 31,
+        AIRBORNE_DECAY_DENOMINATOR = 32,
+        BODY_LIFT_DECAY_NUMERATOR = 2,
+        BODY_LIFT_DECAY_DENOMINATOR = 3,
+    };
     PlayerCarRuntime before;
     CounterSnapshot counters;
+    s32 rivalSpeedBefore[RACE_CAR_SLOT_COUNT];
+    s32 rivalAccelBefore[RACE_CAR_SLOT_COUNT];
     s32 unblendedY;
     s32 unblendedBodyPitch;
     s32 unblendedBodyRoll;
+    s32 unblendedWheelRotation;
+    s32 unblendedHeadingAngle;
+    s32 unblendedSteerPos;
+    s32 unblendedSteeringAngle;
+    s32 unblendedCoastFrames;
+    s32 unblendedLaunchEnergy;
+    s32 unblendedSpinRate;
+    s32 unblendedLaunchSpeed;
+    s32 unblendedYawOffset;
+    s32 unblendedDrivetrainTorque;
+    s32 unblendedEngineRpm;
+    s16 unblendedEngineLoad;
+    s16 unblendedClutch;
+    s16 unblendedJumpTimer;
+    int index;
 
     if (!s_scaled) {
         UpdatePlayerCar(car);
@@ -337,21 +413,173 @@ void SimUpdatePlayerCar(PlayerCarRuntime *car) {
     }
     before = *car;
     counters = TakeCounters();
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        rivalSpeedBefore[index] = g_Cars[index].speed;
+        rivalAccelBefore[index] = g_Cars[index].acceleration;
+    }
     UpdatePlayerCar(car);
+    for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
+        if (g_Cars[index].activeFlag != -1 &&
+            g_Cars[index].collisionFlag != 0) {
+            g_Cars[index].speed = rivalSpeedBefore[index] +
+                SimHalfDelta(g_Cars[index].speed - rivalSpeedBefore[index],
+                             s_parity);
+            g_Cars[index].acceleration = rivalAccelBefore[index] +
+                SimHalfDelta(g_Cars[index].acceleration -
+                                 rivalAccelBefore[index],
+                             s_parity);
+        }
+    }
     unblendedY = car->y;
     unblendedBodyPitch = car->bodyPitch;
     unblendedBodyRoll = car->bodyRoll;
+    unblendedWheelRotation = car->wheelRotation;
+    unblendedHeadingAngle = car->headingAngle;
+    unblendedSteerPos = car->drive.steerPos;
+    unblendedSteeringAngle = car->steeringAngle;
+    unblendedCoastFrames = car->drive.coastFrames;
+    unblendedLaunchEnergy = car->drive.launchEnergy;
+    unblendedSpinRate = car->drive.spinRate;
+    unblendedLaunchSpeed = car->drive.launchSpeed;
+    unblendedYawOffset = car->drive.yawOffset;
+    unblendedDrivetrainTorque = car->drive.drivetrainTorque;
+    unblendedEngineRpm = car->drive.engineRpm;
+    unblendedEngineLoad = car->drive.engineLoad;
+    unblendedClutch = car->drive.clutch;
+    unblendedJumpTimer = car->drive.jumpTimer;
     SimBlendFields(car, &before, kPlayerFields,
                    sizeof(kPlayerFields) / sizeof(kPlayerFields[0]),
                    s_parity);
+    if (before.drive.motionState == CAR_MOTION_TAKEOFF) {
+        car->drive.targetHeading = car->bodyYaw;
+    }
+    if ((before.drive.motionState == CAR_MOTION_DRIVING &&
+         before.drive.gearDisp == before.drive.gear &&
+         before.drive.clutch > 1 &&
+         car->drive.clutch < before.drive.clutch) ||
+        (before.drive.motionState == CAR_MOTION_AIRBORNE &&
+         before.drive.jumpTimer > 1 &&
+         car->drive.jumpTimer < before.drive.jumpTimer)) {
+        car->drive.engineRpm = unblendedEngineRpm;
+    }
+    if (before.drive.steerPos != 0 && unblendedSteerPos == 0 &&
+        (car->drive.trackCurveMode != 0 || g_RacePhase < RACE_PHASE_ACTIVE)) {
+        car->drive.steerPos = 0;
+        car->steeringAngle = unblendedSteeringAngle;
+    }
+    if (unblendedCoastFrames == 0) {
+        car->drive.coastFrames = 0;
+    }
+    if (before.drive.motionState != CAR_MOTION_TAKEOFF &&
+        car->drive.motionState == CAR_MOTION_TAKEOFF) {
+        car->drive.launchEnergy = unblendedLaunchEnergy;
+        car->drive.spinRate = unblendedSpinRate;
+        car->drive.bodyLiftOffset = 0;
+        car->drive.coastFrames = 0;
+    }
+    if (car->drive.clutch > before.drive.clutch) {
+        car->drive.engineLoad = unblendedEngineLoad;
+    }
+    if (car->drive.jumpTimer > before.drive.jumpTimer) {
+        car->drive.engineLoad = unblendedEngineLoad;
+        car->drive.drivetrainTorque = unblendedDrivetrainTorque;
+        car->drive.launchSpeed = unblendedLaunchSpeed;
+        car->drive.yawOffset = unblendedYawOffset;
+        car->drive.spinRate = unblendedSpinRate;
+        if (before.drive.motionState == CAR_MOTION_TAKEOFF) {
+            car->headingAngle = unblendedHeadingAngle;
+        }
+    }
+    if (unblendedClutch == 0 &&
+        (car->drive.motionState == CAR_MOTION_TAKEOFF ||
+         car->drive.motionState == CAR_MOTION_STANDING_START ||
+         (car->speed == 0 && car->drive.gear < before.drive.gear))) {
+        car->drive.clutch = 0;
+    }
+    if (unblendedJumpTimer == 0 &&
+        (car->drive.motionState == CAR_MOTION_TAKEOFF ||
+         car->drive.motionState == CAR_MOTION_STANDING_START)) {
+        car->drive.jumpTimer = 0;
+    }
+    /* Clutch engagement and airborne drivetrain reconnect: when SimBlendFields
+     * holds the countdown at 1 on substep 0, keep the pre-step state active so
+     * the second half-step of the final frame runs before reconnecting; when
+     * the countdown reaches 0 on substep 1, commit the zeroed load. */
+    if (before.drive.clutch > 0 &&
+        car->drive.drivetrainCoupled != before.drive.drivetrainCoupled) {
+        if (car->drive.clutch > 0) {
+            car->drive.drivetrainCoupled = before.drive.drivetrainCoupled;
+            car->drive.engineLoad = before.drive.engineLoad;
+        } else {
+            car->drive.engineLoad = 0;
+        }
+    }
+    if (before.drive.jumpTimer > 0 &&
+        before.drive.motionState == CAR_MOTION_AIRBORNE &&
+        car->drive.motionState == CAR_MOTION_DRIVING) {
+        if (car->drive.jumpTimer > 0) {
+            s32 decayedYawOffset =
+                (s32)(((int64_t)before.drive.yawOffset *
+                       AIRBORNE_DECAY_NUMERATOR) /
+                      AIRBORNE_DECAY_DENOMINATOR);
+            s32 decayedLaunchSpeed =
+                (s32)(((int64_t)before.drive.launchSpeed *
+                       AIRBORNE_DECAY_NUMERATOR) /
+                      AIRBORNE_DECAY_DENOMINATOR);
+            s16 decayedBodyLift = (s16)(before.drive.bodyLiftOffset *
+                                        BODY_LIFT_DECAY_NUMERATOR /
+                                        BODY_LIFT_DECAY_DENOMINATOR);
+
+            car->drive.motionState = CAR_MOTION_AIRBORNE;
+            car->drive.shiftRpmDelta = before.drive.shiftRpmDelta;
+            g_ShiftSoundLevel = counters.shiftSoundLevel;
+            car->drive.yawOffset = before.drive.yawOffset +
+                SimHalfDelta(decayedYawOffset - before.drive.yawOffset,
+                             s_parity);
+            car->drive.launchSpeed = before.drive.launchSpeed +
+                SimHalfDelta(decayedLaunchSpeed - before.drive.launchSpeed,
+                             s_parity);
+            car->drive.bodyLiftOffset = (s16)(before.drive.bodyLiftOffset +
+                SimHalfDelta(decayedBodyLift - before.drive.bodyLiftOffset,
+                             s_parity));
+        } else {
+            car->drive.yawOffset = 0;
+            car->drive.launchSpeed = 0;
+            car->drive.bodyLiftOffset = 0;
+            car->drive.shiftRpmDelta = 0;
+        }
+    }
     SimBlendCarSubsystems(AsRivalCar(car),
                           (const GameCarRuntime *)&before, unblendedY,
-                          unblendedBodyPitch, unblendedBodyRoll, s_parity);
+                          unblendedBodyPitch, unblendedBodyRoll,
+                          unblendedWheelRotation, s_parity);
     BlendCounters(&counters);
+    if (g_ShiftTargetRpm < counters.shiftTargetRpm &&
+        car->drive.jumpTimer <= before.drive.jumpTimer &&
+        before.drive.gearDisp == before.drive.gear) {
+        g_ShiftTargetRpm = counters.shiftTargetRpm +
+            SimHalfDelta(g_ShiftTargetRpm - counters.shiftTargetRpm, s_parity);
+    }
+    if (before.drive.motionState == CAR_MOTION_STANDING_START &&
+        counters.standingStartSpin >= STANDING_START_SPIN_THRESHOLD) {
+        if (s_parity == 0 ||
+            g_StandingStartSpin >= STANDING_START_SPIN_THRESHOLD) {
+            car->drive.motionState = CAR_MOTION_STANDING_START;
+            if (s_parity == 0 &&
+                g_StandingStartSpin < STANDING_START_SPIN_THRESHOLD) {
+                g_StandingStartSpin = STANDING_START_SPIN_THRESHOLD;
+            }
+        }
+    }
+    if (car->drive.motionState != CAR_MOTION_STANDING_START) {
+        car->drive.standingStartBounceX = 0;
+        car->drive.standingStartBounceY = 0;
+    }
 }
 
 void SimUpdateRaceCars(void) {
     GameCarRuntime before[RACE_CAR_SLOT_COUNT];
+    s16 beforeCooldowns[RIVAL_CONTENDER_COUNT];
     int index;
 
     if (!s_scaled) {
@@ -359,21 +587,44 @@ void SimUpdateRaceCars(void) {
         return;
     }
     memcpy(before, g_Cars, sizeof(before));
+    memcpy(beforeCooldowns, g_RivalCueCooldowns, sizeof(beforeCooldowns));
     UpdateRaceCars();
+    for (index = 0; index < RIVAL_CONTENDER_COUNT; index++) {
+        if (g_RivalCueCooldowns[index] > beforeCooldowns[index]) {
+            g_RivalCueCooldowns[index] = (s16)(beforeCooldowns[index] +
+                SimHalfDelta(g_RivalCueCooldowns[index] -
+                                 beforeCooldowns[index],
+                             s_parity));
+        }
+    }
     for (index = 0; index < RACE_CAR_SLOT_COUNT; index++) {
         s32 unblendedY;
         s32 unblendedBodyPitch;
         s32 unblendedBodyRoll;
+        s32 unblendedWheelRotation;
+        s32 unblendedSlideInput;
 
         if (before[index].activeFlag == -1) continue;
         unblendedY = g_Cars[index].y;
         unblendedBodyPitch = g_Cars[index].bodyPitch;
         unblendedBodyRoll = g_Cars[index].bodyRoll;
+        unblendedWheelRotation = g_Cars[index].wheelRotation;
+        unblendedSlideInput = g_Cars[index].slideInput;
         SimBlendFields(&g_Cars[index], &before[index], kRivalFields,
                        sizeof(kRivalFields) / sizeof(kRivalFields[0]),
                        s_parity);
+        if (before[index].slideInput == 0 && before[index].yawRate == 0 &&
+            unblendedSlideInput != 0) {
+            g_Cars[index].slideInput = unblendedSlideInput;
+        }
+        if (before[index].slideActive != 0 &&
+            g_Cars[index].slideActive == 0 &&
+            g_Cars[index].yawRate != 0) {
+            g_Cars[index].slideActive = before[index].slideActive;
+        }
         SimBlendCarSubsystems(&g_Cars[index], &before[index], unblendedY,
-                              unblendedBodyPitch, unblendedBodyRoll, s_parity);
+                              unblendedBodyPitch, unblendedBodyRoll,
+                              unblendedWheelRotation, s_parity);
     }
 }
 
@@ -385,6 +636,8 @@ static const SimField kChaseFields[] = {
 
 void SimUpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car) {
     Camera before;
+    s32 unblendedRampNeg;
+    s32 unblendedRampPos;
 
     if (!s_scaled) {
         UpdateCamera(camera, mode, car);
@@ -392,8 +645,20 @@ void SimUpdateCamera(Camera *camera, CameraViewMode mode, GameCarRuntime *car) {
     }
     before = *camera;
     UpdateCamera(camera, mode, car);
+    if (before.previousMode != CAMERA_VIEW_CHASE &&
+        camera->previousMode == CAMERA_VIEW_CHASE) {
+        return;
+    }
+    unblendedRampNeg = camera->chase.rampNeg;
+    unblendedRampPos = camera->chase.rampPos;
     SimBlendFields(camera, &before, kChaseFields,
                    sizeof(kChaseFields) / sizeof(kChaseFields[0]), s_parity);
+    if (unblendedRampNeg == 0) {
+        camera->chase.rampNeg = 0;
+    }
+    if (unblendedRampPos == 0) {
+        camera->chase.rampPos = 0;
+    }
 }
 
 void SimRaceTrace(void) {

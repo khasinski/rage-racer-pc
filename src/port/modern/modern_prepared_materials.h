@@ -12,8 +12,20 @@
 enum {
     MODERN_PREPARED_MATERIAL_LIMIT = 128,
     MODERN_PREPARED_MATERIAL_BUCKETS = 256,
+    MODERN_PREPARED_SUBMESH_BUCKETS = 1024,
     MODERN_PREPARED_MATERIAL_BYTE_LIMIT = 512 * 1024 * 1024,
 };
+
+typedef struct ModernPreparedSubmeshEntry {
+    uint32_t assetKey;
+    uint16_t mesh;
+    uint8_t assetSet;
+    uint8_t variant;
+    uint8_t hasCarPaint;
+    uint8_t color1;
+    uint8_t color2;
+    uint8_t occupied;
+} ModernPreparedSubmeshEntry;
 
 typedef struct ModernPreparedMaterialEntry {
     uint32_t assetKey;
@@ -31,12 +43,17 @@ typedef struct ModernPreparedMaterialEntry {
 typedef struct ModernPreparedMaterials {
     ModernPreparedMaterialEntry entries[MODERN_PREPARED_MATERIAL_LIMIT];
     uint16_t buckets[MODERN_PREPARED_MATERIAL_BUCKETS];
+    ModernPreparedSubmeshEntry submeshes[MODERN_PREPARED_SUBMESH_BUCKETS];
     uint32_t count;
     size_t bytes;
     int budgetReached;
 } ModernPreparedMaterials;
 
 void ModernPreparedMaterialsClear(ModernPreparedMaterials *cache);
+int ModernPreparedMaterialsHasSubmesh(const ModernPreparedMaterials *cache,
+                                      const RenderMeshInstance *instance);
+void ModernPreparedMaterialsMarkSubmesh(ModernPreparedMaterials *cache,
+                                        const RenderMeshInstance *instance);
 int ModernPreparedMaterialsContains(const ModernPreparedMaterials *cache,
                                     const RenderMeshInstance *instance,
                                     uint32_t material, uint8_t variant);

@@ -1062,12 +1062,14 @@ static void ModernAssetsPrepareInstance(const RenderMeshInstance *instance) {
     uint32_t first, count;
     uint32_t previousRawMaterial = UINT32_MAX;
     int havePrevious = 0;
+    int allPrepared = 1;
     if (cached == NULL || instance->pass != RAGE_RENDER_PASS_MAIN ||
         !RuntimeMeshRange(&cached->mesh, instance->mesh, &first, &count)) return;
     /* Geometry must become resident even after the texture-preparation budget
      * fills. Otherwise a long course can starve cars submitted later in the
      * same frame, which leaves every vehicle invisible in the native renderer. */
     if (ModernPreparedMaterialsBudgetReached(&s_preparedMaterials)) return;
+    if (ModernPreparedMaterialsHasSubmesh(&s_preparedMaterials, instance)) return;
     for (uint32_t offset = 0; offset < count; ++offset) {
             RageRuntimeVertex vertex;
             uint32_t index, material;
@@ -1097,7 +1099,11 @@ static void ModernAssetsPrepareInstance(const RenderMeshInstance *instance) {
             if (ModernAssetsLoadMaterial(instance, material, variant,
                     &definition, &image, &storage))
                 ModernAssetsFreeMaterialImage(&image);
+            else
+                allPrepared = 0;
     }
+    if (allPrepared && !ModernPreparedMaterialsBudgetReached(&s_preparedMaterials))
+        ModernPreparedMaterialsMarkSubmesh(&s_preparedMaterials, instance);
 }
 
 void ModernAssetsPrepareWorld(const RenderWorld *world) {

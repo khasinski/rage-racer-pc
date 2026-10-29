@@ -450,6 +450,12 @@ static void UpdateActiveRaceScene(RaceScene *state, s32 substep) {
         }
     }
 
+    if (g_RacePhase != RACE_PHASE_ACTIVE && SimRaceScaled()) {
+        SimRaceFrameBegin(0);
+        g_FrameSyncThreshold =
+            SimRaceFrameSyncThreshold(RACE_FRAME_SYNC_THRESHOLD);
+    }
+
     if (RaceHasRivals()) {
         if (g_RacePhase < RACE_PHASE_FINISHED) {
             if (!substep) {
@@ -597,6 +603,11 @@ void UpdateRaceScene(void) {
     }
 
     if (g_RacePaused != 0) {
+        if (SimRaceScaled()) {
+            SimRaceFrameBegin(0);
+            g_FrameSyncThreshold =
+                SimRaceFrameSyncThreshold(RACE_FRAME_SYNC_THRESHOLD);
+        }
         g_SceneTimer = frameStartTimer;
         UpdatePausedRaceScene(state);
     } else {
