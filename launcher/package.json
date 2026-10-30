@@ -12,7 +12,7 @@
     "mcp": "node scripts/mcp-server.cjs",
     "build:native": "node scripts/build-native.cjs",
     "package": "node scripts/package.cjs",
-    "test": "node scripts/test-native.cjs && node --test tests/*.test.cjs"
+    "test": "node scripts/test.cjs"
   },
   "devDependencies": {
     "electron": "44.9.1",
