@@ -449,7 +449,25 @@ static void CheckSplitDeltaSprites(void) {
     }
 }
 
+static void CheckDuelTotalRestoration(void) {
+    ResetHud();
+    BuildRaceHudPrims(1);
+    g_GrandPrixMode = 1;
+    g_DuelRaceActive = 1;
+    DrawRacePosition();
+    if (g_DrawBuffer->layout.raceHud.labels[5].w != 8) s_failures++;
+    /* An unavailable rival (or the next normal race) retains the full /12. */
+    g_DuelRaceActive = 0;
+    DrawRacePosition();
+    if (g_DrawBuffer->layout.raceHud.labels[5].w !=
+        g_RaceHudSpriteDescsGp[GRAND_PRIX_HUD_SPRITE_COUNT - 1].w) {
+        puts("FAIL normal race total was truncated after a duel");
+        s_failures++;
+    }
+}
+
 int main(void) {
+    CheckDuelTotalRestoration();
     CheckStaticLabelOwnership();
     CheckLapColumnCapacity();
     CheckTimeLimitWarningBoundary();
