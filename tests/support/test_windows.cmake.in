@@ -1,5 +1,6 @@
 # CTest and game subprocesses inherit this policy, including tests launched
 # directly from child build directories. Keep the real GPU backend.
+set(ENV{SDL_AUDIODRIVER} "dummy")
 set(ENV{PSYZ_HEADLESS} "@RAGE_TEST_HEADLESS@")
 if(@RAGE_TEST_HEADLESS@)
     set(ENV{SDL_MAC_BACKGROUND_APP} "1")

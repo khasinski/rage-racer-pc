@@ -530,7 +530,14 @@ int main(int argc, char **argv) {
     if (RuntimeConfigEnabled("diagnostics.test_log") &&
         !DiagnosticLogOpen(logPath, sizeof(logPath))) return EXIT_FAILURE;
 
-    /* Automated runs stay hidden unless explicitly requested for inspection. */
+    /* Automated runs stay silent and hidden unless explicitly overridden. */
+    if (getenv("SDL_AUDIODRIVER") == NULL) {
+#ifdef _WIN32
+        if (_putenv_s("SDL_AUDIODRIVER", "dummy") != 0) return EXIT_FAILURE;
+#else
+        if (setenv("SDL_AUDIODRIVER", "dummy", 0) != 0) return EXIT_FAILURE;
+#endif
+    }
     if (getenv("PSYZ_HEADLESS") == NULL) {
 #ifdef _WIN32
         if (_putenv_s("PSYZ_HEADLESS", "1") != 0) return EXIT_FAILURE;

@@ -18,3 +18,10 @@
 - Remove existing Python components only after their behavior and regression
   coverage have compiled replacements, so the migration remains testable at
   every commit.
+
+## Automated game runs
+
+- When launching the game for tests, use no audible audio and no visible window.
+- Set `PSYZ_HEADLESS=1` and `SDL_AUDIODRIVER=dummy`; retain the real GPU backend
+  when rendering or capture coverage needs it. Do not use visible or audible
+  test runs unless the user explicitly requests them.
