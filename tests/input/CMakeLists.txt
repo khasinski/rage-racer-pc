@@ -116,3 +116,26 @@ if(TARGET rage-racer-smoke)
 set_tests_properties(keyboard_input PROPERTIES LABELS e2e)
     set_tests_properties(keyboard_input PROPERTIES TIMEOUT 60)
 endif()
+
+# Exercise actual device routing with mocked SDL transports; no wheel, audio,
+# window or driver is required to verify effect ownership and rumble handoff.
+add_executable(force_feedback_device_tests force_feedback_device_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/force_feedback_device.c
+    ${CMAKE_SOURCE_DIR}/src/port/force_feedback.c)
+target_include_directories(force_feedback_device_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(force_feedback_device_tests PRIVATE __psyz=1)
+target_include_directories(force_feedback_device_tests PRIVATE
+    $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>)
+if(MSVC)
+    target_compile_options(force_feedback_device_tests PRIVATE
+        "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(force_feedback_device_tests PRIVATE
+        "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+        ${RAGE_STRICT_WARNING_OPTIONS})
+    target_link_libraries(force_feedback_device_tests PRIVATE m)
+endif()
+add_test(NAME force_feedback_device COMMAND force_feedback_device_tests)
+set_tests_properties(force_feedback_device PROPERTIES LABELS unit)

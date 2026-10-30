@@ -45,6 +45,7 @@ static int s_updateNoted;
 static Uint16 s_lastLow;
 static Uint16 s_lastHigh;
 static int s_rumbleLatched;
+static SDL_JoystickID s_rumblePadId;
 
 static int EnvironmentSet(const char *name) {
     const char *value = getenv(name);
@@ -200,7 +201,7 @@ static void BindWheel(SDL_Joystick *wheel) {
     }
     if (wheel == s_rejectedWheel) return;
     ReleaseEffect(1);
-    if (!SDL_InitSubSystem(SDL_INIT_HAPTIC)) {
+    if (!SDL_WasInit(SDL_INIT_HAPTIC) && !SDL_InitSubSystem(SDL_INIT_HAPTIC)) {
         s_rejectedWheel = wheel;
         fprintf(stderr, "rage-port: haptic subsystem unavailable (%s)\n",
                 SDL_GetError());
@@ -220,15 +221,21 @@ static void BindWheel(SDL_Joystick *wheel) {
     if ((SDL_GetHapticFeatures(s_haptic) & SDL_HAPTIC_AUTOCENTER) != 0) {
         SDL_SetHapticAutocenter(s_haptic, 0);
     }
+    if ((SDL_GetHapticFeatures(s_haptic) & SDL_HAPTIC_GAIN) != 0 &&
+        !SDL_SetHapticGain(s_haptic, 100)) {
+        fprintf(stderr, "rage-port: could not set wheel feedback gain (%s)\n",
+                SDL_GetError());
+    }
+    s_updateNoted = 0;
     memset(&s_effect, 0, sizeof(s_effect));
     s_effect.type = SDL_HAPTIC_CONSTANT;
-    s_effect.constant.direction.type = SDL_HAPTIC_CARTESIAN;
+    s_effect.constant.direction.type = SDL_HAPTIC_STEERING_AXIS;
     s_effect.constant.direction.dir[0] = 1;
     s_effect.constant.length = SDL_HAPTIC_INFINITY;
     s_effect.constant.level = 0;
     s_effectId = SDL_CreateHapticEffect(s_haptic, &s_effect);
-    if (s_effectId < 0 ||
-        !SDL_RunHapticEffect(s_haptic, s_effectId, 1)) {
+    s_effectReady = s_effectId >= 0;
+    if (!s_effectReady || !SDL_RunHapticEffect(s_haptic, s_effectId, 1)) {
         fprintf(stderr, "rage-port: could not start force feedback on %s (%s)\n",
                 name, SDL_GetError());
         ReleaseEffect(1);
@@ -268,8 +275,17 @@ static void SendRumble(float low, float high) {
     SDL_Gamepad *pad = AnalogActiveGamepad();
     Uint16 lowLevel;
     Uint16 highLevel;
+    SDL_JoystickID id = pad != NULL && !AnalogWheelActive()
+                            ? SDL_GetGamepadID(pad) : 0;
 
-    if (pad == NULL || AnalogWheelActive()) {
+    if (id != s_rumblePadId) {
+        SDL_Gamepad *previous = SDL_GetGamepadFromID(s_rumblePadId);
+        if (previous != NULL) SDL_RumbleGamepad(previous, 0, 0, 0);
+        s_rumblePadId = id;
+        s_rumbleLatched = 0;
+        s_rumbleNoted = 0;
+    }
+    if (id == 0) {
         s_rumbleLatched = 0;
         return;
     }
@@ -363,7 +379,6 @@ void PortUpdateForceFeedback(void) {
     s_smoothed = output.torque;
     s_previousAxis = axis;
 
-    BindWheel(AnalogWheelActive() ? AnalogWheelJoystick() : NULL);
     SendTorque(output.torque);
     SendRumble(output.lowRumble, output.highRumble);
 }
