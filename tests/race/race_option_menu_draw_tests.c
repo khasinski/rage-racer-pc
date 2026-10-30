@@ -147,7 +147,8 @@ static void Reset(void) {
 }
 
 static int CheckLayout(s32 grandPrix, s32 expectedSprites) {
-    CourseProgressState progress = {0};
+    /* Later draws in main keep using g_CourseProgress after this returns. */
+    static CourseProgressState progress;
     POLY_FT4 *pulse;
     s32 expectedSelectionY = grandPrix != 0 ? 0x80 : 0x88;
 
