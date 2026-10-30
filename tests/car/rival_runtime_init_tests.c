@@ -8,6 +8,9 @@
 #include <string.h>
 
 s32 g_RaceSeries;
+s32 g_DuelEnabled;
+s32 g_DuelRivalCar;
+s32 g_SceneId;
 s32 g_TrackPointCount;
 const GameTrackPoint *g_TrackPoints;
 const TrackEventData *g_TrackEventData;
@@ -106,6 +109,21 @@ int main(void) {
     CHECK(car.activeFlag == -1);
     CHECK(s_trackCalls == 0);
     CHECK(car.modelY == 0);
+
+    start->activeFlag = 4;
+    events.rivalStarts[1][RACE_CAR_SLOT_COUNT].x = 1234;
+    events.rivalStarts[1][RACE_CAR_SLOT_COUNT].z = 5678;
+    events.rivalStarts[1][RACE_CAR_SLOT_COUNT].trackPointIndex = 1;
+    events.rivalStarts[1][RACE_CAR_SLOT_COUNT].activeFlag = 1;
+    g_DuelEnabled = 1;
+    g_DuelRivalCar = 0;
+    g_SceneId = 11;
+    s_findResult = 1;
+    InitRivalCar(&car, 0, grid);
+    CHECK(s_findStart == 1);
+    CHECK(s_seedMode == 1);
+    CHECK(car.x == 1234 && car.z == 5678);
+    CHECK(car.modelIndex == 7 && car.activeFlag == 4);
 
     puts("rival runtime initialization tests passed");
     return 0;

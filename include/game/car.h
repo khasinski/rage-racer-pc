@@ -745,6 +745,15 @@ extern u16 g_PaintSlots3StopA[10];
 extern u16 g_PaintSlots3StopB[8];
 extern u16 g_PaintSlots4Stop[4];
 extern RaceGridSlot g_RaceGridSlots[RACE_GRID_STORAGE_COUNT];
+/* Optional duel and CPU pursuit rules, configured by the host at startup. */
+extern s32 g_DuelEnabled;
+extern s32 g_DuelRaceActive;
+extern s32 g_DuelRivalCar;
+extern s32 g_CpuChaseMode;
+extern s32 g_CpuChaseRivalCar;
+extern s32 g_CpuChaseNearDistance;
+extern s32 g_CpuChaseFarDistance;
+extern s32 g_CpuChaseSpeedPercent;
 /*
  * The race-intro camera's offset from the keyframe it is easing away from:
  * the three halfwords at 0x8009AFBC.  All three writers take them from one

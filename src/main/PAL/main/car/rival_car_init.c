@@ -3,6 +3,8 @@
 #include "game/car_internal.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
+#include "game/scene.h"
+#include "game/state.h"
 #include "game/track.h"
 #include "game/track_internal.h"
 
@@ -14,6 +16,7 @@ void InitRivalCar(GameCarRuntime *car,
     const s32 series = g_RaceSeries != 0;
     const TrackRivalStart *start =
         &g_TrackEventData->rivalStarts[series][gridPosition + 1];
+    const TrackRivalStart *position = start;
     CarTrackLimits trackLimits = {
         .rightInset = 20,
         .leftInset = -20,
@@ -21,16 +24,27 @@ void InitRivalCar(GameCarRuntime *car,
     s32 trackPointIndex;
     s32 startPointIndex;
 
+    /* Use the last native grid position and its lap-progress seed without
+     * changing the selected rival's model or AI configuration. */
+    if (g_DuelEnabled && g_SceneId == GAME_SCENE_ENTER_RACE &&
+        gridPosition == g_DuelRivalCar) {
+        const TrackRivalStart *last =
+            &g_TrackEventData->rivalStarts[series][RACE_CAR_SLOT_COUNT];
+        if (last->activeFlag != -1) {
+            position = last;
+        }
+    }
+
     memset(car, 0, sizeof(*car));
     car->initializedFlag = 1;
     car->aiEnabled = 1;
     car->facingBackwards = (s16)series;
     car->modelIndex = RaceGridModelId(grid[gridPosition]);
     car->rivalModelId = RaceGridModelId(grid[gridPosition]);
-    startPointIndex = WrapTrackPointIndex(start->trackPointIndex);
+    startPointIndex = WrapTrackPointIndex(position->trackPointIndex);
     car->trackPointIndex = startPointIndex;
-    car->x = start->x;
-    car->z = start->z;
+    car->x = position->x;
+    car->z = position->z;
 
     trackPointIndex = FindTrackSegment(car, car->trackPointIndex);
     if (trackPointIndex < 0) {
@@ -45,7 +59,7 @@ void InitRivalCar(GameCarRuntime *car,
     car->baseBodyYaw = car->bodyYaw;
     car->targetYaw = car->bodyYaw;
     car->headingAngle = car->bodyYaw;
-    SeedCarLapProgress(car, start->activeFlag);
+    SeedCarLapProgress(car, position->activeFlag);
 
     car->activeFlag = start->activeFlag;
     if (start->activeFlag != -1) {

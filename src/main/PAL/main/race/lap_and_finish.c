@@ -9,6 +9,7 @@
  */
 
 #include "game/audio.h"
+#include "game/car.h"
 #include "game/player_car_internal.h"
 #include "game/cd.h"
 #include "game/menu.h"
@@ -175,11 +176,11 @@ static s32 CrossTheLine(RaceScene *state, PlayerCarRuntime *car,
 
     lapsRun = g_LapCount;
     if (car->lap == lapsRun + 1) {
-        /* Grand Prix keeps the retail podium: fourth and below retire.
-         * A custom race still ran its full distance, so every place takes
-         * the finish fade and the replay instead of dropping to the menu. */
-        if (car->drive.racePosition <= FINISHING_PLACE_LIMIT ||
-            g_RaceSession.kind == RACE_SESSION_CUSTOM) {
+        /* Duels require first place; custom races otherwise finish at every
+         * place so they retain the replay path. */
+        if (g_DuelRaceActive ? car->drive.racePosition == 1 :
+            (car->drive.racePosition <= FINISHING_PLACE_LIMIT ||
+             g_RaceSession.kind == RACE_SESSION_CUSTOM)) {
             FinishRace(&state->timing, car, recordMode, lapsRun);
         } else {
             RetireAtLastLap();

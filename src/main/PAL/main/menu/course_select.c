@@ -1,7 +1,28 @@
+#include "game/car.h"
 #include "game/course_select_internal.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/race.h"
+#include "game/render_internal.h"
+
+static void DrawDuelLabel(GameOrderingTableEntry *ot, s32 y, u8 fade) {
+    static const char label[] = "DUEL";
+    s32 index;
+
+    if (!g_DuelEnabled) {
+        return;
+    }
+    for (index = 0; index < 4; index++) {
+        ProportionalFontCell cell = g_PropFontCells[label[index] - 0x20];
+        s16 x = (s16)(0xD8 + index * 18);
+        GameDrawTexturedQuad(
+            ot, x, (s16)y, x + 18, (u16)y, x, (u16)(y + 18),
+            x + 18, (u16)(y + 18), cell.textureU, cell.textureV,
+            cell.textureU + 12, cell.textureV, cell.textureU,
+            cell.textureV + 12, cell.textureU + 12,
+            cell.textureV + 12, fade, fade, fade, 18, 0, 0, 0x29);
+    }
+}
 
 s32 DrawCourseSelectScreen(s32 *progress, s32 step) {
     GameOrderingTableEntry *ot;
@@ -70,6 +91,7 @@ s32 DrawCourseSelectScreen(s32 *progress, s32 step) {
         DrawSprite(
             ot, 0xB0, 0x94 - slide, 0x20, 0x30,
             0x60, 0x88, fade, fade, fade, 0x25B, 0, 1, 0x39);
+        DrawDuelLabel(ot, 0xB0 - slide, fade);
     }
 
     coordinateY = 0xD0 - slide;
