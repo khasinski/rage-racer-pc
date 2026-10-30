@@ -81,6 +81,10 @@ void DrawFlatQuad(GameOrderingTableEntry *ot, s16 x0, s16 y0, s16 x1, u16 y1, u1
     } while (0)
 
 static void DrawGraph(CarSpecGraph *graph, s32 step, u32 tireGrade) {
+    /* Captures describe one draw; repeated frames must not overflow them. */
+    s_polyLineCount = 0;
+    s_spriteCount = 0;
+    s_quadCount = 0;
     graph->step = step;
     DrawCarSpecGraph(graph, tireGrade);
 }
