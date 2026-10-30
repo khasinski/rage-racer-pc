@@ -527,6 +527,24 @@ int main(int argc, char **argv) {
         puts("FAIL duel second place did not retire");
         return 1;
     }
+    g_RaceSession.kind = RACE_SESSION_CUSTOM;
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = 0x10000;
+    g_RacePhase = 0;
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 0);
+    if (g_RacePhase != RACE_PHASE_RETIRED) {
+        puts("FAIL custom duel second place did not retire");
+        return 1;
+    }
+    g_PlayerCar.drive.racePosition = 1;
+    g_PlayerCar.lap = 1;
+    g_PlayerCar.progressA = 0x10000;
+    g_RacePhase = 0;
+    UpdateLapAndFinish(&s_state, &g_PlayerCar, 0);
+    if (g_RacePhase != RACE_PHASE_FINISHED) {
+        puts("FAIL custom duel winner did not finish");
+        return 1;
+    }
     g_DuelRaceActive = 0;
 
     printf("laps and finishing take the same %d states they always did\n",

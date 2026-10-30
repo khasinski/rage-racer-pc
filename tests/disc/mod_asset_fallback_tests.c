@@ -251,6 +251,18 @@ int main(int argc, char **argv) {
         goto cleanup;
     }
     EXPECT(ModAssetsManifest() == NULL); /* Existing raw-only packs still work. */
+    {
+        char coursePath[2048], name[64], length[32];
+        static const unsigned char labels[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789\n"
+            "abcdefghijklmnopqrstuvwxyz0123456789\n";
+        snprintf(coursePath, sizeof(coursePath), "%s/course_01.txt", raw);
+        EXPECT(WriteFixtureFile(coursePath, labels, sizeof(labels) - 1));
+        ModAssetCourseLabel(0, name, sizeof(name), length, sizeof(length));
+        EXPECT(strcmp(name, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcde") == 0);
+        EXPECT(strcmp(length, "abcdefghijklmno") == 0);
+        unlink(coursePath);
+    }
 
     memset(destination, 0xA5, sizeof(destination));
     s_room = sizeof(destination);
