@@ -17,7 +17,9 @@ jobs:
         run: cmake -S . -B build/sanitize -DCMAKE_BUILD_TYPE=Debug -DRAGE_ENABLE_SANITIZERS=ON
       - name: Build
         run: cmake --build build/sanitize --parallel
-      - name: Unit and portable tests
-        run: ctest --test-dir build/sanitize --output-on-failure -L portable
+      - name: Unit tests
+        run: ctest --test-dir build/sanitize --output-on-failure --no-tests=error -L unit
+      - name: Duel and HUD regressions
+        run: ctest --test-dir build/sanitize --output-on-failure --no-tests=error -R "^(lap_and_finish|starting_grid|race_hud_placement|mod_asset_fallback)$"
       # Runtime tests consume the legally supplied PAL disc and run in the
       # pre-release checkout; public CI deliberately has no game data.
