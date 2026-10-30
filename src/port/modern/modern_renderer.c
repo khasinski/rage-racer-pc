@@ -369,10 +369,8 @@ static int ModernEnsureResources(void) {
 
     scale = s_config.modernInternalScale;
     if (scale < 0.5f) scale = 0.5f;
-    /* 16:9 widens the field of view; the vertical view is unchanged. */
-    s_logicalW = s_config.modernAspect == RAGE_MODERN_ASPECT_16_9
-                     ? 320.0f * (16.0f / 9.0f) / (4.0f / 3.0f)
-                     : 320.0f;
+    /* Widen the field of view while preserving vertical framing. */
+    s_logicalW = PortAspectLogicalWidth(s_config.modernAspect);
     s_overscanX = (s_logicalW - 320.0f) * 0.5f;
     s_targetW = (int)(s_logicalW * scale + 0.5f) & ~1;
     s_targetH = (int)(240.0f * scale + 0.5f) & ~1;
@@ -1960,12 +1958,10 @@ int ModernCaptureFrame(const char *path) {
 }
 
 int ModernCullMarginX(void) {
-    if (!ModernPresentationActive() || s_config.modernAspect != RAGE_MODERN_ASPECT_16_9) {
-        return 0;
-    }
-    /* Half the widened logical width, rounded up: 320*(16/9)/(4/3) adds
-     * ~53.3 columns per side. */
-    return 54;
+    float margin;
+    if (!ModernPresentationActive()) return 0;
+    margin = (PortAspectLogicalWidth(s_config.modernAspect) - 320.0f) * 0.5f;
+    return (int)ceilf(margin);
 }
 
 int ModernDepthLimit(void) {

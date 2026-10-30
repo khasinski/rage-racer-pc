@@ -17,11 +17,23 @@ set(scale 3)
 set(aspect 16:9)
 set(width 1280)
 set(height 720)
+set(course 1)
+set(class 4)
+set(car 9)
+set(series extra-gp)
+set(standard ntsc)
+set(captureArgs --set diagnostics.modern_dump_frame=620)
 if(MODE STREQUAL "high_fps")
     set(fps 120)
     set(scale 4.5)
     set(width 1920)
     set(height 1080)
+elseif(MODE STREQUAL "ultrawide")
+    set(aspect 21:9)
+    set(width 1680)
+elseif(MODE STREQUAL "super_ultrawide")
+    set(aspect 32:9)
+    set(width 2560)
 elseif(MODE STREQUAL "standard")
     set(aspect 4:3)
     set(scale 1)
@@ -29,6 +41,15 @@ elseif(MODE STREQUAL "standard")
     set(height 240)
 elseif(NOT MODE STREQUAL "wide")
     message(FATAL_ERROR "Unknown MODE ${MODE}")
+endif()
+if(MODE STREQUAL "ultrawide" OR MODE STREQUAL "super_ultrawide")
+    set(course 0)
+    set(class 0)
+    set(car 3)
+    set(series grand-prix)
+    set(standard auto)
+    set(captureArgs --set diagnostics.modern_dump_scene_id=12
+        --set diagnostics.modern_dump_timer=200)
 endif()
 file(MAKE_DIRECTORY "${OUTPUT}")
 set(log "${OUTPUT}/runtime.log")
@@ -42,13 +63,13 @@ execute_process(COMMAND "${GAME}" --config "${SOURCE}/rage-port.ini"
     --set video.classic_enhancements=true --set "video.fps=${fps}"
     --set "video.internal_scale=${scale}" --set "video.aspect=${aspect}"
     --set video.post=none --set video.grading=off --set video.texture_filter=nearest
-    --set race.course=1 --set race.class=4 --set race.car=9
-    --set race.series=extra-gp --set timing.standard=ntsc
+    --set "race.course=${course}" --set "race.class=${class}" --set "race.car=${car}"
+    --set "race.series=${series}" --set "timing.standard=${standard}"
     --set autopilot.enabled=true --set autopilot.speed=4000
     --set stop.scene=12 --set stop.timer=450
     --set diagnostics.classic_trace=true --set diagnostics.scene_trace=1
     --set diagnostics.classic_dump_midpoint=true
-    --set "diagnostics.modern_dump=${image}" --set diagnostics.modern_dump_frame=620
+    --set "diagnostics.modern_dump=${image}" ${captureArgs}
     --set diagnostics.modern_dump_offscreen=true --set "diagnostics.log=${log}"
     WORKING_DIRECTORY "${SOURCE}" RESULT_VARIABLE result
     OUTPUT_FILE "${OUTPUT}/stdout.log" ERROR_FILE "${OUTPUT}/stderr.log" TIMEOUT 90)

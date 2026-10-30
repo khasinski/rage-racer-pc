@@ -55,3 +55,5 @@ test('configuration retains unrelated settings and updates duplicate known keys'
  assert.match(result,/# keep this/);assert.match(result,/unknown=retain/);assert.match(result,/thing=yes/);assert.match(result,/\[hud\]\nanchor = edges/);
  assert.throws(()=>patchIni('',{'disc.image':'a\nb'}));
 });
+
+for(const aspect of ['21:9','32:9'])test('accepts '+aspect+' game aspect',()=>{assert.doesNotThrow(()=>validate({'video.aspect':aspect}));});

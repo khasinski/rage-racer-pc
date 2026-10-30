@@ -15,8 +15,24 @@ typedef enum RageRendererKind {
 typedef enum RageModernAspect {
     RAGE_MODERN_ASPECT_AUTO = 0,
     RAGE_MODERN_ASPECT_4_3 = 1,
-    RAGE_MODERN_ASPECT_16_9 = 2
+    RAGE_MODERN_ASPECT_16_9 = 2,
+    RAGE_MODERN_ASPECT_21_9 = 3,
+    RAGE_MODERN_ASPECT_32_9 = 4
 } RageModernAspect;
+
+/* Keep vertical framing and authored 320x240 coordinates unchanged. */
+static inline float PortAspectLogicalWidth(RageModernAspect aspect) {
+    switch (aspect) {
+    case RAGE_MODERN_ASPECT_16_9: return 320.0f * 4.0f / 3.0f;
+    case RAGE_MODERN_ASPECT_21_9: return 560.0f;
+    case RAGE_MODERN_ASPECT_32_9: return 320.0f * 8.0f / 3.0f;
+    default: return 320.0f;
+    }
+}
+
+static inline int PortAspectHudMargin(RageModernAspect aspect) {
+    return (int)((PortAspectLogicalWidth(aspect) - 320.0f) * 0.5f);
+}
 
 /* modernFps: RAGE_MODERN_FPS_LOGIC renders one frame per logic frame,
  * RAGE_MODERN_FPS_VSYNC follows the display, a positive value is an

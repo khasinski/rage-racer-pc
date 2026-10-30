@@ -39,6 +39,13 @@ int main(void) {
     EXPECT_EQ(0, HudShowLapTimes());
     EXPECT_EQ(1, HudShowTimeLimit());
 
+    config.modernAspect = RAGE_MODERN_ASPECT_21_9;
+    EXPECT_EQ(-112, HudLeftX(8));
+    EXPECT_EQ(370, HudRightX(250));
+    config.modernAspect = RAGE_MODERN_ASPECT_32_9;
+    EXPECT_EQ(-258, HudLeftX(8));
+    EXPECT_EQ(516, HudRightX(250));
+    config.modernAspect = RAGE_MODERN_ASPECT_16_9;
     config.renderer = RAGE_RENDERER_CLASSIC;
     EXPECT_EQ(-45, HudLeftX(8));
     EXPECT_EQ(303, HudRightX(250));

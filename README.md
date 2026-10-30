@@ -177,7 +177,7 @@ an alternative file and `--set section.key=value` for an individual override.
 
 There are exactly two renderer modes. `classic` presents the faithful
 PS1-compatible output. `modern` presents native `RenderWorld` geometry with a
-normal depth buffer, configurable internal scale, optional 16:9 presentation,
+normal depth buffer, configurable internal scale, optional 16:9, 21:9 or 32:9 presentation,
 an interpolated frame rate and FXAA. It never falls back to captured PS1 3D.
 The supplied file defaults to `modern`:
 
@@ -200,7 +200,7 @@ Video settings:
 |---|---|
 | `renderer` | `classic`, `modern` |
 | `internal_scale` | `0.5` to `16` |
-| `aspect` | `auto`, `4:3`, `16:9` |
+| `aspect` | `auto` (4:3), `4:3`, `16:9`, `21:9`, `32:9` |
 | `fps` | `logic`, `vsync`, or an integer from `1` to `1000` |
 | `draw_distance` | `0` to `16` |
 | `texture_filter` | `nearest`, `linear` |
@@ -298,7 +298,7 @@ percent. The choice is saved next to the remembered disc path. The other
 On a wheel with no constant-force support, and on macOS where most rims have
 no force-feedback driver, the effect stays off and the race runs as before.
 
-In modern or enhanced classic 16:9, `[hud] anchor = edges` moves the corner HUD into the added
+In modern or enhanced classic widescreen, `[hud] anchor = edges` moves the corner HUD into the added
 widescreen area; use `center` for the retail 4:3 positions. Set
 `show_lap_times` or `show_time_limit` to `false` to hide those race displays.
 

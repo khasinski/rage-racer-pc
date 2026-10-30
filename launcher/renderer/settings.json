@@ -38,7 +38,7 @@
     "options": [
       [
         "auto",
-        "Match window"
+        "Original 4:3 (auto)"
       ],
       [
         "4:3",
@@ -47,6 +47,14 @@
       [
         "16:9",
         "Widescreen 16:9"
+      ],
+      [
+        "21:9",
+        "Ultrawide 21:9"
+      ],
+      [
+        "32:9",
+        "Super ultrawide 32:9"
       ]
     ]
   },

@@ -65,6 +65,14 @@ static int ApplySetting(RagePortConfig *config, const char *name,
             config->modernAspect = RAGE_MODERN_ASPECT_4_3;
             return 1;
         }
+        if (strcmp(value, "21:9") == 0) {
+            config->modernAspect = RAGE_MODERN_ASPECT_21_9;
+            return 1;
+        }
+        if (strcmp(value, "32:9") == 0) {
+            config->modernAspect = RAGE_MODERN_ASPECT_32_9;
+            return 1;
+        }
         if (strcmp(value, "16:9") == 0) {
             config->modernAspect = RAGE_MODERN_ASPECT_16_9;
             return 1;

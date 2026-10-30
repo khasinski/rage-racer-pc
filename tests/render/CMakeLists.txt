@@ -2007,7 +2007,7 @@ add_test(NAME vram_sample_mask COMMAND vram_sample_mask_tests)
 set_tests_properties(vram_sample_mask PROPERTIES LABELS unit)
 
 if(TARGET rage-racer)
-    foreach(mode standard wide high_fps)
+    foreach(mode standard wide high_fps ultrawide super_ultrawide)
         add_test(NAME classic_presentation_${mode}
             COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer>
                 -DSOURCE=${CMAKE_SOURCE_DIR}
@@ -2053,3 +2053,12 @@ target_compile_definitions(menu_label_font_tests PRIVATE __psyz=1)
 target_compile_options(menu_label_font_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME menu_label_font COMMAND menu_label_font_tests)
 set_tests_properties(menu_label_font PROPERTIES LABELS unit TIMEOUT 30)
+
+if(TARGET rage-racer-smoke)
+    add_test(NAME modern_ultrawide COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT=${CMAKE_BINARY_DIR}/ultrawide -DDISC=${RAGE_RUNTIME_DISC}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_ultrawide.cmake)
+    set_tests_properties(modern_ultrawide PROPERTIES LABELS e2e TIMEOUT 250
+        RESOURCE_LOCK rage_gpu SKIP_REGULAR_EXPRESSION "SKIP:")
+endif()

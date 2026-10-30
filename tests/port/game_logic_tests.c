@@ -321,6 +321,17 @@ static void test_port_config(void) {
             PortConfigApplyRuntime(&config);
             EXPECT_EQ(RAGE_RENDERER_CLASSIC, config.renderer);
         }
+        {
+            const char *values[] = {"video.aspect=21:9", "video.aspect=32:9"};
+            const RageModernAspect expected[] = {
+                RAGE_MODERN_ASPECT_21_9, RAGE_MODERN_ASPECT_32_9};
+            for (int i = 0; i < 2; ++i) {
+                char *args[] = {"rage-test", "--config", path, "--set", (char *)values[i]};
+                EXPECT_EQ(1, RuntimeConfigInit(5, args));
+                PortConfigApplyRuntime(&config);
+                EXPECT_EQ(expected[i], config.modernAspect);
+            }
+        }
         unlink(path);
     }
     {

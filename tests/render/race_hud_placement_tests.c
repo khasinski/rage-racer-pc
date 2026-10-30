@@ -45,6 +45,7 @@ enum {
 static RagePortConfig s_config;
 static const char *s_anchor = "edges";
 static int s_failures;
+static int s_expectedMargin = HUD_MARGIN;
 
 const RagePortConfig *PortActiveConfig(void) { return &s_config; }
 int ModernIsEnabled(void) { return 1; }
@@ -272,14 +273,14 @@ static void DrawWholeHud(s32 mode) {
 /* Which edge an authored coordinate belongs to, and so how far widening the
  * picture is allowed to move it. */
 static int ExpectedShift(int authoredX) {
-    if (authoredX < HUD_EDGE_BAND) return -HUD_MARGIN;
-    if (authoredX >= HUD_CANVAS - HUD_EDGE_BAND) return HUD_MARGIN;
+    if (authoredX < HUD_EDGE_BAND) return -s_expectedMargin;
+    if (authoredX >= HUD_CANVAS - HUD_EDGE_BAND) return s_expectedMargin;
     return 0;
 }
 
 static void Fail(const char *what, int index, int narrow, int wide,
                  int expected) {
-    printf("FAIL %s %d: 4:3 x=%d, 16:9 x=%d, moved %d, expected %d\n", what,
+    printf("FAIL %s %d: 4:3 x=%d, wide x=%d, moved %d, expected %d\n", what,
            index, narrow, wide, wide - narrow, expected);
     s_failures++;
 }
@@ -304,7 +305,8 @@ static void CollectSprites(s32 mode, int *out) {
                            : frame->layout.raceHud.labels[row - 6].x0;
 }
 
-static void CheckMode(s32 mode) {
+static void CheckMode(s32 mode, RageModernAspect aspect, int margin) {
+    s_expectedMargin = margin;
     const char *name = mode != 0 ? "grand prix" : "time trial";
     int narrowSprites[12], wideSprites[12];
     Placement narrowTimes[MAX_PLACEMENTS];
@@ -317,14 +319,14 @@ static void CheckMode(s32 mode) {
     memcpy(narrowTimes, s_placements, sizeof(narrowTimes));
     narrowCount = s_placementCount;
 
-    s_config.modernAspect = RAGE_MODERN_ASPECT_16_9;
+    s_config.modernAspect = aspect;
     DrawWholeHud(mode);
     CollectSprites(mode, wideSprites);
 
     CheckSprites(mode, narrowSprites, wideSprites);
 
     if (s_placementCount != narrowCount) {
-        printf("FAIL %s: %d times drawn at 4:3 but %d at 16:9\n", name,
+        printf("FAIL %s: %d times drawn at 4:3 but %d wide\n", name,
                narrowCount, s_placementCount);
         s_failures++;
         return;
@@ -471,8 +473,12 @@ int main(void) {
     CheckStaticLabelOwnership();
     CheckLapColumnCapacity();
     CheckTimeLimitWarningBoundary();
-    CheckMode(0);
-    CheckMode(1);
+    CheckMode(0, RAGE_MODERN_ASPECT_16_9, 53);
+    CheckMode(1, RAGE_MODERN_ASPECT_16_9, 53);
+    CheckMode(0, RAGE_MODERN_ASPECT_21_9, 120);
+    CheckMode(1, RAGE_MODERN_ASPECT_21_9, 120);
+    CheckMode(0, RAGE_MODERN_ASPECT_32_9, 266);
+    CheckMode(1, RAGE_MODERN_ASPECT_32_9, 266);
     CheckSplitDeltaIsAMagnitude();
     CheckSplitSignStaysWithItsTime();
     CheckRacePositionDigits();

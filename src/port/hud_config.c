@@ -5,8 +5,6 @@
 #include "modern/modern_renderer.h"
 #include "runtime_config.h"
 
-enum { RAGE_HUD_WIDESCREEN_MARGIN = 53 };
-
 static int s_initialized;
 static int s_anchorEdges;
 static int s_showLapTimes;
@@ -26,10 +24,8 @@ static void HudConfigInit(void) {
 
 static int HudEdgeOffset(void) {
     HudConfigInit();
-    if (!s_anchorEdges || !ModernPresentationActive() ||
-        PortActiveConfig()->modernAspect != RAGE_MODERN_ASPECT_16_9)
-        return 0;
-    return RAGE_HUD_WIDESCREEN_MARGIN;
+    if (!s_anchorEdges || !ModernPresentationActive()) return 0;
+    return PortAspectHudMargin(PortActiveConfig()->modernAspect);
 }
 
 int HudLeftX(int x) { return x - HudEdgeOffset(); }
