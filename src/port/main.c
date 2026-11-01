@@ -17,6 +17,7 @@
 #include "car_catalog_profile.h"
 #include "mod_assets.h"
 #include "diagnostic_log.h"
+#include "disc_picker.h"
 #include "host_storage.h"
 #include "host_disc.h"
 #include "runtime_config.h"
@@ -51,6 +52,24 @@ static void LoadInputConfig(RageInputConfig *config, const char *argv0) {
         InputConfigLoad(config, path);
 }
 
+static int ReportStartupError(const char *logPath, const char *message) {
+    char dialogMessage[2048];
+    const char *detail =
+        (message != NULL && message[0] != '\0')
+            ? message
+            : "Rage Racer could not finish starting up.";
+
+    fprintf(stderr, "rage-port: startup error: %s\n", detail);
+    if (logPath != NULL && logPath[0] != '\0') {
+        snprintf(dialogMessage, sizeof(dialogMessage),
+                 "%s\n\nDiagnostic log:\n%s", detail, logPath);
+    } else {
+        snprintf(dialogMessage, sizeof(dialogMessage), "%s", detail);
+    }
+    HostShowErrorDialog("Rage Racer — Startup Error", dialogMessage);
+    return EXIT_FAILURE;
+}
+
 static ArchiveDumpResult DumpRequestedArchive(void) {
     const char *path = RuntimeConfigGet("tools.dump_archive");
     char fingerprint[72];
@@ -59,6 +78,7 @@ static ArchiveDumpResult DumpRequestedArchive(void) {
         return ARCHIVE_DUMP_NOT_REQUESTED;
     }
     if (!HostInitDisc()) {
+        fprintf(stderr, "rage-port: %s\n", HostDiscLastError());
         return ARCHIVE_DUMP_FAILED;
     }
     if (!HostDumpArchive(path,fingerprint)) {
@@ -105,7 +125,10 @@ int main(int argc, char **argv) {
 #endif
     if (!HostInitStorage()) {
         fprintf(stderr, "failed to initialize user save storage\n");
-        return EXIT_FAILURE;
+        return ReportStartupError(
+            logPath,
+            "Failed to initialize user save storage.\n"
+            "Check write permissions for your user profile directory.");
     }
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     PortConfigDefaults(&portConfig);
@@ -134,7 +157,8 @@ int main(int argc, char **argv) {
     }
     if (!HostInitDisc()) {
         fprintf(stderr, "failed to initialize disc image\n");
-        return EXIT_FAILURE;
+        if (HostDiscUserCancelled()) return EXIT_FAILURE;
+        return ReportStartupError(logPath, HostDiscLastError());
     }
     if(ModAssetsNeedsSource()) {
         char fingerprint[72];
@@ -148,11 +172,19 @@ int main(int argc, char **argv) {
                    ? EXIT_SUCCESS : EXIT_FAILURE;
     TimingInit();
     if (!NativeAssetImporterInit() || !ModernInit(&portConfig))
-        return EXIT_FAILURE;
+        return ReportStartupError(
+            logPath,
+            "Failed to initialize the modern renderer or its native disc "
+            "assets.\nSelect a valid retail Rage Racer (PAL, NTSC-U, or "
+            "NTSC-J) CUE, Track 01 BIN, or CHD image.");
     PortGraphicsOverlayInstall();
     if (!InitNativeGameData()) {
         fprintf(stderr, "failed to initialize retail game data\n");
-        return EXIT_FAILURE;
+        ModernShutdown();
+        return ReportStartupError(
+            logPath,
+            "Failed to initialize retail game data from RAGE.BIN.\n"
+            "The selected disc image may be corrupted or incomplete.");
     }
     ContentOptionsApply();
     g_DuelConfigEnabled = RuntimeConfigEnabled("duel.enabled");
@@ -191,7 +223,11 @@ int main(int argc, char **argv) {
     if (!MenuMusicPrepare()) {
         Psyz_AudioDestroy();
         ModernShutdown();
-        return EXIT_FAILURE;
+        return ReportStartupError(
+            logPath,
+            "Failed to generate or load menu music audio.\n"
+            "Check available disk space and write permissions in your user "
+            "configuration directory.");
     }
     MainLoop();
     Psyz_PcmMusicUnload();

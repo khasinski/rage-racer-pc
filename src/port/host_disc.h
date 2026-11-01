@@ -4,6 +4,8 @@
 #include <stddef.h>
 
 int HostInitDisc(void);
+const char *HostDiscLastError(void);
+int HostDiscUserCancelled(void);
 const char *HostDiscRegion(void);
 int HostDumpArchive(const char *path,char fingerprint[72]);
 int HostDiscFingerprint(char fingerprint[72]);
