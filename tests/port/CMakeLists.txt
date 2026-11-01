@@ -135,6 +135,36 @@ endif()
 add_test(NAME disc_discovery COMMAND disc_discovery_tests)
 set_tests_properties(disc_discovery PROPERTIES LABELS functional)
 
+add_executable(host_disc_error_tests
+    host_disc_error_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/host_disc.c
+    ${CMAKE_SOURCE_DIR}/src/port/archive_index.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_cue.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_discovery.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_iso.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_raw_file.c
+    ${CMAKE_SOURCE_DIR}/src/port/disc_stream_table.c
+    ${CMAKE_SOURCE_DIR}/src/port/platform_paths.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_config.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_parse.c)
+target_include_directories(host_disc_error_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_link_libraries(host_disc_error_tests PRIVATE psyz rage-content)
+if(APPLE)
+    target_link_libraries(host_disc_error_tests PRIVATE "-framework CoreFoundation")
+endif()
+if(MSVC)
+    target_compile_options(host_disc_error_tests PRIVATE /W4 /WX)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
+    target_compile_options(host_disc_error_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME host_disc_error COMMAND host_disc_error_tests)
+set_tests_properties(host_disc_error PROPERTIES LABELS functional)
+
 add_executable(chd_track_layout_tests
     chd_track_layout_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/chd_track_layout.c)
