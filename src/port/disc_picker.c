@@ -89,6 +89,13 @@ void HostShowErrorDialog(const char *title, const char *message) {
             : "An unexpected startup error occurred.";
 
     if (HostGuiDialogsSuppressed()) return;
+    /* A startup error can surface before any video subsystem init; without
+     * it SDL_ShowSimpleMessageBox fails and the player sees nothing. */
+    if (!SDL_WasInit(SDL_INIT_VIDEO) && !SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+        fprintf(stderr, "rage-port: error dialog unavailable: %s\n",
+                SDL_GetError());
+        return;
+    }
     if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, safeTitle, safeMessage,
                                   NULL)) {
         fprintf(stderr, "rage-port: error dialog failed: %s\n", SDL_GetError());

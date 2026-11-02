@@ -19,6 +19,12 @@ enum {
 
 static int s_multiplier;
 static int s_multiplierKnown;
+/* A cadence switch requested from the overlay lands here and only takes
+ * effect when SimRaceFrameBegin opens a fresh retail pair; changing it
+ * between the two fields of a pair would leave the first field's half
+ * steps without their second half. */
+static int s_pendingMultiplier;
+static int s_pendingKnown;
 static int s_scaled;
 static int s_substep;
 static unsigned s_parity;
@@ -123,17 +129,38 @@ int SimTickMultiplier(void) {
 }
 
 void SimTickSetMultiplier(int multiplier) {
+    int clamped = multiplier >= DOUBLE_MULTIPLIER ? DOUBLE_MULTIPLIER
+                                                  : RETAIL_MULTIPLIER;
+
     s_multiplierKnown = 1;
-    s_multiplier = multiplier >= DOUBLE_MULTIPLIER ? DOUBLE_MULTIPLIER
-                                                   : RETAIL_MULTIPLIER;
-    s_running = 0;
-    s_scaled = 0;
-    s_substep = 0;
-    s_parity = 0;
-    s_carriedPressed = 0;
+    if (!s_running || clamped == s_multiplier) {
+        s_multiplier = clamped;
+        s_pendingKnown = 0;
+        return;
+    }
+    s_pendingMultiplier = clamped;
+    s_pendingKnown = 1;
+}
+
+static void SimAdoptPendingMultiplier(void) {
+    if (s_pendingKnown) {
+        s_multiplier = s_pendingMultiplier;
+        s_pendingKnown = 0;
+    }
 }
 
 void SimRaceFrameBegin(int live) {
+    if (!live) {
+        SimAdoptPendingMultiplier();
+    } else if (s_pendingKnown && (!s_running || s_substep == 1)) {
+        /* Between retail steps: switch now, the next live frame opens a
+         * fresh pair at the new cadence. */
+        SimAdoptPendingMultiplier();
+        s_running = 0;
+        s_substep = 0;
+        s_parity = 0;
+        s_carriedPressed = 0;
+    }
     if (SimTickMultiplier() != DOUBLE_MULTIPLIER || !live) {
         s_scaled = 0;
         s_substep = 0;

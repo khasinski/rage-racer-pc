@@ -35,6 +35,7 @@ static int ExpandAtlas(
     const RageSkyPanoramaLayout *layout, int tileColumns) {
     enum { BYTES = 4 };
     uint32_t tileWidth;
+    uint32_t tileRows;
     size_t stripBytes;
     int panoramaRow;
     int column;
@@ -54,11 +55,22 @@ static int ExpandAtlas(
     if (destinationSize < stripBytes * 2u || sourceSize < stripBytes) {
         return 0;
     }
+    tileRows = (uint32_t)(sourceSize /
+                          ((size_t)tileColumns * (size_t)tileWidth *
+                           (size_t)sourceHeight * BYTES));
     /* Validate everything before touching output, including externally supplied
-     * layouts from future replay/import consumers. */
+     * layouts from future replay/import consumers. Tiles must also index the
+     * source atlas this call was sized for, or the per-row memcpy below would
+     * read past the source buffer. */
     for (panoramaRow = 0; panoramaRow < RAGE_SKY_PANORAMA_ROWS; ++panoramaRow)
-        for (column = 0; column < 8; ++column)
-            if (layout->tiles[panoramaRow][column] >= RAGE_SKY_TILE_COUNT) return 0;
+        for (column = 0; column < 8; ++column) {
+            int tile = layout->tiles[panoramaRow][column];
+
+            if (tile < 0 || tile >= RAGE_SKY_TILE_COUNT ||
+                (uint32_t)(tile / tileColumns) >= tileRows) {
+                return 0;
+            }
+        }
     for (panoramaRow = 0; panoramaRow < RAGE_SKY_PANORAMA_ROWS;
          panoramaRow++) {
         for (column = 0; column < 8; column++) {

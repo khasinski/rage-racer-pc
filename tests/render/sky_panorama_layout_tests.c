@@ -122,6 +122,19 @@ int main(void) {
         assert(!RageSkyExpandTexturePageLayout(pageExpanded, sizeof(pageExpanded),
                                                page, sizeof(page), &layout));
         for (size_t i = 0; i < sizeof(pageExpanded); ++i) assert(pageExpanded[i] == 0xA5);
+
+        /* A source buffer shorter than one full atlas row cannot back every
+         * tile row the layout may name: the copy must refuse instead of
+         * reading past the source. */
+        layout.tiles[1][7] = 4; /* second atlas row, valid for a full source */
+        assert(!RageSkyExpandTexturePageLayout(pageExpanded, sizeof(pageExpanded),
+                                               page, 512u * 128u * 4u - 1,
+                                               &layout));
+        assert(!RageSkyExpandTexturePageLayout(pageExpanded, sizeof(pageExpanded),
+                                               page,
+                                               512u * 127u * 4u + 256u * 4u,
+                                               &layout));
+        for (size_t i = 0; i < sizeof(pageExpanded); ++i) assert(pageExpanded[i] == 0xA5);
     }
     return 0;
 }
