@@ -240,7 +240,7 @@ speed_drag_divisor = 2630
 base_steering_grip = 250
 torque_scale = [62, 100, 109, 100, 101, 100]
 # Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [408, 544, 465, 621, 557, 743, 673, 898, 826, 1102, 1008, 1345]
+shift_points = [0, 555, 502, 694, 650, 847, 786, 1037, 950, 1302, 1193, 1345]
 
 [[cars]]
 id = "car_02_g1"
@@ -272,7 +272,7 @@ speed_drag_divisor = 2400
 base_steering_grip = 240
 torque_scale = [62, 100, 109, 100, 101, 100]
 # Reconstructed by rage-port from the peak-torque RPM and gear ratios; values are internal speed thresholds.
-shift_points = [477, 637, 567, 756, 702, 937, 854, 1139, 1005, 1341, 1196, 1595]
+shift_points = [0, 610, 561, 795, 712, 1030, 971, 1250, 1164, 1520, 1415, 1595]
 
 [[cars]]
 id = "car_03_g0"
