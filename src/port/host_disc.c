@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #ifdef _WIN32
@@ -60,6 +61,28 @@ static RageHostDisc g_RageHostDisc;
  * Installed/retired under the audio lock; only the CD backend borrows it. */
 static DiscRawFile s_BinAudio;
 static const char *s_DiscRegion = "unknown";
+static char s_LastDiscError[1024];
+static int s_UserCancelled;
+
+static void HostSetDiscError(const char *format, ...) {
+    va_list args;
+
+    if (format == NULL) {
+        s_LastDiscError[0] = '\0';
+        return;
+    }
+    va_start(args, format);
+    vsnprintf(s_LastDiscError, sizeof(s_LastDiscError), format, args);
+    va_end(args);
+}
+
+const char *HostDiscLastError(void) {
+    return s_LastDiscError[0] != '\0'
+               ? s_LastDiscError
+               : "Could not initialize the Rage Racer disc image.";
+}
+
+int HostDiscUserCancelled(void) { return s_UserCancelled; }
 
 static void HostResetCdBackend(void) {
     Psyz_AudioLock();
@@ -140,13 +163,6 @@ static void HostSaveDiscPath(const char *discPath) {
         DiscWriteSavedPath(path, discPath);
 }
 
-/* The picker asks the desktop for a path; whether it names a disc this build
- * can read is decided here. */
-static int HostChooseDisc(char *path, size_t size) {
-    return HostShowDiscPicker(path, size) && DiscPathIsSupportedImage(path) &&
-           access(path, R_OK) == 0;
-}
-
 static int HostReadRawSector(void *context, unsigned int sector,
                              unsigned char *raw) {
     DiscRawFile disc;
@@ -171,14 +187,31 @@ static int HostReadUserSector(unsigned int sector, unsigned char *user) {
     return DiscIsoReadUserSector(&reader, sector, user);
 }
 
-static int HostFindArchive(void) {
+static int HostFindArchive(const char *displayPath) {
     DiscIsoReader reader;
     DiscIsoFile archive;
     DiscIsoFile stream;
+    const char *shown = (displayPath != NULL && displayPath[0] != '\0')
+                            ? displayPath
+                            : "(unknown path)";
 
-    if (!DiscIsoOpen(&reader, HostReadRawSector, NULL) ||
-        !DiscIsoFindFile(&reader, "RAGE.BIN", &archive) ||
+    if (!DiscIsoOpen(&reader, HostReadRawSector, NULL)) {
+        HostSetDiscError(
+            "The selected file does not contain a valid PlayStation "
+            "ISO-9660 data track (raw 2352-byte sectors):\n%s\n\n"
+            "Select a Rage Racer .cue, Track 01 .bin, or .chd disc image "
+            "(not an audio track .bin, extracted RAGE.BIN, or 2048-byte .iso).",
+            shown);
+        return 0;
+    }
+    if (!DiscIsoFindFile(&reader, "RAGE.BIN", &archive) ||
         !DiscIsoFindFile(&reader, "RAGE.STR", &stream)) {
+        HostSetDiscError(
+            "The selected PlayStation disc image is not Rage Racer "
+            "(missing RAGE.BIN / RAGE.STR on disc):\n%s\n\n"
+            "Please select a retail Rage Racer (PAL, NTSC-U, or NTSC-J) "
+            "disc image.",
+            shown);
         return 0;
     }
     g_RageHostDisc.user_offset = reader.userOffset;
@@ -322,15 +355,23 @@ static int HostOpenDataTrack(const char *path) {
     int written;
 
     g_RageHostDisc.file = fopen(path, "rb");
-    if (g_RageHostDisc.file != NULL && HostFindArchive()) {
+    if (g_RageHostDisc.file == NULL) {
+        HostSetDiscError(
+            "Cannot open the disc data track file:\n%s\n\n"
+            "Check that the file exists and is readable.",
+            path != NULL ? path : "(null)");
+        return 0;
+    }
+    if (HostFindArchive(path)) {
         written = snprintf(g_RageHostDisc.source_path,
                            sizeof(g_RageHostDisc.source_path), "%s", path);
         if (written >= 0 &&
             (size_t)written < sizeof(g_RageHostDisc.source_path)) {
             return 1;
         }
+        HostSetDiscError("Disc image path is too long:\n%s", path);
     }
-    if (g_RageHostDisc.file != NULL) fclose(g_RageHostDisc.file);
+    fclose(g_RageHostDisc.file);
     g_RageHostDisc.file = NULL;
     return 0;
 }
@@ -341,13 +382,35 @@ static int HostOpenDiscImage(const char *discPath) {
     char dataTrackPath[PATH_MAX];
 
     HostResetCdBackend();
+    if (discPath == NULL || discPath[0] == '\0') {
+        HostSetDiscError("No disc image path was specified.");
+        return 0;
+    }
+    if (!DiscPathIsSupportedImage(discPath)) {
+        HostSetDiscError(
+            "Unsupported disc image file extension:\n%s\n\n"
+            "Select a Rage Racer .cue, Track 01 .bin, or .chd file.",
+            discPath);
+        return 0;
+    }
+    if (access(discPath, R_OK) != 0) {
+        HostSetDiscError("Cannot find or read the selected disc image:\n%s",
+                         discPath);
+        return 0;
+    }
     if (DiscPathIsChd(discPath)) {
         int written;
 
-        if (!ChdOpen(discPath)) return 0;
+        if (!ChdOpen(discPath)) {
+            HostSetDiscError(
+                "Cannot open CHD disc image (file may be corrupted or use an "
+                "unsupported CHD format):\n%s",
+                discPath);
+            return 0;
+        }
         g_RageHostDisc.chd = 1;
         g_RageHostDisc.track_offset = 0;
-        if (!HostFindArchive()) {
+        if (!HostFindArchive(discPath)) {
             HostResetCdBackend();
             return 0;
         }
@@ -358,6 +421,7 @@ static int HostOpenDiscImage(const char *discPath) {
             (size_t)written < sizeof(g_RageHostDisc.source_path)) {
             return 1;
         }
+        HostSetDiscError("Disc image path is too long:\n%s", discPath);
         HostResetCdBackend();
         return 0;
     }
@@ -365,23 +429,52 @@ static int HostOpenDiscImage(const char *discPath) {
         int written = snprintf(dataTrackPath, sizeof(dataTrackPath), "%s",
                                discPath);
         if (written < 0 || (size_t)written >= sizeof(dataTrackPath)) {
+            HostSetDiscError("Disc image path is too long:\n%s", discPath);
             return 0;
         }
         g_RageHostDisc.track_offset = 0;
         if (!HostOpenDataTrack(dataTrackPath)) return 0;
         if (HostMountBinAudio(dataTrackPath)) return 1;
+        HostSetDiscError(
+            "The selected .bin file size is not a multiple of 2352-byte raw "
+            "CD sectors:\n%s",
+            dataTrackPath);
         fclose(g_RageHostDisc.file);
         g_RageHostDisc.file = NULL;
         HostResetCdBackend();
         return 0;
     }
-    if (!DiscPathIsCue(discPath) || Psyz_CdSetDiskPath(discPath) != 0) {
+    if (!DiscPathIsCue(discPath)) {
+        HostSetDiscError(
+            "Unsupported disc image format:\n%s\n\n"
+            "Select a Rage Racer .cue, Track 01 .bin, or .chd file.",
+            discPath);
         return 0;
     }
     if (!DiscCueResolveDataTrack(discPath, dataTrackPath,
                                  sizeof(dataTrackPath),
-                                 &g_RageHostDisc.track_offset) ||
-        !HostOpenDataTrack(dataTrackPath)) {
+                                 &g_RageHostDisc.track_offset)) {
+        HostSetDiscError(
+            "The selected .cue file does not declare a raw 2352-byte data "
+            "track (MODE1/2352 or MODE2/2352):\n%s",
+            discPath);
+        return 0;
+    }
+    if (access(dataTrackPath, R_OK) != 0) {
+        HostSetDiscError(
+            "The .cue file references a missing data track .bin file:\n%s\n\n"
+            "Keep the .cue and .bin files in the same folder and make sure "
+            "the FILE entry inside the .cue matches the .bin filename.",
+            dataTrackPath);
+        return 0;
+    }
+    if (Psyz_CdSetDiskPath(discPath) != 0) {
+        HostSetDiscError(
+            "Could not initialize CD tracks from the .cue file:\n%s",
+            discPath);
+        return 0;
+    }
+    if (!HostOpenDataTrack(dataTrackPath)) {
         HostResetCdBackend();
         return 0;
     }
@@ -390,6 +483,7 @@ static int HostOpenDiscImage(const char *discPath) {
 
 static int HostOpenDisc(const char *discPath) {
     if (!HostOpenDiscImage(discPath)) return 0;
+    HostSetDiscError(NULL);
     HostAdoptDiscStreamTable();
     return 1;
 }
@@ -475,6 +569,8 @@ int HostInitDisc(void) {
         configuredPath = RuntimeConfigGetForced("disc.cue");
 
     HostCloseDisc();
+    HostSetDiscError(NULL);
+    s_UserCancelled = 0;
     HostSeedStreamTable();
     /* The smoke executable characterizes renderer and game state without
      * bundling retail data.  The release executable never sets this flag.
@@ -484,13 +580,17 @@ int HostInitDisc(void) {
         const char *testPath = configuredPath;
         if (testPath == NULL || testPath[0] == '\0')
             testPath = "disc/PAL/Rage Racer (Europe)/Rage Racer (Europe).cue";
-        if (access(testPath, R_OK) != 0 || !HostOpenDisc(testPath))
+        if (access(testPath, R_OK) != 0 || !HostOpenDisc(testPath)) {
             fprintf(stderr, "rage-port: no test disc at %s; scenes that need "
                             "disc data will stay black\n", testPath);
+            HostSetDiscError(NULL);
+        }
         return 1;
     }
     if (configuredPath != NULL && configuredPath[0] != '\0') {
-        return HostOpenDisc(configuredPath);
+        if (HostOpenDisc(configuredPath)) return 1;
+        fprintf(stderr, "rage-port: %s\n", HostDiscLastError());
+        return 0;
     }
     /* Remembering the choice means an install that once worked never asks
      * again, so offer a way back to the picker. */
@@ -499,12 +599,19 @@ int HostInitDisc(void) {
      * track files move or get deleted on their own, and a cue that no longer
      * resolves has to send the player back to the picker rather than end the
      * session. */
-    if (!choose && HostLoadSavedDiscPath(discPath, sizeof(discPath)) &&
-        HostOpenDisc(discPath)) return 1;
+    if (!choose && HostLoadSavedDiscPath(discPath, sizeof(discPath))) {
+        if (HostOpenDisc(discPath)) return 1;
+        fprintf(stderr,
+                "rage-port: saved disc path unavailable (%s); falling back to "
+                "disc discovery/picker\n",
+                HostDiscLastError());
+        HostSetDiscError(NULL);
+    }
     if (!choose && HostOpenAdjacentDisc(discPath, sizeof(discPath))) {
         HostSaveDiscPath(discPath);
         return 1;
     }
+    HostSetDiscError(NULL);
 #ifdef __ANDROID__
     /* A desktop file dialog hands back a content URI. fopen cannot read it,
      * so the phone build only accepts a real file in app storage. */
@@ -514,10 +621,30 @@ int HostInitDisc(void) {
     }
     return 0;
 #endif
-    if (!HostChooseDisc(discPath, sizeof(discPath)) ||
-        !HostOpenDisc(discPath)) return 0;
-    HostSaveDiscPath(discPath);
-    return 1;
+    for (;;) {
+        int pick = HostShowDiscPicker(discPath, sizeof(discPath));
+        if (pick <= 0) {
+            if (pick == 0) {
+                s_UserCancelled = 1;
+                HostSetDiscError("Disc image selection was cancelled.");
+                fprintf(stderr, "rage-port: disc selection cancelled\n");
+            } else {
+                HostSetDiscError(
+                    "No Rage Racer disc image was found, and the file picker "
+                    "could not be opened.");
+                fprintf(stderr, "rage-port: %s\n", HostDiscLastError());
+            }
+            return 0;
+        }
+        if (HostOpenDisc(discPath)) {
+            HostSaveDiscPath(discPath);
+            return 1;
+        }
+        fprintf(stderr, "rage-port: rejected selected disc image: %s\n",
+                HostDiscLastError());
+        HostShowErrorDialog("Rage Racer — Invalid Disc Image",
+                            HostDiscLastError());
+    }
 }
 
 /* Write the whole RAGE.BIN out of the mounted disc, so the modding tools can

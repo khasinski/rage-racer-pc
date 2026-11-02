@@ -783,7 +783,16 @@ class LauncherService {
         const previousMods=this.state.mods;this.state.mods=this.state.mods.map(m=>({...m,enabled:false}));
         try{await this.persist();}catch(e){this.state.disc=previous;this.state.mods=previousMods;throw e;}
         return this.snapshot();
-      } catch(e) {await fs.rm(staging,{recursive:true,force:true});throw e;}
+      } catch(e) {
+        try {
+          if(/^rage-port: diagnostics go to /m.test(e?.message||'')){
+            const log=await fs.readFile(path.join(staging,'import.log'),'utf8');
+            const detail=log.split(/\r?\n/).filter(l=>l&&!l.startsWith('=== Rage Racer session')&&!l.startsWith('rage-port: diagnostic log=')&&!l.startsWith('rage-port: renderer=')).join('\n').trim();
+            if(detail)e=Error(detail);
+          }
+        } catch {}
+        await fs.rm(staging,{recursive:true,force:true});throw e;
+      }
     });
   }
   async saveSettings(values) {

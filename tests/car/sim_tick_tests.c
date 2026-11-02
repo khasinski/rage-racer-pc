@@ -221,6 +221,7 @@ static void TestBlendFields(void) {
 
 static void TestFrameSequence(void) {
     SimTickSetMultiplier(1);
+    SimRaceFrameBegin(0); /* settle any pending switch from earlier tests */
     BeginLiveFrame();
     EXPECT_EQ(0, SimRaceScaled());
     EXPECT_EQ(0, SimRaceSubstep());
@@ -253,6 +254,7 @@ static void TestPadEdges(void) {
     unsigned short pressed;
 
     SimTickSetMultiplier(2);
+    SimRaceFrameBegin(0); /* settle any pending switch from earlier tests */
     BeginLiveFrame();
     pressed = 0x0010;
     SimRaceCarryPadEdges(&pressed);
@@ -280,6 +282,7 @@ static void TestRetailPassThrough(void) {
 
     memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
     SimTickSetMultiplier(1);
+    SimRaceFrameBegin(0); /* settle any pending switch from earlier tests */
     BeginLiveFrame();
     reference = g_PlayerCar;
     RetailStep(&reference);
@@ -317,6 +320,7 @@ static void TestDoubleTracksRetail(void) {
     g_PlayerCar.verticalTargetY = 100;
     g_GripLossTimer = 400;
     SimTickSetMultiplier(2);
+    SimRaceFrameBegin(0); /* settle any pending switch from earlier tests */
     for (step = 0; step < 120; step++) {
         BeginLiveFrame();
         SimUpdatePlayerCar(&g_PlayerCar);
@@ -370,6 +374,7 @@ static void TestRivalsAndCamera(void) {
     g_Cars[1].activeFlag = -1;
     g_Cars[1].speed = 999;
     SimTickSetMultiplier(2);
+    SimRaceFrameBegin(0); /* settle any pending switch from earlier tests */
     for (step = 0; step < 40; step++) {
         BeginLiveFrame();
         SimUpdateRaceCars();
@@ -865,7 +870,43 @@ static void TestKnockbackRetriggerLandingAndShiftRpm(void) {
     EXPECT_EQ(9, g_PlayerCar.drive.clutch);
     EXPECT_EQ(9500, g_PlayerCar.drive.engineRpm);
 
-    s_CustomPlayerStep = NULL;
+}
+
+/* Switching the tick rate must not cut a retail pair in half: the change
+ * waits for the pair to complete, then the next live frame opens a fresh
+ * pair at the new cadence. */
+static void TestMultiplierSwitchWaitsForPair(void) {
+    SimTickSetMultiplier(2);
+    SimRaceFrameBegin(0); /* settle any pending switch from earlier tests */
+    BeginLiveFrame();
+    EXPECT_EQ(0, SimRaceSubstep());
+
+    /* A request issued between the fields of a pair is deferred. */
+    SimTickSetMultiplier(1);
+    BeginLiveFrame();
+    EXPECT_EQ(1, SimRaceSubstep());
+    EXPECT_EQ(1, SimRaceScaled());
+
+    /* Completing the pair adopts the retail rate. */
+    BeginLiveFrame();
+    EXPECT_EQ(0, SimRaceSubstep());
+    EXPECT_EQ(0, SimRaceScaled());
+    EXPECT_EQ(0x180, SimRaceFrameSyncThreshold(0x180));
+
+    /* Switching back to double outside a pair applies immediately. */
+    SimTickSetMultiplier(2);
+    BeginLiveFrame();
+    EXPECT_EQ(0, SimRaceSubstep());
+    EXPECT_EQ(1, SimRaceScaled());
+
+    /* Leaving the live phase applies a pending switch as well. */
+    BeginLiveFrame();
+    EXPECT_EQ(1, SimRaceSubstep());
+    SimTickSetMultiplier(1);
+    SimRaceFrameBegin(0);
+    BeginLiveFrame();
+    EXPECT_EQ(0, SimRaceSubstep());
+    EXPECT_EQ(0, SimRaceScaled());
 }
 
 int main(void) {
@@ -883,5 +924,6 @@ int main(void) {
     TestCounterResetsAndChaseCameraInit();
     TestWheelRotationAndRivalSlide();
     TestKnockbackRetriggerLandingAndShiftRpm();
+    TestMultiplierSwitchWaitsForPair();
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }

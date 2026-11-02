@@ -386,7 +386,7 @@ static void UpdateActiveRaceScene(RaceScene *state, s32 substep) {
     s32 lapUpdateResult;
     s32 textureSection;
     RaceClockUpdate raceClock = {0};
-    RaceStartUpdate raceStart;
+    RaceStartUpdate raceStart = {0};
     RaceViewSelection raceView;
     TrackZoneEffect zone;
     WrongWayUpdate wrongWay;

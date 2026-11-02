@@ -49,7 +49,8 @@ void SimBlendFields(void *current, const void *before, const SimField *fields,
 
 /* The configured race tick rate: 1 for retail, 2 for double. */
 int SimTickMultiplier(void);
-/* Forces the multiplier regardless of configuration (tests). */
+/* Requests the multiplier regardless of configuration. Mid-race switches
+ * take effect at the next retail-pair boundary, not between pair fields. */
 void SimTickSetMultiplier(int multiplier);
 
 /* Called once at the top of every race scene frame. `live` is non-zero while
