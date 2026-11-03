@@ -5,4 +5,10 @@ enum { MENU_IMAGE_WIDTH=112, MENU_IMAGE_HEIGHT=16 };
 /* Borrowed RGBA8 row-major pixels, valid until the mod session changes.
  * Menu layout remains 112x16 logical pixels; PNGs do not use a PS1 atlas. */
 const uint8_t *MenuImage(int item,int selected);
+/* Full-resolution straight-alpha pixels for native presentation. */
+const uint8_t *MenuImageNative(int item,int selected,int *width,int *height);
+void MenuImagesReset(void);
+struct RageModManifest;
+/* Copies the optional HD menu layer; disabling restores ordinary mods. */
+int MenuImagesSetHdPack(const char *directory,const struct RageModManifest *manifest);
 #endif

@@ -12,6 +12,7 @@ typedef struct Modern2DState {
     uint32_t twin;
     SDL_Rect scissor;
     int displayPageY;
+    int displayHeight;
     int areaTopVram;
     int hasScissor;
     int areaEmpty;
@@ -20,9 +21,12 @@ typedef struct Modern2DState {
 } Modern2DState;
 
 void ModernOverlayStateInit(Modern2DState *state, int displayPageY);
+void ModernOverlayStateInitHeight(Modern2DState *state,int displayPageY,int displayHeight);
 void ModernOverlayStateApplyWord(Modern2DState *state, uint32_t word);
 void ModernOverlayStateScaleScissor(SDL_Rect *rect, float logicalWidth,
                                     float overscanX, int targetWidth,
                                     int targetHeight);
 
+void ModernOverlayStateScaleScissorHeight(SDL_Rect *rect,float logicalWidth,
+ float overscanX,int targetWidth,int targetHeight,int logicalHeight);
 #endif

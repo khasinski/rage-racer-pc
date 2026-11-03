@@ -25,6 +25,9 @@ int RageSkyExpandPanoramaLayoutScaled(uint8_t *destination, size_t destinationSi
  * Source/destination must not overlap; neither buffer is retained. */
 int RageSkyExpandTexturePageLayout(uint8_t *destination, size_t destinationSize,
     const uint8_t *source, size_t sourceSize, const RageSkyPanoramaLayout *layout);
+int RageSkyExpandTexturePageLayoutScaled(uint8_t *destination, size_t destinationSize,
+    const uint8_t *source, size_t sourceSize, uint32_t pageWidth,
+    const RageSkyPanoramaLayout *layout);
 
 int RageSkyPanoramaTile(
     const int16_t map[RAGE_SKY_MAP_ROWS][RAGE_SKY_MAP_COLUMNS],

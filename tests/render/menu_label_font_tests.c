@@ -18,6 +18,9 @@ typedef struct Tile {
 
 static Tile s_tiles[TILE_LIMIT];
 static int s_tileCount;
+void CaptureMenuImage(const void *begin,const void *end,int item,int selected,int x,int y,int height) {
+    (void)begin;(void)end;(void)item;(void)selected;(void)x;(void)y;(void)height;
+}
 
 const uint8_t *MenuImage(int item, int selected) {
     (void)item;

@@ -84,7 +84,7 @@ static int TestNavigation(void) {
     /* Paging wraps and starts the new page at its first row. */
     OverlayModelDo(&model, OVERLAY_DOWN, 0);
     OverlayModelDo(&model, OVERLAY_PAGE_PREV, 0);
-    CHECK(model.page == OVERLAY_PAGE_VIEW && model.selected == 0);
+    CHECK(model.page == OVERLAY_PAGE_MODS && model.selected == 0);
     CHECK(OverlayModelRowCount(&model) != rows);
     OverlayModelDo(&model, OVERLAY_PAGE_NEXT, 0);
     CHECK(model.page == OVERLAY_PAGE_GRAPHICS);
@@ -280,7 +280,37 @@ static int TestLayout(void) {
     return 0;
 }
 
+static int TestPackActions(void){
+ OverlayModel model;Open(&model);OverlayModelSwitchPage(&model,OVERLAY_PAGE_MODS);
+ const int actions[]={1,5,2,3};
+ for(int row=0;row<4;row++){OverlayModelSelect(&model,row);OverlayModelDo(&model,OVERLAY_ACTIVATE,0);CHECK(model.packAction==actions[row]);CHECK(!model.configPending&&!model.sessionPending);}
+ model.packAction=0;
+ OverlayModelSelect(&model,4);OverlayModelDo(&model,OVERLAY_ACTIVATE,0);
+ CHECK(model.values.session.randomTimeOfDay==1);
+ CHECK(model.packAction==0&&!model.configPending&&model.sessionPending);
+ OverlayPending pending=OverlayModelTakePending(&model,0);CHECK(pending.session);
+ OverlayModelDo(&model,OVERLAY_LEFT,1);CHECK(model.values.session.randomTimeOfDay==0);
+ return 0;
+}
+
+static int TestDownloader(void){
+ OverlayModel model;Open(&model);OverlayModelSwitchPage(&model,OVERLAY_PAGE_MODS);
+ model.packDownloader=1;model.packCanCancel=0;
+ OverlayModelDo(&model,OVERLAY_CLOSE,0);CHECK(model.open&&model.packDownloader==1);
+ OverlayModelDo(&model,OVERLAY_PAGE_NEXT,0);CHECK(model.page==OVERLAY_PAGE_MODS);
+ OverlayModelDo(&model,OVERLAY_ACTIVATE,0);CHECK(model.packAction==0);
+ model.packCanCancel=1;OverlayModelDo(&model,OVERLAY_ACTIVATE,0);CHECK(model.packAction==4);
+ model.packAction=0;
+ float button=(float)OverlayDesignHeight(OverlayModelRowCount(&model))-90;
+ OverlayModelPointer(&model,300,button,1,0);CHECK(model.packAction==4);
+ model.packAction=0;model.packDownloader=2;model.packCanCancel=0;
+ OverlayModelDo(&model,OVERLAY_CLOSE,0);CHECK(model.open&&!model.packDownloader&&model.packAction==6);
+ return 0;
+}
+
 int main(void) {
+    if(TestDownloader())return 1;
+    if(TestPackActions())return 1;
     if (TestEverySettingRoundTrips()) return 1;
     if (TestNavigation()) return 1;
     if (TestStepsAndPending()) return 1;

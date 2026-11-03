@@ -97,3 +97,6 @@ debug_source.c
 .visual-cache/
 rage-port.cfg
 markers/
+
+# Local run output and captures.
+output/

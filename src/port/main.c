@@ -16,6 +16,7 @@
 #include "car_catalog.h"
 #include "car_catalog_profile.h"
 #include "mod_assets.h"
+#include "hd_pack.h"
 #include "diagnostic_log.h"
 #include "disc_picker.h"
 #include "host_storage.h"
@@ -108,6 +109,19 @@ int main(int argc, char **argv) {
     char carCatalogError[256] = {0};
 
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
+    if(RuntimeConfigGet("tools.hd_pack_create")) {
+        char error[256]={0};const char *out=RuntimeConfigGet("tools.hd_pack_output");
+        int ok=out&&HdPackCreate(RuntimeConfigGet("tools.hd_pack_create"),out,error,sizeof(error));
+        if(!ok)fprintf(stderr,"%s\n",error);return ok?EXIT_SUCCESS:EXIT_FAILURE;
+    }
+    if(RuntimeConfigGet("tools.hd_pack_install")||RuntimeConfigEnabled("tools.hd_pack_verify")) {
+        char error[256]={0};HdPackState state;const char *store=RuntimeConfigGet("hd.store");
+        const char *region=RuntimeConfigGet("hd.region");
+        int ok=store&&(RuntimeConfigGet("tools.hd_pack_install")?
+            HdPackInstall(RuntimeConfigGet("tools.hd_pack_install"),store,region,NULL,NULL,error,sizeof(error)):
+            HdPackReadState(store,region,&state)&&HdPackVerify(store,&state,NULL,NULL,error,sizeof(error)));
+        if(!ok)fprintf(stderr,"%s\n",error);return ok?EXIT_SUCCESS:EXIT_FAILURE;
+    }
     if(RuntimeConfigGet("tools.car_raw"))
         return ExportRawCar(RuntimeConfigGet("tools.car_raw"),RuntimeConfigInt("tools.car_bank",10,0,255),RuntimeConfigEnabled("tools.car_rival"),RuntimeConfigInt("tools.car_part",0,0,255),RuntimeConfigGet("tools.car_output"))?EXIT_SUCCESS:EXIT_FAILURE;
     if(RuntimeConfigGet("tools.track_export"))

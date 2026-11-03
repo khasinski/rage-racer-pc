@@ -170,6 +170,7 @@ static int g_SmokeInputCount;
 static int g_SmokeFrameLimit;
 static int g_SmokeFinishFrame;
 static int g_SmokePriorCourseWinsSeeded;
+static int g_SmokeRetriesSeeded;
 static int g_SmokeAutoConfirmFrame;
 static int g_SmokeStopScene;
 static int g_SmokeStopSceneTimer;
@@ -704,6 +705,17 @@ int PortShouldExit(int frame_number) {
                     "smoke state input frame=%d scene=%d timer=%d buttons=%04x\n",
                     frame_number, g_SceneId, g_SceneTimer, input->buttons);
         }
+    }
+    /* Optional capture fixture: exercise the normal exhausted-retry flow.
+     * Absent this smoke-only setting, the saved retry count is untouched. */
+    if (!g_SmokeRetriesSeeded && g_SceneId == 12 &&
+        g_CourseProgress != NULL &&
+        RuntimeConfigGet("hooks.retries_remaining") != NULL) {
+        g_CourseProgress->retriesRemaining = (s16)RuntimeConfigInt(
+            "hooks.retries_remaining", 0, 0, 5);
+        g_SmokeRetriesSeeded = 1;
+        fprintf(stderr, "smoke retry fixture remaining=%d\n",
+                g_CourseProgress->retriesRemaining);
     }
     /* Fixture for the last race of a class, not a forced class-clear flag.
      * CommitClassProgress must still record this race and choose the award. */

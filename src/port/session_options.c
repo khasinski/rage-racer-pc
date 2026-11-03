@@ -1,4 +1,5 @@
 #include "session_options.h"
+#include "race_mods.h"
 
 #include "analog_pad.h"
 #include "force_feedback_device.h"
@@ -9,6 +10,7 @@
 
 void PortSessionOptionsRead(PortSessionOptions *options) {
     if (options == NULL) return;
+    options->randomTimeOfDay = PortRandomTimeOfDayEnabled();
     options->tickMultiplier = SimTickMultiplier();
     options->analog = PortAnalogEnabled();
     options->wheel = PortWheelEnabled();
@@ -30,6 +32,7 @@ void PortSessionOptionsApply(const PortSessionOptions *options) {
     int effects;
 
     if (options == NULL) return;
+    PortSetRandomTimeOfDayEnabled(options->randomTimeOfDay);
     if (options->tickMultiplier > 0 &&
         options->tickMultiplier != SimTickMultiplier()) {
         SimTickSetMultiplier(options->tickMultiplier);

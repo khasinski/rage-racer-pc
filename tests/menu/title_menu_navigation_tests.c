@@ -14,8 +14,8 @@
 
 int main(void) {
     CHECK(MoveTitleMenuSelection(TITLE_MENU_GRAND_PRIX, -1, 1),
-          TITLE_MENU_OPTIONS);
-    CHECK(MoveTitleMenuSelection(TITLE_MENU_OPTIONS, 1, 1),
+          TITLE_MENU_QUIT);
+    CHECK(MoveTitleMenuSelection(TITLE_MENU_QUIT, 1, 1),
           TITLE_MENU_GRAND_PRIX);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_GRAND_PRIX, 1, 1),
           TITLE_MENU_EXTRA_GRAND_PRIX);
@@ -32,17 +32,18 @@ int main(void) {
     CHECK(MoveTitleMenuSelection(TITLE_MENU_TIME_ATTACK, -1, 0),
           TITLE_MENU_GRAND_PRIX);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_OPTIONS, 1, 0),
-          TITLE_MENU_GRAND_PRIX);
+          TITLE_MENU_QUIT);
+    CHECK(MoveTitleMenuSelection(TITLE_MENU_QUIT, 1, 0), TITLE_MENU_GRAND_PRIX);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_GRAND_PRIX, -1, 0),
-          TITLE_MENU_OPTIONS);
+          TITLE_MENU_QUIT);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_TIME_ATTACK, 0, 0),
           TITLE_MENU_TIME_ATTACK);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_ITEM_COUNT + TITLE_MENU_LOAD_SAVE,
                                  0, 1),
           TITLE_MENU_LOAD_SAVE);
-    CHECK(MoveTitleMenuSelection(-1, 0, 1), TITLE_MENU_OPTIONS);
+    CHECK(MoveTitleMenuSelection(-1, 0, 1), TITLE_MENU_QUIT);
     CHECK(MoveTitleMenuSelection(INT_MIN, 0, 1),
-          (INT_MIN % TITLE_MENU_ITEM_COUNT) + TITLE_MENU_ITEM_COUNT);
+          ((INT_MIN % TITLE_MENU_ITEM_COUNT) + TITLE_MENU_ITEM_COUNT) % TITLE_MENU_ITEM_COUNT);
 
     puts("title menu navigation tests passed");
     return 0;

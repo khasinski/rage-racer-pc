@@ -759,7 +759,7 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
                                    ModernAssetImage *image) {
     RageSkyPanoramaLayout layout;
     RageImportedTextureKey texture;
-    const uint16_t *vram;
+    uint16_t *vram;
     uint8_t *page = NULL;
     uint8_t *sky;
     uint32_t pixel;
@@ -775,12 +775,18 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
     memset(&texture, 0, sizeof(texture));
     texture.tpage = 0x18;
     texture.clut = 0x798E;
-    vram = ImportVramSnapshot(1);
-    if (vram == NULL ||
+    /* Environment selection uploads its cloud page after track texture
+     * snapshots may already exist. Sky must read the current page/palette,
+     * independently of the immutable terrain generation. */
+    size_t vramWords = (size_t)RAGE_IMPORT_VRAM_WIDTH * RAGE_IMPORT_VRAM_HEIGHT;
+    vram = SDL_malloc(vramWords * sizeof(*vram));
+    if (vram == NULL || !ImportReadVram(NULL, vram, vramWords) ||
         !ImportDecodeTexture(&texture, texture.clut, vram, &page, NULL)) {
+        SDL_free(vram);
         SDL_free(page);
         return 0;
     }
+    SDL_free(vram);
     sky = SDL_calloc(512u * 256u, 4u);
     if (sky == NULL) {
         SDL_free(page);
@@ -795,11 +801,7 @@ int NativeAssetImporterLoadSky(uint32_t assetKey,
     SDL_free(page);
     for (pixel = 0; pixel < 512u * 256u; pixel++) {
         uint8_t *rgba = sky + pixel * 4u;
-        uint8_t brightness = rgba[0];
-        if (rgba[1] > brightness) brightness = rgba[1];
-        if (rgba[2] > brightness) brightness = rgba[2];
         if (rgba[3] != 0) {
-            rgba[0] = rgba[1] = rgba[2] = brightness;
             opaquePixels++;
         } else {
             rgba[0] = rgba[1] = rgba[2] = 0;

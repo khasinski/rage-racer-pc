@@ -11,8 +11,9 @@
  * at the native_geometry entry points, together with the GTE state in effect.
  * The frame ordering tables also contain sky, HUD, text and
  * menus. The end-of-frame walk follows DrawOTag order. Modern captures those
- * 2D packets only; enhanced classic also retains the emitted 3D packets,
- * including subdivisions and their original ordering. */
+ * 2D packets only in scenes with a native 3D world. Menu previews retain
+ * projected 3D packets, as does enhanced classic, including subdivisions and
+ * their original ordering. */
 
 #include <stdint.h>
 
@@ -67,6 +68,8 @@ typedef struct RageCaptureTerrainBatch {
 enum {
     RAGE_CAPTURE_PACKET_SKY = 1u << 0,
     RAGE_CAPTURE_PACKET_3D = 1u << 1,
+    RAGE_CAPTURE_PACKET_MENU_IMAGE = 1u << 2,
+    RAGE_CAPTURE_PACKET_MENU_IMAGE_DRAW = 1u << 3,
 };
 
 typedef struct RageCapturePacket {
@@ -76,6 +79,9 @@ typedef struct RageCapturePacket {
     uint8_t flags;   /* RAGE_CAPTURE_PACKET_* source classification */
     uint8_t pad;
     uint16_t skyIndex; /* allocation-order primitive within the sky range */
+    uint8_t menuItem,menuSelected;
+    int16_t menuX,menuY;
+    uint16_t menuHeight;
     uint32_t words[RAGE_CAPTURE_PACKET_WORDS];
 } RageCapturePacket;
 
@@ -181,6 +187,9 @@ void CaptureTerrainBegin(const void *cells, int count);
 void CaptureSubmitEnd(void);
 void CaptureSkyBegin(void);
 void CaptureSkyEnd(void);
+/* Keep original GP0 tiles for classic presentation and tag their native draw. */
+void CaptureMenuImage(const void *begin,const void *end,int item,int selected,
+                      int x,int y,int height);
 
 /* Borrow the last two completed snapshots. Beginning/building the next frame
  * does not mutate either. A successful CaptureFrameEnd rotates the pair;

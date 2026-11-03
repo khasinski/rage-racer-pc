@@ -208,6 +208,7 @@ static const EnvironmentAlias s_environmentAliases[] = {
     {"hooks.option_sweep", "RAGE_PORT_SMOKE_OPTION_SWEEP"},
     {"hooks.play_fmv", "RAGE_PORT_SMOKE_PLAY_FMV"},
     {"hooks.retire", "RAGE_PORT_SMOKE_RETIRE"},
+    {"hooks.retries_remaining", "RAGE_PORT_SMOKE_RETRIES_REMAINING"},
     {"input.disable_host", "RAGE_PORT_DISABLE_HOST_INPUT"},
     {"input.raw_script", "RAGE_PORT_RAW_INPUT_SCRIPT"},
     {"input.state_script", "RAGE_PORT_STATE_INPUT_SCRIPT"},

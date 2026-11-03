@@ -33,6 +33,7 @@ static const char *kLabels[MENU_LABEL_COUNT] = {
     "DUEL",
     "SAVE&LOAD",
     "OPTION",
+    "QUIT GAME",
 };
 
 /* Cap height in the 16px bar, plus one pixel of drop shadow under the ink.

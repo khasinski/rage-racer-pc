@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(rage_racer_port VERSION 0.6.13 LANGUAGES C)
+project(rage_racer_port VERSION 0.6.14 LANGUAGES C)
 
-set(RAGE_RACER_RELEASE_VERSION "nightly")
+set(RAGE_RACER_RELEASE_VERSION "0.6.14-alpha")
 
 # Native game, runtime, tools, and tests use the same portable C17 dialect.
 # Vendored projects select their own lower standard where required.
@@ -322,6 +322,8 @@ if(RAGE_BUILD_PORT)
     target_include_directories(miniz PUBLIC
         external/libchdr/deps/miniz-3.1.2)
     add_subdirectory(external/psyz/psyz external-psyz)
+    include(cmake/hd_dependencies.cmake)
+    target_link_libraries(rage-render-world PUBLIC rage-hd-image)
 
     file(GLOB_RECURSE RAGE_GAME_SOURCES CONFIGURE_DEPENDS
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main/PAL/main/*.c"
@@ -383,13 +385,21 @@ if(RAGE_BUILD_PORT)
         src/port/hud_config.c
         src/port/speed_display.c
         src/port/mod_assets.c
+        src/port/hd_pack.c
+        src/port/hd_pack_ui.c
+        src/port/hd_download.c
         src/port/menu_images.c
         src/port/menu_label_font.c
         src/port/graphics_overlay.c
+        src/port/main_menu_model.c
+        src/port/main_menu_raster.c
+        src/port/main_menu_host.c
         src/port/overlay_model.c
         src/port/overlay_raster.c
     src/port/touch_model.c
         src/port/session_options.c
+        src/port/race_mods.c
+        src/port/race_environment_mod.c
         src/port/texture_patch.c
         src/port/port_config.c
         src/port/scenario_control.c
@@ -670,7 +680,7 @@ if(RAGE_BUILD_PORT)
             endif()
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
-            rage-sim psyz rage-render-world rage-content rage-car-catalog chdr-static miniz rage-json)
+            rage-sim psyz rage-render-world rage-content rage-car-catalog chdr-static miniz rage-json rage-hd-network)
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()

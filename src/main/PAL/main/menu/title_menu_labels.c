@@ -3,6 +3,7 @@
 #include "menu_images.h"
 #include "menu_label_font.h"
 #include "content/title_image.h"
+#include "modern/scene_capture.h"
 #include <string.h>
 
 enum {
@@ -62,12 +63,17 @@ u8 *DrawTitleMenuLabel(GameOrderingTableEntry *ot, u8 *packet,
     const uint8_t *fontPixels;
 
     if (image) {
+        u8 *begin=packet;
+        /* Zero-area anchor also represents an image whose compatibility
+         * downsample contains no opaque pixels. */
+        packet=AddTilePrim(ot,packet,x,y,0,0,0,0,0);
         for(row=0;row<visibleHeight;row++)for(s32 column=0;column<CUSTOM_MENU_TEXTURE_WIDTH;){
             const u8 *pixel=image+(row*CUSTOM_MENU_TEXTURE_WIDTH+column)*4;
             s32 start=column++;
             while(column<CUSTOM_MENU_TEXTURE_WIDTH&&!memcmp(pixel,image+(row*CUSTOM_MENU_TEXTURE_WIDTH+column)*4,4))column++;
             if(pixel[3]>=128)packet=AddTilePrim(ot,packet,x+start,y+row,column-start,1,pixel[0],pixel[1],pixel[2]);
         }
+        CaptureMenuImage(begin,packet,item,selected,x,y,visibleHeight);
         return packet;
     }
 

@@ -18,6 +18,11 @@ obtained Rage Racer CUE (with its BIN tracks alongside it), Track 01 BIN, or
 CHD when prompted. Native assets are imported automatically and the game starts
 with the modern renderer. No separate launcher or extractor is required.
 
+The main menu uses native text with mouse, keyboard and gamepad navigation.
+All modes, Load Game, Settings and Quit Game share one list; Up / Down wrap
+through every available item, and Enter confirms. Extra Grand Prix remains
+hidden until earned. Settings opens the original game options; Esc opens the port settings. The original crest and wordmark stay in the background.
+
 Press **Esc** at any time to pause the game and open settings. Graphics covers
 the renderer, resolution, aspect ratio, frame rate, texture filtering,
 anti-aliasing, colour grading, ambient occlusion, shadow detail and draw
@@ -671,3 +676,9 @@ the port.
 
 See [LICENSE.md](LICENSE.md).  Game code and data remain the property of their
 respective owners.  This project does not distribute any original game assets.
+
+Esc → Mods includes **Random time of day** for GP and EX GP. It applies from
+the next race and lasts until quit. The INI default is
+`[mods] random_time_of_day = false`. Randomization uses original environment
+profiles and cloud artwork; class, rival parameters and saved progress remain
+those of the selected race. Time Attack keeps its original selection rules.

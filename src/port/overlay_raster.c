@@ -312,6 +312,7 @@ static void PaintFooter(const Painter *p, int rowCount) {
                                  ? "Return to the game."
                                  : "Close the game.";
 
+    if(p->model->page==OVERLAY_PAGE_MODS&&p->model->selected<4&&p->model->packStatus[0])help=p->model->packStatus;
     FillRoundRect(p->surface, (float)OVERLAY_PAD * s, footerTop,
                   (float)(OVERLAY_PANEL_W - 2 * OVERLAY_PAD) * s, 1.0f, 0.0f,
                   WithAlpha(kText, 0.10f));
@@ -323,6 +324,56 @@ static void PaintFooter(const Painter *p, int rowCount) {
              WithAlpha(kMuted, 0.7f), ALIGN_LEFT);
 }
 
+static void PaintDownloader(const Painter *p, int rowCount) {
+    const float s = p->s;
+    const OverlayModel *m = p->model;
+    const float left = OVERLAY_PAD * s;
+    const float width = (OVERLAY_PANEL_W - 2 * OVERLAY_PAD) * s;
+    const float height = (float)OverlayDesignHeight(rowCount);
+    const char *title = m->packDownloader == 1 ? "HD texture downloader" :
+                        m->packDownloader == 2 ? "HD textures ready" : "Download stopped";
+    DrawText(p->surface, left, 48*s, 26*s, title, kText, ALIGN_LEFT);
+    DrawText(p->surface, left, 92*s, 16*s, "Faithful Refresh", kMuted, ALIGN_LEFT);
+    FillRoundRect(p->surface, left, 116*s, width, s, 0, WithAlpha(kText, .1f));
+    DrawText(p->surface, left, 172*s, 20*s, m->packPhase,
+             m->packDownloader == 3 ? kDanger : kText, ALIGN_LEFT);
+    int percent = m->packPercent < 0 ? 0 : m->packPercent > 100 ? 100 : m->packPercent;
+    FillRoundRect(p->surface, left, 198*s, width, 12*s, 6*s, WithAlpha(kText,.1f));
+    if (percent) FillRoundRect(p->surface,left,198*s,width*percent/100.0f,12*s,6*s,kAccent);
+    char text[96];
+    if (m->packTotalBytes)
+        snprintf(text,sizeof(text),"%.1f / %.1f MB",m->packDownloadedBytes/1000000.0,m->packTotalBytes/1000000.0);
+    else snprintf(text,sizeof(text),"%s",m->packDownloader==1?"Preparing your download...":"");
+    DrawText(p->surface,left,246*s,16*s,text,kMuted,ALIGN_LEFT);
+    snprintf(text,sizeof(text),"%d%%",percent);
+    DrawText(p->surface,left+width,246*s,18*s,text,kText,ALIGN_RIGHT);
+    if (m->packDownloader != 1) {
+        const char *remaining = m->packStatus;
+        for (int line = 0; line < 3 && *remaining; ++line) {
+            char message[160];
+            size_t count = strlen(remaining);
+            if (count >= sizeof(message)) count = sizeof(message)-1;
+            memcpy(message,remaining,count);message[count]=0;
+            while (count && TextWidth(message,14*s)>width) message[--count]=0;
+            if (remaining[count] && count) {
+                size_t word=count;
+                while(word && message[word]!=' ')--word;
+                if(word)message[count=word]=0;
+            }
+            if (!count) break;
+            DrawText(p->surface,left,(296+22*line)*s,14*s,message,kMuted,ALIGN_LEFT);
+            remaining+=count;while(*remaining==' ')++remaining;
+        }
+    }
+    if (m->packCanCancel || m->packDownloader != 1) {
+        FillRoundRect(p->surface,left,(height-110)*s,width,46*s,8*s,WithAlpha(kAccent,.18f));
+        DrawText(p->surface,left+width*.5f,(height-80)*s,17*s,
+                 m->packDownloader==1?"Cancel":"Back to Mods",kText,ALIGN_CENTRE);
+        DrawText(p->surface,left,(height-28)*s,13*s,
+                 m->packDownloader==1?"Enter to cancel":"Enter / Esc to return",kMuted,ALIGN_LEFT);
+    }
+}
+
 void OverlayPaint(OverlaySurface *surface, const OverlayModel *model,
                   const OverlayLayout *layout) {
     Painter painter = {surface, model, layout->scale};
@@ -332,9 +383,12 @@ void OverlayPaint(OverlaySurface *surface, const OverlayModel *model,
     memset(surface->pixels, 0, (size_t)surface->w * (size_t)surface->h * 4u);
     PaintFrame(&painter, (float)OVERLAY_PANEL_W * layout->scale,
                (float)OverlayDesignHeight(rowCount) * layout->scale);
-    PaintHeader(&painter);
-    PaintRows(&painter);
-    PaintFooter(&painter, rowCount);
+    if (model->packDownloader) PaintDownloader(&painter, rowCount);
+    else {
+        PaintHeader(&painter);
+        PaintRows(&painter);
+        PaintFooter(&painter, rowCount);
+    }
     solid = surface->pixels + (size_t)(surface->h - 1) * (size_t)surface->w * 4u;
     solid[3] = 255;
 }

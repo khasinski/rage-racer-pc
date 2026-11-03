@@ -450,8 +450,9 @@ static int BuildVertex(const RageTransformBasis *basis,
     out->position[0] = worldPosition.x; out->position[1] = worldPosition.y;
     out->position[2] = worldPosition.z;
     out->uv[0] = source.uv[0]; out->uv[1] = source.uv[1];
-    if (source.material != UINT32_MAX &&
-        (source.material & RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0) {
+    const int scrolling = source.material != UINT32_MAX &&
+        (source.material & RAGE_RUNTIME_MATERIAL_SCROLL_U) != 0;
+    if (scrolling) {
         if (gpuUV) *materialFlags |= RAGE_RUNTIME_MATERIAL_SCROLL_U;
         else out->uv[0] += (float)instance->textureScrollU * (1.0f / 256.0f);
         source.material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
@@ -481,6 +482,13 @@ static int BuildVertex(const RageTransformBasis *basis,
      * Untextured companion geometry, such as a ground shadow, stays on the
      * surface it was authored against. */
     out->depthBias = source.material != UINT32_MAX ? instance->depthBias : 0.0f;
+    /* Retail animated course sheets are painted over their support scenery.
+     * In the native Z buffer the water/cliff seam can quantize to the same
+     * depth and flicker. Give only these sheets a bounded front priority; the
+     * vertex shader caps eight bias steps to two world units. Keep geometry,
+     * near clipping and ordinary course faces unchanged. */
+    if (scrolling && instance->assetSet == RAGE_RENDER_ASSET_COURSE)
+        out->depthBias -= 8.0f;
     out->shadowReception = instanceState->shadowReception;
     *depthDecal =
         (instance->flags & RAGE_RENDER_INSTANCE_DEPTH_DECAL) != 0;

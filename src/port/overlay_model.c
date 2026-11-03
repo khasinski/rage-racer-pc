@@ -194,8 +194,26 @@ static const OverlaySetting kView[] = {
             kLookaheadNames, Lookahead),
 };
 
+static int HdGet(const OverlayValues *v){return v->hdEnabled;}
+static int HdZero(const OverlayValues *v){(void)v;return 0;}
+static void HdToggleSet(OverlayValues *v,int i){v->hdEnabled=i;}
+static void HdSet(OverlayValues *v,int i){(void)v;(void)i;}
+static const char *const kHdToggle[]={"Off","On"};
+static const char *const kHdInstall[]={"Choose file"};
+static const char *const kHdVerify[]={"Verify"};
+static const char *const kHdDownload[]={"Open downloader"};
+ACCESSORS(RandomTimeOfDay, v->session.randomTimeOfDay != 0,
+          v->session.randomTimeOfDay = i)
+static const OverlaySetting kMods[]={
+ {"HD textures","Enable the installed HD pack.",2,kHdToggle,HdGet,HdToggleSet},
+ {"HD texture pack","Download or update the HD texture pack.",1,kHdDownload,HdZero,HdSet},
+ {"Install local pack","Choose a .rrhd texture pack.",1,kHdInstall,HdZero,HdSet},
+ {"Verify pack","Check all installed file checksums.",1,kHdVerify,HdZero,HdSet},
+ SETTING("Random time of day", "GP / EX GP only. Applies next race; lasts until quit.",
+         kSwitchNames, RandomTimeOfDay)};
+
 static const char *const kPageNames[OVERLAY_PAGE_COUNT] = {
-    "Graphics", "Controls", "Audio", "View"};
+    "Graphics", "Controls", "Audio", "View", "Mods"};
 
 const char *OverlayPageName(int page) {
     return page >= 0 && page < OVERLAY_PAGE_COUNT ? kPageNames[page] : "";
@@ -212,6 +230,8 @@ const OverlaySetting *OverlayPageSettings(int page, int *count) {
     case OVERLAY_PAGE_AUDIO:
         *count = COUNT_OF(kAudio);
         return kAudio;
+    case OVERLAY_PAGE_MODS:
+        *count=COUNT_OF(kMods);return kMods;
     case OVERLAY_PAGE_VIEW:
         *count = COUNT_OF(kView);
         return kView;
@@ -263,6 +283,7 @@ void OverlayModelSwitchPage(OverlayModel *model, int page) {
 }
 
 static void Step(OverlayModel *model, int row, int direction, unsigned nowMs) {
+    if(model->page==OVERLAY_PAGE_MODS && row<4){static const int actions[]={1,5,2,3};model->packAction=actions[row];model->dirty=1;return;}
     int count = 0;
     const OverlaySetting *setting =
         OverlayPageSettings(model->page, &count) + row;
@@ -294,7 +315,19 @@ static void Activate(OverlayModel *model, int row, unsigned nowMs) {
 
 void OverlayModelDo(OverlayModel *model, OverlayAction action,
                     unsigned nowMs) {
+    if (model->packDownloader) {
+        if (model->packDownloader == 1) {
+            if (action == OVERLAY_ACTIVATE && model->packCanCancel)
+                model->packAction = 4;
+        } else if (action == OVERLAY_ACTIVATE || action == OVERLAY_CLOSE) {
+            model->packDownloader = 0;
+            model->packAction = 6;
+            model->dirty = 1;
+        }
+        return;
+    }
     int rows = OverlayModelRowCount(model);
+
     int onSetting = model->selected < OverlayModelSettingCount(model);
 
     switch (action) {
@@ -401,7 +434,15 @@ static int RowAt(const OverlayModel *model, float x, float y) {
 
 void OverlayModelPointer(OverlayModel *model, float x, float y, int click,
                          unsigned nowMs) {
+    if (model->packDownloader) {
+        float top = (float)OverlayDesignHeight(OverlayModelRowCount(model)) - 110.0f;
+        if (click && x >= OVERLAY_PAD && x <= OVERLAY_PANEL_W - OVERLAY_PAD &&
+            y >= top && y <= top + 46.0f)
+            OverlayModelDo(model, OVERLAY_ACTIVATE, nowMs);
+        return;
+    }
     int tab = TabAt(x, y);
+
     int row;
 
     if (tab >= 0) {

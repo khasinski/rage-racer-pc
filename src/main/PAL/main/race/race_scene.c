@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "game/audio.h"
+#include "race_mods.h"
 #include "rage/render_world_game.h"
 #include "rage/sim_tick.h"
 #include <psyz/audio.h>
@@ -247,7 +248,8 @@ void EnterRaceScene(void) {
     }
     g_RaceTotalTime = 0;
     ResetMirrorState();
-    SeekEnvironmentScript(g_TrackRenderTable->environmentScriptOffset);
+    SeekEnvironmentScript(PortApplyRaceEnvironment(
+        g_TrackRenderTable->environmentScriptOffset, g_GrandPrixMode));
     BuildTileStrips();
     BuildRaceHudPrims(RaceHasRivals());
     g_AnimTimer = 0;

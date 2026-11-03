@@ -23,6 +23,16 @@ fail:
     free(pixels);
     return NULL;
 }
+static int SkyRollGradient(const unsigned char *pixels, unsigned width, unsigned height) {
+    if (width != 1706 || height != 960) return 0;
+    unsigned black = 0;
+    for (size_t i = 0; i < (size_t)width * height; ++i) {
+        const unsigned char *p = pixels + i * 3;
+        black += p[0] < 4 && p[1] < 4 && p[2] < 4;
+    }
+    fprintf(stderr, "rolled sky gradient uncovered black pixels=%u\n", black);
+    return black == 0;
+}
 static int Waterfall(const unsigned char *pixels, unsigned width, unsigned height) {
     unsigned bright = 0;
     if (width != 320 || height != 240) return 0;
@@ -32,6 +42,17 @@ static int Waterfall(const unsigned char *pixels, unsigned width, unsigned heigh
     }
     if (bright < 3000) fprintf(stderr, "classic waterfall disappeared: %u pixels\n", bright);
     return bright >= 3000;
+}
+/* The central sheet must cover the cliff, as in the retail painter order. */
+static int NativeWaterfall(const unsigned char *pixels,unsigned width,unsigned height) {
+    if(width!=1706||height!=960)return 0;
+    unsigned bright=0;
+    for(unsigned y=350;y<620;y++)for(unsigned x=515;x<550;x++) {
+        const unsigned char *p=pixels+((size_t)y*width+x)*3;
+        bright+=p[0]>140&&p[1]>140&&p[2]>100;
+    }
+    fprintf(stderr,"native waterfall sheet visible pixels=%u\n",bright);
+    return bright>7000;
 }
 static int Pegase(const unsigned char *pixels, unsigned width, unsigned height) {
     unsigned left = 0, right = 0;
@@ -211,10 +232,46 @@ static int Volume(const unsigned char *pixels, unsigned width, unsigned height) 
     return 1;
 }
 
+static int SkyAtlasPair(const char *before,const char *after) {
+    unsigned w,h,w2,h2,changedSky=0,changedGround=0;
+    unsigned char *a=ReadPPM(before,&w,&h),*b=ReadPPM(after,&w2,&h2);
+    if(!a||!b||w!=w2||h!=h2){free(a);free(b);return 0;}
+    for(unsigned y=0;y<h;y++)for(unsigned x=0;x<w;x++) {
+        size_t i=((size_t)y*w+x)*3;
+        int changed=memcmp(a+i,b+i,3)!=0;
+        if(y<h/2)changedSky+=changed;
+        if(y>=h*3/4)changedGround+=changed;
+    }
+    free(a);free(b);
+    fprintf(stderr,"sky atlas changed sky=%u ground/HUD=%u\n",changedSky,changedGround);
+    /* Start/finish scenery can hide most of the cloud band. A missing
+     * binding changes zero pixels, while every visible sample must affect a
+     * substantial patch and leave the road/HUD byte-identical. */
+    return changedSky>256&&changedGround==0;
+}
+
+/* Only the top-right facade changes. In particular, fullscreen filtering
+ * cannot borrow that color at the opposite screen borders. */
+static int PostBorderPair(const char *before,const char *after) {
+    unsigned w,h,w2,h2,inside=0,outside=0;
+    unsigned char *a=ReadPPM(before,&w,&h),*b=ReadPPM(after,&w2,&h2);
+    if(!a||!b||w!=1706||h!=960||w!=w2||h!=h2){free(a);free(b);return 0;}
+    for(unsigned y=0;y<h;y++)for(unsigned x=0;x<w;x++){
+        size_t i=((size_t)y*w+x)*3;
+        if(!memcmp(a+i,b+i,3))continue;
+        if(x>=900&&y<450)inside++;else outside++;
+    }
+    free(a);free(b);
+    fprintf(stderr,"facade pixels changed=%u unrelated pixels changed=%u\n",inside,outside);
+    return inside>10000&&outside==0;
+}
+
 int main(int argc, char **argv) {
     unsigned width = 0, height = 0;
     unsigned char *pixels;
     int ok;
+    if (argc == 4 && !strcmp(argv[1], "post-border")) return PostBorderPair(argv[2],argv[3])?0:1;
+    if (argc == 4 && !strcmp(argv[1], "sky-atlas")) return SkyAtlasPair(argv[2],argv[3])?0:1;
     if (argc == 4 && !strcmp(argv[1], "title")) return Title(argv[2], argv[3]) ? 0 : 1;
     if (argc >= 4 && !strcmp(argv[1], "sky"))
         return SkyDigest(argc - 3, argv + 3, (uint32_t)strtoul(argv[2], NULL, 0)) ? 0 : 1;
@@ -224,7 +281,9 @@ int main(int argc, char **argv) {
     if (argc != 3) return 2;
     pixels = ReadPPM(argv[2], &width, &height);
     if (!pixels) { fprintf(stderr, "invalid PPM: %s\n", argv[2]); return 1; }
-    if (!strcmp(argv[1], "waterfall")) ok = Waterfall(pixels, width, height);
+    if (!strcmp(argv[1], "sky-roll-gradient")) ok = SkyRollGradient(pixels, width, height);
+    else if (!strcmp(argv[1], "waterfall-native")) ok = NativeWaterfall(pixels, width, height);
+    else if (!strcmp(argv[1], "waterfall")) ok = Waterfall(pixels, width, height);
     else if (!strcmp(argv[1], "pegase")) ok = Pegase(pixels, width, height);
     else if (!strcmp(argv[1], "boot")) ok = Boot(pixels, width, height);
     else if (!strcmp(argv[1], "volume")) ok = Volume(pixels, width, height);

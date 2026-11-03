@@ -88,6 +88,12 @@ All phases R0–R5 and the post-processing part of R6 are implemented:
   texture seam. User-facing semantic PNG overrides now layer over the imported
   PS1 cache; modernised lighting and raytracing remain unimplemented (appendix
   B unchanged).
+  Car PNG overrides are finished colour textures: retail paint masks apply
+  only to imported/cache textures, so a chosen paint colour cannot erase mod
+  detail. Title menu PNGs retain their full resolution in modern presentation;
+  captured tile groups identify native GPU image draws in ordering-table order,
+  including row reveal clipping and fades. Classic presentation retains the
+  112x16 compatibility image.
 - **R7 (effects round 1)** —
   - `modern.texture_filter=linear` selects alpha-aware 4-tap bilinear
     filtering over standalone RGBA materials; transparent taps drop out of
@@ -576,3 +582,10 @@ interim option and a good stress test of the present path.
   texture detail) makes full path tracing stylistically questionable anyway.
 - Prerequisite phases: R2 (scene on GPU) and R3 (materials stable). Nothing
   earlier should bend for RT beyond keeping `RageScene` renderer-agnostic.
+
+Local HD packs now have a native staged installer, integrity verification,
+progress/cancellation and a Mods settings page. They refresh GPU presentation
+without tearing down native imports. HUD sprite overrides retain captured game
+coordinates and palette identities. See [hd_texture_packs.md](hd_texture_packs.md)
+for the local format, scope and authoring commands; v4 visual evidence is under
+`output/imagegen-poc/v4/evidence`.

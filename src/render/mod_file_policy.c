@@ -69,6 +69,6 @@ RageModFileKind ModFileClassify(const char *path) {
     const char *relative=path+prefix; size_t n=size-prefix;
     if (kind == RAGE_MOD_FILE_AUDIO) return Ends(relative,n,".wav") ? kind : RAGE_MOD_FILE_INVALID;
     if (kind == RAGE_MOD_FILE_MESH) return Ends(relative,n,".rmesh") ? kind : RAGE_MOD_FILE_INVALID;
-    return Ends(relative,n,".png") || Ends(relative,n,".json") || Ends(relative,n,".txt")
+    return Ends(relative,n,".png") || Ends(relative,n,".webp") || Ends(relative,n,".json") || Ends(relative,n,".txt")
         ? kind : RAGE_MOD_FILE_INVALID;
 }

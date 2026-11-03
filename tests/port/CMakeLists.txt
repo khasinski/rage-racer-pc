@@ -797,3 +797,15 @@ if(NOT MSVC)
 endif()
 add_test(NAME fmv_zoom COMMAND fmv_zoom_tests)
 set_tests_properties(fmv_zoom PROPERTIES LABELS unit)
+
+add_executable(race_mods_tests race_mods_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/race_mods.c)
+target_include_directories(race_mods_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(race_mods_tests PRIVATE __psyz=1)
+if(NOT MSVC)
+    target_compile_options(race_mods_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME race_mods COMMAND race_mods_tests)
+set_tests_properties(race_mods PROPERTIES LABELS unit)

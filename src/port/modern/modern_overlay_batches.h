@@ -22,6 +22,10 @@ typedef struct ModernSpan {
     SDL_Rect scissor;
     int32_t start;
     int32_t count;
+    /* Native menu spans use pipeline 2 and a shader-generated quad. */
+    uint8_t imageSlot;
+    uint32_t imagePage,imageClut,imageSemi;
+    float imageRect[4],imageUV[4],imageTint[4],imageSourceRect[4];
 } ModernSpan;
 
 typedef struct ModernOverlayBatches {

@@ -5,7 +5,8 @@
 
 enum {
     RAGE_MOD_MANIFEST_SCHEMA_VERSION = 1,
-    RAGE_MOD_MANIFEST_MAX_TEXTURES = 512,
+    RAGE_MOD_MANIFEST_MAX_TEXTURES = 16384,
+    RAGE_MOD_MANIFEST_MAX_BYTES = 16 * 1024 * 1024,
     RAGE_MOD_MANIFEST_MAX_AUDIO = 256,
     RAGE_MOD_MANIFEST_MAX_MATERIALS = 512,
     RAGE_MOD_MANIFEST_MAX_MESHES = 2048,
@@ -32,6 +33,7 @@ typedef struct RageModMaterialOverride {
     char properties[RAGE_MOD_MANIFEST_PROPERTIES_CAPACITY];
 } RageModMaterialOverride;
 
+/* Large bounded value: owners must use heap or static storage, not the stack. */
 typedef struct RageModManifest {
     unsigned schemaVersion;
     char id[RAGE_MOD_MANIFEST_ID_CAPACITY];

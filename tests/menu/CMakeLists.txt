@@ -137,6 +137,7 @@ add_executable(main_menu_state_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/main_menu.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_navigation.c)
 target_include_directories(main_menu_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
@@ -1606,3 +1607,27 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(volume_view PROPERTIES LABELS e2e TIMEOUT 150
         SKIP_REGULAR_EXPRESSION "SKIP:")
 endif()
+
+add_executable(native_main_menu_tests native_main_menu_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/main_menu_model.c
+    ${CMAKE_SOURCE_DIR}/src/port/main_menu_raster.c
+    ${CMAKE_SOURCE_DIR}/src/port/main_menu_host.c
+    ${CMAKE_SOURCE_DIR}/src/port/overlay_raster.c
+    ${CMAKE_SOURCE_DIR}/src/port/overlay_model.c
+    ${CMAKE_SOURCE_DIR}/src/port/touch_model.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_navigation.c
+    ${CMAKE_SOURCE_DIR}/tests/render/stb_truetype_implementation.c)
+target_include_directories(native_main_menu_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>)
+target_compile_definitions(native_main_menu_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(native_main_menu_tests PRIVATE "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(native_main_menu_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    target_link_libraries(native_main_menu_tests PRIVATE m)
+endif()
+add_test(NAME native_main_menu COMMAND native_main_menu_tests)
+set_tests_properties(native_main_menu PROPERTIES LABELS unit)

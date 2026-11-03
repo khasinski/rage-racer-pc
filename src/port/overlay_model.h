@@ -9,6 +9,8 @@
  * the GPU, so every rule can be tested by feeding the model actions. */
 
 typedef struct OverlayValues {
+    int hdEnabled;
+    int hdBusy;
     RagePortConfig config;
     PortSessionOptions session;
 } OverlayValues;
@@ -27,6 +29,7 @@ enum {
     OVERLAY_PAGE_CONTROLS,
     OVERLAY_PAGE_AUDIO,
     OVERLAY_PAGE_VIEW,
+    OVERLAY_PAGE_MODS,
     OVERLAY_PAGE_COUNT,
     /* Rows after a page's settings: resume the game, quit the game. */
     OVERLAY_ACTION_ROWS = 2,
@@ -60,6 +63,12 @@ typedef struct OverlayModel {
     int configPending; /* values.config differs from what the game runs */
     int sessionPending;
     unsigned changedAtMs;
+    int packAction;
+    char packStatus[160];
+    int packDownloader; /* 0 hidden, 1 working, 2 complete, 3 failed */
+    int packPercent, packCanCancel;
+    unsigned packDownloadedBytes, packTotalBytes;
+    char packPhase[48];
     int quitPending;
     int flushInput;    /* closed since the caller last asked */
 } OverlayModel;

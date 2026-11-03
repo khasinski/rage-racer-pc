@@ -1,5 +1,6 @@
 #include "game/angle.h"
 #include "rage/render_world_game.h"
+#include "race_mods.h"
 #include "rage/render_world_scene.h"
 
 #include "course_coordinate.h"
@@ -23,6 +24,7 @@
 #include "game/render_internal.h"
 #include "game/track_internal.h"
 #include "render/render_world_frame.h"
+#include "render/render_stage.h"
 #include "render/car_paint.h"
 #include "modern/scene_capture.h"
 #include "rage/track_asset_identity.h"
@@ -53,6 +55,8 @@ static int s_publishedWorld = 1, s_previousWorld = 2;
 static int s_publishedCount, s_buildingWorld;
 static int s_verifyPublication = -1;
 static uint64_t s_publishedHash, s_previousHash;
+static int s_reviewCameraState = -1;
+static RenderTransform s_reviewCameraTransform;
 
 static uint64_t WorldPublicationHash(const RenderWorld *world) {
     uint64_t hash = UINT64_C(0xcbf29ce484222325);
@@ -449,7 +453,7 @@ static RenderCamera GameRenderWorldBuildCamera(
     GameRenderWorldEnvironmentColor(ENV_SKY_MIDDLE, &camera.skyColor);
     GameRenderWorldEnvironmentColor(ENV_SKY_HORIZON, &camera.skyHorizonColor);
     GameRenderWorldEnvironmentColor(ENV_SKY_BOTTOM, &camera.skyBottomColor);
-    camera.skyAssetKey = TrackDataAssetKey();
+    camera.skyAssetKey = PortRaceEnvironmentSkyAssetKey(TrackDataAssetKey());
     camera.skyCloudRow = (uint32_t)g_SkyRowBase;
     RageSkyCapturePanoramaLayout(&camera.skyLayout, g_SkyTileMap, g_SkyRowBase);
     camera.hasSkyLayout = 1;
@@ -488,6 +492,46 @@ void GameRenderWorldBeginSkyPackets(void) { CaptureSkyBegin(); }
 
 void GameRenderWorldEndSkyPackets(void) { CaptureSkyEnd(); }
 
+/* Authoring-only view: orbit a measured renderer-space material location.
+ * This never moves the car or changes its road/physics height. */
+static void ApplyReviewCamera(RenderCamera *camera) {
+    if (!GameSceneUsesRaceWorld()) return;
+    if (s_reviewCameraState < 0) {
+        static const char *const keys[] = {
+            "diagnostics.review_target_x", "diagnostics.review_target_y",
+            "diagnostics.review_target_z", "diagnostics.review_distance",
+            "diagnostics.review_azimuth", "diagnostics.review_elevation"
+        };
+        const int minimum[] = {-262144, -262144, -262144, 1, -360, -89};
+        const int maximum[] = {262144, 262144, 262144, 65536, 360, 89};
+        int values[6];
+        s_reviewCameraState = 0;
+        if (!RuntimeConfigEnabled("diagnostics.review_camera")) return;
+        for (unsigned i = 0; i < 6; ++i) {
+            const char *value = RuntimeConfigGet(keys[i]);
+            if (!value || !RuntimeParseInt(value, 0, minimum[i], maximum[i], &values[i])) {
+                fprintf(stderr, "rage-port: review camera ignored: invalid or missing %s\n", keys[i]);
+                return;
+            }
+        }
+        RenderStage stage;
+        RenderCamera review;
+        RenderStageDefaults(&stage);
+        stage.target = (Vec3){(float)values[0], (float)values[1], (float)values[2]};
+        stage.distance = (float)values[3];
+        stage.azimuthDegrees = (float)values[4];
+        stage.elevationDegrees = (float)values[5];
+        RenderStageCamera(&stage, &review);
+        s_reviewCameraTransform = review.transform;
+        s_reviewCameraState = 1;
+        fprintf(stderr, "review-camera: {\"target\":[%d,%d,%d],\"distance\":%d,"
+            "\"azimuth\":%d,\"elevation\":%d,\"position\":[%.2f,%.2f,%.2f]}\n",
+            values[0], values[1], values[2], values[3], values[4], values[5],
+            review.transform.position.x, review.transform.position.y, review.transform.position.z);
+    }
+    if (s_reviewCameraState == 1) camera->transform = s_reviewCameraTransform;
+}
+
 void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
                                   int32_t pitch, int32_t yaw, int32_t roll) {
     RenderCamera camera;
@@ -497,6 +541,7 @@ void GameRenderWorldSetCamera(int32_t x, int32_t y, int32_t z,
     /* PAL's 320x240 active viewport with geom screen 320: 41.112°. */
     camera = GameRenderWorldBuildCamera(x, y, z, pitch, yaw, roll,
                                             41.112f, 0);
+    ApplyReviewCamera(&camera);
     RenderDirectionalLightFromSky(&camera, &light);
     RenderWorldSetDirectionalLight(GameRenderWorldMutable(), &light);
     RenderWorldSetCamera(GameRenderWorldMutable(), &camera);
@@ -518,7 +563,8 @@ void GameRenderWorldPublishCurrentCamera(void) {
                                  g_Camera.view.angleY,
                                  g_Camera.view.angleZ);
     GameRenderWorldMutable()->camera.inCarView =
-        g_RacePhase == RACE_PHASE_ACTIVE && g_Camera.mode == CAMERA_VIEW_CAR;
+        g_RacePhase == RACE_PHASE_ACTIVE && g_Camera.mode == CAMERA_VIEW_CAR &&
+        s_reviewCameraState != 1;
     /* A car mirror is a second scene camera, not a recreation of the PS1
      * mirror pass. A 20 degree vertical FOV on the wide mirror target gives
      * a useful rearward field of view without the old projection distortion. */
@@ -532,7 +578,8 @@ void GameRenderWorldPublishCurrentCamera(void) {
      * PS1 mirror visibility list. */
     mirrorCamera.fogNear *= 2.0f;
     mirrorCamera.fogFar *= 2.0f;
-    mirrorActive = g_MirrorUnlocked != 0 && g_RenderState.mirror.enabled != 0 &&
+    mirrorActive = s_reviewCameraState != 1 &&
+                   g_MirrorUnlocked != 0 && g_RenderState.mirror.enabled != 0 &&
                    g_Camera.mode == CAMERA_VIEW_CAR &&
                    g_GrandPrixMode != 0 &&
                    g_RacePhase == RACE_PHASE_ACTIVE;

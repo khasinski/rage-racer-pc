@@ -14,6 +14,14 @@
  * be driven directly; the host services it calls are replaced below. */
 #include "graphics_overlay.c"
 
+void HdPackUiTick(struct OverlayModel *model){(void)model;}
+MainMenuState PortMainMenuState(void){return (MainMenuState){0};}
+void PortMainMenuPointer(int w,int h,float x,float y,int click){(void)w;(void)h;(void)x;(void)y;(void)click;}
+void PortMainMenuEdge(int last){(void)last;}
+MainMenuRect MainMenuRow(int w,int h,int item,int extraUnlocked){(void)extraUnlocked;(void)w;(void)h;(void)item;return (MainMenuRect){0};}
+int MainMenuPaint(OverlaySurface *s,int w,int h,const MainMenuState *state){(void)s;(void)w;(void)h;(void)state;return 0;}
+int ModernPresentationActive(void){return 1;}
+float ModernPresentationAspect(void){return 16.0f/9.0f;}
 static RagePortConfig s_active;
 
 PsyzOverlayEventCB_SDL3 Psyz_OverlayEvent_SDL3(PsyzOverlayEventCB_SDL3 cb) {
@@ -164,6 +172,25 @@ static int TestPanelControls(void) {
     CHECK(s_model.page == OVERLAY_PAGE_AUDIO);
     Press(SDL_SCANCODE_LEFT);
     CHECK(s_model.values.session.music == 14);
+    PortGraphicsOverlayTick();
+    Press(SDL_SCANCODE_PAGEDOWN);
+    CHECK(s_model.page == OVERLAY_PAGE_VIEW);
+    Press(SDL_SCANCODE_PAGEDOWN);
+    CHECK(s_model.page == OVERLAY_PAGE_MODS && s_model.selected == 0);
+    Press(SDL_SCANCODE_RETURN);
+    CHECK(s_model.packAction == 1 && !s_model.configPending &&
+          !s_model.sessionPending);
+    s_model.packAction = 0;
+    Press(SDL_SCANCODE_DOWN);
+    Press(SDL_SCANCODE_RETURN);
+    CHECK(s_model.packAction == 5);
+    s_model.packAction = 0;
+    Press(SDL_SCANCODE_DOWN);
+    Press(SDL_SCANCODE_RETURN);
+    CHECK(s_model.packAction == 2);
+    s_model.packAction = 0;
+    Press(SDL_SCANCODE_PAGEUP);
+    Press(SDL_SCANCODE_PAGEUP);
     Press(SDL_SCANCODE_PAGEUP);
     Press(SDL_SCANCODE_PAGEUP);
     CHECK(s_model.page == OVERLAY_PAGE_GRAPHICS && s_model.selected == 0);

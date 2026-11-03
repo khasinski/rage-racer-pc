@@ -21,6 +21,8 @@ s32 g_SceneTimer;
 Fmv g_Fmv;
 
 static GameFrameContext s_frame;
+static s32 s_menuOpenCalls;
+void UpdateMainMenuOpen(void) { s_menuOpenCalls++; }
 static s32 s_audioFadeCalls;
 static s32 s_classRefreshCalls;
 static s32 s_displayMaskCalls;
@@ -124,7 +126,7 @@ int main(void) {
     CHECK(s_textureResetCalls == 1 && s_textureResetBeforeUpload == 1);
     CHECK(s_frontend.fade == 0 && s_frontend.attractTimer == 0 &&
           s_frontend.exitTimer == 30);
-    CHECK(s_frontend.state == FRONTEND_STATE_TITLE && g_SceneId == 4 &&
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_OPENING && g_SceneId == 4 &&
           g_SceneTimer == 0);
     CHECK(s_classRefreshCalls == 1 && s_reverbCalls == 1);
 
@@ -134,9 +136,9 @@ int main(void) {
     CHECK(s_setupCalls == 1 && s_displayMaskCalls == 0 &&
           s_imageUploadCalls == 0);
     CHECK(s_textureResetCalls == 1);
-    CHECK(s_frontend.fade == 253 && s_frontend.attractTimer == 400 &&
+    CHECK(s_frontend.fade == 255 && s_frontend.attractTimer == 400 &&
           s_frontend.exitTimer == 0);
-    CHECK(s_lastFadeBrightness == 255);
+    CHECK(s_lastFadeBrightness == -1);
 
     s_frontend.fade = 1;
     DrawPressStartPrompt();
@@ -151,9 +153,8 @@ int main(void) {
     s_frontend.selection = 4;
     UpdateTitleScreen();
     CHECK(s_frontend.state == FRONTEND_STATE_MENU_OPENING);
-    CHECK(s_frontend.idleTimer == 0 && s_frontend.selection == 0);
-    CHECK(s_frontend.attractTimer == 0 && s_audioFadeCalls == 1);
-    CHECK(s_soundCue == 2);
+    CHECK(s_menuOpenCalls == 1);
+    CHECK(s_audioFadeCalls == 0 && s_soundCue == 0);
 
     puts("title screen state tests passed");
     return 0;
