@@ -4,11 +4,20 @@
 #include <SDL3/SDL.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s (%s)\n", __LINE__, #x, SDL_GetError()); return 1; } } while (0)
 static char bundled[4096];
 static char profile[4096];
+static int SetTestEnvironment(const char *name, const char *value) {
+#ifdef _WIN32
+    /* SDL updates the Win32 environment; RuntimeConfig uses the CRT's copy.
+     * Keep both consistent when a test changes environment after startup. */
+    if (_putenv_s(name, value != NULL ? value : "") != 0) return -1;
+#endif
+    return value != NULL ? SDL_setenv_unsafe(name, value, 1) : SDL_unsetenv_unsafe(name);
+}
 int PlatformFindConfigFile(const char *argv0, const char *name, char *out, size_t size) {
     (void)argv0; (void)name;
     if (!bundled[0]) return 0;
@@ -42,8 +51,9 @@ static int ReadPreferences(const char *path) {
 int main(int argc, char **argv) {
     if (argc == 3 && !strcmp(argv[1], "read")) return ReadPreferences(argv[2]);
     CHECK(argc == 2);
-    char root[4096], path[4096], setting[4200], explicitConfig[4096], bad[4200];
-    snprintf(root, sizeof(root), "%s/%llu", argv[1], (unsigned long long)SDL_GetTicksNS());
+    char root[4000], path[4096], setting[4200], explicitConfig[4096], bad[4200];
+    int rootLength = snprintf(root, sizeof(root), "%s/%llu", argv[1], (unsigned long long)SDL_GetTicksNS());
+    CHECK(rootLength > 0 && (size_t)rootLength < sizeof(root));
     CHECK(SDL_CreateDirectory(root));
     snprintf(path, sizeof(path), "%s/prefs/settings.ini", root);
     RagePortConfig config = PortConfigDefaultValues();
@@ -114,8 +124,8 @@ int main(int argc, char **argv) {
     config.modernFps = 144;
     CHECK(UserSettingsSave(path, &config, &session));
     SDL_strlcpy(profile, path, sizeof(profile));
-    CHECK(SDL_unsetenv_unsafe("RAGE_PORT_SETTINGS_PATH") == 0);
-    CHECK(SDL_setenv_unsafe("PSYZ_HEADLESS", "0", 1) == 0);
+    CHECK(SetTestEnvironment("RAGE_PORT_SETTINGS_PATH", NULL) == 0);
+    CHECK(SetTestEnvironment("PSYZ_HEADLESS", "0") == 0);
     RuntimeConfigEnableUserSettings();
     char *normal[] = {"settings-test"};
     CHECK(RuntimeConfigInit(1, normal));
@@ -128,7 +138,7 @@ int main(int argc, char **argv) {
     PortConfigApplyRuntime(&config);
     CHECK(config.modernFps == 60 && config.modernBrightness == 0.75f);
     CHECK(!RuntimeConfigSettingsPath());
-    CHECK(SDL_setenv_unsafe("PSYZ_HEADLESS", "1", 1) == 0);
+    CHECK(SetTestEnvironment("PSYZ_HEADLESS", "1") == 0);
     puts("Settings: restart, precedence, failure preservation and malformed data passed");
     return 0;
 }

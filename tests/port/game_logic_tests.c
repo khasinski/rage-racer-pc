@@ -453,6 +453,32 @@ static void test_diagnostic_integer_values(void) {
     }
 }
 
+static void test_platform_profile_override(void) {
+    const char *previous = getenv("RAGE_PORT_PROFILE_ROOT");
+    char *saved = previous != NULL ? strdup(previous) : NULL;
+    const char *isolated = TEST_TEMP_PREFIX "isolated-rage-profile";
+    char found[320], tiny[2] = "x";
+#ifdef _WIN32
+    _putenv_s("RAGE_PORT_PROFILE_ROOT", isolated);
+#else
+    setenv("RAGE_PORT_PROFILE_ROOT", isolated, 1);
+#endif
+    EXPECT_EQ(1, PlatformUserConfigDirectory(found, sizeof(found)));
+    EXPECT_EQ(0, strcmp(found, isolated));
+    EXPECT_EQ(1, PlatformUserStateDirectory(found, sizeof(found)));
+    EXPECT_EQ(0, strcmp(found, isolated));
+    EXPECT_EQ(0, PlatformUserConfigDirectory(tiny, sizeof(tiny)));
+    EXPECT_EQ('\0', tiny[0]);
+    EXPECT_EQ(0, PlatformExistingPortableStateDirectory(".", found, sizeof(found)));
+#ifdef _WIN32
+    _putenv_s("RAGE_PORT_PROFILE_ROOT", saved != NULL ? saved : "");
+#else
+    if (saved != NULL) setenv("RAGE_PORT_PROFILE_ROOT", saved, 1);
+    else unsetenv("RAGE_PORT_PROFILE_ROOT");
+#endif
+    free(saved);
+}
+
 static void test_platform_config_path(void) {
     char root[] = TEST_TEMP_PREFIX "rage-path-test-XXXXXX";
     char directory[256], filePath[320], found[320];
@@ -646,6 +672,7 @@ int main(void) {
     test_port_config();
     test_diagnostic_integer_values();
     test_platform_config_path();
+    test_platform_profile_override();
     test_portable_state_path();
     test_ensure_directory();
 

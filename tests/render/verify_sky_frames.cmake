@@ -6,9 +6,9 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     "RAGE_PORT_SMOKE_CAPTURE_DIR=${root}" RAGE_PORT_SMOKE_CAPTURE_SCENE=12
     RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN=100 RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX=1200
     RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE=50
-    RAGE_PORT_INPUT_SCRIPT=200-900:CROSS,950-1150:CROSS+LEFT,1200-1400:CROSS+RIGHT,1450-1550:SQUARE,1600-2200:CROSS+LEFT,2250-4000:CROSS
     "${GAME}" --scenario "${SOURCE}/race-scenario.ini" --set race.class=4
     --set race.course=0 --set run.frames=2600 --set video.renderer=classic
+    --set input.state_script=12@177-877:CROSS,12@927-1127:CROSS+LEFT,12@1177-1377:CROSS+RIGHT,12@1427-1527:SQUARE,12@1577-2177:CROSS+LEFT,12@2227-3977:CROSS
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 600 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)
 file(GLOB captures "${root}/timer-*.ppm")
@@ -16,9 +16,11 @@ list(SORT captures)
 if(NOT result EQUAL 0)
     message(FATAL_ERROR "Sky run failed: ${root}\n${output}${error}")
 endif()
+# Input times now refer to scene 12, independent of asset-loading frame counts.
+# The 23-frame contact sheet was reviewed after this synchronization change.
 # The hard-cut fix reads the previous published world's sky grid instead of
 # current->previousCamera, whose history intentionally resets at a shot cut.
-execute_process(COMMAND "${CHECK}" sky 0x930DD489 ${captures} RESULT_VARIABLE check_result
+execute_process(COMMAND "${CHECK}" sky 0xa47e8618 ${captures} RESULT_VARIABLE check_result
     OUTPUT_VARIABLE check_output ERROR_VARIABLE check_error)
 if(NOT check_result EQUAL 0)
     message(FATAL_ERROR "Sky digest failed: ${root}\n${check_output}${check_error}")

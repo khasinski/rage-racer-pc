@@ -45,3 +45,18 @@ foreach(required "scenario boot=direct"
     endif()
 endforeach()
 message(STATUS "Scenario validation and menu/direct launch routes passed")
+
+# Held input is anchored to race time, so faster menus or asynchronous asset
+# loading cannot move steering/acceleration to a different point in the race.
+execute_process(COMMAND ${CMAKE_COMMAND} -E env PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
+    "${GAME}" --scenario "${SOURCE}/race-scenario.ini"
+    --set video.renderer=classic --set diagnostics.race_trace=true
+    --set input.disable_host=true --set input.state_script=12@200-250:CROSS
+    --set run.frames=2000 --set stop.scene=12 --set stop.timer=300
+    WORKING_DIRECTORY "${SOURCE}" TIMEOUT 60 RESULT_VARIABLE range_result
+    OUTPUT_VARIABLE range_output ERROR_VARIABLE range_error)
+if(NOT range_result EQUAL 0 OR
+   NOT range_error MATCHES "racetrace [^\n]* timer=240 accelerator=256" OR
+   NOT range_error MATCHES "racetrace [^\n]* timer=260 accelerator=0")
+    message(FATAL_ERROR "Scene-relative held input did not press/release: ${range_output}${range_error}")
+endif()

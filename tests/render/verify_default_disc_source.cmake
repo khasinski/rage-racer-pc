@@ -37,6 +37,8 @@ if(SAVED_DISC)
     set(disc_arguments)
 endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env
+    PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
+    "RAGE_PORT_PROFILE_ROOT=${root}/profile"
     --unset=RAGE_PORT_MODERN_ASSETS "XDG_STATE_HOME=${root}/state"
     --unset=RAGE_PORT_DISC_IMAGE --unset=RAGE_PORT_DISC_CUE
     "XDG_CONFIG_HOME=${root}/config"

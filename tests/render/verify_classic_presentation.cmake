@@ -36,7 +36,9 @@ set(image "${OUTPUT}/frame.ppm")
 # Runtime logs append sessions; stale failures/images must not contaminate a
 # rerun or make an interrupted run appear successful.
 file(REMOVE "${log}" "${image}")
-execute_process(COMMAND "${GAME}" --config "${SOURCE}/rage-port.ini"
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
+    "RAGE_PORT_PROFILE_ROOT=${OUTPUT}/profile"
+    "${GAME}" --config "${SOURCE}/rage-port.ini"
     --scenario "${SOURCE}/race-scenario.ini"
     --set "disc.image=${DISC}" --set video.renderer=classic
     --set video.classic_enhancements=true --set "video.fps=${fps}"
@@ -48,7 +50,8 @@ execute_process(COMMAND "${GAME}" --config "${SOURCE}/rage-port.ini"
     --set stop.scene=12 --set stop.timer=450
     --set diagnostics.classic_trace=true --set diagnostics.scene_trace=1
     --set diagnostics.classic_dump_midpoint=true
-    --set "diagnostics.modern_dump=${image}" --set diagnostics.modern_dump_frame=620
+    --set "diagnostics.modern_dump=${image}"
+    --set diagnostics.modern_dump_scene_id=12 --set diagnostics.modern_dump_timer=430
     --set diagnostics.modern_dump_offscreen=true --set "diagnostics.log=${log}"
     WORKING_DIRECTORY "${SOURCE}" RESULT_VARIABLE result
     OUTPUT_FILE "${OUTPUT}/stdout.log" ERROR_FILE "${OUTPUT}/stderr.log" TIMEOUT 90)

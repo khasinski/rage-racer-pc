@@ -277,6 +277,9 @@ add_executable(game_logic_tests
     ${CMAKE_SOURCE_DIR}/src/port/platform_paths.c
 )
 target_link_libraries(game_logic_tests PRIVATE rage-sim)
+if(UNIX)
+    target_link_libraries(game_logic_tests PRIVATE m)
+endif()
 if(APPLE)
     target_link_libraries(game_logic_tests PRIVATE "-framework CoreFoundation")
 endif()

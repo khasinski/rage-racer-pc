@@ -414,10 +414,11 @@ void SimRaceTrace(void) {
     }
     fprintf(stderr,
             "racetrace frame=%d tick=%u mult=%d x=%d z=%d speed=%d rpm=%d "
-            "gear=%d heading=%d yaw=%d progress=%d rival0=%d,%d\n",
+            "gear=%d heading=%d yaw=%d progress=%d rival0=%d,%d timer=%d accelerator=%d\n",
             g_FrameCounter, s_traceTick++,
             s_scaled ? DOUBLE_MULTIPLIER : RETAIL_MULTIPLIER,
             car->x, car->z, car->speed, car->drive.engineRpm, car->drive.gear,
             car->headingAngle & ANGLE_MASK, car->bodyYaw & ANGLE_MASK,
-            car->trackProgress, g_Cars[0].x, g_Cars[0].z);
+            car->trackProgress, g_Cars[0].x, g_Cars[0].z, g_SceneTimer,
+            car->drive.acceleratorInput.value);
 }

@@ -2052,6 +2052,9 @@ set_tests_properties(graphics_overlay_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE
 
 add_executable(overlay_model_tests overlay_model_tests.c
     "${PROJECT_SOURCE_DIR}/src/port/overlay_model.c")
+if(UNIX)
+    target_link_libraries(overlay_model_tests PRIVATE m)
+endif()
 target_include_directories(overlay_model_tests PRIVATE
     "${PROJECT_SOURCE_DIR}/src/port"
     "${PROJECT_SOURCE_DIR}/src/port/include"

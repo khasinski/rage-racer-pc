@@ -157,6 +157,8 @@ static uint32_t SmokeHashVisibleList(const VisibleTerrainCell *entries) {
 typedef struct RageSmokeStateInput {
     int scene;
     int timer;
+    int endTimer;
+    int held;
     int phase;
     int hasPhase;
     unsigned short buttons;
@@ -513,26 +515,34 @@ static void SmokeInitialize(void) {
          g_SmokeStateInputCount < 32; token = strtok(NULL, ",")) {
         char *at = strchr(token, '@');
         char *phaseAt;
+        char *rangeAt;
         char *colon = strchr(token, ':');
         unsigned short buttons;
         int scene;
         int timer;
+        int endTimer = 0;
         int phase = 0;
         if (at == NULL || colon == NULL || at > colon) continue;
         *at = '\0';
         *colon = '\0';
         phaseAt = strchr(at + 1, '@');
         if (phaseAt != NULL) *phaseAt = '\0';
+        rangeAt = strchr(at + 1, '-');
+        if (rangeAt != NULL) *rangeAt = '\0';
         buttons = SmokeButton(colon + 1);
         if (buttons == 0 ||
             !RuntimeParseInt(token, 0, 0, INT_MAX, &scene) ||
             !RuntimeParseInt(at + 1, 0, 0, INT_MAX, &timer) ||
+            (rangeAt != NULL &&
+             !RuntimeParseInt(rangeAt + 1, 0, timer, INT_MAX, &endTimer)) ||
             (phaseAt != NULL &&
              !RuntimeParseInt(phaseAt + 1, 0, 0, INT_MAX, &phase))) {
             continue;
         }
         g_SmokeStateInputs[g_SmokeStateInputCount].scene = scene;
         g_SmokeStateInputs[g_SmokeStateInputCount].timer = timer;
+        g_SmokeStateInputs[g_SmokeStateInputCount].held = rangeAt != NULL;
+        g_SmokeStateInputs[g_SmokeStateInputCount].endTimer = endTimer;
         g_SmokeStateInputs[g_SmokeStateInputCount].phase = phase;
         g_SmokeStateInputs[g_SmokeStateInputCount].hasPhase = phaseAt != NULL;
         g_SmokeStateInputs[g_SmokeStateInputCount].buttons = buttons;
@@ -704,6 +714,12 @@ int PortShouldExit(int frame_number) {
             fprintf(stderr,
                     "smoke state input frame=%d scene=%d timer=%d buttons=%04x\n",
                     frame_number, g_SceneId, g_SceneTimer, input->buttons);
+        }
+        if (input->held && input->armed && g_SceneId == input->scene &&
+            phaseMatches && g_SceneTimer >= input->timer &&
+            g_SceneTimer <= input->endTimer) {
+            g_PadType = 0x41;
+            g_PadHeld |= input->buttons;
         }
     }
     /* Optional capture fixture: exercise the normal exhausted-retry flow.

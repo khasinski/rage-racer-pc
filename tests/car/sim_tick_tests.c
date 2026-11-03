@@ -46,6 +46,7 @@ s16 g_GripLossTimer;
 s16 g_SteerHoldFrames;
 s16 g_RacePhase;
 s32 g_FrameCounter;
+s32 g_SceneTimer;
 
 const char *RuntimeConfigGet(const char *key) {
     (void)key;

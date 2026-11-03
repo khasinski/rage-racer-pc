@@ -91,6 +91,7 @@ endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     --unset=RAGE_TEST_SCENARIO --unset=PSYZ_VERIFY_VRAM_READ_CACHE
     PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
+    "RAGE_PORT_PROFILE_ROOT=${session}/state"
     "XDG_STATE_HOME=${session}/state" ${oracleEnv} ${resource_command}
     "${GAME}" --config "${CONFIG}" --scenario "${ROOT}/race-scenario.ini"
     --set "disc.image=${DISC}" --set video.renderer=modern

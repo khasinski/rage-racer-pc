@@ -1863,10 +1863,11 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         if (frameTiming < 0)
             frameTiming = RuntimeConfigEnabled("diagnostics.frame_timing");
         if (frameTiming)
-            fprintf(stderr, "benchmark-frame frame=%u scene=%d point=%d end_ns=%llu window_flags=%llx\n",
+            fprintf(stderr, "benchmark-frame frame=%u scene=%d point=%d end_ns=%llu window_flags=%llx timer=%u\n",
                     snapshot->frameCounter, snapshot->sceneId,
                     g_PlayerCar.trackPointIndex, (unsigned long long)finished,
-                    (unsigned long long)(s_window ? SDL_GetWindowFlags(s_window) : 0));
+                    (unsigned long long)(s_window ? SDL_GetWindowFlags(s_window) : 0),
+                    (unsigned)snapshot->sceneTimer);
         if (!profileWindowStart) {
             PsyzVideoStats initialStats = {0};
             Psyz_VideoStats(&initialStats);
