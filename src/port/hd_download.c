@@ -59,7 +59,7 @@ int HdDownloadParseCatalog(const char *json,size_t size,const char *base,
         snprintf(expected,sizeof(expected),"%s/hd-%s-v%s.rrhd",base,region,r.version);
         if(strcmp(expected,r.url))ok=0;
     }
-    if(ok)*out=r;yyjson_doc_free(doc);return ok;
+    if(ok){*out=r;}yyjson_doc_free(doc);return ok;
 }
 static size_t writeBytes(char *data,size_t a,size_t b,void *context) {
     Transfer *t=context;if(a&&b>SIZE_MAX/a)return 0;size_t n=a*b;
@@ -103,15 +103,15 @@ int HdDownloadInstall(const char *base,const char *store,const char *region,
     Transfer t={0};int ok=0,initialized=0;t.progress=progress;t.context=context;
     if(error&&cap)SDL_strlcpy(error,"Download failed or cancelled. Previous pack kept.",cap);
     if(!baseOK(base)) {if(error&&cap)SDL_strlcpy(error,"HD download server is not configured.",cap);return 0;}
-    if(curl_global_init(CURL_GLOBAL_DEFAULT)!=CURLE_OK)goto done;initialized=1;
+    if(curl_global_init(CURL_GLOBAL_DEFAULT)!=CURLE_OK){goto done;}initialized=1;
     snprintf(url,sizeof(url),"%s/api/mods/hd/%s/latest",base,region);
     if(!request(url,&t)||!HdDownloadParseCatalog(t.catalog,t.used,base,region,&release)) {
-        if(error&&cap)SDL_strlcpy(error,"Could not read a compatible HD release. Previous pack kept.",cap);goto done;
+        if(error&&cap){SDL_strlcpy(error,"Could not read a compatible HD release. Previous pack kept.",cap);}goto done;
     }
     HdPackState state;
     if(HdPackReadState(store,region,&state)&&!strcmp(state.hash,release.sha256)&&
        HdPackVerify(store,&state,verifyProgress,&t,error,cap)) {
-        if(error&&cap)SDL_strlcpy(error,"HD pack is up to date and verified.",cap);ok=2;goto done;
+        if(error&&cap){SDL_strlcpy(error,"HD pack is up to date and verified.",cap);}ok=2;goto done;
     }
     if(progress&&!progress(context,"Downloading",0,release.size))goto done;
     if(!SDL_CreateDirectory(store))goto done;
@@ -120,11 +120,11 @@ int HdDownloadInstall(const char *base,const char *store,const char *region,
     int fetched=request(release.url,&t),closed=SDL_CloseIO(t.file);t.file=NULL;Sha256Finish(&t.sha,hash);
     if(!fetched||!closed||t.written!=release.size||strcmp(hash,release.sha256))goto done;
     if(!HdPackInstall(archive,store,region,installProgress,&t,error,cap))goto done;
-    if(error&&cap)SDL_strlcpy(error,"HD pack downloaded and installed.",cap);ok=1;
+    if(error&&cap){SDL_strlcpy(error,"HD pack downloaded and installed.",cap);}ok=1;
 done:
     if(t.file)SDL_CloseIO(t.file);
     if(*archive)SDL_RemovePath(archive);
-    if(initialized)curl_global_cleanup();return ok;
+    if(initialized){curl_global_cleanup();}return ok;
 }
 
 #endif

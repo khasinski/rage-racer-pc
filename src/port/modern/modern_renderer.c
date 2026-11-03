@@ -810,7 +810,7 @@ static int ModernEnsureUiAtlasPipeline(void) {
  info.target_info.color_target_descriptions=&target;info.target_info.num_color_targets=1;
  info.target_info.has_depth_stencil_target=true;info.target_info.depth_stencil_format=SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
  if(vs&&fs)s_pipeUiAtlas=SDL_CreateGPUGraphicsPipeline(s_device,&info);
- if(vs)SDL_ReleaseGPUShader(s_device,vs);if(fs)SDL_ReleaseGPUShader(s_device,fs);
+ if(vs){SDL_ReleaseGPUShader(s_device,vs);}if(fs){SDL_ReleaseGPUShader(s_device,fs);}
  return s_pipeUiAtlas!=NULL;
 }
 
@@ -915,7 +915,7 @@ static int ModernRefreshSkyAtlas(const RenderWorld *world) {
         SDL_GPUShader *fs=ModernCreateShader(sky_atlas_frag_spv,sky_atlas_frag_spv_len,
             (const char*)sky_atlas_frag_msl,sky_atlas_frag_msl_len,SDL_GPU_SHADERSTAGE_FRAGMENT,"fs_sky_atlas",1,0);
         if(vs&&fs){s_pipeSkyAtlas=ModernCreateOverlayPipeline(vs,fs,0);s_pipeSkyAtlasSub=ModernCreateOverlayPipeline(vs,fs,1);}
-        if(vs)SDL_ReleaseGPUShader(s_device,vs);if(fs)SDL_ReleaseGPUShader(s_device,fs);
+        if(vs){SDL_ReleaseGPUShader(s_device,vs);}if(fs){SDL_ReleaseGPUShader(s_device,fs);}
     }
     if(!s_skyAtlasSampler){
         SDL_GPUSamplerCreateInfo sampler={0};

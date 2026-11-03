@@ -48,7 +48,7 @@ static int apply(void){
  RageModManifest *m=s.have&&s.state.enabled?HdPackReadManifest(s.state.directory):NULL;
  if(s.have&&s.state.enabled&&!m)return 0;
  int ok=MenuImagesSetHdPack(m?s.state.directory:NULL,m);
- if(ok)ok=ModernAssetsSetHdPack(m?s.state.directory:NULL,m);free(m);
+ if(ok){ok=ModernAssetsSetHdPack(m?s.state.directory:NULL,m);}free(m);
  if(ok)ok=ModernRestartPresentation(PortActiveConfig());
  return ok;
 }

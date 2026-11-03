@@ -74,14 +74,14 @@ int HdPackVerify(const char *store,const HdPackState *s,HdPackProgress progress,
  (void)store;char path[1800],actual[65];Record *files=NULL;SDL_IOStream *f=NULL;Uint32 count=0;int ok=0;
  if(!join(path,sizeof(path),s->directory,"integrity.bin")||!hashIO(path,actual)||strcmp(actual,s->inventoryHash))return fail(error,cap,"Pack inventory checksum mismatch.");
  f=SDL_IOFromFile(path,"rb");if(!f||!readHeader(f,&count))goto done;files=calloc(count,sizeof(*files));if(!files)goto done;
- for(Uint32 i=0;i<count;i++){if(!readRecord(f,&files[i]))goto done;for(Uint32 j=0;j<i;j++)if(!strcmp(files[i].name,files[j].name))goto done;if(!join(path,sizeof(path),s->directory,files[i].name)||!hashIO(path,actual)||strcmp(actual,files[i].sha))goto done;if(progress&&!progress(context,(int)((i+1)*100/count)))goto done;}
+ for(Uint32 i=0;i<count;i++){if(!readRecord(f,&files[i])){goto done;}for(Uint32 j=0;j<i;j++)if(!strcmp(files[i].name,files[j].name))goto done;if(!join(path,sizeof(path),s->directory,files[i].name)||!hashIO(path,actual)||strcmp(actual,files[i].sha))goto done;if(progress&&!progress(context,(int)((i+1)*100/count)))goto done;}
  {char tail;if(SDL_ReadIO(f,&tail,1)!=0||!references(s->directory,files,count))goto done;}ok=1;
  done:if(f)SDL_CloseIO(f);free(files);if(!ok)fail(error,cap,"Pack verification failed or cancelled.");return ok;
 }
 int HdPackCreate(const char *source,const char *output,char *error,size_t cap){
  RageModManifest *m=HdPackReadManifest(source);HdPackState state={0};if(!m||!metadata(source,&state)){free(m);return fail(error,cap,"Invalid HD pack folder or metadata.");}
  Record *files=calloc(MAX_FILES,sizeof(*files));SDL_IOStream *f=NULL;Uint32 count=2;int ok=0;char path[1800];SDL_PathInfo info;
- if(!files)goto done;strcpy(files[0].name,"pack.json");strcpy(files[1].name,"mod.toml");
+ if(!files){goto done;}strcpy(files[0].name,"pack.json");strcpy(files[1].name,"mod.toml");
  for(size_t i=0;i<m->textureCount;i++){int found=0;for(Uint32 j=2;j<count;j++)if(!strcmp(files[j].name,m->textures[i].path))found=1;if(!found){if(count==MAX_FILES)goto done;SDL_strlcpy(files[count++].name,m->textures[i].path,256);}}
  if(SDL_GetPathInfo(output,&info))goto done;
  f=SDL_IOFromFile(output,"wb");if(!f||!writeHeader(f,count))goto done;Uint64 total=0;
@@ -105,7 +105,7 @@ int HdPackInstall(const char *archive,const char *store,const char *region,HdPac
  if(!join(path,sizeof(path),stage,"textures")||!SDL_CreateDirectory(path)||!join(path,sizeof(path),stage,"integrity.bin"))goto done;
  index=SDL_IOFromFile(path,"wb");if(!index||!writeHeader(index,count))goto done;Uint64 total=0;
  for(Uint32 i=0;i<count;i++){
-  if(!readRecord(f,&files[i]))goto done;for(Uint32 j=0;j<i;j++)if(!strcmp(files[i].name,files[j].name))goto done;
+  if(!readRecord(f,&files[i])){goto done;}for(Uint32 j=0;j<i;j++)if(!strcmp(files[i].name,files[j].name))goto done;
   if((i==0&&strcmp(files[i].name,"pack.json"))||(i==1&&strcmp(files[i].name,"mod.toml")))goto done;
   total+=files[i].bytes;if(total>MAX_TOTAL)goto done;
   void *bytes=SDL_malloc(files[i].bytes);if(!bytes)goto done;int valid=SDL_ReadIO(f,bytes,files[i].bytes)==files[i].bytes;
@@ -126,6 +126,6 @@ int HdPackInstall(const char *archive,const char *store,const char *region,HdPac
  }else {if(!SDL_RenamePath(stage,final))goto done;stage[0]=0;}
  SDL_strlcpy(state.hash,archiveHash,sizeof(state.hash));state.enabled=1;
  if(!saveState(store,&state,1))goto done;
- if(progress)progress(context,100);ok=1;
+ if(progress){progress(context,100);}ok=1;
  done:if(index)SDL_CloseIO(index);if(f)SDL_CloseIO(f);if(ownedStage&&*stage)clean(stage,files,created);free(files);if(!ok)fail(error,cap,"Install failed/cancelled: invalid files, region or checksum. Previous pack kept.");return ok;
 }
