@@ -8,8 +8,9 @@
   "fork": {
     "repository": "https://github.com/khasinski/rage-racer-psyz",
     "branch": "rage-racer-upstream-20261103",
-    "commit": "41b68b321af4e6702808459dfc7d3f2494bc3ffe",
-    "aheadOfUpstream": 1,
+    "commit": "8db3cb79c2f3b2835786cdc9000539be813cb9a9",
+    "integrationCommit": "41b68b321af4e6702808459dfc7d3f2494bc3ffe",
+    "aheadOfUpstream": 6,
     "behindUpstream": 0,
     "previousCommit": "5b950544640a54b48cbb8e5c4870cf3d5ef62471",
     "localBackupBranch": "backup/rage-pre-upstream-20261103",
@@ -38,6 +39,7 @@
     "Mirror capture test uses logic-rate presentation so the requested diagnostic frame cannot be skipped by host pacing."
   ],
   "verification": {
+    "auditStage": "Initial rebase audit, before the follow-up fixes described below.",
     "platform": "macOS arm64, SDL GPU Metal",
     "environment": {"PSYZ_HEADLESS": "1", "SDL_AUDIODRIVER": "dummy"},
     "build": "passed: full Release and standalone PsyZ tests",
@@ -63,6 +65,31 @@
       "No Windows/Linux runtime validation in this session.",
       "No interactive driving, native file chooser or double-click acceptance performed.",
       "The fork retains its custom presentation backend; this is not a promise of full upstream native-canvas rendering parity."
+    ]
+  },
+  "followupAudit": {
+    "report": "docs/release-validation-2026-11-03.md",
+    "rootTests": {
+      "total": 581,
+      "passed": 552,
+      "skipped": 29,
+      "unresolvedFailures": 0,
+      "fullRunLog": "build/reports/release-gates-verified-pal-console.log",
+      "finalFixtureRerunLog": "build/reports/release-gates-pal-last-rerun.log",
+      "note": "The full real-PAL run passed 551 tests and skipped 29. Its remaining FMV temporary-directory fixture failure was corrected by explicitly placing the isolated save profile outside the FMV scratch directory; that test then passed separately."
+    },
+    "ci": {
+      "sourceCommit": "29703d6e43f79caf011ba08198d1df328da451f9",
+      "url": "https://github.com/khasinski/rage-racer-pc/actions/runs/41689181577",
+      "macOS": "passed: build and unit/functional tests",
+      "Windows": "passed: build and unit/functional tests",
+      "Linux": "passed: build and unit/functional tests"
+    },
+    "runtimeLimits": [
+      "No complete normal-physics day/night laps or native chooser/double-click acceptance performed.",
+      "Packaged macOS CLI startup from clean profiles passes with CUE and Track 01 BIN and produces identical modern frames.",
+      "A packaged Linux GPU probe under Apple Silicon x86-64 emulation exits with SIGSEGV; native Linux GPU validation remains required. Independent composite and SSAO Vulkan tests pass in that environment.",
+      "The bazzite host previously used for the Windows VM is unreachable."
     ]
   }
 }

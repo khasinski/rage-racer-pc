@@ -76,7 +76,11 @@ synchronization. These scripted captures do not establish a complete driven lap.
 
 - `build/reports/release-gates-final-console.log`: 517 passed, 64 skipped, zero
   failures out of 581 registered tests before the additional real-disc fixes.
-- `build/reports/release-gates-after-disc-fixes-console.log`: final repeated gate.
+- `build/reports/release-gates-verified-pal-console.log`: full PAL-enabled gate,
+  551 passed, 29 skipped, one temporary-directory fixture failure.
+- `build/reports/release-gates-pal-last-rerun.log`: the remaining fixture passed
+  after assigning its profile outside the directory checked for FMV leaks.
+  Combined final coverage is 552 passed, 29 skipped, no unresolved failures.
 - `build/reports/release-gates-fmv-fixed.log`: real-CUE movie checks.
 - `build/reports/release-gates-extra-gp.log`: Classic presentation and asset checks.
 - `build/reports/classic-reference-diff.json`: old/new hashes and pixel differences.
@@ -95,6 +99,10 @@ produced the same frame hash:
 `383458ca2079eaf04a607ef090ff35e31d090658ce7eed2e16f5584cdbc83d67`.
 These launches supplied the disc through CLI configuration. They do not prove
 Finder double-click or native selection acceptance.
+The final ad-hoc-signed local validation archive is
+`build/release-validation/Rage-Racer-validation-macos-arm64.zip`, SHA-256
+`366bf6b8afef9e76671b8cf4c63d5d34d748bbb2f64454120d22efcaad477a4a`.
+It is a validation package, not a notarized public release.
 
 `release-validation.yml` builds and tests macOS arm64, Windows x86-64 and Linux
 x86-64 with read-only repository permissions and uploads validation artifacts.
@@ -109,6 +117,10 @@ width. A diagnostic preload captured a program counter outside the executable;
 gdb could not read registers through this emulation environment. The cause is
 unresolved: this is neither a passing Linux runtime result nor proof that the
 native Linux build has the same failure. Native Linux GPU validation is required.
+Independent composite and SSAO Vulkan GPU tests passed in the same emulated
+environment, so the failure has not been reduced to a general Vulkan startup
+failure. Logs are in `build/reports/linux-package-*.log` and
+`build/release-validation/linux-runtime/`.
 
 ## Performance scope
 
@@ -145,3 +157,50 @@ The tested smoke executable SHA-256 was
 Raw logs, settings hashes and completion evidence are under
 `build/release-validation/performance/final-{original,hd}/`; per-run quantiles
 and spike positions are in `build/reports/performance-review.json`.
+
+## Follow-up: smoke memory footprint
+
+The reported approximately 4 GB is macOS physical footprint, including Metal
+resources in unified memory. In the original-texture probe, `footprint`
+attributed approximately 2.90 GB to IOAccelerator graphics and 0.92 GB to owned,
+unmapped graphics memory. Ordinary malloc allocations were much smaller. This
+was not just a large reserved virtual address range.
+
+An Objective-C diagnostic hook recorded Metal buffer and texture allocations
+without changing SDL. It found 1,332 allocations of 2 MiB buffers. The legacy
+VRAM upload transfer was sized for the entire 1024×512 RGBA backing image even
+when `LoadImage` uploaded only a small CLUT. SDL's buffer cycling preserved each
+in-flight upload and then retained those backing stores for reuse, holding
+approximately 2.6 GiB in this one size class.
+
+PsyZ commit `8db3cb7` replaces that amplification with lazy power-of-two upload
+size classes, 1 KiB through 2 MiB. Transfers still cycle to preserve queued
+copies. Resource teardown releases every size class. Full-page initialization
+and movie upload retain their existing dedicated transfer.
+
+| Measurement | Before | After |
+| --- | ---: | ---: |
+| Original textures, peak physical footprint | 3.97 GB | 1.25 GB |
+| HD, peak physical footprint | 5.09 GB | 2.30 GB |
+| 2 MiB backing allocations in the diagnostic trace | 1,332 | 12 |
+| Combined size of those allocations | 2.79 GB | 25.2 MB |
+| Three consecutive races, original textures | not measured | peak 1.37 GB |
+
+The original and HD comparisons use the same settings and two route laps as the
+earlier measurements, with no diagnostic injection during footprint runs.
+The reductions are approximately 68% and 55%. Three full debug-route races
+completed in the stability run; this does not assert normal-physics acceptance
+or rule out every possible longer-term leak.
+
+Validation passed 12 targeted Rage tests covering exact classic/modern image
+references, brightness invariance, mirrors, renderer restarts, VRAM caching,
+image upload and FMV. Six selected SDK tests also passed. The added GPU regression
+queues a full VRAM upload, a size-boundary-crossing tile and 512 CLUT uploads
+before synchronizing, then compares actual GPU VRAM against the complete expected
+image, bypassing the CPU readback cache. Five broader SDK display/RGB24 image
+checks failed identically in before/after probes; no claim of full SDK GPU parity
+is made.
+
+Evidence is retained under `build/reports/memory-audit/`, including `after-*`,
+`stability-footprint.txt`, `metal-*-trace.log`, `render-tests.log`,
+`compat-tests.log`, `psyz-upload-regression.log` and the baseline comparison logs.
