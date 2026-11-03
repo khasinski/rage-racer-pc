@@ -44,6 +44,15 @@ static void ResetLegacyTransitionState(void) {
 void SceneRuntimeBeforeDispatch(s32 scene) {
     if (s_runtime.scene != scene) {
         const int continues = ContinuesScene(s_runtime.scene, scene);
+        /* These entry handlers initialise the next scene's timer themselves:
+         * -1 waits for retry input; 555 holds then fades GAME OVER. Resetting
+         * either on dispatch skips the intended presentation. */
+        const int keepsTimer =
+            (s_runtime.scene == GAME_SCENE_ENTER_LOST_RACE &&
+             scene == GAME_SCENE_LOST_RACE) ||
+            (s_runtime.scene == GAME_SCENE_ENTER_RACE_END &&
+             scene == GAME_SCENE_RACE_END);
+        const s32 entryTimer = g_SceneTimer;
         SceneState state = s_runtime.state;
         u32 generation = s_runtime.generation + 1;
 
@@ -59,6 +68,7 @@ void SceneRuntimeBeforeDispatch(s32 scene) {
                 BOOT_LOGO_INITIAL_HOLD_FRAMES;
         }
         ResetLegacyTransitionState();
+        if (keepsTimer) g_SceneTimer = entryTimer;
     }
 }
 

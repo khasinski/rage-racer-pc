@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -286,6 +287,7 @@ static void test_port_config(void) {
         "texture_filter = linear\n"
         "post = fxaa\n"
         "bloom = on\n"
+        "brightness = 1.30\n"
         "grading = vibrant\n"
         "draw_distance = nonsense\n"
         "unknown.key = 1\n";
@@ -298,6 +300,7 @@ static void test_port_config(void) {
     EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_VSYNC, config.modernFps);
     EXPECT_EQ(1, config.carLights);
+    EXPECT_EQ(100, (s32)lroundf(config.modernBrightness * 100.0f));
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
         failures++;
@@ -305,13 +308,14 @@ static void test_port_config(void) {
         char *arguments[] = {"rage-test", "--config", path};
         close(fd);
         EXPECT_EQ(1, RuntimeConfigInit(3, arguments));
-        EXPECT_EQ(8, PortConfigApplyRuntime(&config));
+        EXPECT_EQ(9, PortConfigApplyRuntime(&config));
         EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
         EXPECT_EQ(RAGE_MODERN_ASPECT_16_9, config.modernAspect);
         EXPECT_EQ(120, config.modernFps);
         EXPECT_EQ(1, config.modernTextureFilterLinear);
         EXPECT_EQ(RAGE_MODERN_POST_FXAA, config.modernPost);
         EXPECT_EQ(1, config.modernGrading);
+        EXPECT_EQ(130, (s32)lroundf(config.modernBrightness * 100.0f));
         EXPECT_EQ(35, (s32)(config.modernInternalScale * 10.0f));
         /* invalid value keeps the default */
         EXPECT_EQ(10, (s32)(config.modernDrawDistance * 10.0f));

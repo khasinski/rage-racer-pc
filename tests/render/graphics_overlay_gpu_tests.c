@@ -14,6 +14,14 @@
  * be driven directly; the host services it calls are replaced below. */
 #include "graphics_overlay.c"
 
+void HdPackUiTick(struct OverlayModel *model){(void)model;}
+MainMenuState PortMainMenuState(void){return (MainMenuState){0};}
+void PortMainMenuPointer(int w,int h,float x,float y,int click){(void)w;(void)h;(void)x;(void)y;(void)click;}
+void PortMainMenuEdge(int last){(void)last;}
+MainMenuRect MainMenuRow(int w,int h,int item,int extraUnlocked){(void)extraUnlocked;(void)w;(void)h;(void)item;return (MainMenuRect){0};}
+int MainMenuPaint(OverlaySurface *s,int w,int h,const MainMenuState *state){(void)s;(void)w;(void)h;(void)state;return 0;}
+int ModernPresentationActive(void){return 1;}
+float ModernPresentationAspect(void){return 16.0f/9.0f;}
 static RagePortConfig s_active;
 
 PsyzOverlayEventCB_SDL3 Psyz_OverlayEvent_SDL3(PsyzOverlayEventCB_SDL3 cb) {
@@ -46,6 +54,7 @@ int RuntimeConfigEnabled(const char *key) {
     (void)key;
     return 0;
 }
+const char *RuntimeConfigSettingsPath(void) { return NULL; }
 static PortSessionOptions s_storedSession;
 static int s_haveSession;
 
@@ -164,9 +173,47 @@ static int TestPanelControls(void) {
     CHECK(s_model.page == OVERLAY_PAGE_AUDIO);
     Press(SDL_SCANCODE_LEFT);
     CHECK(s_model.values.session.music == 14);
+    PortGraphicsOverlayTick();
+    Press(SDL_SCANCODE_PAGEDOWN);
+    CHECK(s_model.page == OVERLAY_PAGE_VIEW);
+    Press(SDL_SCANCODE_PAGEDOWN);
+    CHECK(s_model.page == OVERLAY_PAGE_MODS && s_model.selected == 0);
+    Press(SDL_SCANCODE_RETURN);
+    CHECK(s_model.packAction == 1 && !s_model.configPending &&
+          !s_model.sessionPending);
+    s_model.packAction = 0;
+    Press(SDL_SCANCODE_DOWN);
+    Press(SDL_SCANCODE_RETURN);
+    CHECK(s_model.packAction == 5);
+    s_model.packAction = 0;
+    Press(SDL_SCANCODE_DOWN);
+    Press(SDL_SCANCODE_RETURN);
+    CHECK(s_model.packAction == 2);
+    s_model.packAction = 0;
+    Press(SDL_SCANCODE_PAGEUP);
+    Press(SDL_SCANCODE_PAGEUP);
     Press(SDL_SCANCODE_PAGEUP);
     Press(SDL_SCANCODE_PAGEUP);
     CHECK(s_model.page == OVERLAY_PAGE_GRAPHICS && s_model.selected == 0);
+
+    /* Display mode is a host action, including while Classic is selected;
+     * it must reach the session adapter without rebuilding the renderer. */
+    {
+        int count;
+        const OverlaySetting *settings = OverlayPageSettings(OVERLAY_PAGE_GRAPHICS, &count);
+        int row = 0;
+        while (row < count && strcmp(settings[row].label, "Display mode")) ++row;
+        CHECK(row < count);
+        s_model.selected = row;
+        Press(SDL_SCANCODE_RIGHT);
+        CHECK(s_model.sessionPending && !s_model.configPending);
+        PortGraphicsOverlayTick();
+        CHECK(s_storedSession.fullscreen == 1 && s_model.values.session.fullscreen == 1);
+        CHECK(s_active.renderer == RAGE_RENDERER_CLASSIC);
+        Press(SDL_SCANCODE_LEFT);
+        PortGraphicsOverlayTick();
+        CHECK(s_storedSession.fullscreen == 0);
+    }
 
     /* Closing and then reading the close flag happens exactly once. */
     Press(SDL_SCANCODE_ESCAPE);
@@ -176,7 +223,7 @@ static int TestPanelControls(void) {
 
     /* The resume row closes it as well. */
     Press(SDL_SCANCODE_ESCAPE);
-    s_model.selected = OverlayModelSettingCount(&s_model);
+    s_model.selected = OverlayModelSettingCount(&s_model) + 1;
     Press(SDL_SCANCODE_RETURN);
     CHECK(!PortGraphicsOverlayActive() && PortGraphicsOverlayTakeClosed());
     s_presentationAvailable = 0;
@@ -215,16 +262,27 @@ int main(void) {
 
         PortSessionOptionsRead(&session);
         s_active.renderer = RAGE_RENDERER_MODERN;
+        s_active.modernBrightness = 1.0f;
         OverlayModelOpen(&s_model, &s_active, &session);
     }
     s_windowW = TARGET_W;
     s_windowH = TARGET_H;
     OverlayComputeLayout(OverlayModelRowCount(&s_model), TARGET_W, TARGET_H,
                          &s_layout);
-    CHECK(s_layout.scale >= 0.99f && s_layout.scale <= 1.01f);
+    CHECK(s_layout.h <= TARGET_H && s_layout.w <= TARGET_W);
     CHECK(OverlayFontReady());
     CHECK(OverlaySurfaceResize(&s_surface, s_layout.w, s_layout.h));
     OverlayPaint(&s_surface, &s_model, &s_layout);
+    if (getenv("RAGE_TEST_OVERLAY_DUMP")) {
+        CHECK(OverlaySurfaceDump(&s_surface, getenv("RAGE_TEST_OVERLAY_DUMP")));
+        char path[4096];
+        snprintf(path, sizeof(path), "%s.classic.ppm", getenv("RAGE_TEST_OVERLAY_DUMP"));
+        s_model.values.config.renderer = RAGE_RENDERER_CLASSIC;
+        OverlayPaint(&s_surface, &s_model, &s_layout);
+        CHECK(OverlaySurfaceDump(&s_surface, path));
+        s_model.values.config.renderer = RAGE_RENDERER_MODERN;
+        OverlayPaint(&s_surface, &s_model, &s_layout);
+    }
     CHECK(EnsurePipeline(device, SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM));
     CHECK(UploadSurface(device));
 

@@ -103,6 +103,9 @@ int main(void) {
             assert(RageSkyExpandTexturePageLayout(pageExpanded, sizeof(pageExpanded),
                                                   page, sizeof(page), &layout));
             assert(memcmp(expanded, pageExpanded, sizeof(expanded)) == 0);
+            assert(RageSkyExpandTexturePageLayoutScaled(pageExpanded, sizeof(pageExpanded),
+                page, sizeof(page), 256, &layout));
+            assert(memcmp(expanded, pageExpanded, sizeof(expanded)) == 0);
             for (unsigned y = 0; y < 256; ++y) {
                 for (unsigned x = 0; x < 512; ++x) {
                     const uint8_t *pixel = pageExpanded + (y * 512 + x) * 4;

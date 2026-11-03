@@ -1,4 +1,12 @@
 add_executable(native_asset_fixture native_asset_fixture.c)
+if(TARGET rage-racer-smoke)
+    add_test(NAME modern_brightness COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DFIXTURE=$<TARGET_FILE:native_asset_fixture>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_brightness.cmake)
+    set_tests_properties(modern_brightness PROPERTIES LABELS "e2e;gpu" TIMEOUT 310)
+endif()
 add_executable(car_lights_tests car_lights_tests.c)
 target_link_libraries(car_lights_tests PRIVATE rage-render-world)
 target_compile_options(car_lights_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
@@ -1989,6 +1997,13 @@ if(TARGET rage-racer)
 endif()
 
 if(TARGET rage-racer-smoke)
+    add_executable(menu_hd_fixture menu_hd_fixture.c)
+    target_link_libraries(menu_hd_fixture PRIVATE SDL3::SDL3)
+    add_test(NAME menu_hd_render COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DFIXTURE=$<TARGET_FILE:menu_hd_fixture>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_hd.cmake)
+    set_tests_properties(menu_hd_render PROPERTIES LABELS e2e TIMEOUT 90)
     add_test(NAME native_vertex_budget COMMAND ${CMAKE_COMMAND}
         -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
         -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
@@ -2023,6 +2038,7 @@ add_test(NAME menu_label_font COMMAND menu_label_font_tests)
 set_tests_properties(menu_label_font PROPERTIES LABELS unit TIMEOUT 30)
 
 add_executable(graphics_overlay_gpu_tests graphics_overlay_gpu_tests.c
+    "${PROJECT_SOURCE_DIR}/src/port/user_settings.c"
     "${PROJECT_SOURCE_DIR}/src/port/overlay_model.c"
     "${PROJECT_SOURCE_DIR}/src/port/overlay_raster.c"
     "${PROJECT_SOURCE_DIR}/src/port/touch_model.c"
@@ -2060,3 +2076,115 @@ if(NOT MSVC)
 endif()
 add_test(NAME touch_model COMMAND touch_model_tests)
 set_tests_properties(touch_model PROPERTIES LABELS unit TIMEOUT 30)
+
+add_executable(hd_pack_tests hd_pack_tests.c ${CMAKE_SOURCE_DIR}/src/port/hd_pack.c ${CMAKE_SOURCE_DIR}/src/port/hd_pack_ui.c ${CMAKE_SOURCE_DIR}/src/port/hd_download.c)
+target_include_directories(hd_pack_tests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+target_link_libraries(hd_pack_tests PRIVATE rage-render-world rage-content rage-json SDL3::SDL3 rage-hd-network)
+add_test(NAME hd_pack COMMAND hd_pack_tests)
+set_tests_properties(hd_pack PROPERTIES LABELS "unit")
+
+add_test(NAME ui_atlas_render COMMAND ${CMAKE_COMMAND}
+    -DFIXTURE=$<TARGET_FILE:menu_hd_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+    -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_ui_atlas.cmake)
+set_tests_properties(ui_atlas_render PROPERTIES LABELS "e2e;gpu" TIMEOUT 70)
+
+add_test(NAME ui_atlas_render_480 COMMAND ${CMAKE_COMMAND}
+    -DFIXTURE=$<TARGET_FILE:menu_hd_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+    -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_ui_atlas_480.cmake)
+set_tests_properties(ui_atlas_render_480 PROPERTIES LABELS "e2e;gpu" TIMEOUT 70)
+
+add_executable(ui_atlas_gpu_tests ui_atlas_gpu_tests.c)
+target_include_directories(ui_atlas_gpu_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port/modern/shaders)
+target_link_libraries(ui_atlas_gpu_tests PRIVATE SDL3::SDL3)
+add_test(NAME ui_atlas_blend_gpu COMMAND ui_atlas_gpu_tests)
+set_tests_properties(ui_atlas_blend_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
+
+add_test(NAME ui_region_render COMMAND ${CMAKE_COMMAND}
+    -DFIXTURE=$<TARGET_FILE:menu_hd_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+    -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DREGION=1
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_ui_atlas.cmake)
+add_test(NAME ui_region_render_480 COMMAND ${CMAKE_COMMAND}
+    -DFIXTURE=$<TARGET_FILE:menu_hd_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+    -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR} -DREGION=1
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_ui_atlas_480.cmake)
+set_tests_properties(ui_region_render ui_region_render_480 PROPERTIES LABELS "e2e;gpu" TIMEOUT 70)
+
+add_executable(ui_mirror_fixture ui_mirror_fixture.c)
+target_link_libraries(ui_mirror_fixture PRIVATE SDL3::SDL3)
+add_test(NAME ui_mirror_render COMMAND ${CMAKE_COMMAND}
+    -DFIXTURE=$<TARGET_FILE:ui_mirror_fixture> -DGAME=$<TARGET_FILE:rage-racer-smoke>
+    -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+    -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_ui_mirror.cmake)
+set_tests_properties(ui_mirror_render PROPERTIES LABELS "e2e;gpu" TIMEOUT 70)
+
+target_include_directories(graphics_overlay_gpu_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port/include)
+
+if(TARGET rage-racer-smoke AND TARGET menu_hd_fixture)
+    add_test(NAME menu_preview_capture COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DFIXTURE=$<TARGET_FILE:menu_hd_fixture>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_preview.cmake)
+    set_tests_properties(menu_preview_capture PROPERTIES LABELS e2e TIMEOUT 60)
+endif()
+
+if(TARGET rage-racer-smoke)
+    add_test(NAME waterfall_native COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_native_waterfall.cmake)
+    set_tests_properties(waterfall_native PROPERTIES LABELS e2e TIMEOUT 60)
+endif()
+
+if(TARGET rage-racer-smoke AND TARGET menu_hd_fixture)
+    add_test(NAME sky_atlas_runtime COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DFIXTURE=$<TARGET_FILE:menu_hd_fixture>
+        -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sky_atlas.cmake)
+    set_tests_properties(sky_atlas_runtime PROPERTIES LABELS e2e TIMEOUT 180)
+    add_test(NAME sky_roll_gradient COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DFIXTURE=$<TARGET_FILE:menu_hd_fixture>
+        -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sky_roll_gradient.cmake)
+    set_tests_properties(sky_roll_gradient PROPERTIES LABELS "e2e;gpu" TIMEOUT 60)
+    add_test(NAME sky_environment_runtime COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DFIXTURE=$<TARGET_FILE:menu_hd_fixture>
+        -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}/reports
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_sky_environment.cmake)
+    set_tests_properties(sky_environment_runtime PROPERTIES LABELS e2e TIMEOUT 180)
+    add_test(NAME material_usage_runtime COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}/reports
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_material_usage.cmake)
+    set_tests_properties(material_usage_runtime PROPERTIES LABELS e2e TIMEOUT 120)
+    add_test(NAME review_camera_runtime COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}/reports
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_review_camera.cmake)
+    set_tests_properties(review_camera_runtime PROPERTIES LABELS e2e TIMEOUT 180)
+    add_test(NAME post_frame_border COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DFIXTURE=$<TARGET_FILE:menu_hd_fixture>
+        -DCHECK=$<TARGET_FILE:ppm_capture_check> -DSOURCE=${CMAKE_SOURCE_DIR}
+        -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}/reports
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_post_border.cmake)
+    set_tests_properties(post_frame_border PROPERTIES LABELS e2e TIMEOUT 90)
+endif()
+
+add_executable(modern_image_tests modern_image_tests.c)
+target_include_directories(modern_image_tests PRIVATE ${PROJECT_SOURCE_DIR}/src ${rage_webp_SOURCE_DIR}/src)
+target_link_libraries(modern_image_tests PRIVATE rage-hd-image webp)
+add_test(NAME modern_image COMMAND modern_image_tests)
+set_tests_properties(modern_image PROPERTIES LABELS unit TIMEOUT 30)
+if(UNIX AND NOT ANDROID)
+    add_executable(hd_download_tests hd_download_tests.c
+        ${PROJECT_SOURCE_DIR}/src/port/hd_download.c ${PROJECT_SOURCE_DIR}/src/port/hd_pack.c)
+    target_include_directories(hd_download_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
+    target_link_libraries(hd_download_tests PRIVATE rage-render-world rage-content rage-json rage-hd-image rage-hd-network SDL3::SDL3)
+    add_dependencies(hd_download_tests rage-hd-server rage-hd-publish)
+    add_test(NAME hd_download COMMAND hd_download_tests $<TARGET_FILE:rage-hd-server> $<TARGET_FILE:rage-hd-publish>)
+    set_tests_properties(hd_download PROPERTIES LABELS integration TIMEOUT 60)
+endif()

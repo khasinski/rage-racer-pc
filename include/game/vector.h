@@ -94,7 +94,7 @@ typedef struct LVec {
  */
 /*
  * The other way round: a routine that takes the words rather than the vector.
- * ApplyMatrixLV is handed both scratch arrays and named vectors by its
+ * GameApplyMatrixLV is handed both scratch arrays and named vectors by its
  * fourteen callers, so the named ones say here that they mean their words.
  */
 static inline s32 *AsWords(Vec4 *vector) {

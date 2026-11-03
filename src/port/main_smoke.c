@@ -7,11 +7,19 @@
 #include <libetc.h>
 
 #include <stdio.h>
+#include <SDL3/SDL.h>
+#include "native_mesh_writer.h"
 #include <stdlib.h>
+#include <limits.h>
 
 #include "host_storage.h"
 #include "host_disc.h"
 #include "game/diagnostics.h"
+#include "game/car.h"
+#include "game/random.h"
+#include "game/terrain_internal.h"
+#include "game/track.h"
+#include "race_mods.h"
 
 #include "input_config.h"
 #include "content_options.h"
@@ -248,11 +256,17 @@ static void ReportInitialState(void) {
 }
 
 static void ReportWindowSize(void) {
-    PsyzSize size;
+    int count = 0, width = 0, height = 0;
+    SDL_Window **windows;
 
     if (!RuntimeConfigEnabled("report.window_size")) return;
-    size = Psyz_VideoGetDisplaySize();
-    printf("window size: %dx%d\n", size.w, size.h);
+    /* PsyZ now reports display pixels. This diagnostic checks the logical
+     * size of the game's sole SDL window, including on Retina displays. */
+    windows = SDL_GetWindows(&count);
+    if (windows && count == 1)
+        SDL_GetWindowSize(windows[0], &width, &height);
+    SDL_free(windows);
+    printf("window size: %dx%d\n", width, height);
 }
 
 static void ReportAudioMetrics(void) {
@@ -490,6 +504,157 @@ static int SmokePlayerBodyState(const RenderWorld *world) {
     return -1;
 }
 
+static int DumpNativeMaterial(void) {
+    const char *path=RuntimeConfigGet("dump.material_png");
+    if(!path||!*path)return 1;
+    RenderMeshInstance instance={0};
+    instance.assetKey=(uint32_t)RuntimeConfigInt("dump.material_asset_key",88,0,255);
+    instance.assetSet=(RenderAssetSet)RuntimeConfigInt("dump.material_asset_set",2,0,4);
+    unsigned material=(unsigned)RuntimeConfigInt("dump.material_index",0,0,65535);
+    unsigned variant=(unsigned)RuntimeConfigInt("dump.material_variant",0,0,255);
+    unsigned count=(unsigned)RuntimeConfigInt("dump.material_count",1,0,1024);
+    if(!count){
+        RageImportedTextureKey key;
+        if(!NativeAssetImporterFind(&instance))return 0;
+        while(count<65536u-material &&
+              NativeAssetImporterMaterialKey(&instance,material+count,&key))count++;
+        if(!count)return 0;
+    }
+    if(RuntimeConfigEnabled("report.material_locations") &&
+       instance.assetSet==RAGE_RENDER_ASSET_TERRAIN && g_TerrainCellGrid &&
+       g_TrackPoints && g_TrackPointCount>0){
+        const RageRuntimeCachedMesh *cached=NativeAssetImporterFind(&instance);
+        if(!cached)return 0;
+        const char *uvRect=RuntimeConfigGet("report.material_locations_uv");
+        int uvX=0,uvY=0,uvW=256,uvH=256;
+        if(uvRect&&*uvRect){
+            char trailing;
+            if(sscanf(uvRect,"%d,%d,%d,%d%c",&uvX,&uvY,&uvW,&uvH,&trailing)!=4||
+               uvX<0||uvY<0||uvW<1||uvH<1||uvX>255||uvY>255||
+               uvW>256-uvX||uvH>256-uvY)return 0;
+        }
+        printf("material-locations: {\"material\":%u,\"track_points\":%d,"
+            "\"track_length\":%d,\"texture_page2_sections\":[%d,%d],\"instances\":[",
+            material,g_TrackPointCount,g_TrackLength,g_TrackTextureSectionLo,
+            g_TrackTextureSectionHi);
+        int first=1;
+        for(uint32_t mesh=0;mesh<cached->mesh.meshCount;mesh++){
+            uint32_t start,length;double sx=0,sy=0,sz=0;unsigned vertices=0;
+            double minimum[3]={0},maximum[3]={0};
+            if(!RuntimeMeshRange(&cached->mesh,mesh,&start,&length))return 0;
+            for(uint32_t i=start;i<start+length;i++){
+                uint32_t index;RageRuntimeVertex v;
+                if(!RuntimeMeshIndex(&cached->mesh,i,&index)||
+                   !RuntimeMeshVertex(&cached->mesh,index,&v))return 0;
+                if(v.material==UINT32_MAX ||
+                   (v.material&RAGE_RUNTIME_MATERIAL_INDEX_MASK)!=material)continue;
+                int u=(int)(v.uv[0]*256.0f),t=(int)(v.uv[1]*256.0f);
+                if(u<uvX||u>=uvX+uvW||t<uvY||t>=uvY+uvH)continue;
+                for(unsigned axis=0;axis<3;axis++){
+                    double value=v.position[axis];
+                    if(!vertices||value<minimum[axis])minimum[axis]=value;
+                    if(!vertices||value>maximum[axis])maximum[axis]=value;
+                }
+                sx+=v.position[0];sy+=v.position[1];sz+=v.position[2];vertices++;
+            }
+            if(!vertices)continue;
+            for(unsigned z=0;z<32;z++)for(unsigned x=0;x<32;x++){
+                if((g_TerrainCellGrid[((31-z)<<5)+x]&0x3ff)!=mesh)continue;
+                double wx=x*2048.0+1024.0+sx/vertices*0.25;
+                double wy=sy/vertices*0.25;
+                double wz=-(z*2048.0+1024.0)+sz/vertices*0.25;
+                int nearest=-1;double best=1.0e30;
+                for(int p=0;p<g_TrackPointCount;p++){
+                    double dx=wx-g_TrackPoints[p].x,dz=wz+g_TrackPoints[p].z;
+                    double distance=dx*dx+dz*dz;
+                    if(distance<best){best=distance;nearest=p;}
+                }
+                /* Same quarter-scale and cell translation as SubmitTerrainCell.
+                 * Y is renderer-up; Z is the negative game-world Z. XZ-only
+                 * nearest points can identify a different road height. */
+                printf("%s{\"mesh\":%u,\"grid\":[%u,%u],\"world_xz\":[%.1f,%.1f],"
+                    "\"world_xyz\":[%.1f,%.1f,%.1f],"
+                    "\"world_bounds_min\":[%.1f,%.1f,%.1f],"
+                    "\"world_bounds_max\":[%.1f,%.1f,%.1f],"
+                    "\"nearest_track_point\":%d,\"track_xz\":[%d,%d],\"distance_squared\":%.1f}",
+                    first?"":",",mesh,x,z,wx,wz,wx,wy,wz,
+                    x*2048.0+1024.0+minimum[0]*0.25,minimum[1]*0.25,
+                    -(z*2048.0+1024.0)+minimum[2]*0.25,
+                    x*2048.0+1024.0+maximum[0]*0.25,maximum[1]*0.25,
+                    -(z*2048.0+1024.0)+maximum[2]*0.25,nearest,
+                    g_TrackPoints[nearest].x,g_TrackPoints[nearest].z,best);first=0;
+            }
+        }
+        printf("]}\n");
+    }
+    if(RuntimeConfigEnabled("report.material_uv")){
+        const RageRuntimeCachedMesh *cached=NativeAssetImporterFind(&instance);
+        if(!cached)return 0;
+        unsigned char seen[256][256]={0};
+        printf("material-uv: {\"material\":%u,\"points\":[",material);
+        int first=1;
+        for(uint32_t i=0;i<cached->mesh.vertexCount;i++){
+            RageRuntimeVertex vertex;
+            if(!RuntimeMeshVertex(&cached->mesh,i,&vertex))return 0;
+            if(vertex.material==UINT32_MAX ||
+               (vertex.material&RAGE_RUNTIME_MATERIAL_INDEX_MASK)!=material)continue;
+            int u=(int)(vertex.uv[0]*256.0f),v=(int)(vertex.uv[1]*256.0f);
+            if(u<0||u>255||v<0||v>255||seen[v][u])continue;
+            seen[v][u]=1;printf("%s[%d,%d]",first?"":",",u,v);first=0;
+        }
+        printf("]}\n");
+    }
+    for(unsigned offset=0;offset<count;++offset){
+    unsigned index=material+offset;
+    RageRenderMaterial definition;ModernAssetImage image={0};RageImportedTextureKey key;
+    if(!NativeAssetImporterLoadMaterial(&instance,index,(uint8_t)variant,&definition,&image))return 0;
+    char *numbered=NULL;
+    if(count>1 && SDL_asprintf(&numbered,"%s.%u.png",path,index)<0){
+        ModernAssetsFreeMaterialImage(&image);return 0;
+    }
+    SDL_Surface *surface=SDL_CreateSurfaceFrom((int)image.width,(int)image.height,
+        SDL_PIXELFORMAT_RGBA32,image.pixels,(int)image.width*4);
+    int ok=surface&&SDL_SavePNG(surface,numbered?numbered:path);
+    if(ok&&NativeAssetImporterMaterialKey(&instance,index,&key))
+        printf("native-material: {\"asset_key\":%u,\"asset_set\":%u,\"material\":%u,\"variant\":%u,\"page\":%u,\"clut\":%u,\"window\":[%u,%u,%u,%u],\"has_window\":%u}\n",
+            instance.assetKey,(unsigned)instance.assetSet,index,variant,key.tpage,key.clut,
+            key.windowOffsetU,key.windowOffsetV,key.windowWidthU,key.windowWidthV,key.hasWindow);
+    SDL_DestroySurface(surface);SDL_free(numbered);ModernAssetsFreeMaterialImage(&image);
+    if(!ok)return 0;
+    }
+    return 1;
+}
+
+static void ReportHudLayout(void) {
+    if(RuntimeConfigEnabled("report.sky_layout")){
+        printf("sky-layout: {\"tiles\":[");
+        for(int i=0;i<SKY_TILE_COUNT;i++){
+            printf("%s[",i?",":"");
+            for(int j=0;j<4;j++)printf("%s[%u,%u]",j?",":"",
+                g_SkyTileUV[i].corner[j].bytes.u,g_SkyTileUV[i].corner[j].bytes.v);
+            printf("]");
+        }
+        printf("],\"map\":[");
+        for(int y=0;y<SKY_TILE_MAP_ROWS;y++){
+            printf("%s[",y?",":"");
+            for(int x=0;x<SKY_TILE_MAP_COLUMNS;x++)printf("%s%d",x?",":"",g_SkyTileMap[y][x]);
+            printf("]");
+        }
+        printf("]}\n");
+    }
+    if(!RuntimeConfigEnabled("report.hud_layout")||!g_CarSpec)return;
+    printf("environment-layout: {\"grand_prix_mode\":%d,\"random_time_of_day\":%d,\"environment_mode4\":%d,\"sky_override_asset_key\":%u}\n",
+        g_GrandPrixMode,PortRandomTimeOfDayEnabled(),g_IsEnvironmentMode4,
+        PortRaceEnvironmentSkyAssetKey(0));
+    const CarTachometerSpec *t=&g_CarSpec->tachometer;
+    int x=-(s16)t->faceDX,y=-(s16)t->faceDY;
+    printf("hud-layout: {\"model\":%d,\"page\":10,\"clut\":%u,\"rect\":[%u,%u,%u,%u],"
+        "\"pivot\":[%d,%d],\"speed_origin\":[%d,%d],\"gear_origin\":[%d,%d]}\n",
+        g_PlayerCarIndex,g_TachoNeedleSprite.clut,g_TachoNeedleSprite.u0,g_TachoNeedleSprite.v0,
+        g_TachoNeedleSprite.w,g_TachoNeedleSprite.h,x,y,
+        x+(s16)t->digitsX,y+(s16)t->digitsY,x+t->gearDigitDX,y+t->gearDigitDY);
+}
+
 static void ReportFinalState(void) {
     printf("Rage Racer smoke stopped at frame %d, scene %d, frontend %d, "
            "player=(%d,%d) speed=%d accelerator=%d held=%04x accel_mask=%04x "
@@ -527,6 +692,7 @@ int main(int argc, char **argv) {
     int inputIndex;
     char logPath[1024];
 
+    RuntimeConfigIsolateUserSettings();
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
     if (RuntimeConfigEnabled("diagnostics.test_log") &&
         !DiagnosticLogOpen(logPath, sizeof(logPath))) return EXIT_FAILURE;
@@ -574,6 +740,14 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     if (!InitNativeGameData()) return EXIT_FAILURE;
+    /* Scene-level RNG synchronization happens after race initialization.
+     * Asset reviews also need reproducible initial environment selection. */
+    if(RuntimeConfigGet("start.random_seed")){
+        int seed;
+        if(!RuntimeParseInt(RuntimeConfigGet("start.random_seed"),0,0,INT_MAX,&seed))
+            return EXIT_FAILURE;
+        g_RandomSeed=(u32)seed;
+    }
     ContentOptionsApply();
     if (!LoadCarCatalogForSmoke()) return EXIT_FAILURE;
     PortConfigDefaults(&portConfig);
@@ -604,6 +778,10 @@ int main(int argc, char **argv) {
         fprintf(stderr, "failed to capture smoke frame\n");
         return EXIT_FAILURE;
     }
+    if(!DumpNativeMaterial()) {
+        fprintf(stderr,"failed to export native material\n");return EXIT_FAILURE;
+    }
+    ReportHudLayout();
     ReportFinalState();
     Psyz_AudioDestroy();
     ModernShutdown();

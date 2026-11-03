@@ -6,6 +6,7 @@
 #include "modern_ssao.h"
 #include "../runtime_config.h"
 #include "../track_material_page.h"
+#include <limits.h>
 
 #include "modern_assets.h"
 #include "modern_depth_probe.h"
@@ -23,6 +24,7 @@
 #include "render/render_projection.h"
 #include "render/car_lamps.h"
 #include "render/texture_mipmap.h"
+#include "content/sha256.h"
 #include "rage/track_asset_identity.h"
 
 #include "shaders/native_color_frag_spv.h"
@@ -113,15 +115,22 @@ typedef struct ModernNativeTexture {
     uint8_t hasCarPaint;
     uint8_t carPaintColor1;
     uint8_t carPaintColor2;
+    uint8_t usageReported;
     RenderAssetSet assetSet;
     RageRenderMaterial definition;
     int transparent;
+    int ownsTexture;
+    uint32_t width, height;
+    char pixelDigest[65];
     SDL_GPUTexture *texture;
 } ModernNativeTexture;
 
 
 static SDL_GPUDevice *s_device;
 static uint32_t s_textureWarmCursor;
+static ModernTextureKey s_preloadedBanks[128];
+static unsigned s_preloadedBankCount;
+static void ModernNativePreloadWorld(const RenderWorld *world);
 static SDL_GPUGraphicsPipeline *s_texturedOpaque;
 static SDL_GPUGraphicsPipeline *s_texturedTransparent;
 static SDL_GPUGraphicsPipeline *s_texturedOpaqueDecal;
@@ -176,6 +185,8 @@ static uint32_t s_residentGeometryCount;
 static uint32_t s_residentGeometryLimit = 512;
 static int s_performanceTrace = -1;
 static int s_assetTrace = -1;
+static int s_materialUsageTrace;
+static uint64_t s_materialUsageStartFrame;
 static int s_batchDraws = -1;
 static int s_unsharedViews = -1;
 static float s_headlightPitchDegrees = -1.0f;
@@ -185,6 +196,9 @@ static void EnsureNativeGpuConfig(void) {
     if (s_performanceTrace >= 0) return;
     s_performanceTrace = RuntimeConfigEnabled("diagnostics.performance_trace");
     s_assetTrace = RuntimeConfigEnabled("diagnostics.modern_asset_trace");
+    s_materialUsageTrace = RuntimeConfigEnabled("diagnostics.material_usage");
+    s_materialUsageStartFrame = (uint64_t)RuntimeConfigInt(
+        "diagnostics.material_usage_start_frame", 0, 0, INT_MAX);
     s_batchDraws = !RuntimeConfigEnabled("diagnostics.modern_unbatched_draws");
     s_unsharedViews = RuntimeConfigEnabled("diagnostics.modern_unshared_views");
     s_headlightPitchDegrees =
@@ -840,9 +854,10 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter,
 static void ModernNativeGpuClearTextures(void) {
     uint32_t index;
     s_textureWarmCursor = 0;
+    s_preloadedBankCount = 0;
     if (s_device != NULL) {
         for (index = 0; index < s_textureIndex.count; index++) {
-            if (s_textures[index].texture != NULL)
+            if (s_textures[index].texture != NULL && s_textures[index].ownsTexture)
                 SDL_ReleaseGPUTexture(s_device, s_textures[index].texture);
         }
     }
@@ -1017,6 +1032,7 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
         s_cockpitHeadlightRecess);
     if (trace) copied = SDL_GetTicksNS();
     void *meshLookupContext = ModernNativePrepareMeshLookup(world);
+    ModernNativePreloadWorld(world);
     if (trace) lookupFinished = SDL_GetTicksNS();
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {
@@ -1403,6 +1419,8 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     static int trace = -1;
     Uint64 loadStart = 0, materialDone = 0, mipDone = 0;
     uint64_t imageHash = UINT64_C(14695981039346656037);
+    char pixelDigest[65];
+    int shared = 0;
     if (entry != NULL || span->material == UINT32_MAX) return entry;
     /* Never release unsubmitted uploads to make room. A failed reservation
      * leaves the cache untouched and can be retried after the next prepare. */
@@ -1443,12 +1461,26 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         materialDone += hashNs;
         loadStart += hashNs;
     }
-    mipLevels = TextureMipLevelCount(
-        image.width, image.height, RAGE_TEXTURE_ATLAS_MIP_LEVELS);
+    mipLevels = TextureAtlasMipLevelCount(image.width, image.height);
     mipSize = TextureMipChainSizeRGBA8(
         image.width, image.height, mipLevels);
     /* SDL transfer sizes and per-level offsets are Uint32. */
     if (mipSize == 0 || mipSize > UINT32_MAX) goto fail;
+    Sha256 digest;
+    Sha256Init(&digest);
+    Sha256Update(&digest, image.pixels, image.size);
+    Sha256Finish(&digest, pixelDigest);
+    entry = &s_textures[s_textureIndex.count];
+    for (uint32_t i = 0; i < s_textureIndex.count; ++i) {
+        ModernNativeTexture *existing = &s_textures[i];
+        if (existing->width == image.width && existing->height == image.height &&
+            !strcmp(existing->pixelDigest, pixelDigest)) {
+            entry->texture = existing->texture;
+            shared = 1;
+            if (trace) mipDone = SDL_GetTicksNS();
+            goto textureReady;
+        }
+    }
     mipChain = malloc(mipSize);
     if (mipChain == NULL ||
         !TextureBuildMipChainRGBA8(
@@ -1467,6 +1499,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
         texture.layer_count_or_depth = 1;
         texture.num_levels = mipLevels;
         entry->texture = SDL_CreateGPUTexture(s_device, &texture);
+        entry->ownsTexture = entry->texture != NULL;
         transfer.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
         transfer.size = (Uint32)mipSize;
         upload = SDL_CreateGPUTransferBuffer(s_device, &transfer);
@@ -1504,6 +1537,10 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     }
     ModernNativeRetireUpload(upload);
     upload = NULL;
+textureReady:
+    entry->width = image.width;
+    entry->height = image.height;
+    memcpy(entry->pixelDigest, pixelDigest, sizeof(pixelDigest));
     entry->transparent = 0;
     for (byte = 3; byte < image.size; byte += 4) {
         uint8_t alpha = ((const uint8_t *)image.pixels)[byte];
@@ -1525,6 +1562,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     entry->hasCarPaint = span->hasCarPaint;
     entry->carPaintColor1 = span->carPaintColor1;
     entry->carPaintColor2 = span->carPaintColor2;
+    entry->usageReported = 0;
     materialDefinition.baseColorTexture = (RageRenderMaterialPath){0};
     materialDefinition.paintMask = (RageRenderMaterialPath){0};
     entry->definition = materialDefinition;
@@ -1537,7 +1575,7 @@ static ModernNativeTexture *ModernNativeLoadTexture(
                 (unsigned)span->materialVariant,
                 (materialDone-loadStart)/1000000.0,
                 (mipDone-materialDone)/1000000.0,
-                (done-mipDone)/1000000.0, mipSize,
+                (done-mipDone)/1000000.0, shared ? 0 : mipSize,
                 (unsigned long long)imageHash);
     }
     return entry;
@@ -1550,11 +1588,114 @@ fail:
     ModernAssetsFreeMaterialImage(&image);
     if (upload != NULL) SDL_ReleaseGPUTransferBuffer(s_device, upload);
     if (entry != NULL) {
-        if (entry->texture != NULL)
+        if (entry->texture != NULL && entry->ownsTexture)
             SDL_ReleaseGPUTexture(s_device, entry->texture);
         memset(entry, 0, sizeof(*entry));
     }
     return NULL;
+}
+
+static ModernResidentGeometry *ModernNativeResidentBuffer(
+    SDL_GPUCommandBuffer *command, const RageNativeMeshTemplateView *source);
+
+/* Complete immutable mesh banks before their first presentation. The published
+ * world includes off-screen terrain and scenery; visiting the full bank also
+ * covers rotating wheels and later LODs. Only real instance palette/paint
+ * identities are used. Track image banks are independent of those palettes. */
+static void ModernNativePreloadWorld(const RenderWorld *world) {
+    Uint64 started = SDL_GetTicksNS();
+    unsigned before = s_textureIndex.count, banks = 0;
+    SDL_GPUCommandBuffer *command = NULL;
+    for (uint32_t i = 0; i < world->instanceCount; ++i) {
+        const RenderMeshInstance *instance = &world->instances[i];
+        ModernTextureKey key = {0};
+        const RageRuntimeMesh *mesh;
+        unsigned seen;
+        key.assetKey = instance->assetKey;
+        key.assetSet = instance->assetSet;
+        key.variant = instance->materialVariant;
+        key.hasCarPaint = instance->hasCarPaint;
+        key.carPaintColor1 = instance->carPaintColor1;
+        key.carPaintColor2 = instance->carPaintColor2;
+        for (seen = 0; seen < s_preloadedBankCount; ++seen)
+            if (ModernTextureKeyEqual(&key, &s_preloadedBanks[seen])) break;
+        if (seen < s_preloadedBankCount) continue;
+        mesh = ModernAssetsResidentMeshLookup(NULL, instance);
+        if (!mesh) continue;
+        if (!command) {
+            command = SDL_AcquireGPUCommandBuffer(s_device);
+            if (!command) return;
+        }
+        ModernTextureIndex attempted = {0};
+        for (uint32_t v = 0; v < mesh->vertexCount; ++v) {
+            RageRuntimeVertex vertex;
+            RageNativeDrawSpan span = {0};
+            uint32_t raw, material;
+            if (!RuntimeMeshVertex(mesh, v, &vertex)) continue;
+            raw = material = vertex.material;
+            if (material == UINT32_MAX) continue;
+            material &= ~RAGE_RUNTIME_MATERIAL_SCROLL_U;
+            if (material & RAGE_RUNTIME_MATERIAL_METADATA) {
+                material &= RAGE_RUNTIME_MATERIAL_INDEX_MASK;
+                if (material == RAGE_RUNTIME_MATERIAL_INDEX_MASK) continue;
+            }
+            span.assetKey = key.assetKey;
+            span.assetSet = key.assetSet;
+            span.material = material;
+            span.materialVariant = key.variant;
+            span.hasCarPaint = key.hasCarPaint;
+            span.carPaintColor1 = key.carPaintColor1;
+            span.carPaintColor2 = key.carPaintColor2;
+            if (span.assetSet == RAGE_RENDER_ASSET_TERRAIN &&
+                !(raw & RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT))
+                span.materialVariant &= (uint8_t)~1u;
+            int alternate = TrackMaterialAlternateVariant(span.assetSet,
+                                                           span.materialVariant);
+            for (unsigned bank = 0; bank < (alternate >= 0 ? 2u : 1u); ++bank) {
+                if (bank) span.materialVariant = (uint8_t)alternate;
+                ModernTextureKey materialKey = ModernTextureKeyFromSpan(&span);
+                if (ModernTextureIndexFind(&attempted, &materialKey) >= 0) continue;
+                (void)ModernTextureIndexInsert(&attempted, &materialKey);
+                (void)ModernNativeLoadTexture(command, &span);
+                /* Bound temporary upload memory even with large HD packs. */
+                if (s_pendingUploads.count >= 16) {
+                    SDL_SubmitGPUCommandBuffer(command);
+                    SDL_WaitForGPUIdle(s_device);
+                    ModernNativeReleasePendingUploads();
+                    command = SDL_AcquireGPUCommandBuffer(s_device);
+                    if (!command) return;
+                }
+            }
+        }
+        if (!s_cpuGeometryReference && s_residentGeometryEnabled) {
+            for (uint32_t part = 0; part < mesh->meshCount; ++part) {
+                const RageNativeMeshTemplateView *source =
+                    RenderNativeMeshTemplateAcquire(&s_meshTemplates, mesh,
+                                                     instance->assetSet, part);
+                if (source) (void)ModernNativeResidentBuffer(command, source);
+                if (s_pendingUploads.count >= 16) {
+                    SDL_SubmitGPUCommandBuffer(command);
+                    SDL_WaitForGPUIdle(s_device);
+                    ModernNativeReleasePendingUploads();
+                    command = SDL_AcquireGPUCommandBuffer(s_device);
+                    if (!command) return;
+                }
+            }
+        }
+        if (s_preloadedBankCount < SDL_arraysize(s_preloadedBanks))
+
+            s_preloadedBanks[s_preloadedBankCount++] = key;
+        ++banks;
+    }
+    if (command) {
+        SDL_SubmitGPUCommandBuffer(command);
+        SDL_WaitForGPUIdle(s_device);
+        ModernNativeReleasePendingUploads();
+    }
+    if (banks)
+        fprintf(stderr, "modern-preload banks=%u textures=%u total=%u ms=%.3f\n",
+                banks, s_textureIndex.count - before, s_textureIndex.count,
+                (SDL_GetTicksNS() - started) / 1000000.0);
 }
 
 /* Amortize the opposite track bank while the intro/current bank is visible.
@@ -2331,6 +2472,24 @@ static void ModernNativeGpuDrawSet(
                 ++spanIndex;
             }
             ModernNativeDrawGeometry(pass, geometry, vertexCount);
+            /* Record submitted colour draws, independently of cache warming
+             * and shadow casters. Depth/occlusion can still hide their pixels. */
+            if (s_materialUsageTrace && texture &&
+                s_worldFrame >= s_materialUsageStartFrame) {
+                unsigned viewBit = strcmp(viewName, "main") == 0 ? 1u : 2u;
+                if (!(texture->usageReported & viewBit)) {
+                    texture->usageReported |= (uint8_t)viewBit;
+                    fprintf(stderr, "native-material-use: {\"frame\":%llu,\"view\":\"%s\","
+                        "\"asset\":%u,\"set\":%u,\"material\":%u,\"variant\":%u,"
+                        "\"paint\":[%u,%u,%u],\"vertices\":%u}\n",
+                        (unsigned long long)s_worldFrame, viewName, texture->assetKey,
+                        (unsigned)texture->assetSet, texture->material,
+                        (unsigned)texture->materialVariant,
+                        (unsigned)texture->hasCarPaint,
+                        (unsigned)texture->carPaintColor1,
+                        (unsigned)texture->carPaintColor2, vertexCount);
+                }
+            }
             drawCount++;
         }
     }

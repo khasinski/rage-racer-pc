@@ -29,7 +29,10 @@ static int ClampIndex(int index, int count) {
 
 #define COUNT_OF(array) ((int)(sizeof(array) / sizeof((array)[0])))
 #define SETTING(label, help, names, Name) \
-    {label, help, COUNT_OF(names), names, Get##Name, Set##Name}
+    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 0}
+
+#define MODERN_SETTING(label, help, names, Name) \
+    {label, help, COUNT_OF(names), names, Get##Name, Set##Name, 0, 1}
 
 static const char *const kSwitchNames[] = {"Off", "On"};
 
@@ -80,7 +83,16 @@ static const char *const kDistanceNames[] = {"0.5x", "1x", "1.5x",
 ACCESSORS(Distance, NearestIndex(kDistances, COUNT_OF(kDistances), v->config.modernDrawDistance),
           v->config.modernDrawDistance = kDistances[i])
 
+static const char *const kBrightnessNames[] = {
+    "50%", "55%", "60%", "65%", "70%", "75%", "80%", "85%", "90%", "95%",
+    "100%", "105%", "110%", "115%", "120%", "125%", "130%", "135%", "140%", "145%", "150%"};
+ACCESSORS(Brightness, ClampIndex((int)lroundf((v->config.modernBrightness - 0.5f) / 0.05f), 21),
+          v->config.modernBrightness = 0.5f + i * 0.05f)
+static const char *const kWindowNames[] = {"Windowed", "Full screen"};
+ACCESSORS(Fullscreen, v->session.fullscreen != 0, v->session.fullscreen = i)
+
 static const OverlaySetting kGraphics[] = {
+
     SETTING("Renderer", "Classic replays the original PlayStation image; Modern draws the scene natively.",
             kRendererNames, Renderer),
     SETTING("Render resolution", "Higher values increase image detail and GPU load.",
@@ -92,14 +104,18 @@ static const OverlaySetting kGraphics[] = {
             kFilterNames, Filter),
     SETTING("Anti-aliasing", "FXAA softens jagged edges.", kPostNames, Post),
     SETTING("Color grading", "A more vibrant palette.", kGradingNames, Grading),
-    SETTING("Shadows", "Sun shadow detail. High uses the sharpest shadow maps.",
+    MODERN_SETTING("Shadows", "Sun shadow detail. High uses the sharpest shadow maps.",
             kShadowNames, Shadows),
-    SETTING("Ambient occlusion", "Soft contact shadows in creases and under cars.",
+    MODERN_SETTING("Ambient occlusion", "Soft contact shadows in creases and under cars.",
             kSwitchNames, Ssao),
-    SETTING("Car lights", "Headlights, tail lamps and brake lights. On follows day, night and tunnels.",
+    MODERN_SETTING("Car lights", "Headlights, tail lamps and brake lights. On follows day, night and tunnels.",
             kSwitchNames, CarLights),
     SETTING("Draw distance", "Values above 1x may expose unfinished track geometry.",
             kDistanceNames, Distance),
+    {"Brightness", "Modern only. 100% is the default, calibrated for a brighter image.",
+     COUNT_OF(kBrightnessNames), kBrightnessNames, GetBrightness, SetBrightness, 1, 1},
+    SETTING("Display mode", "Switch between a window and full screen. Shortcut: F4.",
+            kWindowNames, Fullscreen),
 };
 
 /* controls */
@@ -194,8 +210,26 @@ static const OverlaySetting kView[] = {
             kLookaheadNames, Lookahead),
 };
 
+static int HdGet(const OverlayValues *v){return v->hdEnabled;}
+static int HdZero(const OverlayValues *v){(void)v;return 0;}
+static void HdToggleSet(OverlayValues *v,int i){v->hdEnabled=i;}
+static void HdSet(OverlayValues *v,int i){(void)v;(void)i;}
+static const char *const kHdToggle[]={"Off","On"};
+static const char *const kHdInstall[]={"Choose file"};
+static const char *const kHdVerify[]={"Verify"};
+static const char *const kHdDownload[]={"Open downloader"};
+ACCESSORS(RandomTimeOfDay, v->session.randomTimeOfDay != 0,
+          v->session.randomTimeOfDay = i)
+static const OverlaySetting kMods[]={
+ {"HD textures","Enable the installed HD pack.",2,kHdToggle,HdGet,HdToggleSet,0,0},
+ {"HD texture pack","Download or update the HD texture pack.",1,kHdDownload,HdZero,HdSet,0,0},
+ {"Install local pack","Choose a .rrhd texture pack.",1,kHdInstall,HdZero,HdSet,0,0},
+ {"Verify pack","Check all installed file checksums.",1,kHdVerify,HdZero,HdSet,0,0},
+ SETTING("Random time of day", "GP / EX GP only. Applies next race; lasts until quit.",
+         kSwitchNames, RandomTimeOfDay)};
+
 static const char *const kPageNames[OVERLAY_PAGE_COUNT] = {
-    "Graphics", "Controls", "Audio", "View"};
+    "Graphics", "Controls", "Audio", "View", "Mods"};
 
 const char *OverlayPageName(int page) {
     return page >= 0 && page < OVERLAY_PAGE_COUNT ? kPageNames[page] : "";
@@ -212,6 +246,8 @@ const OverlaySetting *OverlayPageSettings(int page, int *count) {
     case OVERLAY_PAGE_AUDIO:
         *count = COUNT_OF(kAudio);
         return kAudio;
+    case OVERLAY_PAGE_MODS:
+        *count=COUNT_OF(kMods);return kMods;
     case OVERLAY_PAGE_VIEW:
         *count = COUNT_OF(kView);
         return kView;
@@ -219,6 +255,40 @@ const OverlaySetting *OverlayPageSettings(int page, int *count) {
         *count = 0;
         return NULL;
     }
+}
+
+int OverlaySettingAvailable(const OverlayModel *model, int row) {
+    int count;
+    const OverlaySetting *settings = OverlayPageSettings(model->page, &count);
+    return row >= 0 && row < count &&
+        (!settings[row].modernOnly || model->values.config.renderer == RAGE_RENDERER_MODERN);
+}
+
+void OverlayModelResetPage(OverlayModel *model, unsigned nowMs) {
+    OverlayValues defaults = {0};
+    defaults.config = PortConfigDefaultValues();
+    defaults.session = (PortSessionOptions){
+        .tickMultiplier=1, .analog=1, .wheel=1, .steeringLinearity=0.5f,
+        .forceFeedback=1, .forceFeedbackGain=55, .music=15, .effects=15,
+        .hudEdges=1, .showLapTimes=1, .showTimeLimit=1,
+        .chaseDistance=1.0f, .chaseHeight=1.0f};
+    int count;
+    const OverlaySetting *settings = OverlayPageSettings(model->page, &count);
+    RagePortConfig beforeConfig = model->values.config;
+    PortSessionOptions beforeSession = model->values.session;
+    for (int row = 0; row < count; ++row) {
+        /* Pack installation/activation is managed by the pack store. */
+        if (model->page == OVERLAY_PAGE_MODS && row < 4) continue;
+        settings[row].set(&model->values, settings[row].get(&defaults));
+    }
+    if (memcmp(&beforeConfig, &model->values.config, sizeof(beforeConfig))) {
+        model->configPending = 1;
+        model->changedAtMs = nowMs;
+    }
+    if (memcmp(&beforeSession, &model->values.session, sizeof(beforeSession)))
+        model->sessionPending = 1;
+    model->sliderDragging = 0;
+    model->dirty = 1;
 }
 
 /* ---- state ---- */
@@ -244,6 +314,7 @@ void OverlayModelOpen(OverlayModel *model, const RagePortConfig *config,
 }
 
 void OverlayModelClose(OverlayModel *model) {
+    model->sliderDragging = 0;
     model->open = 0;
     model->flushInput = 1;
 }
@@ -258,18 +329,22 @@ void OverlayModelSelect(OverlayModel *model, int row) {
 void OverlayModelSwitchPage(OverlayModel *model, int page) {
     if (page < 0 || page >= OVERLAY_PAGE_COUNT || page == model->page) return;
     model->page = page;
+    model->sliderDragging = 0;
     model->selected = 0;
     model->dirty = 1;
 }
 
 static void Step(OverlayModel *model, int row, int direction, unsigned nowMs) {
+    if (!OverlaySettingAvailable(model, row)) return;
+    if(model->page==OVERLAY_PAGE_MODS && row<4){static const int actions[]={1,5,2,3};model->packAction=actions[row];model->dirty=1;return;}
     int count = 0;
     const OverlaySetting *setting =
         OverlayPageSettings(model->page, &count) + row;
     RagePortConfig beforeConfig = model->values.config;
     int index = setting->get(&model->values);
 
-    index = (index + direction + setting->count) % setting->count;
+    index = setting->slider ? ClampIndex(index + direction, setting->count)
+        : (index + direction + setting->count) % setting->count;
     setting->set(&model->values, index);
     if (memcmp(&beforeConfig, &model->values.config, sizeof(beforeConfig)) != 0) {
         model->configPending = 1;
@@ -284,8 +359,10 @@ static void Activate(OverlayModel *model, int row, unsigned nowMs) {
     int settings = OverlayModelSettingCount(model);
 
     if (row == settings) {
-        OverlayModelClose(model);
+        OverlayModelResetPage(model, nowMs);
     } else if (row == settings + 1) {
+        OverlayModelClose(model);
+    } else if (row == settings + 2) {
         model->quitPending = 1;
     } else if (row >= 0 && row < settings) {
         Step(model, row, 1, nowMs);
@@ -294,7 +371,19 @@ static void Activate(OverlayModel *model, int row, unsigned nowMs) {
 
 void OverlayModelDo(OverlayModel *model, OverlayAction action,
                     unsigned nowMs) {
+    if (model->packDownloader) {
+        if (model->packDownloader == 1) {
+            if (action == OVERLAY_ACTIVATE && model->packCanCancel)
+                model->packAction = 4;
+        } else if (action == OVERLAY_ACTIVATE || action == OVERLAY_CLOSE) {
+            model->packDownloader = 0;
+            model->packAction = 6;
+            model->dirty = 1;
+        }
+        return;
+    }
     int rows = OverlayModelRowCount(model);
+
     int onSetting = model->selected < OverlayModelSettingCount(model);
 
     switch (action) {
@@ -338,12 +427,14 @@ int OverlayDesignHeight(int rowCount) {
 void OverlayComputeLayout(int rowCount, int windowW, int windowH,
                           OverlayLayout *layout) {
     float scale = (float)windowH / (float)OVERLAY_REFERENCE_H;
+    float heightLimit = (float)(windowH - 24) / (float)OverlayDesignHeight(rowCount);
+    if (scale > heightLimit) scale = heightLimit;
     float widthLimit = (float)windowW * 0.94f / (float)OVERLAY_PANEL_W;
 
     if (scale > widthLimit) scale = widthLimit;
     if (scale > 2.5f) scale = 2.5f;
     if (scale < 0.5f) scale = 0.5f;
-    scale = floorf(scale * 8.0f) / 8.0f; /* no repaint on every resize pixel */
+    scale = floorf(scale * 16.0f) / 16.0f; /* no repaint on every resize pixel */
     layout->scale = scale;
     layout->w = (int)ceilf((float)OVERLAY_PANEL_W * scale);
     layout->h = (int)ceilf((float)OverlayDesignHeight(rowCount) * scale);
@@ -401,16 +492,47 @@ static int RowAt(const OverlayModel *model, float x, float y) {
 
 void OverlayModelPointer(OverlayModel *model, float x, float y, int click,
                          unsigned nowMs) {
-    int tab = TabAt(x, y);
+    if (click < 0) { model->sliderDragging = 0; return; }
+    if (click == 1) model->sliderDragging = 0;
+    if (click == 2 && !model->sliderDragging) return;
+    if (model->packDownloader) {
+        float top = (float)OverlayDesignHeight(OverlayModelRowCount(model)) - 110.0f;
+        if (click && x >= OVERLAY_PAD && x <= OVERLAY_PANEL_W - OVERLAY_PAD &&
+            y >= top && y <= top + 46.0f)
+            OverlayModelDo(model, OVERLAY_ACTIVATE, nowMs);
+        return;
+    }
+    int tab = click == 2 ? -1 : TabAt(x, y);
+
     int row;
 
     if (tab >= 0) {
         if (click) OverlayModelSwitchPage(model, tab);
         return;
     }
-    row = RowAt(model, x, y);
+    row = click == 2 ? model->sliderDragging - 1 : RowAt(model, x, y);
     if (row >= 0) OverlayModelSelect(model, row);
     if (!click) return;
+    if (row >= 0 && row < OverlayModelSettingCount(model)) {
+        int count;
+        const OverlaySetting *setting =
+            OverlayPageSettings(model->page, &count) + row;
+        if (OverlaySettingAvailable(model, row) && setting->slider &&
+            (click == 2 || x >= OverlayValueCentre() - OVERLAY_VALUE_W * 0.5f)) {
+            model->sliderDragging = row + 1;
+            float t = (x - OverlayValueCentre()) / OVERLAY_SLIDER_W + 0.5f;
+            int value = ClampIndex((int)lroundf(t * (setting->count - 1)),
+                                   setting->count);
+            if (value != setting->get(&model->values)) {
+                setting->set(&model->values, value);
+                model->configPending = 1;
+                model->changedAtMs = nowMs;
+                model->dirty = 1;
+            }
+            return;
+        }
+    }
+    if (click == 2) return;
     if (row < 0) {
         OverlayModelClose(model);
     } else if (row < OverlayModelSettingCount(model)) {

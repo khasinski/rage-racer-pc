@@ -52,4 +52,24 @@ void ModernAssetsFreeMaterialImage(ModernAssetImage *image);
  * path, which is also entered for high-FPS repeat presentations. */
 void ModernAssetsPrepareWorld(const RenderWorld *world);
 
+/* Explicit scene keys prevent stale/reused VRAM pages receiving unrelated art. */
+int ModernAssetsHasUiScene(int scene);
+int ModernAssetsLoadUiImage(const char *key,ModernAssetImage *image);
+#include "render/mod_manifest.h"
+typedef struct ModernUiRegion {
+    char key[RAGE_MOD_MANIFEST_KEY_CAPACITY];
+    unsigned x,y,width,height;
+} ModernUiRegion;
+/* A region override must contain the entire requested sprite. Uncovered
+ * rectangles remain live VRAM; a transparent PNG is not a coverage mask. */
+int ModernAssetsResolveUiRegion(int scene,unsigned page,unsigned clut,int hud,
+    unsigned u,unsigned v,unsigned width,unsigned height,ModernUiRegion *out);
+int ModernAssetsSetHdPack(const char *root,const RageModManifest *manifest);
+
+/* Car-specific HUD bindings take precedence over shared HUD assets. */
+int ModernAssetsResolveCarUiRegion(int car,int scene,unsigned page,unsigned clut,int hud,
+    unsigned u,unsigned v,unsigned width,unsigned height,ModernUiRegion *out);
+
+/* Raw 4-by-2 cloud-tile page for captured sky polygons; not a panorama. */
+int ModernAssetsLoadSkyAtlas(uint32_t assetKey, ModernAssetImage *image);
 #endif

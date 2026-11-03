@@ -17,8 +17,10 @@ set(menu_log "${menu_output}${menu_error}")
 if(NOT menu_result EQUAL 0)
     message(FATAL_ERROR "Scenario menu route failed (${menu_result}):\n${menu_log}")
 endif()
+# The native main menu opens directly; confirmation occurs in MENU_OPEN (2),
+# without the former Press Start / TITLE (0) step.
 foreach(required "ignoring invalid race.mode=99" "ignoring invalid race.grid"
-    "scenario confirm scene=4 phase=0" "scenario confirm scene=8" "smoke synchronized stop")
+    "scenario confirm scene=4 phase=2" "scenario confirm scene=8" "smoke synchronized stop")
     string(FIND "${menu_log}" "${required}" found)
     if(found EQUAL -1)
         message(FATAL_ERROR "Scenario menu route missed ${required}:\n${menu_log}")

@@ -17,21 +17,7 @@ static char *Trim(char *text) {
 }
 
 void PortConfigDefaults(RagePortConfig *config) {
-    if (config == NULL) return;
-    config->renderer = RAGE_RENDERER_MODERN;
-    /* Keep these values equal to the shipped rage-port.ini and launcher
-     * schema. A direct executable launch without a nearby INI is still a
-     * supported first-run path, so it must not create a third preset. */
-    config->modernInternalScale = 4.0f;
-    config->modernAspect = RAGE_MODERN_ASPECT_16_9;
-    config->modernFps = RAGE_MODERN_FPS_VSYNC;
-    config->modernDrawDistance = 1.0f;
-    config->modernTextureFilterLinear = 1;
-    config->modernPost = RAGE_MODERN_POST_FXAA;
-    config->modernGrading = 1;
-    config->modernSsao = 1;
-    config->modernShadows = 2;
-    config->carLights = 1;
+    if (config) *config = PortConfigDefaultValues();
 }
 
 static int ParseFloat(const char *value, float *out, float min, float max) {
@@ -109,6 +95,9 @@ static int ApplySetting(RagePortConfig *config, const char *name,
         (void)value;
         return 1;
     }
+    if (strcmp(name, "modern.brightness") == 0) {
+        return ParseFloat(value, &config->modernBrightness, 0.5f, 1.5f);
+    }
     if (strcmp(name, "modern.grading") == 0) {
         if (strcmp(value, "off") == 0) {
             config->modernGrading = 0;
@@ -181,6 +170,7 @@ int PortConfigApplyRuntime(RagePortConfig *config) {
         {"video.texture_filter", "modern.texture_filter"},
         {"video.post", "modern.post"},
         {"video.bloom", "modern.bloom"},
+        {"video.brightness", "modern.brightness"},
         {"video.grading", "modern.grading"},
         {"video.ssao", "modern.ssao"},
         {"video.shadows", "modern.shadows"},

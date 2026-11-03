@@ -88,7 +88,7 @@ void CameraViewFromBlendedNode(Camera *camera, GameCarRuntime *car, GameViewWork
     nodeOffset.x = chaseNode->offset[0];
     nodeOffset.y = chaseNode->offset[1];
     nodeOffset.z = CameraAddWord(chaseNode->offset[2], 0x32);
-    ApplyMatrixLV(&inverseObjectRotation, AsWords(&nodeOffset),
+    GameApplyMatrixLV(&inverseObjectRotation, AsWords(&nodeOffset),
                   AsWords(&nodeWorld));
     focusX = CameraAddWord(car->x, nodeWorld.x);
     focusY = CameraAddWord(car->y, nodeWorld.y);
@@ -230,7 +230,7 @@ void CameraViewFromCamPath(Camera *camera, GameCarRuntime *car, GameViewWork *vi
     MulMatrix2(&cameraRotation, &objectRotation);
     TransposeMatrix(&objectRotation, &matrixWork);
     focusOffset.z = CameraAddWord(focusOffset.z, 0x32);
-    ApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
+    GameApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
                   AsWords(&focusWorld));
     focusX = CameraAddWord(view->x, focusWorld.x);
     focusY = CameraAddWord(view->y, focusWorld.y);
@@ -238,7 +238,7 @@ void CameraViewFromCamPath(Camera *camera, GameCarRuntime *car, GameViewWork *vi
     /* Sit the path's distance behind the focus point, then look back at
      * it. */
     eyeOffset.z = camera->path.angle[CAMPATH_DIST];
-    ApplyMatrixLV(&matrixWork, AsWords(&eyeOffset), AsWords(&eyeWorld));
+    GameApplyMatrixLV(&matrixWork, AsWords(&eyeOffset), AsWords(&eyeWorld));
     view->x = CameraSubtractWord(focusX, eyeWorld.x);
     view->y = CameraSubtractWord(focusY, eyeWorld.y);
     view->z = CameraSubtractWord(focusZ, eyeWorld.z);
@@ -248,9 +248,9 @@ void CameraViewFromCamPath(Camera *camera, GameCarRuntime *car, GameViewWork *vi
     rollProbe.x = 0x1000;
     BuildRotMatrixY(&cameraRotation,
                     CameraSubtractWord(0, view->angleY));
-    ApplyMatrixLV(&cameraRotation, AsWords(&rollProbe), AsWords(&rollWork));
+    GameApplyMatrixLV(&cameraRotation, AsWords(&rollProbe), AsWords(&rollWork));
     TransposeMatrix(&matrixWork, &cameraRotation);
-    ApplyMatrixLV(&cameraRotation, AsWords(&rollWork), AsWords(&rollProbe));
+    GameApplyMatrixLV(&cameraRotation, AsWords(&rollWork), AsWords(&rollProbe));
     view->angleZ = 0x400 - (Atan2(rollProbe.y, rollProbe.x) & ANGLE_MASK);
     camera->previousMode = TRACK_CAMERA_PATH;
 }
@@ -284,7 +284,7 @@ void CameraViewFromSlidingNode(Camera *camera, GameCarRuntime *car, GameViewWork
     duration = CameraNodeDuration(orbitNode);
     nodeOffset.y = orbitNode->data.orientation.distance;
     nodeOffset.z = 0x32;
-    ApplyMatrixLV(&inverseObjectRotation, AsWords(&nodeOffset),
+    GameApplyMatrixLV(&inverseObjectRotation, AsWords(&nodeOffset),
                   AsWords(&nodeWorld));
     /* Slide the camera from where it starts to the node's own position
      * across the node's duration, then aim back at the car. */

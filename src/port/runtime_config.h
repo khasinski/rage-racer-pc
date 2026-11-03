@@ -7,6 +7,12 @@
  * sections and dotted keys (for example [race] mode = grand-prix becomes
  * race.mode). --set key=value overrides files. */
 int RuntimeConfigInit(int argc, char **argv);
+/* Consumers are isolated by default; the production game explicitly opts in.
+ * Smoke runs never consult the player's profile unless settings.path is
+ * explicitly supplied. Headless runs have the same default isolation. */
+void RuntimeConfigIsolateUserSettings(void);
+void RuntimeConfigEnableUserSettings(void);
+const char *RuntimeConfigSettingsPath(void);
 /*
  * Every setting can also be given in the environment; runtime_config.c derives
  * the name from the key and keeps the historical exceptions in one table, so

@@ -18,7 +18,8 @@ foreach(renderer classic modern)
             --set diagnostics.modern_dump_timer=430)
     endif()
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env ${env} "${GAME}"
-        --scenario "${SOURCE}/race-scenario.ini" --set run.frames=3000 --set stop.scene=12
+        --scenario "${SOURCE}/race-scenario.ini" --set video.fps=logic
+        --set run.frames=3000 --set stop.scene=12
         --set stop.timer=431 --set race.grid=0,1,2,3,4,5,6,7,8,9,10
         --set start.player_track_point=50 --set start.rival_track_points=52,54,56
         --set start.freeze=true --set "capture.directory=${out}" --set capture.scene=12

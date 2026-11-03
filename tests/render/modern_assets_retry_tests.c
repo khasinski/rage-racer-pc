@@ -1,5 +1,6 @@
 #include <SDL3/SDL.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "port/modern/modern_assets.h"
 #include "port/runtime_config.h"
@@ -268,7 +269,9 @@ int main(int argc, char **argv) {
         static const char hdManifest[] =
             "[mod]\nid = \"hd-test\"\n[textures]\n"
             "\"car.0.material.0\" = \"textures/car0.png\"\n"
-            "\"track.big1.sky\" = \"textures/sky.png\"\n";
+            "\"track.big1.sky\" = \"textures/sky.png\"\n"
+            "[materials]\n"
+            "\"car.0.material.8192\" = \"inherit auto 0.82 0.02 1 1 1 1 0 0 0\"\n";
         SDL_Surface *carSurf = SDL_CreateSurface(1024, 1024, SDL_PIXELFORMAT_RGBA32);
         SDL_Surface *skySurf = SDL_CreateSurface(1024, 512, SDL_PIXELFORMAT_RGBA32);
         RageRenderMaterial hdDef = {0};
@@ -281,6 +284,8 @@ int main(int argc, char **argv) {
         snprintf(paintPath, sizeof(paintPath), "%s/car.paint", argv[1]);
         if (!carSurf || !skySurf || !SDL_CreateDirectory(mods) || !SDL_CreateDirectory(texDir)) return 63;
         memset(carSurf->pixels, 10, (size_t)carSurf->pitch * (size_t)carSurf->h);
+        /* A detail within a painted retail texel must survive a mod override. */
+        ((uint8_t *)carSurf->pixels)[4]=91;
         memset(skySurf->pixels, 200, (size_t)skySurf->pitch * (size_t)skySurf->h);
         memset(paintMask, RAGE_CAR_PAINT_NONE, sizeof(paintMask));
         paintMask[0] = RAGE_CAR_PAINT_FIRST_PRIMARY;
@@ -301,16 +306,132 @@ int main(int argc, char **argv) {
         };
         if (!ModernAssetsLoadMaterial(&instance, 0, 0, &hdDef, &hdImage, &hdStorage) ||
             hdImage.width != 1024 || hdImage.height != 1024 ||
-            ((const uint8_t *)hdImage.pixels)[0] != 148 ||
-            ((const uint8_t *)hdImage.pixels)[(1 * 1024 + 1) * 4] != 148 ||
-            ((const uint8_t *)hdImage.pixels)[(2 * 1024 + 2) * 4] <= 10 ||
-            ((const uint8_t *)hdImage.pixels)[(2 * 1024 + 2) * 4] >= 148 ||
+            ((const uint8_t *)hdImage.pixels)[0] != 10 ||
+            ((const uint8_t *)hdImage.pixels)[4] != 91 ||
+            ((const uint8_t *)hdImage.pixels)[(1 * 1024 + 1) * 4] != 10 ||
+            ((const uint8_t *)hdImage.pixels)[(2 * 1024 + 2) * 4] != 10 ||
             ((const uint8_t *)hdImage.pixels)[(8 * 1024 + 8) * 4] != 10) return 66;
         ModernAssetsFreeMaterialImage(&hdImage);
+        if (!ModernAssetsLoadMaterial(&instance,8192,0,&hdDef,&hdImage,&hdStorage) ||
+            hdDef.roughness < 0.819f || hdDef.roughness > 0.821f ||
+            hdDef.metallic < 0.019f || hdDef.metallic > 0.021f) return 91;
+        ModernAssetsFreeMaterialImage(&hdImage);
+        if (!ModernAssetsLoadMaterial(&instance,4096,0,&hdDef,&hdImage,&hdStorage) ||
+            hdDef.roughness < 0.079f || hdDef.roughness > 0.081f) return 92;
+        ModernAssetsFreeMaterialImage(&hdImage);
+        instance.carPaintColor1=9;
+        if (!ModernAssetsLoadMaterial(&instance,0,0,&hdDef,&hdImage,&hdStorage) ||
+            ((const uint8_t *)hdImage.pixels)[0]!=10 ||
+            ((const uint8_t *)hdImage.pixels)[4]!=91) return 66;
+        ModernAssetsFreeMaterialImage(&hdImage);
+        instance.carPaintColor1=3;
+        {
+            RageModManifest *paintPack=calloc(1,sizeof(*paintPack));
+            const char text[]="[textures]\n\"car.0.material.0.paintable\"=\"textures/car0.png\"\n";
+            uint8_t silver;
+            if(!paintPack||!ModManifestParse(text,sizeof(text)-1,paintPack)||
+               !ModernAssetsSetHdPack(mods,paintPack))return 93;
+            free(paintPack);
+            if(!ModernAssetsLoadMaterial(&instance,0,0,&hdDef,&hdImage,&hdStorage))return 94;
+            silver=((const uint8_t*)hdImage.pixels)[0];
+            if(((const uint8_t*)hdImage.pixels)[(8*1024+8)*4]!=10)return 95;
+            ModernAssetsFreeMaterialImage(&hdImage);
+            instance.carPaintColor1=9;
+            if(!ModernAssetsLoadMaterial(&instance,0,0,&hdDef,&hdImage,&hdStorage)||
+               ((const uint8_t*)hdImage.pixels)[0]==silver||
+               ((const uint8_t*)hdImage.pixels)[(8*1024+8)*4]!=10)return 96;
+            ModernAssetsFreeMaterialImage(&hdImage);
+            instance.carPaintColor1=3;
+            if(!ModernAssetsSetHdPack(NULL,NULL))return 97;
+        }
         if (!ModernAssetsLoadSkyImage(0x58, NULL, &skyImage) ||
             skyImage.width != 1024 || skyImage.height != 512 ||
             ((const uint8_t *)skyImage.pixels)[0] != 200) return 67;
         ModernAssetsFreeMaterialImage(&skyImage);
+        /* A separate HD layer wins, then disabling restores ordinary mods.
+         * Changing it must retain the imported mesh session. */
+        {
+            RageModManifest *pack=calloc(1,sizeof(*pack));
+            static const char uiLayer[]="[textures]\n"
+                "\"ui.scene.8.page.29.clut.32641\" = \"textures/car0.png\"\n"
+                "\"ui.scene.8.page.31.clut.32576.region.0.0.48.24\" = \"textures/car0.png\"\n"
+                "\"ui.scene.8.page.31.clut.32576.region.12.0.12.24\" = \"textures/car0.png\"\n"
+                "\"ui.scene.8.page.31.clut.32576.region.250.0.12.24\" = \"textures/car0.png\"\n"
+                "\"ui.scene.8.page.31.clut.32576.region.0.0.0.24\" = \"textures/car0.png\"\n"
+                "\"ui.hud.page.9.clut.30924.region.0.76.24.24\" = \"textures/car0.png\"\n"
+                "\"ui.hud.car.0.page.10.clut.13224\" = \"textures/car0.png\"\n"
+                "\"ui.hud.car.3.page.10.clut.13288.region.0.112.96.94\" = \"textures/car0.png\"\n"
+                "\"track.big1.sky.atlas\" = \"textures/car0.png\"\n"
+                "\"track.big2.sky.atlas\" = \"textures/sky.png\"\n";
+            if(!pack||!ModManifestParse(uiLayer,sizeof(uiLayer)-1,pack))return 69;
+            /* Exercise copying and resolving a full manifest, including UI
+             * entries beyond the old reverse-search distance. */
+            while(pack->textureCount<RAGE_MOD_MANIFEST_MAX_TEXTURES){
+                size_t index=pack->textureCount++;
+                snprintf(pack->textures[index].key,sizeof(pack->textures[index].key),
+                    "test.padding.%zu",index);
+                snprintf(pack->textures[index].path,sizeof(pack->textures[index].path),
+                    "textures/car0.png");
+            }
+            uint64_t generation=ModernAssetsGeneration();
+            uint32_t meshes=ModernAssetsCachedMeshCount();
+            ModernUiRegion coldRegion;
+            if(ModernAssetsResolveCarUiRegion(3,12,10,13288,1,0,112,96,94,&coldRegion))return 98;
+            if(!ModernAssetsSetHdPack(mods,pack)||ModernAssetsGeneration()==generation||
+               ModernAssetsCachedMeshCount()!=meshes)return 69;
+            free(pack);
+            if(!ModernAssetsHasUiScene(8)||ModernAssetsHasUiScene(18)||
+               ModernAssetsHasUiScene(4)||ModernAssetsHasUiScene(-1)||ModernAssetsHasUiScene(40))return 69;
+            if(!ModernAssetsLoadUiImage("ui.scene.8.page.29.clut.32641",&hdImage)||
+               hdImage.width!=1024||((const uint8_t*)hdImage.pixels)[4]!=91)return 69;
+            ModernAssetsFreeMaterialImage(&hdImage);
+            if(!ModernAssetsLoadSkyAtlas(0x58,&skyImage)||skyImage.width!=1024||skyImage.height!=1024||
+               ((const uint8_t*)skyImage.pixels)[4]!=91)return 71;
+            ModernAssetsFreeMaterialImage(&skyImage);
+            /* Mirror panorama must use the same page atlas as the main sky,
+             * even when a legacy strip is also present in a lower layer. */
+            {
+                RageSkyPanoramaLayout layout = {0};
+                if (!ModernAssetsLoadSkyImage(0x58, &layout, &skyImage) ||
+                    skyImage.width != 2048 || skyImage.height != 1024 ||
+                    ((const uint8_t *)skyImage.pixels)[4] != 91 ||
+                    ((const uint8_t *)skyImage.pixels)[5] != 10 ||
+                    ((const uint8_t *)skyImage.pixels)[7] != 10) return 71;
+                ModernAssetsFreeMaterialImage(&skyImage);
+            }
+            if(ModernAssetsLoadSkyAtlas(0x60,&skyImage)||ModernAssetsLoadSkyAtlas(0x5a,&skyImage))return 71;
+            ModernUiRegion region;
+            if(!ModernAssetsResolveCarUiRegion(3,12,10,13288,1,0,112,96,94,&region)||
+               ModernAssetsResolveCarUiRegion(0,12,10,13288,1,0,112,96,94,&region)||
+               ModernAssetsResolveCarUiRegion(3,12,10,13288,1,0,0,96,94,&region))return 70;
+            if(!ModernAssetsResolveCarUiRegion(0,12,10,13224,1,0,112,96,94,&region)||
+               ModernAssetsResolveCarUiRegion(3,12,10,13224,1,0,112,96,94,&region)||
+               ModernAssetsResolveUiRegion(12,10,13224,1,0,112,96,94,&region))return 70;
+            if(!ModernAssetsResolveUiRegion(8,31,32576,0,12,0,12,24,&region)||region.x!=12||region.width!=12)return 70;
+            if(!ModernAssetsResolveUiRegion(8,31,32576,0,12,0,24,24,&region)||region.x!=0||region.width!=48)return 70;
+            if(!ModernAssetsResolveUiRegion(8,31,32576,0,47,23,1,1,&region))return 70;
+            region.x=999;
+            if(ModernAssetsResolveUiRegion(8,31,32576,0,47,23,2,1,&region)||region.x!=999||
+               ModernAssetsResolveUiRegion(8,31,32576,0,0,23,1,2,&region)||
+               ModernAssetsResolveUiRegion(8,31,32576,0,48,0,1,24,&region)||
+               ModernAssetsResolveUiRegion(8,31,32576,0,255,0,2,1,&region)||
+               ModernAssetsResolveUiRegion(18,31,32576,0,0,0,12,24,&region))return 70;
+            if(!ModernAssetsResolveUiRegion(12,9,30924,1,0,76,24,24,&region)||region.y!=76||
+               ModernAssetsResolveUiRegion(12,9,30924,0,0,76,24,24,&region)||
+               ModernAssetsResolveUiRegion(4,9,30924,1,0,76,24,24,&region))return 70;
+            if(!ModernAssetsResolveUiRegion(8,29,32641,0,128,128,128,128,&region)||region.width!=256)return 70;
+            if(!ModernAssetsLoadMaterial(&instance,0,0,&hdDef,&hdImage,&hdStorage)||
+               ((const uint8_t*)hdImage.pixels)[4]!=91)return 69;
+            ModernAssetsFreeMaterialImage(&hdImage);
+            if(!ModernAssetsSetHdPack(NULL,NULL)||ModernAssetsLoadSkyAtlas(0x58,&skyImage)||ModernAssetsHasUiScene(8)||!ModernAssetsReady()||
+               ModernAssetsCachedMeshCount()!=meshes)return 69;
+            region.x=999;
+            if(ModernAssetsResolveCarUiRegion(3,12,10,13288,1,0,112,96,94,&region)||
+               region.x!=999)return 99;
+            if(!ModernAssetsLoadMaterial(&instance,0,0,&hdDef,&hdImage,&hdStorage)||
+               ((const uint8_t*)hdImage.pixels)[4]!=91)return 69;
+            ModernAssetsFreeMaterialImage(&hdImage);
+        }
         /* Verify 4:1 upscaled sky strip (1024x256 -> expanded 1024x512) and 512x512 cached RGBA textures. */
         {
             SDL_Surface *stripSurf = SDL_CreateSurface(1024, 256, SDL_PIXELFORMAT_RGBA32);

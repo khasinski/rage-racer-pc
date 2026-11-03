@@ -29,6 +29,9 @@ typedef enum RageModernPost {
     RAGE_MODERN_POST_FXAA = 1
 } RageModernPost;
 
+/* Modern 100% is brighter than the original renderer's neutral point. */
+#define RAGE_MODERN_BRIGHTNESS_BASELINE 1.15f
+
 typedef struct RagePortConfig {
     RageRendererKind renderer;
     float modernInternalScale;  /* multiplier of 320x240, default 4 */
@@ -37,11 +40,22 @@ typedef struct RagePortConfig {
     float modernDrawDistance;   /* multiplier, default 1 */
     int modernTextureFilterLinear; /* 0 nearest, 1 linear */
     RageModernPost modernPost;
+    float modernBrightness;    /* relative to modern baseline: 1 = 100%, default */
     int modernGrading;          /* 0 off, 1 vibrant */
     int modernSsao;             /* 0 off, 1 ambient occlusion */
     int modernShadows;          /* 0 off, 1 standard, 2 high shadow-map detail */
     int carLights;              /* 0 off; 1 on, following day, night and tunnels */
 } RagePortConfig;
+
+/* Shared by startup and the per-page reset without involving runtime I/O. */
+static inline RagePortConfig PortConfigDefaultValues(void) {
+    return (RagePortConfig){
+        .renderer = RAGE_RENDERER_MODERN, .modernInternalScale = 4.0f,
+        .modernAspect = RAGE_MODERN_ASPECT_16_9, .modernFps = RAGE_MODERN_FPS_VSYNC,
+        .modernDrawDistance = 1.0f, .modernTextureFilterLinear = 1,
+        .modernPost = RAGE_MODERN_POST_FXAA, .modernBrightness = 1.0f,
+        .modernGrading = 1, .modernSsao = 1, .modernShadows = 2, .carLights = 1};
+}
 
 void PortConfigDefaults(RagePortConfig *config);
 /* Applies [video] values loaded by runtime_config. */

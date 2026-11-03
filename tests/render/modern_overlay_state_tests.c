@@ -28,5 +28,16 @@ int main(void) {
     rect = (SDL_Rect){0, 0, 320, 240};
     ModernOverlayStateScaleScissor(&rect, 320.0f, 0.0f, 640, 480);
     assert(rect.x == 0 && rect.y == 0 && rect.w == 640 && rect.h == 480);
+    ModernOverlayStateInitHeight(&state,0,480);
+    ModernOverlayStateApplyWord(&state,0xE3000000u);
+    ModernOverlayStateApplyWord(&state,0xE4000000u | 319u | (479u<<10));
+    assert(!state.areaEmpty&&state.scissor.h==480);
+    ModernOverlayStateApplyWord(&state,0xE3000000u | (400u<<10));
+    assert(state.displayHeight==480);
+    ModernOverlayStateApplyWord(&state,0xE4000000u | 319u | (479u<<10));
+    assert(!state.areaEmpty&&state.scissor.y==400&&state.scissor.h==80);
+    rect=state.scissor;
+    ModernOverlayStateScaleScissorHeight(&rect,320.f,0.f,1280,960,480);
+    assert(rect.y==800&&rect.h==160&&rect.w==1280);
     return 0;
 }

@@ -9,49 +9,12 @@
 #include "game/save_internal.h"
 #include "game/screens.h"
 #include <string.h>
+#include "main_menu_ui.h"
 
-enum {
-    MAIN_MENU_ROW_REVEAL_FRAMES = 8,
-    MAIN_MENU_OPEN_FRAMES =
-        0x10 + (TITLE_MENU_ITEM_COUNT - 1) * MAIN_MENU_ROW_REVEAL_FRAMES,
-};
+enum { MAIN_MENU_OPEN_FRAMES = 16 };
 
-void DrawMainMenuRows(void) {
-    const Frontend *frontend = MenuFrontend();
-    GameOrderingTableEntry *ot = GamePrimaryOrderingTable(0);
-    u8 *packet = RENDER_PRIM_CURSOR_AS(u8);
-    s32 rowStep = g_ExtraGrandPrixUnlocked != 0 ? 0x14 : 0x18;
-    s32 row = 0;
-    s32 item = 0;
-
-    while (item < TITLE_MENU_ITEM_COUNT) {
-        s32 clut = 0x7E85;
-        s32 height;
-        s32 delta;
-
-        if (g_ExtraGrandPrixUnlocked == 0 &&
-            item == TITLE_MENU_EXTRA_GRAND_PRIX) {
-            item = TITLE_MENU_TIME_ATTACK;
-        }
-        if (item == frontend->selection &&
-            frontend->state != FRONTEND_STATE_MENU_OPENING &&
-            (frontend->pulse & 2) == 0) {
-            clut = 0x7E86;
-        }
-
-        delta = frontend->menuSlide - row * MAIN_MENU_ROW_REVEAL_FRAMES;
-        height = delta > 0x10 ? 0x10 : delta;
-        if (height < 0) height = 0;
-
-        packet = DrawTitleMenuLabel(
-            ot, packet, (TitleMenuItem)item, 0x68, 0x64 + row * rowStep,
-            height, clut == 0x7E86);
-        item++;
-        row++;
-    }
-
-    g_RenderState.draw.packetCursor = packet;
-}
+/* Menu rows are rendered as native text by the host presentation layer. */
+void DrawMainMenuRows(void) {}
 
 void UpdateMainMenuOpen(void) {
     Frontend *frontend = MenuFrontend();
@@ -88,7 +51,9 @@ void UpdateMainMenuInput(void) {
     s32 direction = 0;
     u16 pressed = g_PadPressed;
 
-    if (pressed != 0) frontend->idleTimer = 0;
+    int nativeInput = PortMainMenuTakeInput(&frontend->selection);
+    if (nativeInput & 2) pressed |= PAD_CONFIRM;
+    if (pressed != 0 || nativeInput) frontend->idleTimer = 0;
     oldSelection = frontend->selection;
     if (pressed & PAD_UP) {
         direction = -1;
@@ -102,6 +67,10 @@ void UpdateMainMenuInput(void) {
 
     if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
+        if (frontend->selection == TITLE_MENU_QUIT) {
+            PortMainMenuRequestQuit();
+            return;
+        }
         if (!AssetLoadCompletedSuccessfully()) ResetAssetLoader();
         ShuffleBgmOrder();
         g_RaceSession.kind = RACE_SESSION_STANDARD;
@@ -149,7 +118,10 @@ void UpdateMainMenuInput(void) {
             RequestOptionScreenAssets();
             MenuOption()->cursor = 0;
             break;
+        case TITLE_MENU_QUIT:
+            break;
         }
+        frontend->pulse = 0;
         frontend->state = FRONTEND_STATE_MENU_EXIT;
     }
     DrawMainMenuRows();

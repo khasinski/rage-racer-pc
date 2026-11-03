@@ -87,7 +87,7 @@ static int ModAssetsReadManifest(void) {
     long size = -1;
     if (fseek(file, 0, SEEK_END) == 0) size = ftell(file);
     /* More than the maximum meaningful content in the bounded schema. */
-    if (size < 0 || size > 2 * 1024 * 1024 || fseek(file, 0, SEEK_SET) != 0) {
+    if (size < 0 || size > RAGE_MOD_MANIFEST_MAX_BYTES || fseek(file, 0, SEEK_SET) != 0) {
         fclose(file);
         fprintf(stderr, "rage-port: invalid mod manifest size %s; mod disabled\n", path);
         return 0;

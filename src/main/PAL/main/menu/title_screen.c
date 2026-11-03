@@ -39,10 +39,9 @@ void EnterTitleScreen(void) {
     g_SceneId = GAME_SCENE_FRONTEND;
     frontend->idleTimer = 0;
     frontend->menuSlide = 0;
-    frontend->state = FRONTEND_STATE_TITLE;
+    frontend->state = FRONTEND_STATE_MENU_OPENING;
     RefreshClassWinState();
     SetDefaultReverbDepth();
-    DrawPressStartPrompt();
 }
 
 static void DrawTitleFadeOverlay(s32 brightness) {
@@ -81,17 +80,6 @@ void DrawPressStartPrompt(void) {
 
 
 void UpdateTitleScreen(void) {
-    Frontend *frontend = MenuFrontend();
-
-    if (g_PadPressed & PAD_START) {
-        PlaySoundCue(2);
-        frontend->state = FRONTEND_STATE_MENU_OPENING;
-        frontend->idleTimer = 0;
-        frontend->selection = TITLE_MENU_GRAND_PRIX;
-        if (frontend->attractTimer > 0) {
-            frontend->attractTimer = 0;
-            StartCdVolumeFade(1);
-        }
-    }
-    DrawPressStartPrompt();
+    MenuFrontend()->state = FRONTEND_STATE_MENU_OPENING;
+    UpdateMainMenuOpen();
 }

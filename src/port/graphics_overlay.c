@@ -1,4 +1,7 @@
 #include "graphics_overlay.h"
+#include "user_settings.h"
+#include "hd_pack_ui.h"
+#include "main_menu_ui.h"
 
 #include <SDL3/SDL.h>
 #include <psyz/overlay_sdl3.h>
@@ -68,6 +71,8 @@ static void OpenPanel(void) {
     }
 }
 
+void PortGraphicsOverlayOpen(void) { if (!s_model.open) OpenPanel(); }
+
 /* Keys that change a value or move between pages act once per press: each
  * step can rebuild the presentation, so holding one must not run through
  * every value. Moving the selection may repeat. */
@@ -116,8 +121,37 @@ static void OnMouse(float windowX, float windowY, int click) {
     OverlayModelPointer(&s_model, x, y, click, NowMs());
 }
 
+static void MainMenuMouse(float x, float y, int click) {
+    SDL_Window *window=NULL;SDL_GPUDevice *device=NULL;
+    if (!Psyz_VideoGetPresentationDevice_SDL3GPU(&window,&device) || !window) return;
+    int width,height;SDL_GetWindowSizeInPixels(window,&width,&height);
+    float density=SDL_GetWindowPixelDensity(window);
+    float aspect=ModernPresentationAspect();
+    int contentW=width,contentH=height;
+    if (ModernPresentationActive()) {
+        if ((float)width/height>aspect) contentW=(int)(height*aspect);
+        else contentH=(int)(width/aspect);
+    }
+    PortMainMenuPointer(contentW,contentH,x*density-(width-contentW)*0.5f,
+                        y*density-(height-contentH)*0.5f,click);
+}
+
 static void OnEvent(const SDL_Event *event) {
     if (s_prevEvent != NULL) s_prevEvent(event);
+    if (!s_model.open && PortMainMenuState().interactive) {
+        if(event->type==SDL_EVENT_MOUSE_MOTION) MainMenuMouse(event->motion.x,event->motion.y,0);
+        if(event->type==SDL_EVENT_MOUSE_BUTTON_DOWN && event->button.button==SDL_BUTTON_LEFT)
+            MainMenuMouse(event->button.x,event->button.y,1);
+        if(event->type==SDL_EVENT_KEY_DOWN && !event->key.repeat) {
+            if(event->key.scancode==SDL_SCANCODE_HOME) PortMainMenuEdge(0);
+            if(event->key.scancode==SDL_SCANCODE_END) PortMainMenuEdge(1);
+            if(event->key.scancode==SDL_SCANCODE_SPACE) {
+                MainMenuState state=PortMainMenuState();
+                MainMenuRect row=MainMenuRow(1280,720,state.selected,state.extraUnlocked);
+                PortMainMenuPointer(1280,720,row.x+row.w/2,row.y+row.h/2,1);
+            }
+        }
+    }
     if (event->type >= SDL_EVENT_FINGER_DOWN && event->type <= SDL_EVENT_FINGER_CANCELED &&
         TouchEnabled()) {
         OnTouchEvent(event);
@@ -138,11 +172,14 @@ static void OnEvent(const SDL_Event *event) {
         return;
     } else if (event->type == SDL_EVENT_MOUSE_MOTION) {
         if (TouchEnabled() && event->motion.which == SDL_TOUCH_MOUSEID) return;
-        OnMouse(event->motion.x, event->motion.y, 0);
+        OnMouse(event->motion.x, event->motion.y, (event->motion.state & SDL_BUTTON_LMASK) ? 2 : 0);
     } else if (event->type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
                event->button.button == SDL_BUTTON_LEFT) {
         if (TouchEnabled() && event->button.which == SDL_TOUCH_MOUSEID) return;
         OnMouse(event->button.x, event->button.y, 1);
+    } else if (event->type == SDL_EVENT_MOUSE_BUTTON_UP &&
+               event->button.button == SDL_BUTTON_LEFT) {
+        OnMouse(event->button.x, event->button.y, -1);
     } else if (event->type == SDL_EVENT_GAMEPAD_BUTTON_DOWN) {
         OverlayModelDo(&s_model, ButtonAction(event->gbutton.button), NowMs());
     }
@@ -161,6 +198,11 @@ static SDL_GPUGraphicsPipeline *s_pipeline;
 static SDL_GPUSampler *s_sampler;
 static SDL_GPUTexture *s_texture;
 static int s_textureW, s_textureH;
+static SDL_GPUTextureFormat s_pipelineFormat;
+static SDL_GPUTexture *s_titleTexture;
+static OverlaySurface s_titleSurface;
+static MainMenuState s_titleState;
+static int s_titleW,s_titleH;
 
 static TouchState s_touch;
 static TouchLayout s_touchLayout;
@@ -173,11 +215,13 @@ static int s_touchEnabled = -1;
 
 void PortGraphicsOverlayReleaseGpu(void) {
     if (s_device != NULL) {
+        if (s_titleTexture != NULL) SDL_ReleaseGPUTexture(s_device,s_titleTexture);
         if (s_texture != NULL) SDL_ReleaseGPUTexture(s_device, s_texture);
         if (s_atlasTexture != NULL) SDL_ReleaseGPUTexture(s_device, s_atlasTexture);
         if (s_sampler != NULL) SDL_ReleaseGPUSampler(s_device, s_sampler);
         if (s_pipeline != NULL) SDL_ReleaseGPUGraphicsPipeline(s_device, s_pipeline);
     }
+    s_titleTexture=NULL;s_titleW=s_titleH=0;
     s_atlasTexture = NULL;
     s_touchW = s_touchH = 0;
     s_texture = NULL;
@@ -223,7 +267,12 @@ static int EnsurePipeline(SDL_GPUDevice *device, SDL_GPUTextureFormat format) {
     SDL_GPUSamplerCreateInfo sampler;
 
     if (s_device != NULL && s_device != device) PortGraphicsOverlayReleaseGpu();
+    if (s_pipeline != NULL && s_pipelineFormat != format) {
+        SDL_ReleaseGPUGraphicsPipeline(device,s_pipeline);s_pipeline=NULL;
+        if(s_sampler){SDL_ReleaseGPUSampler(device,s_sampler);s_sampler=NULL;}
+    }
     if (s_pipeline != NULL && s_sampler != NULL) return 1;
+    s_pipelineFormat=format;
     s_device = device;
     vertex = CreateShader(device, SDL_GPU_SHADERSTAGE_VERTEX, overlay_vert_spv,
                           overlay_vert_spv_len, overlay_vert_msl,
@@ -368,6 +417,45 @@ static void RefreshSurface(SDL_GPUDevice *device, SDL_Window *window) {
     s_model.dirty = 0;
 }
 
+static int RefreshMainMenu(SDL_GPUDevice *device, SDL_GPUTextureFormat format,
+                           int width, int height) {
+    MainMenuState state = PortMainMenuState();
+    if (!state.active || width <= 0 || height <= 0) return 0;
+    if (!EnsurePipeline(device, format)) return 0;
+    if (s_titleTexture == NULL || s_titleW != width || s_titleH != height + 1 ||
+        state.selected != s_titleState.selected || state.extraUnlocked != s_titleState.extraUnlocked ||
+        state.opacity != s_titleState.opacity) {
+        if (!MainMenuPaint(&s_titleSurface, width, height, &state) ||
+            !UploadTo(device,&s_titleTexture,&s_titleW,&s_titleH,&s_titleSurface)) return 0;
+        s_titleState = state;
+    }
+    return 1;
+}
+static void DrawMainMenuNative(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass,
+                                int width, int height) {
+    OverlayQuad quad = {{-1,1,1,-1},{0,0,1,0},{1,1,1,1}};
+    SDL_GPUViewport viewport = {0,0,(float)width,(float)height,0,1};
+    SDL_Rect scissor = {0,0,width,height};
+    SDL_GPUTextureSamplerBinding binding = {s_titleTexture,s_sampler};
+    quad.uv[3] = (float)(s_titleH-1)/(float)s_titleH;
+    SDL_SetGPUViewport(pass,&viewport);
+    SDL_SetGPUScissor(pass,&scissor);
+    SDL_BindGPUGraphicsPipeline(pass,s_pipeline);
+    SDL_BindGPUFragmentSamplers(pass,0,&binding,1);
+    SDL_PushGPUVertexUniformData(command,0,&quad,sizeof(quad));
+    SDL_DrawGPUPrimitives(pass,6,1,0,0);
+}
+void PortMainMenuRenderTarget(SDL_GPUDevice *device, SDL_GPUCommandBuffer *command,
+                              SDL_GPUTexture *target, int width, int height) {
+    if (!RefreshMainMenu(device,SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,width,height)) return;
+    SDL_GPUColorTargetInfo color = {0};
+    color.texture=target;
+    color.load_op=SDL_GPU_LOADOP_LOAD;
+    color.store_op=SDL_GPU_STOREOP_STORE;
+    SDL_GPURenderPass *pass=SDL_BeginGPURenderPass(command,&color,1,NULL);
+    if (pass) { DrawMainMenuNative(command,pass,width,height);SDL_EndGPURenderPass(pass); }
+}
+
 /* ---- touch pad ---- */
 
 /* The phone build always has it; elsewhere it is for trying the pad out. */
@@ -401,14 +489,16 @@ static void OnTouchEvent(const SDL_Event *event) {
     if (s_model.open) {
         TouchReleaseAll(&s_touch);
         if ((event->type == SDL_EVENT_FINGER_DOWN ||
-             event->type == SDL_EVENT_FINGER_MOTION) &&
+             event->type == SDL_EVENT_FINGER_MOTION ||
+             event->type == SDL_EVENT_FINGER_UP) &&
             s_windowW > 0 && s_windowH > 0 && s_layout.scale > 0.0f) {
             float px = event->tfinger.x * (float)s_windowW;
             float py = event->tfinger.y * (float)s_windowH;
             OverlayModelPointer(&s_model,
                                 (px - (float)s_layout.x) / s_layout.scale,
                                 (py - (float)s_layout.y) / s_layout.scale,
-                                event->type == SDL_EVENT_FINGER_DOWN, NowMs());
+                                event->type == SDL_EVENT_FINGER_UP ? -1 :
+                                event->type == SDL_EVENT_FINGER_DOWN ? 1 : 2, NowMs());
         }
         return;
     }
@@ -507,22 +597,69 @@ static void DrawTouch(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
     }
 }
 
+static void SavePreferences(void) {
+    const char *path = RuntimeConfigSettingsPath();
+    PortSessionOptions session;
+    if (!path) return;
+    PortSessionOptionsRead(&session);
+    if (!UserSettingsSave(path, PortActiveConfig(), &session)) {
+        snprintf(s_model.settingsStatus, sizeof(s_model.settingsStatus),
+                 "Could not save settings. Changes apply until quit.");
+        fprintf(stderr, "rage-port: cannot save settings %s: %s\n", path, SDL_GetError());
+    } else s_model.settingsStatus[0] = '\0';
+    s_model.dirty = 1;
+}
+
+static void RestoreAndTrackDisplayMode(void) {
+    static int lastFullscreen = -1;
+    static int lastRenderer = -1;
+    SDL_Window *window;
+    SDL_GPUDevice *device;
+    if (!Psyz_VideoGetPresentationDevice_SDL3GPU(&window, &device) || !window) return;
+    PortSessionOptions session;
+    PortSessionOptionsRead(&session);
+    if (lastFullscreen < 0) {
+        if (RuntimeConfigGet("video.fullscreen")) {
+            session.fullscreen = RuntimeConfigEnabled("video.fullscreen");
+            PortSessionOptionsApply(&session);
+            PortSessionOptionsRead(&session);
+        }
+    } else if (lastFullscreen != session.fullscreen ||
+               lastRenderer != (int)PortActiveConfig()->renderer) SavePreferences();
+    lastFullscreen = session.fullscreen;
+    lastRenderer = (int)PortActiveConfig()->renderer;
+}
+
 void PortGraphicsOverlayTick(void) {
+    RestoreAndTrackDisplayMode();
+    HdPackUiTick(&s_model);
     SDL_GPUDevice *device = NULL;
     SDL_Window *window = NULL;
     OverlayPending due = OverlayModelTakePending(&s_model, NowMs());
 
     if (due.config) {
-        ModernApplyConfig(&s_model.values.config);
+        if (!ModernApplyConfig(&s_model.values.config))
+            fprintf(stderr, "rage-port: graphics settings could not be applied\n");
         OverlayModelAdopt(&s_model, PortActiveConfig());
     }
-    if (due.session) PortSessionOptionsApply(&s_model.values.session);
+    if (due.session) {
+        PortSessionOptionsApply(&s_model.values.session);
+        PortSessionOptionsRead(&s_model.values.session);
+        s_model.dirty = 1;
+    }
+    if (due.config || due.session) SavePreferences();
     if (OverlayModelTakeQuit(&s_model)) {
         SDL_Event quit;
 
         SDL_zero(quit);
         quit.type = SDL_EVENT_QUIT;
         SDL_PushEvent(&quit);
+    }
+    if (!s_model.open && PortMainMenuState().active && !ModernPresentationActive()) {
+        if(Psyz_VideoGetPresentationDevice_SDL3GPU(&window,&device) && window) {
+            s_window=window;SDL_GetWindowSizeInPixels(window,&s_windowW,&s_windowH);
+            RefreshMainMenu(device,SDL_GetGPUSwapchainTextureFormat(device,window),s_windowW,s_windowH);
+        }
     }
     if (!s_model.open && !TouchEnabled()) return;
     if (!Psyz_VideoGetPresentationDevice_SDL3GPU(&window, &device)) return;
@@ -582,6 +719,8 @@ static void DrawPanel(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
 static void OnRender(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
     if (s_prevRender != NULL) s_prevRender(command, pass);
     if (s_model.open) DrawPanel(command, pass);
+    else if (PortMainMenuState().active && !ModernPresentationActive() && s_titleTexture)
+        DrawMainMenuNative(command,pass,s_windowW,s_windowH);
     else if (TouchEnabled()) DrawTouch(command, pass);
 }
 

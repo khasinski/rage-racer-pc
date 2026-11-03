@@ -81,7 +81,7 @@ void SetCameraRotMatrix(GameRenderState *state,
  * 16-bit, so the game keeps this one for the camera, whose offsets and
  * distances do not fit in a short.
  */
-void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
+void GameApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
     int row;
     for (row = 0; row < 3; row++) {
         int64_t value = (int64_t)matrix->m[row][0] * input[0]

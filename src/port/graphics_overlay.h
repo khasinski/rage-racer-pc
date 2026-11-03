@@ -10,6 +10,12 @@
 
 /* Registers the input and swapchain hooks. Safe before platform start-up. */
 void PortGraphicsOverlayInstall(void);
+void PortGraphicsOverlayOpen(void);
+struct SDL_GPUDevice;
+struct SDL_GPUCommandBuffer;
+struct SDL_GPUTexture;
+void PortMainMenuRenderTarget(struct SDL_GPUDevice *device,
+    struct SDL_GPUCommandBuffer *command, struct SDL_GPUTexture *target, int width, int height);
 
 /* Non-zero while the panel is open. The main loop holds game logic then. */
 int PortGraphicsOverlayActive(void);

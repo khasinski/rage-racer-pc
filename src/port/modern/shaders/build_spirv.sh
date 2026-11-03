@@ -72,6 +72,11 @@ if [ "${1:-}" = "composite" ]; then
     exit 0
 fi
 
+if [ "${1:-}" = "ui-atlas" ]; then
+    build_shader ui_atlas.frag ui_atlas_frag frag fs_ui_atlas
+    exit 0
+fi
+
 if [ "${1:-}" = "overlay" ]; then
     build_shader overlay.vert overlay_vert vert vs_overlay
     build_shader overlay.frag overlay_frag frag fs_overlay
@@ -105,3 +110,5 @@ build_shader overlay.vert overlay_vert vert vs_overlay
 build_shader overlay.frag overlay_frag frag fs_overlay
 build_shader ssao.frag ssao_frag frag fs_ssao
 build_shader ssao_blur.frag ssao_blur_frag frag fs_ssao_blur
+
+build_shader ui_atlas.frag ui_atlas_frag frag fs_ui_atlas

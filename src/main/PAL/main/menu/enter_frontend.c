@@ -17,7 +17,7 @@ void EnterFrontend(void) {
     g_SceneId = 4;
     g_SceneTimer = 0;
     *frontend = (Frontend){
-        .state = FRONTEND_STATE_TITLE,
+        .state = FRONTEND_STATE_MENU_OPENING,
         .attractTimer = -1,
     };
 

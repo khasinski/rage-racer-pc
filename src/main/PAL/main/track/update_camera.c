@@ -42,14 +42,14 @@ static void CameraViewFromOrbitPosition(Camera *camera, GameCarRuntime *car,
     MulMatrix2(&cameraRotation, &objectRotation);
     TransposeMatrix(&objectRotation, &cameraToWorld);
     focusOffset.z = 0x32;
-    ApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
+    GameApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
                   AsWords(&focusWorld));
     view->x = CameraAddWord(view->x, focusWorld.x);
     view->y = CameraAddWord(view->y, focusWorld.y);
     view->z = CameraAddWord(view->z, focusWorld.z);
     eyeOffset.y = height;
     eyeOffset.z = distance;
-    ApplyMatrixLV(&cameraToWorld, AsWords(&eyeOffset), AsWords(&eyeWorld));
+    GameApplyMatrixLV(&cameraToWorld, AsWords(&eyeOffset), AsWords(&eyeWorld));
     /* Pitch uses the orbit distance rather than the flattened eye vector,
      * so a pitched camera tilts a shade less than a true look-at would.
      * Retail's, and the view players know. */

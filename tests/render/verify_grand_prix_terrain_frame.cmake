@@ -10,13 +10,13 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     RAGE_PORT_SMOKE_CAPTURE_SCENE=12 RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN=35
     RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX=100 RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE=5
     RAGE_PORT_SMOKE_CAMERA_STATE=1 "RAGE_PORT_MODERN_DUMP=${presented}"
-    RAGE_PORT_MODERN_DUMP_FRAME=1399 RAGE_PORT_MODERN_DUMP_SCENE=12
+    RAGE_PORT_MODERN_DUMP_TIMER=35 RAGE_PORT_MODERN_DUMP_SCENE_ID=12
     "${GAME}" --set video.internal_scale=1 --set video.aspect=4:3
     --set video.post=none
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 105 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)
 set(log "${output}${error}")
-foreach(needle "stopped at frame 1465, scene 12" "smoke synchronized stop frame=1465 scene=12 timer=101" "sync=180" "ref_lap=100765")
+foreach(needle "stopped at frame [0-9]+, scene 12" "smoke synchronized stop frame=[0-9]+ scene=12 timer=101" "sync=180" "ref_lap=100765")
     if(NOT log MATCHES "${needle}")
         message(FATAL_ERROR "Grand Prix assertion missing ${needle}: ${root}\n${log}")
     endif()

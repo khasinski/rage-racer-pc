@@ -269,7 +269,7 @@ void DrawCar(GameCarRuntime *object) {
         (int64_t)object->x - g_Camera.view.x);
     cameraOffset.z = WrapSigned32(
         (int64_t)object->z - g_Camera.view.z);
-    ApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&cameraOffset),
+    GameApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&cameraOffset),
                   AsWords(&viewPosition));
     renderDistance = CarRenderManhattanDistance(
         object->x, object->z, g_Camera.view.x, g_Camera.view.z);

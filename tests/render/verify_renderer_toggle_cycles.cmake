@@ -7,7 +7,8 @@ if(NOT result STREQUAL "0")
     message(FATAL_ERROR "Cannot generate native assets: ${root}")
 endif()
 set(scenario "${root}/renderer żółty.ini")
-file(WRITE "${scenario}" "[race]\nenabled=true\nmode=grand-prix\nseries=gp\nclass=0\ncourse=0\ncar=3\n[video]\nrenderer=classic\n[modern]\nassets=${assets}\n[run]\nframes=2450\n[stop]\nscene=12\ntimer=250\n[hooks]\ntoggle_renderer_frames=1000,1060,1120,1180\n[diagnostics]\nrenderer_lifecycle=true\n")
+# Faster menu transitions must leave enough race time for all four hooks.
+file(WRITE "${scenario}" "[race]\nenabled=true\nmode=grand-prix\nseries=gp\nclass=0\ncourse=0\ncar=3\n[video]\nrenderer=classic\n[modern]\nassets=${assets}\n[run]\nframes=2450\n[stop]\nscene=12\ntimer=450\n[hooks]\ntoggle_renderer_frames=1000,1060,1120,1180\n[diagnostics]\nrenderer_lifecycle=true\n")
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     "${GAME}" --scenario "${scenario}" --set video.fps=vsync WORKING_DIRECTORY "${SOURCE}"
     RESULT_VARIABLE result TIMEOUT 165 OUTPUT_VARIABLE output ERROR_VARIABLE error)

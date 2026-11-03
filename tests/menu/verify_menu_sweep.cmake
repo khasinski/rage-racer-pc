@@ -9,7 +9,7 @@ function(run_sweep variable pattern expected input_script)
     endif()
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
         RAGE_PORT_SMOKE_FRAMES=2200 "${variable}=1" ${scene_trace}
-        "RAGE_PORT_INPUT_SCRIPT=${input_script}" "${GAME}"
+        PSYZ_HEADLESS=1 "${GAME}" --set "input.state_script=${input_script}"
         WORKING_DIRECTORY "${SOURCE}" TIMEOUT 135 RESULT_VARIABLE result
         OUTPUT_VARIABLE output ERROR_VARIABLE error)
     set(log "${output}${error}")
@@ -41,15 +41,15 @@ endfunction()
 
 # CMake sorts strings lexically, so 10–12 follow 1 in the expected lists.
 run_sweep(RAGE_PORT_SMOKE_MENU_SWEEP "menu sweep [^\n]*screen=[0-9]+"
-    "1;10;11;12;2;3;4;5;6;7;8;9" "400:START,500:DOWN,520:CROSS")
+    "1;10;11;12;2;3;4;5;6;7;8;9" "4@40:DOWN,4@44:CONFIRM")
 run_sweep(RAGE_PORT_SMOKE_OPTION_SWEEP "option sweep [^\n]*mode=[0-9]+"
-    "1;10;11;2;3;4;5;6;7;8;9" "400:START,500:UP,520:CROSS")
+    "1;10;11;2;3;4;5;6;7;8;9" "4@40:UP,4@44:UP,4@48:CONFIRM")
 # Enter OPTION through real input: the entry scene arms a fade-in that must
 # finish and hand the root menu its cursor, otherwise the screen is a softlock.
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     RAGE_PORT_SMOKE_FRAMES=900 RAGE_PORT_SCENE_TRACE=1
-    "RAGE_PORT_INPUT_SCRIPT=400:START,500:UP,520:CROSS,700:DOWN,760:DOWN,800:CROSS"
-    "${GAME}"
+    PSYZ_HEADLESS=1 "${GAME}"
+    --set input.state_script=4@40:UP,4@44:UP,4@48:CONFIRM,23@200:DOWN,23@210:DOWN,23@220:CONFIRM
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 135 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)
 set(log "${output}${error}")

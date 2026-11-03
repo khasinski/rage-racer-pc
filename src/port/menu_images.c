@@ -2,33 +2,50 @@
 #include "mod_assets.h"
 #include "render/mod_manifest.h"
 #include "render/asset_path.h"
-#include "modern/modern_png.h"
+#include "modern/modern_image.h"
 #include <SDL3/SDL.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 static struct {
     unsigned generation;
     uint8_t checked[7][2],valid[7][2];
     uint8_t pixels[7][2][MENU_IMAGE_WIDTH*MENU_IMAGE_HEIGHT*4];
+    SDL_Surface *native[7][2];
 } images;
+static RageModManifest *hdManifest;
+static char hdRoot[1400];
+int MenuImagesSetHdPack(const char *directory,const RageModManifest *manifest){
+    RageModManifest *copy=NULL;
+    if(directory&&manifest){if(strlen(directory)>=sizeof(hdRoot))return 0;copy=malloc(sizeof(*copy));if(!copy)return 0;*copy=*manifest;}
+    MenuImagesReset();free(hdManifest);hdManifest=copy;SDL_strlcpy(hdRoot,copy?directory:"",sizeof(hdRoot));return 1;
+}
+
 static const char *names[]={"grand-prix","extra-grand-prix","time-attack","custom","duel","load-save","options"};
+void MenuImagesReset(void){
+    for(int i=0;i<7;i++)for(int j=0;j<2;j++)SDL_DestroySurface(images.native[i][j]);
+    memset(&images,0,sizeof(images));
+}
 const uint8_t *MenuImage(int item,int selected){
     if(item<0||item>=7)return NULL;
     selected=selected!=0;
     unsigned generation=ModAssetsGeneration();
-    if(generation!=images.generation){memset(&images,0,sizeof(images));images.generation=generation;}
+    if(generation!=images.generation){
+        MenuImagesReset();images.generation=generation;
+    }
     if(images.checked[item][selected])return images.valid[item][selected]?images.pixels[item][selected]:NULL;
     images.checked[item][selected]=1;
     const RageModManifest *manifest=ModAssetsManifest();
     const char *root=ModAssetsDirectory();char key[96],path[1600];
     snprintf(key,sizeof(key),"ui.title.%s%s",names[item],selected?".selected":"");
-    const char *relative=manifest?ModManifestFindTexture(manifest,key):NULL;
+    const char *relative=hdManifest?ModManifestFindTexture(hdManifest,key):NULL;
+    if(relative)root=hdRoot;else relative=manifest?ModManifestFindTexture(manifest,key):NULL;
     if(!root||!relative)return NULL;
     if(!AssetPathIsRelativeFile(relative,strlen(relative))||snprintf(path,sizeof(path),"%s/%s",root,relative)>=(int)sizeof(path))return NULL;
     SDL_PathInfo info;
     if(!SDL_GetPathInfo(path,&info)||info.type!=SDL_PATHTYPE_FILE||info.size>128u*1024u*1024u)return NULL;
-    SDL_Surface *loaded=ModernLoadPNG(SDL_IOFromFile(path,"rb"),4096),*surface=NULL;
+    SDL_Surface *loaded=ModernLoadImage(SDL_IOFromFile(path,"rb"),4096),*surface=NULL;
     if(loaded&&loaded->w>=MENU_IMAGE_WIDTH&&loaded->h>=MENU_IMAGE_HEIGHT&&
        (loaded->w%MENU_IMAGE_WIDTH)==0&&(loaded->h%MENU_IMAGE_HEIGHT)==0&&
        (loaded->w/MENU_IMAGE_WIDTH)==(loaded->h/MENU_IMAGE_HEIGHT))
@@ -55,6 +72,15 @@ const uint8_t *MenuImage(int item,int selected){
             }
         }
     }
-    SDL_DestroySurface(surface);images.valid[item][selected]=1;
+    images.native[item][selected]=surface;images.valid[item][selected]=1;
     return images.pixels[item][selected];
+}
+
+const uint8_t *MenuImageNative(int item,int selected,int *width,int *height){
+    if(!width||!height)return NULL;
+    *width=*height=0;
+    if(!MenuImage(item,selected))return NULL;
+    SDL_Surface *surface=images.native[item][selected!=0];
+    *width=surface->w;*height=surface->h;
+    return surface->pixels;
 }

@@ -102,7 +102,10 @@ static void Architecture(void) {
     }
     char *config = Read("src/port/port_config.h");
     int count = 0;
-    for (char *p = config; (p = strstr(p, "RAGE_RENDERER_")); p += 14) ++count;
+    char *enumStart = strstr(config, "typedef enum RageRendererKind");
+    char *enumEnd = enumStart ? strstr(enumStart, "}") : NULL;
+    for (char *p = enumStart; p && (p = strstr(p, "RAGE_RENDERER_")) &&
+         enumEnd && p < enumEnd; p += 14) ++count;
     Require(count == 2 && strstr(config, "RAGE_RENDERER_CLASSIC = 0") &&
             strstr(config, "RAGE_RENDERER_MODERN = 1"), "public renderer identities changed");
     char *modern = Read("src/port/modern/modern_renderer.c");

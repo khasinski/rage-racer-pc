@@ -12,11 +12,12 @@ static uint32_t TwinFromE2(uint32_t word) {
            (((offX & maskX) * 8) << 16) | (((offY & maskY) * 8) << 24);
 }
 
-void ModernOverlayStateInit(Modern2DState *state, int displayPageY) {
+void ModernOverlayStateInitHeight(Modern2DState *state,int displayPageY,int displayHeight) {
     if (!state) return;
     memset(state, 0, sizeof(*state));
     state->twin = 0x0000FFFFu;
     state->displayPageY = displayPageY;
+    state->displayHeight=displayHeight==480?480:240;
     state->areaTopVram = displayPageY;
 }
 
@@ -43,7 +44,7 @@ void ModernOverlayStateApplyWord(Modern2DState *state, uint32_t word) {
         y = (int)((word >> 10) & 0x1FFu);
         top = state->areaTopVram > state->displayPageY
             ? state->areaTopVram : state->displayPageY;
-        bottom = y < state->displayPageY + 239 ? y : state->displayPageY + 239;
+        bottom = y < state->displayPageY + state->displayHeight - 1 ? y : state->displayPageY + state->displayHeight - 1;
         state->scissor.w = x - state->scissor.x + 1;
         state->scissor.y = top - state->displayPageY;
         state->scissor.h = bottom - top + 1;
@@ -60,15 +61,23 @@ void ModernOverlayStateApplyWord(Modern2DState *state, uint32_t word) {
     }
 }
 
-void ModernOverlayStateScaleScissor(SDL_Rect *rect, float logicalWidth,
+void ModernOverlayStateInit(Modern2DState *state,int displayPageY){
+ ModernOverlayStateInitHeight(state,displayPageY,240);
+}
+
+void ModernOverlayStateScaleScissorHeight(SDL_Rect *rect, float logicalWidth,
                                     float overscanX, int targetWidth,
-                                    int targetHeight) {
+                                    int targetHeight,int logicalHeight) {
     float scale;
-    if (!rect || logicalWidth <= 0 || targetWidth <= 0 || targetHeight <= 0)
+    if (!rect || logicalWidth <= 0 || targetWidth <= 0 || targetHeight <= 0 || logicalHeight <= 0)
         return;
     scale = (float)targetWidth / logicalWidth;
     rect->x = (int)(((float)rect->x + overscanX) * scale);
-    rect->y = rect->y * targetHeight / 240;
+    rect->y = rect->y * targetHeight / logicalHeight;
     rect->w = (int)((float)rect->w * scale);
-    rect->h = rect->h * targetHeight / 240;
+    rect->h = rect->h * targetHeight / logicalHeight;
+}
+
+void ModernOverlayStateScaleScissor(SDL_Rect *rect,float logicalWidth,float overscanX,int targetWidth,int targetHeight){
+ ModernOverlayStateScaleScissorHeight(rect,logicalWidth,overscanX,targetWidth,targetHeight,240);
 }
