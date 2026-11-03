@@ -64,7 +64,8 @@ if(retail_log MATCHES "mult=2")
     message(FATAL_ERROR "the retail run used double-rate ticks")
 endif()
 
-# After the standing start the car is moving: compare 6.6 s into the race.
+# After the standing start the car is moving: compare 200 retail active-phase
+# ticks with 400 half ticks (8 seconds on PAL, 6.67 seconds on NTSC).
 car_at("${retail_log}" 200 retail_x retail_z retail_mult)
 car_at("${double_log}" 400 double_x double_z double_mult)
 if(NOT retail_mult EQUAL 1 OR NOT double_mult EQUAL 2)

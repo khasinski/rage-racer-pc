@@ -1,0 +1,117 @@
+# Integration validation — 2026-11-03
+
+This session covers the upstream PsyZ integration and the current native menu,
+brightness and saved-settings changes. It does not mark Texture Refresh 0.1
+accepted: normal-physics day/night laps, the native pack chooser and clean
+double-click startup on all three systems remain separate observations.
+
+## Repaired behavior
+
+- Double-rate physics blended the wheel-speed snapshot loaded at a gear
+  change. Preserve this discrete initial condition while continuing to blend
+  continuous motion. At the existing comparison point, position error fell
+  from `(425,39)` to `(136,17)` world units; the original 300-unit tolerance is
+  unchanged. The unit fixture covers shifts on both half-step parities.
+- The always-open native main menu once again preloads and starts idle race
+  demonstrations. Opening/exiting transitions cannot trigger that load.
+- Publishing a decoded movie now includes its black bars on both display
+  pages. Pixels from the preceding scene can no longer remain in the bars.
+  Real-disc FMV layout, in-process decoding without ffmpeg and audio/video
+  pacing checks pass with the PAL CUE.
+- Retail Extra GP physical course selectors `4..7` are accepted when their
+  combined class/course address remains in the retail track banks. Rejecting
+  these selectors prevented direct scenarios from loading race textures and
+  left Classic presentation tests waiting at the frontend. Added-track slots
+  retain their separate bank mapping; addresses beyond the last bank still
+  fail before disc access.
+- Linux rejects a directory named `mod.toml`. Opening a directory can succeed
+  on Linux; treating its apparent zero length as an empty manifest incorrectly
+  activated its raw overrides. The existing unreadable-provider test covers
+  this case.
+- Explicit `RAGE_PORT_PROFILE_ROOT` isolates configuration, saves, audio cache
+  and packs on every desktop platform, excluding old portable-save roots.
+
+## Test migration and image review
+
+Menu tests now operate through the native menu, without a Press Start phase.
+Prologue, vehicle and Grand Prix captures use scene timers instead of absolute
+frame numbers. Held test input supports `scene@first-last:BUTTONS`; an end-to-end
+check observes real accelerator input during the range and its release after
+the range. The sky sequence now uses this input to avoid steering at a different
+race location when asset loading takes a different number of frames.
+
+Atlas tests use the retained wordmark instead of the removed Press Start sprite.
+The mirrored crest fixture checks the new location and shading above the menu.
+The old `ui.title.*` row override test verifies that retired overrides cannot
+change the native text menu, including a clean/reference image comparison.
+No missing UI coverage was replaced by a skipped test.
+
+Classic course captures were compared with archived images matching the old
+hashes before updating references:
+
+| Capture | Changed pixels / 76,800 | Maximum channel difference / 255 |
+| --- | ---: | ---: |
+| GP 0 | 2 | 9 |
+| GP 1 | 4 | 9 |
+| GP 2 | 1 | 8 |
+| GP 3 | 0 | 0 |
+| Extra GP 0 | 14 | 8 |
+| Extra GP 1 | 1 | 8 |
+| Extra GP 2 | 4 | 9 |
+| Extra GP 3 | 1 | 9 |
+
+The seeded neutral-gamma modern capture is byte-identical to the stored
+pre-rebase binary's capture, SHA-256
+`6d3c229980970314a2c984771cc8f9f3c21bc662ed7c96fb1ba7125d3c28a64b`.
+A separate neutral reference remains in the modern feature test. Modern's
+100% brightness reference includes the intentional 1.15 baseline; Classic's
+brightness invariance remains covered with grading enabled and disabled.
+All 23 sky captures were reviewed as a contact sheet after changing input
+synchronization. These scripted captures do not establish a complete driven lap.
+
+## Local evidence
+
+- `build/reports/release-gates-final-console.log`: 517 passed, 64 skipped, zero
+  failures out of 581 registered tests before the additional real-disc fixes.
+- `build/reports/release-gates-after-disc-fixes-console.log`: final repeated gate.
+- `build/reports/release-gates-fmv-fixed.log`: real-CUE movie checks.
+- `build/reports/release-gates-extra-gp.log`: Classic presentation and asset checks.
+- `build/reports/classic-reference-diff.json`: old/new hashes and pixel differences.
+- `build/reports/sky-review-contact.png`: reviewed scripted sky sequence.
+
+The default suite's skips include regional media and real-disc checks whose
+default nested disc path is absent here. Additional PAL checks use an explicit
+legal CUE; skipped tests are not counted as passes.
+
+## Packaged startup
+
+A staged macOS `.app` generated its native assets and menu PCM in two empty
+profiles, once from CUE and once from Track 01 BIN. The BIN run used the package
+directory as its working directory. Both entered the Metal modern renderer and
+produced the same frame hash:
+`383458ca2079eaf04a607ef090ff35e31d090658ce7eed2e16f5584cdbc83d67`.
+These launches supplied the disc through CLI configuration. They do not prove
+Finder double-click or native selection acceptance.
+
+`release-validation.yml` builds and tests macOS arm64, Windows x86-64 and Linux
+x86-64 with read-only repository permissions and uploads validation artifacts.
+It has no release-publication step. Isolated snapshots are published on
+`validation/release-20261103`; the original working tree and its index are not
+replaced by those snapshot commits. Linux is also built locally in an Ubuntu
+24.04 x86-64 container. Software Vulkan/container performance is not hardware
+performance evidence. The previously used bazzite/Windows VM host was unreachable.
+
+## Performance scope
+
+The CMake harness supports Linux and macOS and forces hidden, silent execution.
+Per-frame diagnostics include the scene timer, allowing startup/intro stalls
+to be separated from settled driving. Runs use the existing debug route for
+repeatable rendering load; its completed laps do not satisfy normal-physics
+acceptance. Headless rendering intervals are not display/scanout FPS.
+
+Preliminary Apple M5 Max/Metal runs at 1706×960, linear filtering, FXAA and
+vibrant grading completed two route laps each. Original/HD p99 intervals were
+5.48/7.72 ms; startup peaks were 123.83/205.15 ms. Other validation work was
+running concurrently, so these are preliminary observations. Final isolated
+measurements and raw logs are retained under
+`build/release-validation/performance/` and `build/reports/performance-review.json`.

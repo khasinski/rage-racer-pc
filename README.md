@@ -644,6 +644,13 @@ git. A cue elsewhere works too:
 RAGE_PORT_DISC_CUE="/path/to/Rage Racer.cue" ctest --test-dir build
 ```
 
+For an isolated runtime validation, set `RAGE_PORT_PROFILE_ROOT` to an empty
+absolute directory. Saves, preferences, disc selection, generated audio and
+installed packs then use that directory on every desktop platform, including
+macOS. Existing portable saves are excluded while this override is set. The
+performance harness sets it automatically. Automated game runs must also set
+`PSYZ_HEADLESS=1` and `SDL_AUDIODRIVER=dummy`.
+
 To stage a legally obtained disc for local development without Python or `7z`,
 run the native tool from the build tree. It validates the retail executable
 before writing `assets/<region>/main.exe` and `SYSTEM.CNF`, and links the cue
