@@ -9,6 +9,7 @@
 #include "rage/sim_tick.h"
 
 static int failures;
+static int shiftFixture;
 
 #define EXPECT_EQ(expected, actual) do {                                   \
     long long expectedValue = (long long)(expected);                       \
@@ -95,7 +96,16 @@ static void RetailStep(PlayerCarRuntime *car) {
     g_GripLossTimer--;
 }
 
-void UpdatePlayerCar(PlayerCarRuntime *car) { RetailStep(car); }
+void UpdatePlayerCar(PlayerCarRuntime *car) {
+    if (shiftFixture) {
+        /* BeginCarGearShift snapshots wheel speed, then engine presentation
+         * publishes the new gear. This is a discrete clutch initial state. */
+        car->drive.gear = 2;
+        car->drive.gearDisp = 2;
+        car->drive.clutch = 10;
+        car->drive.engineLoad = 800;
+    } else RetailStep(car);
+}
 
 void UpdateRaceCars(void) {
     int index;
@@ -336,6 +346,22 @@ static void TestRivalsAndCamera(void) {
     EXPECT_EQ(7, g_Camera.chase.damping);
 }
 
+static void TestGearShiftKeepsWheelSpeed(void) {
+    shiftFixture = 1;
+    for (int parity = 0; parity < 2; ++parity) {
+        memset(&g_PlayerCar, 0, sizeof(g_PlayerCar));
+        g_PlayerCar.drive.gear = g_PlayerCar.drive.gearDisp = 1;
+        SimRaceFrameBegin(0);
+        SimTickSetMultiplier(2);
+        BeginLiveFrame();
+        if (parity) BeginLiveFrame();
+        SimUpdatePlayerCar(&g_PlayerCar);
+        EXPECT_EQ(800, g_PlayerCar.drive.engineLoad);
+        EXPECT_EQ(10, g_PlayerCar.drive.clutch);
+    }
+    shiftFixture = 0;
+}
+
 int main(void) {
     TestHalfDelta();
     TestBlendFields();
@@ -344,5 +370,6 @@ int main(void) {
     TestRetailPassThrough();
     TestDoubleTracksRetail();
     TestRivalsAndCamera();
+    TestGearShiftKeepsWheelSpeed();
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
