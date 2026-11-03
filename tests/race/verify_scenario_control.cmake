@@ -46,6 +46,24 @@ foreach(required "scenario boot=direct"
 endforeach()
 message(STATUS "Scenario validation and menu/direct launch routes passed")
 
+foreach(class 0 4 5)
+    execute_process(COMMAND ${CMAKE_COMMAND} -E env PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
+        "${GAME}" --scenario "${SOURCE}/race-scenario.ini" --set video.renderer=classic
+        --set race.series=extra-gp --set "race.class=${class}" --set race.course=0
+        --set stop.scene=12 --set stop.timer=1 --set run.frames=2000
+        WORKING_DIRECTORY "${SOURCE}" TIMEOUT 60 RESULT_VARIABLE extra_result
+        OUTPUT_VARIABLE extra_output ERROR_VARIABLE extra_error)
+    set(asset_series 1)
+    if(class EQUAL 5)
+        set(asset_series 0)
+    endif()
+    if(NOT extra_result EQUAL 0 OR
+       NOT extra_error MATCHES "direct boot entered the race course=0 asset_series=${asset_series} selected_series=1" OR
+       NOT extra_error MATCHES "scene=12 timer=1")
+        message(FATAL_ERROR "Extra GP class ${class} direct boot failed: ${extra_output}${extra_error}")
+    endif()
+endforeach()
+
 # Held input is anchored to race time, so faster menus or asynchronous asset
 # loading cannot move steering/acceleration to a different point in the race.
 execute_process(COMMAND ${CMAKE_COMMAND} -E env PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy

@@ -18,18 +18,21 @@ double-click startup on all three systems remain separate observations.
   pages. Pixels from the preceding scene can no longer remain in the bars.
   Real-disc FMV layout, in-process decoding without ffmpeg and audio/video
   pacing checks pass with the PAL CUE.
-- Retail Extra GP physical course selectors `4..7` are accepted when their
-  combined class/course address remains in the retail track banks. Rejecting
-  these selectors prevented direct scenarios from loading race textures and
-  left Classic presentation tests waiting at the frontend. Added-track slots
-  retain their separate bank mapping; addresses beyond the last bank still
-  fail before disc access.
+- Direct Extra GP boot no longer carries the menu's series bits into the
+  track-pack slot. It now performs the same handover as normal car selection.
+  This fixes Classic scenarios waiting at the frontend and the shared Extra
+  finale. The loader retains its strict slot/bank validation. Start, class 4
+  and finale scenarios verify both the slot and the selected asset series.
 - Linux rejects a directory named `mod.toml`. Opening a directory can succeed
   on Linux; treating its apparent zero length as an empty manifest incorrectly
   activated its raw overrides. The existing unreadable-provider test covers
   this case.
 - Explicit `RAGE_PORT_PROFILE_ROOT` isolates configuration, saves, audio cache
   and packs on every desktop platform, excluding old portable-save roots.
+  Smoke executables allocate an independent temporary profile unless this
+  override is explicitly supplied.
+- CD track-transition logs remain available in Release builds, so replay and
+  race audio tests can verify the selected tracks as well as mixed PCM energy.
 
 ## Test migration and image review
 

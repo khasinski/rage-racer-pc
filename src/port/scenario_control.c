@@ -399,9 +399,9 @@ static void ScenarioSelectDirectSeries(void) {
         ? GrandPrixAssetSeries(selection->series, selection->classIndex)
         : selection->series);
     g_GrandPrixClass = selection->classIndex;
-    g_CourseIndex = selection->course >= 8
-        ? selection->course
-        : selection->course + selection->series * 4;
+    /* HandOverToRace removes the menu's series bits before loading tracks.
+     * Direct boot bypasses that handover: its course is already a slot. */
+    g_CourseIndex = selection->course;
 
     if (!selection->mode) {
         g_CarTable = g_TimeAttackCars;
@@ -539,7 +539,8 @@ static void ScenarioDirectBoot(void) {
             g_SceneId = GAME_SCENE_ENTER_RACE;
             ScenarioApplyGrid();
             s_scenario.directStep = RAGE_DIRECT_DONE;
-            fprintf(stderr, "rage-port: scenario direct boot entered the race\n");
+            fprintf(stderr, "rage-port: scenario direct boot entered the race course=%d asset_series=%d selected_series=%d\n",
+                    g_CourseIndex, g_GrandPrixSeries, g_SeriesSelection);
         }
         break;
     }

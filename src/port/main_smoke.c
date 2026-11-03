@@ -11,6 +11,12 @@
 #include "native_mesh_writer.h"
 #include <stdlib.h>
 #include <limits.h>
+#include <time.h>
+#ifdef _WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "host_storage.h"
 #include "host_disc.h"
@@ -686,6 +692,32 @@ static void ReportFinalState(void) {
            g_RaceSession.kind, g_RaceSession.model);
 }
 
+static int InitializeSmokeProfile(void) {
+    const char *existing = getenv("RAGE_PORT_PROFILE_ROOT");
+    if (existing != NULL && existing[0] != '\0') return 1;
+    const char *temporary = getenv("TMPDIR");
+#ifdef _WIN32
+    if (temporary == NULL || temporary[0] == '\0') temporary = getenv("TEMP");
+    unsigned long process = (unsigned long)_getpid();
+#else
+    unsigned long process = (unsigned long)getpid();
+#endif
+    if (temporary == NULL || temporary[0] == '\0') temporary = "/tmp";
+    char root[4096];
+    int length = snprintf(root, sizeof(root), "%s/rage-smoke-%lu-%llu-%llu",
+        temporary, process, (unsigned long long)time(NULL),
+        (unsigned long long)SDL_GetTicksNS());
+    if (length <= 0 || (size_t)length >= sizeof(root) || !SDL_CreateDirectory(root))
+        return 0;
+#ifdef _WIN32
+    if (_putenv_s("RAGE_PORT_PROFILE_ROOT", root) != 0) return 0;
+#else
+    if (setenv("RAGE_PORT_PROFILE_ROOT", root, 1) != 0) return 0;
+#endif
+    fprintf(stderr, "rage-port: isolated smoke profile %s\n", root);
+    return 1;
+}
+
 int main(int argc, char **argv) {
     RageInputConfig inputConfig;
     RagePortConfig portConfig;
@@ -693,6 +725,7 @@ int main(int argc, char **argv) {
     char logPath[1024];
 
     RuntimeConfigIsolateUserSettings();
+    if (!InitializeSmokeProfile()) return EXIT_FAILURE;
     if (!RuntimeConfigInit(argc, argv)) return EXIT_FAILURE;
     if (RuntimeConfigEnabled("diagnostics.test_log") &&
         !DiagnosticLogOpen(logPath, sizeof(logPath))) return EXIT_FAILURE;
