@@ -625,7 +625,7 @@ void EndMirrorPass(void);
 void RestoreColorMatrix(void);
 s32 rsin(s32 angle);
 s32 rcos(s32 angle);
-void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output);
+void GameApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output);
 void SubmitTerrainCells(void *ctx, const VisibleTerrainCell *cells, s32 count);
 void SetTrackTexturePageNow(s32 trackSection);
 

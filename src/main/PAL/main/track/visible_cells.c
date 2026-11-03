@@ -104,7 +104,7 @@ void BuildVisibleCells(const GameCameraState *camera, s32 near, s32 far) {
             (cellZ * TERRAIN_CELL_SIZE -
              (cameraZ - TERRAIN_CELL_HALF_SIZE)) *
             4;
-        ApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&worldOffset),
+        GameApplyMatrixLV(&g_RenderState.geometry.matrix, AsWords(&worldOffset),
                       AsWords(&projected));
         if (projected.z < near || projected.z > far) {
             continue;

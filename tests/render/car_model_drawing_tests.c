@@ -106,7 +106,7 @@ void ApplyMatrix(MATRIX *matrix, SVECTOR *input, VECTOR *output) {
     output->vy = input->vy;
     output->vz = input->vz;
 }
-void ApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
+void GameApplyMatrixLV(const Matrix *matrix, const s32 *input, s32 *output) {
     (void)matrix;
     output[0] = input[0];
     output[1] = input[1];

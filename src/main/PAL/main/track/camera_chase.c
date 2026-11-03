@@ -168,7 +168,7 @@ void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork
     TransposeMatrix(&objectRotation, &matrixWork);
     focusOffset.y = -0x3C;
     focusOffset.z = 0x32;
-    ApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
+    GameApplyMatrixLV(&inverseObjectRotation, AsWords(&focusOffset),
                   AsWords(&focusWorld));
     view->x = CameraAddWord(view->x, focusWorld.x);
     view->y = CameraAddWord(view->y, focusWorld.y);
@@ -195,7 +195,7 @@ void CameraViewFromChaseCamera(Camera *camera, GameCarRuntime *car, GameViewWork
     }
     eyeOffset.y = ChaseCameraHeight(eyeOffset.y);
     eyeOffset.z = ChaseCameraDistance(eyeOffset.z);
-    ApplyMatrixLV(&matrixWork, AsWords(&eyeOffset), AsWords(&eyeWorld));
+    GameApplyMatrixLV(&matrixWork, AsWords(&eyeOffset), AsWords(&eyeWorld));
     view->x = CameraSubtractWord(view->x, eyeWorld.x);
     view->y = CameraSubtractWord(view->y, eyeWorld.y);
     view->z = CameraSubtractWord(view->z, eyeWorld.z);

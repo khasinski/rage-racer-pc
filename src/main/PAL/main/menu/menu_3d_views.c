@@ -136,7 +136,7 @@ void DrawMenuCarView(void) {
         (s32)((u32)car->bodyRotation.y + (u32)s_rotationSpeed);
     BuildRotMatrixY(&mtxA, car->bodyRotation.y);
     vec.z = (s16)(-((s16)g_CarModelAsset->modelOffsetZ / 2));
-    ApplyMatrixLV(&mtxA, AsWords(&vec), AsWords(&out));
+    GameApplyMatrixLV(&mtxA, AsWords(&vec), AsWords(&out));
     BuildRotMatrixY(&mtxB, 0x800 - car->bodyRotation.y);
     BuildRotMatrixX(&mtxA, car->bodyRotation.x);
     MulMatrix2(&mtxB, &mtxA);

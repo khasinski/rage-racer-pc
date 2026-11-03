@@ -65,7 +65,7 @@ int main(void) {
     matrix.m[0][0] = 0x1000;
     matrix.m[1][1] = 0x1000;
     matrix.m[2][2] = 0x1000;
-    ApplyMatrixLV(&matrix, input, output);
+    GameApplyMatrixLV(&matrix, input, output);
     CHECK_EQ(output[0], 100);
     CHECK_EQ(output[1], -200);
     CHECK_EQ(output[2], 300);
@@ -78,7 +78,7 @@ int main(void) {
     input[0] = INT_MAX;
     input[1] = INT_MAX;
     input[2] = INT_MAX;
-    ApplyMatrixLV(&matrix, input, output);
+    GameApplyMatrixLV(&matrix, input, output);
     CHECK_EQ(output[0], -1572888);
     CHECK_EQ(output[1], -1572888);
     CHECK_EQ(output[2], -1572888);
