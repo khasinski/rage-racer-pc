@@ -203,7 +203,13 @@ static inline s32 TrackCourseAssetIndex(s32 base, s32 classIndex,
                (courseIndex - EXTRA_TRACK_COURSE_SLOT_BASE) *
                    TRACK_ASSETS_PER_COURSE;
     }
-    if ((u32)courseIndex >= TRACK_COURSE_COUNT) {
+    /* Retail Extra GP uses physical selectors 4..7. They select the next
+     * quartet of packs; four-slot progress-table indices are a separate
+     * domain. Keep the combined address inside the retail track banks. */
+    if ((u32)courseIndex >= TRACK_COURSE_COUNT * 2 ||
+        classIndex * TRACK_ASSETS_PER_CLASS +
+            courseIndex * TRACK_ASSETS_PER_COURSE >=
+                TRACK_CLASS_COUNT * TRACK_ASSETS_PER_CLASS) {
         return -1;
     }
     return base + classIndex * TRACK_ASSETS_PER_CLASS +

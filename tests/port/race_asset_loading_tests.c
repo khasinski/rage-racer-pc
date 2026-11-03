@@ -531,7 +531,7 @@ static void TestTrackPhases(void) {
     s_installCount = 0;
     s_seriesCamera = 0;
     g_AssetLoadState = 6;
-    g_CourseIndex = TRACK_COURSE_COUNT;
+    g_CourseIndex = EXTRA_TRACK_COURSE_SLOT_BASE + EXTRA_TRACK_COURSE_COUNT;
     s_loadAssetIndex = -1;
     LoadRaceAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
@@ -757,7 +757,7 @@ static void TestRaceStartAndCourseRequests(void) {
           "standalone course load publishes trailing image buffer");
 
     g_AssetLoadState = 1;
-    g_CourseIndex = TRACK_COURSE_COUNT;
+    g_CourseIndex = EXTRA_TRACK_COURSE_SLOT_BASE + EXTRA_TRACK_COURSE_COUNT;
     s_loadAssetIndex = -1;
     LoadCourseTextureAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
@@ -876,16 +876,23 @@ static void TestResidentCourseInstallation(void) {
 
     g_AssetLoadState = 1;
     g_GrandPrixClass = 0;
-    g_CourseIndex = TRACK_COURSE_COUNT;
+    g_CourseIndex = EXTRA_TRACK_COURSE_SLOT_BASE + EXTRA_TRACK_COURSE_COUNT;
     s_loadAssetIndex = -1;
     LoadTrackDataAssets();
     Check(g_AssetLoadState == 0 && AssetLoadHasFailed() &&
               s_loadAssetIndex == -1,
-          "standalone runtime loader rejects a physical course selector");
+          "standalone runtime loader rejects a course beyond the available banks");
 }
 
 int main(void) {
+    Check(TrackCourseAssetIndex(ASSET_TRACK_1ST_BASE, 4, 5) == ASSET_TRACK_1ST_BASE + 42,
+          "Extra GP physical selector resolves its retail texture bank");
+    Check(TrackCourseAssetIndex(ASSET_TRACK_2ND_BASE, 4, 5) == ASSET_TRACK_2ND_BASE + 42,
+          "Extra GP runtime and texture banks select the same course");
+    Check(TrackCourseAssetIndex(ASSET_TRACK_2ND_BASE, 5, 4) == -1,
+          "Extra GP selector cannot address beyond the last retail track bank");
     TestRequestHandshake();
+
     TestVoiceAndCarPhases();
     TestTrackPhases();
     TestRaceStartAndCourseRequests();
