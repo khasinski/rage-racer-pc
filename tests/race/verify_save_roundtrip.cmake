@@ -4,19 +4,13 @@ endif()
 string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef id)
 set(root "${OUTPUT_ROOT}/save-roundtrip-${id}")
 file(MAKE_DIRECTORY "${root}")
-if(APPLE)
-    set(card_suffix "Library/Application Support/Rage Racer/bu00")
-elseif(WIN32)
-    set(card_suffix "Rage Racer/bu00")
-else()
-    set(card_suffix "rage-racer/bu00")
-endif()
+set(card_suffix "profile/bu00")
 function(link_assets work)
     file(CREATE_LINK "${SOURCE}/assets" "${work}/assets" SYMBOLIC)
 endfunction()
 function(run_game work log_out)
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env
-        "HOME=${work}" "XDG_STATE_HOME=${work}" "APPDATA=${work}" SDL_AUDIODRIVER=dummy
+        "RAGE_PORT_PROFILE_ROOT=${work}/profile" PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
         ${ARGN} "${GAME}" WORKING_DIRECTORY "${work}" TIMEOUT 75
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
     set(log "${output}${error}")

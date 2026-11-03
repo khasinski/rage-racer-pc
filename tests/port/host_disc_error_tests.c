@@ -233,10 +233,9 @@ int main(void) {
     CHECK(unsetenv("RAGE_PORT_DISC_CUE") == 0);
 #endif
 #ifdef _WIN32
-    CHECK(_putenv_s("APPDATA", dir) == 0);
+    CHECK(_putenv_s("RAGE_PORT_PROFILE_ROOT", dir) == 0);
 #else
-    CHECK(setenv("HOME", dir, 1) == 0);
-    CHECK(setenv("XDG_CONFIG_HOME", dir, 1) == 0);
+    CHECK(setenv("RAGE_PORT_PROFILE_ROOT", dir, 1) == 0);
 #endif
     snprintf(isoPath, sizeof(isoPath), "%s%cdisc.iso", dir, sep);
     snprintf(missingPath, sizeof(missingPath), "%s%cmissing.cue", dir, sep);

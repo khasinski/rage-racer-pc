@@ -886,7 +886,6 @@ static void TestResidentCourseInstallation(void) {
 
 int main(void) {
     TestRequestHandshake();
-
     TestVoiceAndCarPhases();
     TestTrackPhases();
     TestRaceStartAndCourseRequests();

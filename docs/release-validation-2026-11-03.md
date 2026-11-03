@@ -103,6 +103,12 @@ It has no release-publication step. Isolated snapshots are published on
 replaced by those snapshot commits. Linux is also built locally in an Ubuntu
 24.04 x86-64 container. Software Vulkan/container performance is not hardware
 performance evidence. The previously used bazzite/Windows VM host was unreachable.
+An additional packaged Linux/Vulkan runtime probe under x86-64 emulation on
+Apple Silicon exited with SIGSEGV, including with restricted software vector
+width. A diagnostic preload captured a program counter outside the executable;
+gdb could not read registers through this emulation environment. The cause is
+unresolved: this is neither a passing Linux runtime result nor proof that the
+native Linux build has the same failure. Native Linux GPU validation is required.
 
 ## Performance scope
 
@@ -112,9 +118,30 @@ to be separated from settled driving. Runs use the existing debug route for
 repeatable rendering load; its completed laps do not satisfy normal-physics
 acceptance. Headless rendering intervals are not display/scanout FPS.
 
-Preliminary Apple M5 Max/Metal runs at 1706×960, linear filtering, FXAA and
-vibrant grading completed two route laps each. Original/HD p99 intervals were
-5.48/7.72 ms; startup peaks were 123.83/205.15 ms. Other validation work was
-running concurrently, so these are preliminary observations. Final isolated
-measurements and raw logs are retained under
-`build/release-validation/performance/` and `build/reports/performance-review.json`.
+Final Apple M5 Max/Metal measurements at 1706×960, linear filtering, FXAA and
+vibrant grading used three alternating original/HD pairs, two route laps per
+run. No other game runs or container builds were active. Settled measurements
+start at race scene timer 250; each case contributes 3,735 intervals.
+
+| Metric | Original | HD 7.232 |
+| --- | ---: | ---: |
+| Median of three p99 measurements | 5.89 ms | 6.66 ms |
+| Range of p99 measurements | 5.33–7.10 ms | 6.64–6.99 ms |
+| Maximum settled interval | 14.28 ms | 16.59 ms |
+| Settled intervals over 16.67 ms | 0 | 0 |
+| First measured texture preload | 1.21–1.99 s | 5.99–6.31 s |
+| Maximum interval including intro | 181.19 ms | 177.39 ms |
+
+The recurring intro spikes are at scene timers 8, 60 and 80, coinciding with
+additional material preloads. Moving these preloads before the intro and
+reducing the initial HD decode/preparation cost are the next performance
+targets. This session measured those costs; it did not eliminate them. SDK
+clock time to the first race image is recorded separately and must not be
+mistaken for complete process-start or disc-picker latency. OS file caches
+were not flushed. Each process used a fresh profile.
+
+The tested smoke executable SHA-256 was
+`a74d263d40a41bcdca7c4ed6ca439ec1cf63d9952818cf32bbc172c9d5b99e46`.
+Raw logs, settings hashes and completion evidence are under
+`build/release-validation/performance/final-{original,hd}/`; per-run quantiles
+and spike positions are in `build/reports/performance-review.json`.
