@@ -13,7 +13,16 @@ int HdDownloadInstall(const char *base,const char *store,const char *region,HdDo
 
 #include "yyjson.h"
 #include <SDL3/SDL.h>
+/* WinSock's 32-bit u_long differs from the pointer-width PS1 compatibility
+ * typedef pulled in by SDL's system headers. Keep its declaration local. */
+#ifdef _WIN32
+#define u_long RageDownloadWinULong
+#endif
 #include <curl/curl.h>
+#ifdef _WIN32
+#undef u_long
+#endif
+
 #include <stdio.h>
 #include <string.h>
 
