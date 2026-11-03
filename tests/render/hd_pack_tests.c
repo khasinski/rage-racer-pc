@@ -19,7 +19,12 @@ int ModernRestartPresentation(const RagePortConfig *config){(void)config;restart
 static int cancel(void *context,int percent){(void)context;return percent<50;}
 int main(void){
  char error[256]={0},root[1000],source[1100],store[1100],path[1200],archive[1100],bad[1100];
- snprintf(root,sizeof(root),"%srage-hd-%llu",(getenv("TMPDIR")?getenv("TMPDIR"):"/tmp/"),(unsigned long long)SDL_GetPerformanceCounter());
+ const char *temporary=SDL_getenv("TMPDIR");
+ if(!temporary||!*temporary)temporary=SDL_getenv("TEMP");
+ if(!temporary||!*temporary)temporary=SDL_getenv("TMP");
+ if(!temporary||!*temporary)temporary=".";
+ snprintf(root,sizeof(root),"%s/rage-hd-%llu",temporary,(unsigned long long)SDL_GetPerformanceCounter());
+
  snprintf(source,sizeof(source),"%s/source",root);snprintf(store,sizeof(store),"%s/store",root);snprintf(archive,sizeof(archive),"%s/test.rrhd",root);snprintf(bad,sizeof(bad),"%s/bad.rrhd",root);
  CHECK(SDL_CreateDirectory(source));snprintf(path,sizeof(path),"%s/textures",source);CHECK(SDL_CreateDirectory(path));
  const char *metadata="{\"format\":1,\"name\":\"Test\",\"version\":\"1\",\"region\":\"PAL\"}";
