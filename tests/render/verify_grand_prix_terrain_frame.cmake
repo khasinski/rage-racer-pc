@@ -10,8 +10,9 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     RAGE_PORT_SMOKE_CAPTURE_SCENE=12 RAGE_PORT_SMOKE_CAPTURE_TIMER_MIN=35
     RAGE_PORT_SMOKE_CAPTURE_TIMER_MAX=100 RAGE_PORT_SMOKE_CAPTURE_TIMER_STRIDE=5
     RAGE_PORT_SMOKE_CAMERA_STATE=1 "RAGE_PORT_MODERN_DUMP=${presented}"
-    RAGE_PORT_MODERN_DUMP_TIMER=35 RAGE_PORT_MODERN_DUMP_SCENE_ID=12
     "${GAME}" --set video.internal_scale=1 --set video.aspect=4:3
+    --set diagnostics.modern_dump_timer=35 --set diagnostics.modern_dump_scene_id=12
+    --set video.renderer=modern --set video.fps=logic
     --set video.post=none
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 105 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)
