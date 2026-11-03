@@ -43,6 +43,7 @@ static void Text(OverlaySurface *s, MainMenuRect row, const char *text, int disa
 }
 int MainMenuPaint(OverlaySurface *surface, int width, int height, const MainMenuState *state) {
     if (!s_ready) {
+        if (archivo_black_ttf_len != sizeof(archivo_black_ttf)) return 0;
         if (!stbtt_InitFont(&s_font,archivo_black_ttf,stbtt_GetFontOffsetForIndex(archivo_black_ttf,0))) return 0;
         s_ready=1;
     }
