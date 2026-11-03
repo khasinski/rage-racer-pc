@@ -1,4 +1,6 @@
 #include "race_mods.h"
+#include "rage/menu_animation.h"
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -9,6 +11,15 @@ int RuntimeConfigEnabled(const char *key) {
 int Random15(void) { calls++; return sample; }
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "%d: %s\n", __LINE__, #x); return 1; } } while (0)
 int main(void) {
+    CHECK(!PortFastMenusEnabled() && PortMenuAnimationTicks() == 1);
+    PortSetFastMenusEnabled(1);
+    CHECK(PortFastMenusEnabled() && PortMenuAnimationTicks() == 2);
+    CHECK(PortMenuAnimationStep(3) == 6 && PortMenuAnimationStep(-1) == -2);
+    CHECK(PortMenuAnimationStep(0) == 0);
+    CHECK(PortMenuAnimationStep(INT_MAX) == INT_MAX);
+    CHECK(PortMenuAnimationStep(INT_MIN) == INT_MIN);
+    PortSetFastMenusEnabled(0);
+    CHECK(PortMenuAnimationTicks() == 1 && PortMenuAnimationStep(3) == 3);
     CHECK(PortRandomTimeOfDayEnabled());
     CHECK(PortRaceEnvironmentProfile(3, 0, 5) == 3);
     CHECK(calls == 0);

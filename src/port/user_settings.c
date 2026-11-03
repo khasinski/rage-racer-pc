@@ -29,7 +29,8 @@ int UserSettingsSave(const char *path, const RagePortConfig *c,
         "force_feedback=%s\nffb_gain=%.6g\n"
         "[game]\ntick_rate=%s\n"
         "[hud]\nanchor=%s\nshow_lap_times=%s\nshow_time_limit=%s\n"
-        "[camera]\nchase_distance=%.6g\nchase_height=%.6g\nchase_turn_lookahead=%.6g\n",
+        "[camera]\nchase_distance=%.6g\nchase_height=%.6g\nchase_turn_lookahead=%.6g\n"
+        "[mods]\nfast_menus=%s\n",
         c->renderer == RAGE_RENDERER_MODERN ? "modern" : "classic",
         c->modernInternalScale,
         c->modernAspect == RAGE_MODERN_ASPECT_16_9 ? "16:9" :
@@ -46,7 +47,7 @@ int UserSettingsSave(const char *path, const RagePortConfig *c,
         s->forceFeedbackGain / 100.0, s->tickMultiplier >= 2 ? "double" : "retail",
         s->hudEdges ? "edges" : "center", s->showLapTimes ? "true" : "false",
         s->showTimeLimit ? "true" : "false", s->chaseDistance, s->chaseHeight,
-        s->chaseLookahead);
+        s->chaseLookahead, s->fastMenus ? "true" : "false");
     if (length < 0 || (size_t)length >= sizeof(contents)) return 0;
     snprintf(temporary, sizeof(temporary), "%s.tmp.%" PRIu64, path, SDL_GetTicksNS());
     if (!SDL_SaveFile(temporary, contents, (size_t)length) ||

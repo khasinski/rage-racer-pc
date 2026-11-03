@@ -1,9 +1,21 @@
 #include "race_mods.h"
+#include "rage/menu_animation.h"
 #include "runtime_config.h"
 #include "game/random.h"
 #include <stdint.h>
 
 static int s_randomTimeOfDay = -1;
+static int s_fastMenus = -1;
+
+int PortFastMenusEnabled(void) {
+    if (s_fastMenus < 0)
+        s_fastMenus = RuntimeConfigEnabled("mods.fast_menus") != 0;
+    return s_fastMenus;
+}
+
+void PortSetFastMenusEnabled(int enabled) { s_fastMenus = enabled != 0; }
+
+int PortMenuAnimationTicks(void) { return PortFastMenusEnabled() ? 2 : 1; }
 
 int PortRandomTimeOfDayEnabled(void) {
     if (s_randomTimeOfDay < 0)

@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/asset.h"
 #include "game/car.h"
 #include "game/menu.h"
@@ -135,7 +136,7 @@ void DrawCarSpecGraph(CarSpecGraph *graph, u32 tireGrade) {
 
     UpdateCarSpecValues(graph, tireGrade);
     graph->progress = AddClampedMenuValue(
-        graph->progress, graph->step, 0, CAR_SPEC_BAR_MAX);
+        graph->progress, PortMenuAnimationStep(graph->step), 0, CAR_SPEC_BAR_MAX);
 
     for (i = 0; i < CAR_SPEC_BAR_COUNT; i++) {
         revealed[i] = graph->progress - CAR_SPEC_BAR_MAX +

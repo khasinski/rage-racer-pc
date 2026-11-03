@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/render.h"
@@ -6,7 +7,7 @@
 enum { TIME_ATTACK_PLATE_PROGRESS_MAX = 12 };
 
 void DrawTimeAttackPlate(MenuWidgets *widgets) {
-    s32 step = widgets->timeAttackStep;
+    s32 step = PortMenuAnimationStep(widgets->timeAttackStep);
     s32 progress;
 
     if (step == 0) {

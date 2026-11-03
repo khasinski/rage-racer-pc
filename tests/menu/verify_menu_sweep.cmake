@@ -2,6 +2,11 @@ if(NOT DEFINED GAME OR NOT DEFINED SOURCE)
     message(FATAL_ERROR "GAME and SOURCE are required")
 endif()
 
+set(menu_options)
+if(FAST_MENUS)
+    list(APPEND menu_options --set mods.fast_menus=true)
+endif()
+
 function(run_sweep variable pattern expected input_script)
     set(scene_trace)
     if(variable STREQUAL "RAGE_PORT_SMOKE_OPTION_SWEEP")
@@ -9,7 +14,7 @@ function(run_sweep variable pattern expected input_script)
     endif()
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
         RAGE_PORT_SMOKE_FRAMES=2200 "${variable}=1" ${scene_trace}
-        PSYZ_HEADLESS=1 "${GAME}" --set "input.state_script=${input_script}"
+        PSYZ_HEADLESS=1 "${GAME}" ${menu_options} --set "input.state_script=${input_script}"
         WORKING_DIRECTORY "${SOURCE}" TIMEOUT 135 RESULT_VARIABLE result
         OUTPUT_VARIABLE output ERROR_VARIABLE error)
     set(log "${output}${error}")
@@ -48,7 +53,7 @@ run_sweep(RAGE_PORT_SMOKE_OPTION_SWEEP "option sweep [^\n]*mode=[0-9]+"
 # finish and hand the root menu its cursor, otherwise the screen is a softlock.
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     RAGE_PORT_SMOKE_FRAMES=900 RAGE_PORT_SCENE_TRACE=1
-    PSYZ_HEADLESS=1 "${GAME}"
+    PSYZ_HEADLESS=1 "${GAME}" ${menu_options}
     --set input.state_script=4@40:UP,4@44:UP,4@48:CONFIRM,23@200:DOWN,23@210:DOWN,23@220:CONFIRM
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 135 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)

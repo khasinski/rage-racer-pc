@@ -319,8 +319,12 @@ speed, slide and impacts. Pause the race and confirm the `FFB` row to turn it
 on or off; left and right on that row change the strength in steps of 5
 percent. The choice is saved next to the remembered disc path. The other
 `ffb_*` scales stay in `[input]`. A gamepad takes the same impacts as rumble.
-On a wheel with no constant-force support, and on macOS where most rims have
-no force-feedback driver, the effect stays off and the race runs as before.
+Wheels can also vibrate when supported by their driver, including devices
+without constant-force support. Constant force and vibration share a haptic
+handle so vibration cannot reset the steering effect on DirectInput wheels.
+If initialization fails, toggling FFB off and on retries the device. Startup
+logs include its name, USB IDs, haptic capabilities and driver errors; actual
+support depends on the wheel, its operating mode and the installed driver.
 
 In modern or enhanced classic 16:9, `[hud] anchor = edges` moves the corner HUD into the added
 widescreen area; use `center` for the retail 4:3 positions. Set
@@ -698,3 +702,8 @@ the next race and lasts until quit. The INI default is
 `[mods] random_time_of_day = false`. Randomization uses original environment
 profiles and cloud artwork; class, rival parameters and saved progress remain
 those of the selected race. Time Attack keeps its original selection rules.
+
+Esc → Mods also offers **Fast menus** (off by default). It doubles menu
+transition and selection animation speed, including the course/car carousel
+and customization screens. The choice is remembered; the INI key is
+`[mods] fast_menus = true`.

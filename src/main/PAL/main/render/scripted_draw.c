@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu.h"
 #include "game/render_internal.h"
 
@@ -237,7 +238,7 @@ void DrawTimedDrawScript(const TimedDrawCommand *commands, s32 progress) {
 s32 RunTimedDrawScript(const TimedDrawCommand *commands, s32 *progress,
                        s32 step) {
     TimedDrawScriptTick tick = AdvanceTimedDrawScript(commands, progress,
-                                                      step);
+                                                      PortMenuAnimationStep(step));
     DrawTimedDrawScript(commands, tick.drawAt);
     return tick.finished;
 }

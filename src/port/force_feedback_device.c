@@ -45,6 +45,10 @@ static int s_updateNoted;
 static Uint16 s_lastLow;
 static Uint16 s_lastHigh;
 static int s_rumbleLatched;
+static SDL_JoystickID s_rumbleDevice;
+static int s_hapticRumbleTried;
+static int s_hapticRumbleReady;
+static int s_hapticRumblePlaying;
 
 static int EnvironmentSet(const char *name) {
     const char *value = getenv(name);
@@ -166,9 +170,25 @@ static void LoadSettings(void) {
             ParseUnit(forcedGain, (float)s_gainPercent / 100.0f,
                       "input.ffb_gain"));
     }
+    fprintf(stderr, "rage-port: force feedback enabled=%d gain=%d%%\n",
+            s_enabled, s_gainPercent);
+}
+
+static void StopJoystickRumble(void) {
+    SDL_Joystick *device = s_rumbleDevice != 0
+                            ? SDL_GetJoystickFromID(s_rumbleDevice) : NULL;
+    if (device != NULL && s_rumbleLatched && (s_lastLow || s_lastHigh))
+        SDL_RumbleJoystick(device, 0, 0, 0);
+    s_rumbleDevice = 0;
+    s_rumbleLatched = 0;
 }
 
 static void ReleaseEffect(int restoreCenter) {
+    if (s_haptic != NULL && s_hapticRumblePlaying)
+        SDL_StopHapticRumble(s_haptic);
+    s_hapticRumbleTried = 0;
+    s_hapticRumbleReady = 0;
+    s_hapticRumblePlaying = 0;
     if (s_haptic != NULL && restoreCenter &&
         (SDL_GetHapticFeatures(s_haptic) & SDL_HAPTIC_AUTOCENTER) != 0) {
         SDL_SetHapticAutocenter(s_haptic, 50);
@@ -186,6 +206,9 @@ static void ReleaseEffect(int restoreCenter) {
 }
 
 void ForceFeedbackDetachJoystick(struct SDL_Joystick *joystick) {
+    if (joystick != NULL && SDL_GetJoystickID(joystick) == s_rumbleDevice) {
+        StopJoystickRumble();
+    }
     if (joystick != NULL && joystick == s_boundWheel) ReleaseEffect(1);
     if (joystick != NULL && joystick == s_rejectedWheel) s_rejectedWheel = NULL;
 }
@@ -200,6 +223,10 @@ static void BindWheel(SDL_Joystick *wheel) {
     }
     if (wheel == s_rejectedWheel) return;
     ReleaseEffect(1);
+    s_rumbleNoted = 0;
+    /* DirectInput's joystick rumble initializer resets every effect on the
+     * device. Stop that path before creating effects on the haptic handle. */
+    if (SDL_GetJoystickID(wheel) == s_rumbleDevice) StopJoystickRumble();
     if (!SDL_InitSubSystem(SDL_INIT_HAPTIC)) {
         s_rejectedWheel = wheel;
         fprintf(stderr, "rage-port: haptic subsystem unavailable (%s)\n",
@@ -209,9 +236,28 @@ static void BindWheel(SDL_Joystick *wheel) {
     s_haptic = SDL_OpenHapticFromJoystick(wheel);
     name = SDL_GetJoystickName(wheel);
     if (name == NULL) name = "racing wheel";
-    if (s_haptic == NULL ||
-        (SDL_GetHapticFeatures(s_haptic) & SDL_HAPTIC_CONSTANT) == 0) {
-        fprintf(stderr, "rage-port: %s has no constant-force feedback\n", name);
+    if (s_haptic == NULL) {
+        fprintf(stderr, "rage-port: opening force feedback on %s failed (%s); "
+                        "joystick vibration remains available if supported\n",
+                name, SDL_GetError());
+        s_rejectedWheel = wheel;
+        return;
+    }
+    fprintf(stderr, "rage-port: haptic device %s id=%u vid=%04x pid=%04x "
+                    "features=0x%x platform=%s\n", name,
+            (unsigned)SDL_GetJoystickID(wheel), SDL_GetJoystickVendor(wheel),
+            SDL_GetJoystickProduct(wheel), SDL_GetHapticFeatures(s_haptic),
+            SDL_GetPlatform());
+    if ((SDL_GetHapticFeatures(s_haptic) & SDL_HAPTIC_CONSTANT) == 0) {
+        if (SDL_HapticRumbleSupported(s_haptic) && SDL_InitHapticRumble(s_haptic)) {
+            s_hapticRumbleTried = 1;
+            s_hapticRumbleReady = 1;
+            s_boundWheel = wheel;
+            fprintf(stderr, "rage-port: %s supports vibration without constant force\n", name);
+            return;
+        }
+        fprintf(stderr, "rage-port: %s has no constant-force feedback; "
+                        "trying joystick vibration\n", name);
         if (s_haptic != NULL) SDL_CloseHaptic(s_haptic);
         s_haptic = NULL;
         s_rejectedWheel = wheel;
@@ -227,8 +273,8 @@ static void BindWheel(SDL_Joystick *wheel) {
     s_effect.constant.length = SDL_HAPTIC_INFINITY;
     s_effect.constant.level = 0;
     s_effectId = SDL_CreateHapticEffect(s_haptic, &s_effect);
-    if (s_effectId < 0 ||
-        !SDL_RunHapticEffect(s_haptic, s_effectId, 1)) {
+    s_effectReady = s_effectId >= 0;
+    if (!s_effectReady || !SDL_RunHapticEffect(s_haptic, s_effectId, 1)) {
         fprintf(stderr, "rage-port: could not start force feedback on %s (%s)\n",
                 name, SDL_GetError());
         ReleaseEffect(1);
@@ -239,6 +285,7 @@ static void BindWheel(SDL_Joystick *wheel) {
     s_boundWheel = wheel;
     s_sentLevel = 0;
     s_previousAxis = AnalogSteeringDeflection();
+    s_updateNoted = 0;
     fprintf(stderr, "rage-port: force feedback on %s\n", name);
 }
 
@@ -266,37 +313,73 @@ static void SendTorque(float torque) {
 
 static void SendRumble(float low, float high) {
     SDL_Gamepad *pad = AnalogActiveGamepad();
+    SDL_Joystick *device = AnalogWheelActive() ? AnalogWheelJoystick()
+                            : pad != NULL ? SDL_GetGamepadJoystick(pad) : NULL;
+    SDL_JoystickID id;
     Uint16 lowLevel;
     Uint16 highLevel;
 
-    if (pad == NULL || AnalogWheelActive()) {
-        s_rumbleLatched = 0;
-        return;
-    }
     if (low < 0.0f) low = 0.0f;
     if (high < 0.0f) high = 0.0f;
     if (low > 1.0f) low = 1.0f;
     if (high > 1.0f) high = 1.0f;
+    if (device != NULL && device == s_boundWheel && s_haptic != NULL) {
+        float strength = low > high ? low : high;
+        StopJoystickRumble();
+        /* Reuse the haptic handle: SDL_RumbleJoystick can reset the constant
+         * effect on DirectInput devices, even for a zero-strength command. */
+        if (strength == 0.0f) {
+            if (s_hapticRumblePlaying) SDL_StopHapticRumble(s_haptic);
+            s_hapticRumblePlaying = 0;
+            return;
+        }
+        if (!s_hapticRumbleTried) {
+            s_hapticRumbleTried = 1;
+            s_hapticRumbleReady = SDL_HapticRumbleSupported(s_haptic) &&
+                                  SDL_InitHapticRumble(s_haptic);
+            if (!s_hapticRumbleReady)
+                fprintf(stderr, "rage-port: separate haptic vibration unavailable on %s (%s); "
+                                "constant force remains active\n",
+                        SDL_GetJoystickName(device), SDL_GetError());
+        }
+        if (s_hapticRumbleReady) {
+            if (SDL_PlayHapticRumble(s_haptic, strength, 80))
+                s_hapticRumblePlaying = 1;
+            else if (!s_rumbleNoted) {
+                s_rumbleNoted = 1;
+                fprintf(stderr, "rage-port: haptic vibration failed on %s (%s)\n",
+                        SDL_GetJoystickName(device), SDL_GetError());
+            }
+        }
+        return;
+    }
+    id = device != NULL ? SDL_GetJoystickID(device) : 0;
+    if (id != s_rumbleDevice) {
+        StopJoystickRumble();
+        s_rumbleDevice = id;
+        s_rumbleNoted = 0;
+    }
+    if (device == NULL) return;
     lowLevel = (Uint16)(low * 65535.0f);
     highLevel = (Uint16)(high * 65535.0f);
     /* A zero command can be sent once. A live rumble has a short duration, so
      * the same strength has to be posted again every frame or the pad goes
      * quiet while the car is still sliding. */
     if (lowLevel == 0 && highLevel == 0) {
-        if (s_rumbleLatched && s_lastLow == 0 && s_lastHigh == 0) return;
+        if (!s_rumbleLatched || (s_lastLow == 0 && s_lastHigh == 0)) return;
         s_lastLow = 0;
         s_lastHigh = 0;
         s_rumbleLatched = 1;
-        SDL_RumbleGamepad(pad, 0, 0, 0);
+        SDL_RumbleJoystick(device, 0, 0, 0);
         return;
     }
     s_lastLow = lowLevel;
     s_lastHigh = highLevel;
     s_rumbleLatched = 1;
-    if (!SDL_RumbleGamepad(pad, lowLevel, highLevel, 80) && !s_rumbleNoted) {
+    if (!SDL_RumbleJoystick(device, lowLevel, highLevel, 80) && !s_rumbleNoted) {
         s_rumbleNoted = 1;
-        fprintf(stderr, "rage-port: gamepad rumble unavailable (%s)\n",
-                SDL_GetError());
+        fprintf(stderr, "rage-port: vibration unavailable on %s (%s)\n",
+                SDL_GetJoystickName(device), SDL_GetError());
     }
 }
 
@@ -339,11 +422,11 @@ void PortUpdateForceFeedback(void) {
     float axis = AnalogSteeringDeflection();
 
     LoadSettings();
-    /* Keep the effect for the whole race, including pause, and give the wheel
-     * its own centering spring back once the race is left. */
-    BindWheel(g_SceneId == GAME_SCENE_RACE && AnalogWheelActive()
-                  ? (SDL_Joystick *)AnalogWheelJoystick()
-                  : NULL);
+    /* Keep one effect during a race or settings preview. In ordinary menus
+     * release it once so the driver's centering spring can take over. */
+    BindWheel(AnalogWheelActive() &&
+                      (g_SceneId == GAME_SCENE_RACE || s_pulseFrames > 0)
+                  ? AnalogWheelJoystick() : NULL);
     sample.wheelAxis = axis;
     sample.previousWheelAxis = s_previousAxis;
     sample.smoothed = s_smoothed;
@@ -354,16 +437,20 @@ void PortUpdateForceFeedback(void) {
     tuning.enabled = s_enabled;
     tuning.gain = (float)s_gainPercent / 100.0f;
     output = ForceFeedbackEvaluate(&tuning, &sample);
+    if (!sample.active || !s_enabled || s_gainPercent == 0)
+        output.torque = 0.0f;
     if (s_pulseFrames > 0) {
         s_pulseFrames--;
-        if (output.torque < 0.30f) output.torque = 0.30f;
-        if (output.lowRumble < 0.30f) output.lowRumble = 0.30f;
-        if (output.highRumble < 0.30f) output.highRumble = 0.30f;
+        if (s_enabled && s_gainPercent > 0) {
+            float pulse = 0.30f * tuning.gain;
+            if (output.torque < pulse) output.torque = pulse;
+            if (output.lowRumble < pulse) output.lowRumble = pulse;
+            if (output.highRumble < pulse) output.highRumble = pulse;
+        }
     }
     s_smoothed = output.torque;
     s_previousAxis = axis;
 
-    BindWheel(AnalogWheelActive() ? AnalogWheelJoystick() : NULL);
     SendTorque(output.torque);
     SendRumble(output.lowRumble, output.highRumble);
 }
@@ -379,6 +466,7 @@ void PortSetForceFeedbackEnabled(int enabled) {
     enabled = enabled != 0;
     if (enabled == s_enabled) return;
     s_enabled = enabled;
+    if (s_enabled) s_rejectedWheel = NULL;
     s_pulseFrames = s_enabled ? FFB_PULSE_FRAMES : 0;
     WritePlayerFile();
     fprintf(stderr, "rage-port: force feedback %s\n",
@@ -403,6 +491,7 @@ void PortSetForceFeedbackGainPercent(int percent) {
 void PortToggleForceFeedback(void) {
     LoadSettings();
     s_enabled = !s_enabled;
+    if (s_enabled) s_rejectedWheel = NULL;
     if (s_enabled) s_pulseFrames = FFB_PULSE_FRAMES;
     else s_pulseFrames = 0;
     WritePlayerFile();

@@ -25,6 +25,8 @@
 
 #include <limits.h>
 #include <stdio.h>
+
+extern int g_TestMenuAnimationTicks;
 #include <stdlib.h>
 #include <string.h>
 
@@ -444,6 +446,22 @@ int main(void) {
                s_digest, expected);
         return 1;
     }
+    /* Entry/exit scripts complete in half the calls, including odd limits.
+     * A draw-only call must still leave the shared progress untouched. */
+    g_TestMenuAnimationTicks = 2;
+    BuildScript(33);
+    s32 fastProgress = 0;
+    for (int i = 0; i < 16; ++i) {
+        if (RunTimedDrawScript(s_script, &fastProgress, 1)) return 1;
+    }
+    if (fastProgress != 32 || !RunTimedDrawScript(s_script, &fastProgress, 1) ||
+        fastProgress != 33) return 1;
+    RunTimedDrawScript(s_script, &fastProgress, 0);
+    if (fastProgress != 33) return 1;
+    for (int i = 0; i < 17; ++i)
+        RunTimedDrawScript(s_script, &fastProgress, -1);
+    if (fastProgress != 0) return 1;
+    g_TestMenuAnimationTicks = 1;
     printf("the script walker takes the same %d states it always did\n",
            states);
     return 0;

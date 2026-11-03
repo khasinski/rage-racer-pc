@@ -42,6 +42,7 @@ static int ReadPreferences(const char *path) {
     CHECK(fabsf(config.modernBrightness - 1.25f) < 0.001f);
     CHECK(config.modernFps == 144);
     CHECK(RuntimeConfigEnabled("video.fullscreen"));
+    CHECK(RuntimeConfigEnabled("mods.fast_menus"));
     CHECK(!strcmp(RuntimeConfigGet("hud.anchor"), "center"));
     CHECK(!strcmp(RuntimeConfigGet("camera.chase_distance"), "2"));
     CHECK(!RuntimeConfigGet("disc.image") && !RuntimeConfigGet("tools.hd_pack_create"));
@@ -61,6 +62,7 @@ int main(int argc, char **argv) {
     config.modernBrightness = 1.25f;
     config.modernFps = 144;
     session.fullscreen = 1;
+    session.fastMenus = 1;
     session.chaseDistance = 2;
     session.chaseHeight = 1;
     session.tickMultiplier = 1;

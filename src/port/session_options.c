@@ -13,6 +13,7 @@ void PortSessionOptionsRead(PortSessionOptions *options) {
     if (options == NULL) return;
     options->fullscreen = Psyz_VideoIsFullscreen();
     options->randomTimeOfDay = PortRandomTimeOfDayEnabled();
+    options->fastMenus = PortFastMenusEnabled();
     options->tickMultiplier = SimTickMultiplier();
     options->analog = PortAnalogEnabled();
     options->wheel = PortWheelEnabled();
@@ -37,6 +38,7 @@ void PortSessionOptionsApply(const PortSessionOptions *options) {
     if (options->fullscreen != Psyz_VideoIsFullscreen())
         Psyz_VideoSetFullscreen(options->fullscreen);
     PortSetRandomTimeOfDayEnabled(options->randomTimeOfDay);
+    PortSetFastMenusEnabled(options->fastMenus);
     if (options->tickMultiplier > 0 &&
         options->tickMultiplier != SimTickMultiplier()) {
         SimTickSetMultiplier(options->tickMultiplier);

@@ -1586,7 +1586,17 @@ if(TARGET rage-racer-smoke)
             -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.cmake
     )
 set_tests_properties(menu_sweep PROPERTIES LABELS e2e)
-    set_tests_properties(menu_sweep PROPERTIES TIMEOUT 225)
+set_tests_properties(menu_sweep PROPERTIES TIMEOUT 225)
+add_test(NAME menu_sweep_fast
+    COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DFAST_MENUS=1
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.cmake)
+set_tests_properties(menu_sweep_fast PROPERTIES LABELS e2e TIMEOUT 225)
+    add_test(NAME fast_menus_navigation
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_fast_menus.cmake)
+    set_tests_properties(fast_menus_navigation PROPERTIES LABELS e2e TIMEOUT 185)
 
     add_test(
         NAME trophy_view
@@ -1631,3 +1641,12 @@ else()
 endif()
 add_test(NAME native_main_menu COMMAND native_main_menu_tests)
 set_tests_properties(native_main_menu PROPERTIES LABELS unit)
+
+foreach(menu_clock_target IN ITEMS
+    car_name_plate_tests main_menu_state_tests timed_draw_script_tests
+    time_attack_plate_tests browse_arrows_tests car_spec_graph_tests
+    class_change_curtain_tests menu_alt_panel_tests menu_light_burst_tests
+    frontend_tests update_menu_mode_tests course_card_tests logo_name_panel_tests)
+    target_sources(${menu_clock_target} PRIVATE
+        ${CMAKE_SOURCE_DIR}/tests/support/menu_animation_stub.c)
+endforeach()

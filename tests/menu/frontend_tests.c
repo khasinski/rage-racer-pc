@@ -11,6 +11,8 @@
 
 #include <stdio.h>
 
+extern int g_TestMenuAnimationTicks;
+
 static Frontend s_frontend;
 #include <string.h>
 
@@ -197,6 +199,17 @@ int main(void) {
     CHECK(s_frontend.pulse == 126 && g_SceneId != 0x16);
     UpdateMainMenuExit();
     CHECK(s_frontend.pulse == 129 && g_SceneId == 0x16);
+
+    Reset();
+    g_TestMenuAnimationTicks = 2;
+    s_frontend.pulse = 0;
+    g_SceneId = 4;
+    s_frontend.selection = TITLE_MENU_OPTIONS;
+    for (int i = 0; i < 21; i++) UpdateMainMenuExit();
+    CHECK(s_frontend.pulse == 126 && g_SceneId != 0x16);
+    UpdateMainMenuExit();
+    CHECK(s_frontend.pulse == 129 && g_SceneId == 0x16);
+    g_TestMenuAnimationTicks = 1;
 
     Reset();
     s_frontend.pulse = 0x80;

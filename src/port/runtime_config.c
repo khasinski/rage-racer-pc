@@ -57,7 +57,7 @@ static int PreferenceKey(const char *key) {
         "video.brightness", "video.ssao", "video.shadows", "video.car_lights", "video.fullscreen",
         "input.analog", "input.wheel", "input.steering_linearity", "input.force_feedback",
         "input.ffb_gain", "game.tick_rate", "hud.anchor", "hud.show_lap_times", "hud.show_time_limit",
-        "camera.chase_distance", "camera.chase_height", "camera.chase_turn_lookahead"};
+        "camera.chase_distance", "camera.chase_height", "camera.chase_turn_lookahead", "mods.fast_menus"};
     for (unsigned i = 0; i < sizeof(keys)/sizeof(keys[0]); ++i)
         if (!strcmp(keys[i], key)) return 1;
     return 0;

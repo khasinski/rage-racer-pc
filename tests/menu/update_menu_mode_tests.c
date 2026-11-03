@@ -4,6 +4,8 @@
 
 #include <limits.h>
 #include <stdio.h>
+
+extern int g_TestMenuAnimationTicks;
 #include <string.h>
 
 s32 g_AnimTimer;
@@ -252,6 +254,14 @@ int main(void) {
     CHECK(TestInvalidIndices() == 0);
     CHECK(TestTimerWrap() == 0);
     CHECK(TestScreenStateIsolation() == 0);
+    Reset();
+    g_TestMenuAnimationTicks = 2;
+    MenuBeginExit(MENU_SCREEN_CAR_SELECT);
+    MenuActivateScreen(MENU_SCREEN_COURSE_SELECT);
+    UpdateMenuMode();
+    CHECK(s_drawCalls == 2 && s_drawSteps[0] == 40 && s_drawSteps[1] == -20);
+    CHECK(s_updateCalls == 1 && g_AnimTimer == 11 && g_SceneTimer == 1);
+    g_TestMenuAnimationTicks = 1;
     puts("menu mode dispatcher tests passed");
     return 0;
 }

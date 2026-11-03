@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+int PortFastMenusEnabled(void);
+void PortSetFastMenusEnabled(int enabled);
 int PortRandomTimeOfDayEnabled(void);
 void PortSetRandomTimeOfDayEnabled(int enabled);
 /* Called once when a new race starts. Replay seeks retain their recorded clock. */

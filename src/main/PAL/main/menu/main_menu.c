@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/asset.h"
 #include "game/audio.h"
 #include "game/car.h"
@@ -22,7 +23,7 @@ void UpdateMainMenuOpen(void) {
     frontend->menuSlide = AddClampedMenuValue(
         frontend->menuSlide, 0, 0, MAIN_MENU_OPEN_FRAMES);
     frontend->menuSlide = AddClampedMenuValue(
-        frontend->menuSlide, 1, 0, MAIN_MENU_OPEN_FRAMES);
+        frontend->menuSlide, PortMenuAnimationStep(1), 0, MAIN_MENU_OPEN_FRAMES);
     if (frontend->menuSlide >= MAIN_MENU_OPEN_FRAMES) {
         frontend->state = FRONTEND_STATE_MENU_INPUT;
     }

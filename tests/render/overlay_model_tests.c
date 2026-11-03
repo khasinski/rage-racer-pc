@@ -291,6 +291,9 @@ static int TestPackActions(void){
  CHECK(model.packAction==0&&!model.configPending&&model.sessionPending);
  OverlayPending pending=OverlayModelTakePending(&model,0);CHECK(pending.session);
  OverlayModelDo(&model,OVERLAY_LEFT,1);CHECK(model.values.session.randomTimeOfDay==0);
+ OverlayModelSelect(&model,5);OverlayModelDo(&model,OVERLAY_ACTIVATE,2);
+ CHECK(model.values.session.fastMenus==1 && model.sessionPending);
+ OverlayModelDo(&model,OVERLAY_LEFT,3);CHECK(model.values.session.fastMenus==0);
  return 0;
 }
 

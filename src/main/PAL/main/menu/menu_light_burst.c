@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 #include "game/render.h"
@@ -49,6 +50,7 @@ static void DrawLightBurstBands(GameOrderingTableEntry *ot, s32 level) {
 }
 
 void DrawMenuLightBurst(MenuWidgets *widgets, s32 step) {
+    step = PortMenuAnimationStep(step);
     GameOrderingTableEntry *ot;
 
     if (step == 0) {

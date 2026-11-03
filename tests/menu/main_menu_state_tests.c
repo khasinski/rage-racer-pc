@@ -10,6 +10,8 @@
 #include <limits.h>
 #include <stdio.h>
 
+extern int g_TestMenuAnimationTicks;
+
 static Frontend s_frontend;
 
 static OptionMenu s_optionMenu;
@@ -158,6 +160,18 @@ int main(void) {
     UpdateMainMenuInput();
     CHECK(g_CarTable == g_TimeAttackCars && g_RaceProgress == &g_TimeAttackSave);
     CHECK(g_SeriesSelection == 0 && s_selectBgmRequests == 1);
+
+    ResetState(TITLE_MENU_GRAND_PRIX);
+    s_frontend.state = FRONTEND_STATE_MENU_OPENING;
+    s_frontend.menuSlide = 0;
+    g_TestMenuAnimationTicks = 2;
+    for (int i = 0; i < 7; ++i) UpdateMainMenuOpen();
+    CHECK(s_frontend.menuSlide == 14);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_OPENING);
+    UpdateMainMenuOpen();
+    CHECK(s_frontend.menuSlide == 16);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_INPUT);
+    g_TestMenuAnimationTicks = 1;
 
     ResetState(TITLE_MENU_CUSTOM);
     UpdateMainMenuInput();

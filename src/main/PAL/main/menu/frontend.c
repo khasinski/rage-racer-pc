@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/audio.h"
@@ -24,7 +25,7 @@ enum {
 void UpdateMainMenuExit(void) {
     Frontend *frontend = MenuFrontend();
 
-    frontend->pulse = AddClampedMenuValue(frontend->pulse, 3, 0, 0x81);
+    frontend->pulse = AddClampedMenuValue(frontend->pulse, PortMenuAnimationStep(3), 0, 0x81);
     DrawFullscreenFadeTile(frontend->pulse * 2, 0x59);
 
     if (frontend->pulse >= 0x81) {

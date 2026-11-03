@@ -220,13 +220,16 @@ static const char *const kHdVerify[]={"Verify"};
 static const char *const kHdDownload[]={"Open downloader"};
 ACCESSORS(RandomTimeOfDay, v->session.randomTimeOfDay != 0,
           v->session.randomTimeOfDay = i)
+ACCESSORS(FastMenus, v->session.fastMenus != 0, v->session.fastMenus = i)
 static const OverlaySetting kMods[]={
  {"HD textures","Enable the installed HD pack.",2,kHdToggle,HdGet,HdToggleSet,0,0},
  {"HD texture pack","Download or update the HD texture pack.",1,kHdDownload,HdZero,HdSet,0,0},
  {"Install local pack","Choose a .rrhd texture pack.",1,kHdInstall,HdZero,HdSet,0,0},
  {"Verify pack","Check all installed file checksums.",1,kHdVerify,HdZero,HdSet,0,0},
  SETTING("Random time of day", "GP / EX GP only. Applies next race; lasts until quit.",
-         kSwitchNames, RandomTimeOfDay)};
+         kSwitchNames, RandomTimeOfDay),
+ SETTING("Fast menus", "Menu transitions and selection animations run at 2x speed.",
+         kSwitchNames, FastMenus)};
 
 static const char *const kPageNames[OVERLAY_PAGE_COUNT] = {
     "Graphics", "Controls", "Audio", "View", "Mods"};
