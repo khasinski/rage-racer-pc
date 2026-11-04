@@ -5,6 +5,11 @@
 #include <stdio.h>
 #include <string.h>
 #ifdef _WIN32
+/* Only memory-status declarations are needed. WinSock's u_long conflicts
+ * with the pointer-sized legacy PSY-Q typedef on 64-bit Windows. */
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #endif
 
