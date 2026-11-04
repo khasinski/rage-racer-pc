@@ -367,6 +367,7 @@ if(RAGE_BUILD_PORT)
         src/port/track_asset_identity.c
         src/port/track_lighting.c
         src/port/runtime_config.c
+        src/port/memory_budget.c
         src/port/runtime_parse.c
         src/port/timing_control.c
         src/port/analog_pad.c
@@ -570,6 +571,7 @@ if(RAGE_BUILD_PORT)
         tools/rage_frame_replay.c
         src/port/platform_paths.c
         src/port/runtime_config.c
+        src/port/memory_budget.c
         src/port/runtime_parse.c
         src/port/mod_assets.c
         src/port/texture_patch.c
@@ -590,6 +592,7 @@ if(RAGE_BUILD_PORT)
         tools/rage_render_stage.c
         src/port/platform_paths.c
         src/port/runtime_config.c
+        src/port/memory_budget.c
         src/port/runtime_parse.c
         src/port/mod_assets.c
         src/port/texture_patch.c

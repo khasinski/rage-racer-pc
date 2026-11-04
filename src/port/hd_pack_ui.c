@@ -1,3 +1,4 @@
+#include "memory_budget.h"
 /* File dialog and verification run asynchronously; only the presentation thread
  * changes the HD layer. Native meshes, disc imports and game state stay alive. */
 #include "hd_pack_ui.h"
@@ -45,8 +46,8 @@ static void SDLCALL chosen(void *context,const char *const *files,int filter){
 }
 static void shutdownWorker(void){SDL_SetAtomicInt(&s.cancel,1);if(s.thread){SDL_WaitThread(s.thread,NULL);s.thread=NULL;}}
 static int apply(void){
- RageModManifest *m=s.have&&s.state.enabled?HdPackReadManifest(s.state.directory):NULL;
- if(s.have&&s.state.enabled&&!m)return 0;
+ RageModManifest *m=s.have&&s.state.enabled&&MemoryBudgetAllowHd()?HdPackReadManifest(s.state.directory):NULL;
+ if(s.have&&s.state.enabled&&MemoryBudgetAllowHd()&&!m)return 0;
  int ok=MenuImagesSetHdPack(m?s.state.directory:NULL,m);
  if(ok){ok=ModernAssetsSetHdPack(m?s.state.directory:NULL,m);}free(m);
  if(ok)ok=ModernRestartPresentation(PortActiveConfig());
@@ -66,7 +67,7 @@ void HdPackUiTick(OverlayModel *model){
   if(store)SDL_strlcpy(s.store,store,sizeof(s.store));else PlatformUserConfigPath("hd-packs",s.store,sizeof(s.store));
   const char *region=HostDiscRegion();SDL_strlcpy(s.region,region?region:"",sizeof(s.region));
   s.have=HdPackReadState(s.store,s.region,&s.state);
-  if(s.have&&s.state.enabled){if(HdPackVerify(s.store,&s.state,NULL,NULL,s.message,sizeof(s.message)))apply();else s.state.enabled=0;}
+  if(s.have&&s.state.enabled&&MemoryBudgetAllowHd()){if(HdPackVerify(s.store,&s.state,NULL,NULL,s.message,sizeof(s.message)))apply();else s.state.enabled=0;}
  }
  if(s.dialog&&SDL_GetAtomicInt(&s.dialogDone)){
   s.dialog=0;if(*s.file)start(1);
@@ -90,7 +91,9 @@ void HdPackUiTick(OverlayModel *model){
  if(action==4&&s.thread&&s.job==4&&SDL_GetAtomicInt(&s.phase)==1)SDL_SetAtomicInt(&s.cancel,1);
  if(action==6&&!s.thread)s.downloader=0;
  if(action&&!s.thread&&!s.dialog){
-  if(action==1){
+  if(action==1&&!MemoryBudgetAllowHd()){
+   SDL_strlcpy(s.message,"HD textures are suspended by the low-memory profile.",sizeof(s.message));
+  }else if(action==1){
    if(s.have){
     if(!s.state.enabled)start(3);
     else if(HdPackSetEnabled(s.store,&s.state,0)){
@@ -116,7 +119,7 @@ void HdPackUiTick(OverlayModel *model){
  model->packDownloader=s.downloader;model->packPercent=percent;model->packCanCancel=canCancel;
  model->packDownloadedBytes=done;model->packTotalBytes=total;SDL_strlcpy(model->packPhase,phaseName,sizeof(model->packPhase));
  if(model->values.hdBusy!=(s.thread!=NULL)){model->values.hdBusy=s.thread!=NULL;model->dirty=1;}
- model->values.hdEnabled=s.have&&s.state.enabled;
+ model->values.hdEnabled=s.have&&s.state.enabled&&MemoryBudgetAllowHd();
  char status[160];if(s.thread){
   if(s.job==4){
    int phase=SDL_GetAtomicInt(&s.phase);
@@ -125,5 +128,6 @@ void HdPackUiTick(OverlayModel *model){
   }else snprintf(status,sizeof(status),"%s: %d%%",s.job==1?"Installing":"Verifying",SDL_GetAtomicInt(&s.percent));
  }
 else if(s.dialog)SDL_strlcpy(status,"Choose a local .rrhd file...",sizeof(status));else if(*s.message)SDL_strlcpy(status,s.message,sizeof(status));else if(s.have)snprintf(status,sizeof(status),"%.100s %.30s",s.state.name,s.state.version);else SDL_strlcpy(status,"No HD pack installed.",sizeof(status));
+ if(!s.thread&&!s.dialog&&!MemoryBudgetAllowHd())SDL_strlcpy(status,"Low memory: HD textures suspended; installed pack and preference kept.",sizeof(status));
  if(strcmp(model->packStatus,status)){SDL_strlcpy(model->packStatus,status,sizeof(model->packStatus));if(model->page==OVERLAY_PAGE_MODS)model->dirty=1;}
 }

@@ -1,3 +1,4 @@
+#include "memory_budget.h"
 #include "graphics_overlay.h"
 #include "user_settings.h"
 #include "hd_pack_ui.h"
@@ -631,6 +632,10 @@ static void RestoreAndTrackDisplayMode(void) {
 }
 
 void PortGraphicsOverlayTick(void) {
+    if (MemoryBudgetGet()->tier != RAGE_MEMORY_NORMAL && !s_model.settingsStatus[0]) {
+        SDL_strlcpy(s_model.settingsStatus,"Low memory: graphics capped and HD textures suspended.",sizeof(s_model.settingsStatus));
+        s_model.dirty = 1;
+    }
     RestoreAndTrackDisplayMode();
     HdPackUiTick(&s_model);
     SDL_GPUDevice *device = NULL;

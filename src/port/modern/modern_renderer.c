@@ -1,3 +1,4 @@
+#include "../memory_budget.h"
 #include "modern_renderer.h"
 #include "game/car.h"
 #include "modern_assets.h"
@@ -522,6 +523,9 @@ static int ModernEnsureResources(void) {
     if (s_resourcesReady) return 1;
     if (s_device == NULL) return 0;
 
+    if (MemoryBudgetGet()->tier != RAGE_MEMORY_NORMAL &&
+        !SDL_SetGPUAllowedFramesInFlight(s_device, 1))
+        fprintf(stderr, "rage-port: cannot limit GPU frames in flight (%s)\n", SDL_GetError());
     scale = s_config.modernInternalScale;
     if (scale < 0.5f) scale = 0.5f;
     /* 16:9 widens the field of view; the vertical view is unchanged. */
@@ -534,7 +538,7 @@ static int ModernEnsureResources(void) {
     s_mirrorTargetW = (int)(148.0f * scale + 0.5f) & ~1;
     s_mirrorTargetH = (int)(36.0f * scale + 0.5f) & ~1;
 
-    s_ringEnabled = s_enabled && s_markerCaptureEnabled && RuntimeConfigEnabled("diagnostics.marker_history");
+    s_ringEnabled = MemoryBudgetAllowHd() && s_enabled && s_markerCaptureEnabled && RuntimeConfigEnabled("diagnostics.marker_history");
     {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -2014,6 +2018,31 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     if (s_prev_present_source) {
         s_prev_present_source(info);
     }
+    {
+        static int pressureInjected;
+        int pressureFrame = RuntimeConfigInt("diagnostics.memory_pressure_frame", 0, 0, 10000000);
+        if (!pressureInjected && pressureFrame > 0 &&
+            CaptureCurrent()->frameCounter >= (uint32_t)pressureFrame) {
+            SDL_Event pressure = {0};
+            pressure.type = SDL_EVENT_LOW_MEMORY;
+            SDL_PushEvent(&pressure);
+            pressureInjected = 1;
+        }
+    }
+    /* Watch callbacks may arrive on Android's OS thread. Reclaim GPU resources
+     * here, after submission and before another command buffer is acquired. */
+    if (MemoryBudgetPoll()) {
+        RagePortConfig reduced = s_config;
+        MemoryBudgetApplyConfig(&reduced);
+        MenuImagesSetHdPack(NULL, NULL);
+        ModernAssetsSetHdPack(NULL, NULL);
+        if (!ModernRestartPresentation(&reduced)) {
+            fprintf(stderr, "rage-port: low-memory presentation rebuild failed\n");
+            return;
+        }
+    }
+    if (MemoryBudgetGet()->tier != RAGE_MEMORY_NORMAL && s_device != NULL)
+        SDL_WaitForGPUIdle(s_device);
     /* Opt-in lifecycle exercise at the host callback boundary, after PSY-Z
      * has submitted pending work and before it acquires a swapchain command. */
     {
@@ -2277,6 +2306,10 @@ int ModernInit(const RagePortConfig *config) {
     }
     s_shutdownNeeded = 1;
     s_config = *config;
+    MemoryBudgetApplyConfig(&s_config);
+    ModernAssetsSetTextureOverridesEnabled(MemoryBudgetAllowHd());
+    MenuImagesSetTextureOverridesEnabled(MemoryBudgetAllowHd());
+    MemoryBudgetStartWatch();
     if (!isfinite(s_config.modernBrightness) || s_config.modernBrightness < 0.5f ||
         s_config.modernBrightness > 1.5f) s_config.modernBrightness = 1.0f;
     const char *classic = RuntimeConfigGet("video.classic_enhancements");
@@ -2306,6 +2339,7 @@ int ModernInit(const RagePortConfig *config) {
     ModernPresentationClockReset(&s_presentationClock);
     s_markerCaptureEnabled = RuntimeConfigEnabled("diagnostics.marker_capture");
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;
+    PortConfigSetActive(&s_config);
     fprintf(stderr, "rage-port: renderer toggle=%s; active=%s\n",
             SDL_GetScancodeName(s_toggleScancode),
             s_enabled ? "modern" : "classic");
@@ -2390,6 +2424,7 @@ int ModernApplyConfig(const RagePortConfig *requested) {
 
     if (requested == NULL || !s_initialized) return 0;
     next = *requested;
+    MemoryBudgetApplyConfig(&next);
     if (!isfinite(next.modernBrightness) || next.modernBrightness < 0.5f ||
         next.modernBrightness > 1.5f) next.modernBrightness = 1.0f;
     wantModern = next.renderer == RAGE_RENDERER_MODERN;
@@ -2411,6 +2446,7 @@ int ModernApplyConfig(const RagePortConfig *requested) {
 }
 
 void ModernShutdown(void) {
+    MemoryBudgetStopWatch();
     if (!s_shutdownNeeded) return;
     s_shutdownNeeded = 0;
     ModernDetachPresentation();

@@ -68,6 +68,10 @@ int main(int argc,char **argv){
     p=MenuImage(3,0);assert(p&&p[0]==73); /* Classic retains its 112x16 image. */
     WriteImageSize(path,448,64);generation++;
     p=MenuImage(3,0);assert(p&&p[0]==17&&p[1]==34&&p[2]==51&&p[3]==0);
+    MenuImagesSetTextureOverridesEnabled(0);
+    assert(!MenuImage(3,0)&&!MenuImageNative(3,0,&nativeW,&nativeH));
+    MenuImagesSetTextureOverridesEnabled(1);
+    assert(MenuImage(3,0));
     MenuImagesReset();
     assert(SDL_RemovePath(path));assert(SDL_RemovePath(root));
     puts("menu PNG runtime/cache/draw tests passed");return 0;

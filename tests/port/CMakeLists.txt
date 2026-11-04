@@ -822,3 +822,14 @@ target_link_libraries(user_settings_tests PRIVATE SDL3::SDL3)
 target_compile_options(user_settings_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 add_test(NAME user_settings COMMAND user_settings_tests "${CMAKE_CURRENT_BINARY_DIR}/user-settings-fixture")
 set_tests_properties(user_settings PROPERTIES LABELS unit TIMEOUT 30)
+
+add_executable(memory_budget_tests memory_budget_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/memory_budget.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_parse.c)
+target_include_directories(memory_budget_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(memory_budget_tests PRIVATE SDL3::SDL3)
+target_compile_options(memory_budget_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+foreach(profile IN ITEMS normal 2gb 4gb available forced_low forced_minimum unknown normal_override pressure)
+    add_test(NAME memory_budget_${profile} COMMAND memory_budget_tests ${profile})
+    set_tests_properties(memory_budget_${profile} PROPERTIES LABELS unit)
+endforeach()

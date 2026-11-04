@@ -8,6 +8,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+static int s_textureOverridesEnabled = 1;
+
 static struct {
     unsigned generation;
     uint8_t checked[7][2],valid[7][2];
@@ -27,7 +29,11 @@ void MenuImagesReset(void){
     for(int i=0;i<7;i++)for(int j=0;j<2;j++)SDL_DestroySurface(images.native[i][j]);
     memset(&images,0,sizeof(images));
 }
+void MenuImagesSetTextureOverridesEnabled(int enabled){
+    enabled=enabled!=0;if(enabled!=s_textureOverridesEnabled){MenuImagesReset();s_textureOverridesEnabled=enabled;}
+}
 const uint8_t *MenuImage(int item,int selected){
+    if(!s_textureOverridesEnabled)return NULL;
     if(item<0||item>=7)return NULL;
     selected=selected!=0;
     unsigned generation=ModAssetsGeneration();

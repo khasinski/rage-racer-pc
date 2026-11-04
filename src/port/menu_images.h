@@ -8,6 +8,7 @@ const uint8_t *MenuImage(int item,int selected);
 /* Full-resolution straight-alpha pixels for native presentation. */
 const uint8_t *MenuImageNative(int item,int selected,int *width,int *height);
 void MenuImagesReset(void);
+void MenuImagesSetTextureOverridesEnabled(int enabled);
 struct RageModManifest;
 /* Copies the optional HD menu layer; disabling restores ordinary mods. */
 int MenuImagesSetHdPack(const char *directory,const struct RageModManifest *manifest);

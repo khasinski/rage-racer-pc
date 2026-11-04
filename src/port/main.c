@@ -1,3 +1,4 @@
+#include "memory_budget.h"
 #ifdef __ANDROID__
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -148,6 +149,7 @@ int main(int argc, char **argv) {
     Psyz_VideoSetAspectMode(PSYZ_ASPECT_SQUARE);
     PortConfigDefaults(&portConfig);
     PortConfigApplyRuntime(&portConfig);
+    MemoryBudgetApplyConfig(&portConfig);
     PortConfigSetActive(&portConfig);
     fprintf(stderr,
             "rage-port: renderer=%s scale=%.2f aspect=%d fps=%d draw_distance=%.2f post=%d\n",

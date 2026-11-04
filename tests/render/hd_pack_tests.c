@@ -8,6 +8,8 @@
 #include <string.h>
 static const char *testStore;static int applied,restarted,layerEnabled;
 static int restartSuccess=1;
+static int allowHd=1;
+int MemoryBudgetAllowHd(void){return allowHd;}
 const char *RuntimeConfigGet(const char *key){return !strcmp(key,"hd.store")?testStore:!strcmp(key,"hd.server")?"invalid-test-origin":NULL;}
 const char *HostDiscRegion(void){return "PAL";}
 int PlatformUserConfigPath(const char *name,char *out,size_t n){(void)name;(void)out;(void)n;return 0;}
@@ -41,10 +43,19 @@ int main(void){
  size_t n;unsigned char *bytes=SDL_LoadFile(archive,&n);CHECK(bytes&&n>20);bytes[n-1]^=1;CHECK(SDL_SaveFile(bad,bytes,n));SDL_free(bytes);
  CHECK(!HdPackInstall(bad,store,"PAL",NULL,NULL,error,sizeof(error)));CHECK(HdPackReadState(store,"PAL",&b)&&!b.enabled&&!strcmp(a.hash,b.hash));CHECK(HdPackVerify(store,&b,NULL,NULL,error,sizeof(error)));
  CHECK(HdPackInstall(archive,store,"PAL",NULL,NULL,error,sizeof(error)));CHECK(HdPackReadState(store,"PAL",&b)&&b.enabled);
- testStore=store;OverlayModel model={0};HdPackUiTick(&model);CHECK(applied==1&&restarted==1&&layerEnabled&&model.values.hdEnabled);
- model.packAction=1;HdPackUiTick(&model);CHECK(applied==2&&restarted==2&&!layerEnabled&&!model.values.hdEnabled);
+ testStore=store;OverlayModel model={0};allowHd=0;HdPackUiTick(&model);
+ CHECK(!model.values.hdEnabled&&applied==0&&restarted==0);
+ model.packAction=1;HdPackUiTick(&model);CHECK(applied==0&&strstr(model.packStatus,"Low memory"));
+ CHECK(HdPackReadState(store,"PAL",&b)&&b.enabled);
+ allowHd=1;model.packAction=1;HdPackUiTick(&model);
+ /* First normal toggle disables the previously saved active pack. */
+ CHECK(!model.values.hdEnabled);
+ model.packAction=1;HdPackUiTick(&model);
+ for(int i=0;i<2000&&!model.values.hdEnabled;i++){SDL_Delay(1);HdPackUiTick(&model);}
+ CHECK(applied==2&&restarted==2&&layerEnabled&&model.values.hdEnabled);
+ model.packAction=1;HdPackUiTick(&model);CHECK(applied==3&&restarted==3&&!layerEnabled&&!model.values.hdEnabled);
  model.packAction=1;HdPackUiTick(&model);for(int i=0;i<2000&&!model.values.hdEnabled;i++){SDL_Delay(1);HdPackUiTick(&model);}
- CHECK(applied==3&&restarted==3&&layerEnabled&&model.values.hdEnabled);
+ CHECK(applied==4&&restarted==4&&layerEnabled&&model.values.hdEnabled);
  /* Persisted settings can change even when presentation recreation fails.
   * The UI must distinguish that failure from successful activation. */
  restartSuccess=0;

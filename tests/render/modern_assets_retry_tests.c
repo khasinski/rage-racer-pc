@@ -385,6 +385,10 @@ int main(int argc, char **argv) {
             if(!ModernAssetsLoadUiImage("ui.scene.8.page.29.clut.32641",&hdImage)||
                hdImage.width!=1024||((const uint8_t*)hdImage.pixels)[4]!=91)return 69;
             ModernAssetsFreeMaterialImage(&hdImage);
+            ModernAssetsSetTextureOverridesEnabled(0);
+            if(ModernAssetsHasUiScene(8)||ModernAssetsLoadUiImage("ui.scene.8.page.29.clut.32641",&hdImage))return 101;
+            ModernAssetsSetTextureOverridesEnabled(1);
+            if(!ModernAssetsHasUiScene(8))return 102;
             if(!ModernAssetsLoadSkyAtlas(0x58,&skyImage)||skyImage.width!=1024||skyImage.height!=1024||
                ((const uint8_t*)skyImage.pixels)[4]!=91)return 71;
             ModernAssetsFreeMaterialImage(&skyImage);

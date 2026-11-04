@@ -1,3 +1,4 @@
+#include "memory_budget.h"
 #include <psyz.h>
 #include <psyz/video.h>
 #include <psyz/audio.h>
@@ -785,6 +786,7 @@ int main(int argc, char **argv) {
     if (!LoadCarCatalogForSmoke()) return EXIT_FAILURE;
     PortConfigDefaults(&portConfig);
     PortConfigApplyRuntime(&portConfig);
+    MemoryBudgetApplyConfig(&portConfig);
     if (RuntimeConfigEnabled("video.modern"))
         portConfig.renderer = RAGE_RENDERER_MODERN;
     PortConfigSetActive(&portConfig);

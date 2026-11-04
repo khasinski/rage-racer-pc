@@ -64,6 +64,8 @@ typedef struct ModernUiRegion {
  * rectangles remain live VRAM; a transparent PNG is not a coverage mask. */
 int ModernAssetsResolveUiRegion(int scene,unsigned page,unsigned clut,int hud,
     unsigned u,unsigned v,unsigned width,unsigned height,ModernUiRegion *out);
+/* Budget guard applied before decoding any replacement PNG/WebP. */
+void ModernAssetsSetTextureOverridesEnabled(int enabled);
 int ModernAssetsSetHdPack(const char *root,const RageModManifest *manifest);
 
 /* Car-specific HUD bindings take precedence over shared HUD assets. */

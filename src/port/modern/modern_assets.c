@@ -26,6 +26,8 @@
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
 
+static int s_textureOverridesEnabled = 1;
+
 /* One entry per bank's first definition. More than one car may share a bank;
  * all matching replacements are assembled before the result is cached. */
 static RageRuntimeCachedMesh
@@ -604,6 +606,7 @@ int ModernAssetsReady(void) {
 static int ModernAssetsLoadRootPngFile(const char *root,const char *key,
                                       const char *relativePath,
                                       ModernAssetImage *image) {
+    if (!s_textureOverridesEnabled) return 0;
     char fullPath[1900];
     SDL_Surface *source = NULL, *converted = NULL;
     uint8_t *pixels = NULL;
@@ -1181,6 +1184,14 @@ int ModernAssetsLoadUiImage(const char *key,ModernAssetImage *image) {
  return path&&ModernAssetsLoadRootPngFile(s_modRoot,key,path,image);
 }
 
+void ModernAssetsSetTextureOverridesEnabled(int enabled) {
+    enabled = enabled != 0;
+    if (s_textureOverridesEnabled == enabled) return;
+    s_textureOverridesEnabled = enabled;
+    ModernPreparedMaterialsClear(&s_preparedMaterials);
+    s_generation++;
+}
+
 int ModernAssetsSetHdPack(const char *root,const RageModManifest *manifest) {
  RageModManifest *copy=NULL;
  if(root&&manifest){if(strlen(root)>=sizeof(s_hdRoot))return 0;copy=malloc(sizeof(*copy));if(!copy)return 0;*copy=*manifest;}
@@ -1189,7 +1200,7 @@ int ModernAssetsSetHdPack(const char *root,const RageModManifest *manifest) {
 }
 
 int ModernAssetsHasUiScene(int scene) {
- if(scene<0||scene>=40)return 0;
+ if(!s_textureOverridesEnabled||scene<0||scene>=40)return 0;
  char prefix[48];int n=snprintf(prefix,sizeof(prefix),"ui.scene.%d.",scene);
  const RageModManifest *layers[]={s_hdManifest,s_modReady?s_modManifest:NULL};
  for(size_t layer=0;layer<2;layer++)if(layers[layer]&&layers[layer]->error==RAGE_MOD_MANIFEST_OK&&layers[layer]->textureCount<=RAGE_MOD_MANIFEST_MAX_TEXTURES)
@@ -1213,6 +1224,7 @@ static int UiRegionNumbers(const char *text,unsigned values[4]) {
 }
 static int FindUiFamily(const char *family,unsigned u,unsigned v,unsigned w,unsigned h,ModernUiRegion *out) {
     const RageModManifest *layers[]={s_hdManifest,s_modReady?s_modManifest:NULL};
+    if(!s_textureOverridesEnabled)return 0;
     size_t prefix=strlen(family);
     for(size_t layer=0;layer<2;layer++) {
         const RageModManifest *m=layers[layer];

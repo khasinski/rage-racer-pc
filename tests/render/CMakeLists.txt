@@ -6,6 +6,12 @@ if(TARGET rage-racer-smoke)
         -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
         -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_brightness.cmake)
     set_tests_properties(modern_brightness PROPERTIES LABELS "e2e;gpu" TIMEOUT 310)
+    add_test(NAME memory_budget_render COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DFIXTURE=$<TARGET_FILE:native_asset_fixture>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_memory_budget.cmake)
+    set_tests_properties(memory_budget_render PROPERTIES LABELS "e2e;gpu" TIMEOUT 235)
 endif()
 add_executable(car_lights_tests car_lights_tests.c)
 target_link_libraries(car_lights_tests PRIVATE rage-render-world)

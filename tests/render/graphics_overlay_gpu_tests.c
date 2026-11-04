@@ -14,6 +14,7 @@
  * be driven directly; the host services it calls are replaced below. */
 #include "graphics_overlay.c"
 
+const RageMemoryBudget *MemoryBudgetGet(void){static const RageMemoryBudget budget={16384,8192,RAGE_MEMORY_NORMAL};return &budget;}
 void HdPackUiTick(struct OverlayModel *model){(void)model;}
 MainMenuState PortMainMenuState(void){return (MainMenuState){0};}
 void PortMainMenuPointer(int w,int h,float x,float y,int click){(void)w;(void)h;(void)x;(void)y;(void)click;}

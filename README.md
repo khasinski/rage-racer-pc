@@ -707,3 +707,11 @@ Esc → Mods also offers **Fast menus** (off by default). It doubles menu
 transition and selection animation speed, including the course/car carousel
 and customization screens. The choice is remembered; the INI key is
 `[mods] fast_menus = true`.
+
+RAM is detected automatically on PC and Android. Machines with up to 2 GiB use
+minimum graphics; up to 4 GiB use the low-memory profile. Low available physical
+memory and SDL/Android low-memory notifications can reduce the profile during
+play. Restricted profiles suspend replacement textures, reduce render targets,
+turn off shadows/SSAO and bound GPU work while keeping the modern renderer.
+Installed HD packs are preserved. See [memory profiles](docs/memory-budget.md)
+for thresholds, manual `[memory] profile` choices and validation results.

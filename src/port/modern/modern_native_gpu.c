@@ -1,3 +1,4 @@
+#include "../memory_budget.h"
 #include "shaders/lamp_glow_vert_spv.h"
 #include "shaders/lamp_glow_vert_msl.h"
 #include "shaders/lamp_glow_frag_spv.h"
@@ -1603,6 +1604,7 @@ static ModernResidentGeometry *ModernNativeResidentBuffer(
  * covers rotating wheels and later LODs. Only real instance palette/paint
  * identities are used. Track image banks are independent of those palettes. */
 static void ModernNativePreloadWorld(const RenderWorld *world) {
+    if (!MemoryBudgetAllowHd()) return;
     Uint64 started = SDL_GetTicksNS();
     unsigned before = s_textureIndex.count, banks = 0;
     SDL_GPUCommandBuffer *command = NULL;
@@ -1658,7 +1660,7 @@ static void ModernNativePreloadWorld(const RenderWorld *world) {
                 (void)ModernTextureIndexInsert(&attempted, &materialKey);
                 (void)ModernNativeLoadTexture(command, &span);
                 /* Bound temporary upload memory even with large HD packs. */
-                if (s_pendingUploads.count >= 16) {
+                if (s_pendingUploads.count >= (MemoryBudgetAllowHd() ? 16u : 2u)) {
                     SDL_SubmitGPUCommandBuffer(command);
                     SDL_WaitForGPUIdle(s_device);
                     ModernNativeReleasePendingUploads();
@@ -1673,7 +1675,7 @@ static void ModernNativePreloadWorld(const RenderWorld *world) {
                     RenderNativeMeshTemplateAcquire(&s_meshTemplates, mesh,
                                                      instance->assetSet, part);
                 if (source) (void)ModernNativeResidentBuffer(command, source);
-                if (s_pendingUploads.count >= 16) {
+                if (s_pendingUploads.count >= (MemoryBudgetAllowHd() ? 16u : 2u)) {
                     SDL_SubmitGPUCommandBuffer(command);
                     SDL_WaitForGPUIdle(s_device);
                     ModernNativeReleasePendingUploads();
@@ -1707,7 +1709,7 @@ static void ModernNativeWarmTrackBank(SDL_GPUCommandBuffer *command) {
         const char *value = RuntimeConfigGet("diagnostics.texture_prewarm");
         enabled = value == NULL || RuntimeConfigEnabled("diagnostics.texture_prewarm");
     }
-    if (!enabled) return;
+    if (!enabled || !MemoryBudgetAllowHd()) return;
     Uint64 start = SDL_GetTicksNS();
     unsigned loads = 0, visited = 0;
     while (s_textureWarmCursor < s_textureIndex.count && loads < 2 && visited++ < 64) {
