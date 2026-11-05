@@ -8,15 +8,29 @@ RPM, gearing, car specifications, physics or AI. The circular scale is RPM.
 
 ## Scope
 
-PAL AGE Erriso (car 0) and Lizard Esperanza (car 3) are supported. Other cars
-and disc regions retain their retail units, including the digits. This is a
-visual feasibility experiment, not a complete option for all thirteen cars.
+All thirteen PAL cars are supported. Other disc regions retain their retail
+units, including the digits, until their artwork can be measured and tested.
+This is a visual feasibility experiment with a startup selector.
 
 Select the mode at startup with `--set poc.speed_units=auto`, `kmh` or `mph`.
 The default `auto` performs no bitmap writes and preserves regional rounding.
-PAL `kmh` preserves the original `km` / `km/h` artwork. `mph` clears only the
-label rectangle and composes a compact pixel glyph from C masks. AGE needs
-all fifteen available pixels before the separate gear indicator.
+PAL `kmh` preserves the original artwork. Each dial has its own measured
+label rectangle, height, italic/bold treatment and spelling. `mph` clears
+only that rectangle and composes compact pixel glyphs from C masks.
+
+| Cars | Original | Imperial | Height |
+| --- | --- | --- | --- |
+| 0, 8 | `km` | `mi` | 7 px, italic |
+| 2 | `km` | `mi` | 3 px |
+| 4 | `km` | `mi` | 4 px |
+| 1, 3, 6, 7, 11, 12 | `km/h` | `mi/h` | 7 px, italic |
+| 5 | `km/h` | `mi/h` | 7 px, upright |
+| 9, 10 | no label | no label | digits only |
+
+The glyph composer also supports slashless `mph` for future `kmh` layouts;
+none of the thirteen measured PAL originals uses slashless `kmh`. Metric
+labels are never normalized to a common spelling. Car 2's metal-pattern
+background is reconstructed with a matching four-pixel tile, not a flat fill.
 
 Both Classic and Modern use the patched original 4bpp face. Modern HD image
 loading also patches the corresponding car-specific dial replacement, at its
@@ -26,8 +40,8 @@ from the image. The tested HD assets are Esperanza's 384×376 day/night faces
 disk are unchanged. Low-memory mode continues to use the patched original.
 
 This prototype has no in-game selector. Changing units requires a restart.
-Arbitrary third-party HUD layouts, noninteger scaling, generic HUD keys and
-the remaining eleven cars need explicit layout support before release.
+Arbitrary third-party HUD layouts, noninteger scaling and generic HUD keys
+need explicit layout support before release.
 
 ## Verification
 
@@ -41,8 +55,21 @@ ctest --test-dir build/release \
 ```
 
 The regional test checks conversions and limits, unsupported cars/regions,
-unchanged rival state over 300 ticks, exact indexed-pixel patch boundaries,
-scaled RGBA patch boundaries and unchanged alpha.
+unchanged rival state over 300 ticks, exact indexed-pixel patch boundaries
+for all thirteen cars, grayscale shadow selection, and both full-page and
+cropped HD surfaces at 1×/4× with both palettes and unchanged alpha.
+
+An opt-in real-game test captures every car with `auto` and `mph` and checks
+that final simulation diagnostics match:
+
+```sh
+cmake -DGAME="$PWD/build/release/rage-racer-smoke" -DSOURCE="$PWD" \
+  -DOUTPUT_ROOT="$PWD/build/reports/speed-units" \
+  -P tests/render/verify_speed_units_poc.cmake
+```
+
+Optionally pass `-DHD_MOD=/absolute/path/to/pack` to capture Esperanza with HD.
+The test needs the legally supplied PAL disc at `disc/PAL/Rage Racer (Europe).cue`.
 
 Real GPU captures use `PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy`, deterministic
 input (`input.state_script=12@177-450:CROSS`), seed 1 and scene 12 timer 430.
@@ -53,6 +80,12 @@ Modern original, Modern HD, Classic and the class-3 night HD captures have
 zero RGB differences outside the tachometer area between unit modes. The
 night capture resolves CLUT 13288 and the actual night HD face.
 
-Before release: map the remaining original dials and regional variants,
+The expanded run captured all thirteen cars with `auto`/`mph` (26 frames),
+with identical simulation diagnostics and zero RGB differences outside the
+tachometer. Additional real captures cover the 3px/4px Pegase and Acceron
+labels in Classic and Esperanza's night HD replacement. These results are in
+`build/reports/speed-units/speed-units-all/`, `speed-units-classic/` and `poc/`.
+
+Before release: map regional variants,
 define HD layout metadata, add the persisted Options selector, invalidate HD
 caches when changing units live, and verify replay, retries and car changes.
