@@ -1,5 +1,9 @@
 # Speed units prototype
 
+Status: the generated-font visual approach was rejected. Its committed
+prototype is retained for comparison while the replacement is developed;
+see [the retail reference diff workflow](hud-unit-reference-diff.md).
+
 Branch: `poc/speed-units`. Starting snapshot: `7f3749d82`.
 
 The prototype replaces the baked unit label in the tachometer bitmap at car
