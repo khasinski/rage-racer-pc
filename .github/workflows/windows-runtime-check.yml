@@ -188,6 +188,12 @@ jobs:
           $icd = Get-ChildItem "$tools/mesa/x64" -Recurse -Filter "lvp_icd*.json" | Select-Object -First 1
           if (-not $icd) { throw "lavapipe ICD not found in $asset" }
           Get-Content $icd.FullName | Out-Host
+          # The runner account is elevated, and the Vulkan loader ignores
+          # VK_DRIVER_FILES in elevated processes. Register the ICD the way a
+          # driver installer does on this ephemeral VM.
+          $key = "HKLM:\SOFTWARE\Khronos\Vulkan\Drivers"
+          New-Item -Path $key -Force | Out-Null
+          New-ItemProperty -Path $key -Name $icd.FullName -PropertyType DWord -Value 0 -Force | Out-Null
           "VK_DRIVER_FILES=$($icd.FullName)" >> $env:GITHUB_ENV
           "VK_ICD_FILENAMES=$($icd.FullName)" >> $env:GITHUB_ENV
           Write-Host "Using $asset with $($icd.FullName)"
