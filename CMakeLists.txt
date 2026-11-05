@@ -782,8 +782,12 @@ if(RAGE_BUILD_PORT)
         )
     endif()
     if(WIN32)
+        configure_file(packaging/windows/rage-racer-version.h.in
+            "${CMAKE_CURRENT_BINARY_DIR}/generated/windows/rage-racer-version.h" @ONLY)
         target_sources(rage-racer PRIVATE
             packaging/windows/rage-racer.rc)
+        target_include_directories(rage-racer PRIVATE
+            "${CMAKE_CURRENT_BINARY_DIR}/generated/windows")
         # Electron passes Unicode paths; native argv and narrow filesystem APIs
         # must use the same UTF-8 encoding (Windows 10 1903 or newer).
         if(MSVC)

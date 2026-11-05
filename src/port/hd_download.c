@@ -13,14 +13,23 @@ int HdDownloadInstall(const char *base,const char *store,const char *region,HdDo
 
 #include "yyjson.h"
 #include <SDL3/SDL.h>
-/* WinSock's 32-bit u_long differs from the pointer-width PS1 compatibility
- * typedef pulled in by SDL's system headers. Keep its declaration local. */
 #ifdef _WIN32
+/* Windows uses the operating system's WinHTTP stack instead of a statically
+ * linked curl/Schannel/WinSock client. The bundled client made the game
+ * executable look like a self-contained downloader to Microsoft Defender's
+ * machine-learning heuristics (Trojan:Win32/Wacatac.C!ml false positive in
+ * 0.6.14) and duplicated TLS, proxy and certificate handling that Windows
+ * already provides. WinSock's 32-bit u_long differs from the pointer-width
+ * PS1 compatibility typedef, so keep any declaration local. */
 #define u_long RageDownloadWinULong
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #endif
-#include <curl/curl.h>
-#ifdef _WIN32
+#include <windows.h>
+#include <winhttp.h>
 #undef u_long
+#else
+#include <curl/curl.h>
 #endif
 
 #include <stdio.h>
@@ -80,9 +89,72 @@ static size_t writeBytes(char *data,size_t a,size_t b,void *context) {
     if(n>sizeof(t->catalog)-1-t->used)return 0;
     memcpy(t->catalog+t->used,data,n);t->used+=n;t->catalog[t->used]=0;return n;
 }
-static int tick(void *context,curl_off_t total,curl_off_t now,curl_off_t up,curl_off_t sent) {
-    (void)total;(void)now;(void)up;(void)sent;Transfer *t=context;
+static int cancelled(Transfer *t) {
     return t->progress&&!t->progress(t->context,t->file?"Downloading":"Checking for updates",t->written,t->size);
+}
+#ifdef _WIN32
+#define USER_AGENT L"RageRacer/0.6 (HD packs)"
+enum { CONNECT_TIMEOUT_MS=10000, STALL_TIMEOUT_MS=60000 };
+static const Uint64 TRANSFER_TIMEOUT_MS=UINT64_C(7200000);
+static int transportInit(void) { return 1; }
+static void transportCleanup(void) {}
+static wchar_t *widen(const char *text) {
+    int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,text,-1,NULL,0);
+    wchar_t *wide=n>0?SDL_malloc((size_t)n*sizeof(*wide)):NULL;
+    if(wide&&MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,text,-1,wide,n)!=n){SDL_free(wide);wide=NULL;}
+    return wide;
+}
+/* Same contract as the curl transport: HTTPS with certificate and host-name
+ * validation, explicit loopback HTTP only after baseOK, no redirects, 10 s
+ * connect timeout, a 60 s stall limit, a two-hour ceiling and success only for
+ * a complete 200 response. */
+static int request(const char *url,Transfer *t) {
+    HINTERNET session=NULL,connection=NULL,handle=NULL;
+    wchar_t *wide=widen(url),host[256];char *buffer=NULL;int ok=0;
+    URL_COMPONENTS parts;DWORD policy=WINHTTP_OPTION_REDIRECT_POLICY_NEVER;
+    DWORD status=0,length=sizeof(status);const Uint64 started=SDL_GetTicks();
+    if(!wide)return 0;
+    memset(&parts,0,sizeof(parts));parts.dwStructSize=sizeof(parts);
+    parts.lpszHostName=host;parts.dwHostNameLength=(DWORD)(sizeof(host)/sizeof(host[0]));
+    parts.dwUrlPathLength=(DWORD)-1;parts.dwExtraInfoLength=(DWORD)-1;
+    if(!WinHttpCrackUrl(wide,0,0,&parts)||!host[0])goto done;
+    if(parts.nScheme!=INTERNET_SCHEME_HTTPS&&parts.nScheme!=INTERNET_SCHEME_HTTP)goto done;
+#ifdef WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY
+    session=WinHttpOpen(USER_AGENT,WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0);
+#endif
+    /* Windows 8 and older do not know the automatic proxy access type. */
+    if(!session)session=WinHttpOpen(USER_AGENT,WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0);
+    if(!session||!WinHttpSetTimeouts(session,CONNECT_TIMEOUT_MS,CONNECT_TIMEOUT_MS,STALL_TIMEOUT_MS,STALL_TIMEOUT_MS))goto done;
+    connection=WinHttpConnect(session,host,parts.nPort,0);if(!connection)goto done;
+    handle=WinHttpOpenRequest(connection,L"GET",parts.dwUrlPathLength?parts.lpszUrlPath:L"/",NULL,
+        WINHTTP_NO_REFERER,WINHTTP_DEFAULT_ACCEPT_TYPES,parts.nScheme==INTERNET_SCHEME_HTTPS?WINHTTP_FLAG_SECURE:0);
+    if(!handle||!WinHttpSetOption(handle,WINHTTP_OPTION_REDIRECT_POLICY,&policy,sizeof(policy)))goto done;
+    if(cancelled(t))goto done;
+    if(!WinHttpSendRequest(handle,WINHTTP_NO_ADDITIONAL_HEADERS,0,WINHTTP_NO_REQUEST_DATA,0,0,0)||
+       !WinHttpReceiveResponse(handle,NULL))goto done;
+    if(!WinHttpQueryHeaders(handle,WINHTTP_QUERY_STATUS_CODE|WINHTTP_QUERY_FLAG_NUMBER,
+                            WINHTTP_HEADER_NAME_BY_INDEX,&status,&length,WINHTTP_NO_HEADER_INDEX)||status!=200)goto done;
+    buffer=SDL_malloc(65536);if(!buffer)goto done;
+    for(;;){
+        DWORD got=0;
+        if(cancelled(t)||SDL_GetTicks()-started>TRANSFER_TIMEOUT_MS)goto done;
+        if(!WinHttpReadData(handle,buffer,65536,&got))goto done;
+        if(!got)break;
+        if(writeBytes(buffer,1,got,t)!=got)goto done;
+    }
+    ok=1;
+done:
+    SDL_free(buffer);
+    if(handle)WinHttpCloseHandle(handle);
+    if(connection)WinHttpCloseHandle(connection);
+    if(session)WinHttpCloseHandle(session);
+    SDL_free(wide);return ok;
+}
+#else
+static int transportInit(void) { return curl_global_init(CURL_GLOBAL_DEFAULT)==CURLE_OK; }
+static void transportCleanup(void) { curl_global_cleanup(); }
+static int tick(void *context,curl_off_t total,curl_off_t now,curl_off_t up,curl_off_t sent) {
+    (void)total;(void)now;(void)up;(void)sent;return cancelled(context);
 }
 static int request(const char *url,Transfer *t) {
     CURL *c=curl_easy_init();if(!c)return 0;
@@ -100,6 +172,7 @@ static int request(const char *url,Transfer *t) {
     CURLcode result=curl_easy_perform(c);long status=0;curl_easy_getinfo(c,CURLINFO_RESPONSE_CODE,&status);
     curl_easy_cleanup(c);return result==CURLE_OK&&status==200;
 }
+#endif
 static int installProgress(void *context,int percent) {
     Transfer *t=context;return !t->progress||t->progress(t->context,"Installing and verifying",(uint64_t)percent,100);
 }
@@ -112,7 +185,7 @@ int HdDownloadInstall(const char *base,const char *store,const char *region,
     Transfer t={0};int ok=0,initialized=0;t.progress=progress;t.context=context;
     if(error&&cap)SDL_strlcpy(error,"Download failed or cancelled. Previous pack kept.",cap);
     if(!baseOK(base)) {if(error&&cap)SDL_strlcpy(error,"HD download server is not configured.",cap);return 0;}
-    if(curl_global_init(CURL_GLOBAL_DEFAULT)!=CURLE_OK){goto done;}initialized=1;
+    if(!transportInit()){goto done;}initialized=1;
     snprintf(url,sizeof(url),"%s/api/mods/hd/%s/latest",base,region);
     if(!request(url,&t)||!HdDownloadParseCatalog(t.catalog,t.used,base,region,&release)) {
         if(error&&cap){SDL_strlcpy(error,"Could not read a compatible HD release. Previous pack kept.",cap);}goto done;
@@ -133,7 +206,7 @@ int HdDownloadInstall(const char *base,const char *store,const char *region,
 done:
     if(t.file)SDL_CloseIO(t.file);
     if(*archive)SDL_RemovePath(archive);
-    if(initialized){curl_global_cleanup();}return ok;
+    if(initialized){transportCleanup();}return ok;
 }
 
 #endif

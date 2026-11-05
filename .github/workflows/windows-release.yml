@@ -37,6 +37,23 @@ jobs:
         run: >-
           ctest --test-dir build/release -C Release --output-on-failure
           -L '^(unit|functional)$' --parallel 4
+      - name: Verify executable imports and metadata
+        shell: pwsh
+        run: |
+          # Keep the game free of a bundled socket/TLS client (the 0.6.14
+          # Defender false positive) and identifiable by its version resource.
+          $exe = "build/release/Release/rage-racer.exe"
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $dumpbin = & $vswhere -latest -products * -find "VC\Tools\MSVC\**\bin\Hostx64\x64\dumpbin.exe" | Select-Object -First 1
+          $imports = (& $dumpbin /nologo /dependents $exe) |
+            Where-Object { $_ -match '^\s+\S+\.(dll|DLL)\s*$' } | ForEach-Object { $_.Trim().ToLowerInvariant() }
+          $imports | ForEach-Object { Write-Host "  $_" }
+          $hits = $imports | Where-Object { @('ws2_32.dll','crypt32.dll','secur32.dll','iphlpapi.dll','bcrypt.dll','wininet.dll','urlmon.dll') -contains $_ }
+          if ($hits) { throw "rage-racer.exe must not import: $($hits -join ', ')" }
+          $info = (Get-Item $exe).VersionInfo
+          if ($info.ProductName -ne 'Rage Racer PC' -or $info.ProductVersion -ne '${{ inputs.version || github.ref_name }}') {
+            throw "rage-racer.exe version metadata does not match the release ($($info.ProductVersion))"
+          }
       - name: Build standalone editor package
         working-directory: launcher
         shell: pwsh

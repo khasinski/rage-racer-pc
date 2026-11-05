@@ -2173,7 +2173,7 @@ target_include_directories(modern_image_tests PRIVATE ${PROJECT_SOURCE_DIR}/src 
 target_link_libraries(modern_image_tests PRIVATE rage-hd-image webp)
 add_test(NAME modern_image COMMAND modern_image_tests)
 set_tests_properties(modern_image PROPERTIES LABELS unit TIMEOUT 30)
-if(UNIX AND NOT ANDROID)
+if(NOT ANDROID)
     add_executable(hd_download_tests hd_download_tests.c
         ${PROJECT_SOURCE_DIR}/src/port/hd_download.c ${PROJECT_SOURCE_DIR}/src/port/hd_pack.c)
     target_include_directories(hd_download_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
