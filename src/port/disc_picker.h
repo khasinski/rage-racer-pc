@@ -15,5 +15,8 @@
  */
 int HostShowDiscPicker(char *path, size_t size);
 void HostShowErrorDialog(const char *title, const char *message);
+/* Returns 1 when SDL can create a GPU device for the renderer's SPIR-V/MSL
+ * shaders (Vulkan or Metal), 0 when no backend is usable on this machine. */
+int HostGpuBackendAvailable(void);
 
 #endif

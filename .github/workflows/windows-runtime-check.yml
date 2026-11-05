@@ -122,17 +122,18 @@ jobs:
           Write-Host "New build scan exit code: $code"
           if ($code -eq 2) { throw "Microsoft Defender flags the new Rage-Racer.exe" }
 
-      - name: Packaged first launch without a disc
+      - name: Prepare packaged launch probes
         shell: pwsh
         run: |
-          # The release executable must fail with an actionable message, not
-          # crash or hang, when no disc image is available and dialogs are
-          # suppressed. Run from a directory whose name has spaces and Polish
-          # characters to cover the UTF-8 code-page manifest.
+          # Run from a directory whose name has spaces and Polish characters
+          # to cover the UTF-8 code-page manifest.
           $unicode = Join-Path $env:RUNNER_TEMP "Gra Żółć test"
           New-Item -ItemType Directory -Force $unicode | Out-Null
           Copy-Item "$env:RAGE_PACKAGE/*" $unicode -Recurse -Force
-          function Launch($label, $arguments, $expect) {
+          "RAGE_UNICODE_DIR=$unicode" >> $env:GITHUB_ENV
+          $helper = @'
+          function Launch($label, $arguments, $expect, $reject) {
+            $unicode = $env:RAGE_UNICODE_DIR
             $stdout = Join-Path $env:RUNNER_TEMP "$label.out.txt"
             $stderr = Join-Path $env:RUNNER_TEMP "$label.err.txt"
             # diagnostics.log takes a file path; the game redirects stderr there.
@@ -150,14 +151,18 @@ jobs:
             }
             if ($p.ExitCode -eq 0) { throw "$label unexpectedly succeeded without retail data" }
             if ($text -notmatch $expect) { throw "$label did not report: $expect" }
+            if ($reject -and $text -match $reject) { throw "$label unexpectedly reported: $reject" }
           }
-          Launch "no-disc" @() "disc picker suppressed|No Rage Racer disc image"
-          # A non-disc file renamed .bin must be rejected by content, which
-          # proves the UTF-8 path was opened rather than mis-encoded.
-          $fake = Join-Path $unicode "Zła płyta.bin"
-          [IO.File]::WriteAllBytes($fake, (New-Object byte[] (2352 * 32)))
-          Launch "invalid-bin" @("--set", "disc.cue=`"$fake`"") "valid PlayStation|ISO-9660"
-          Launch "missing-disc" @("--set", "disc.cue=`"$unicode\brak.cue`"") "Cannot find or read"
+          '@
+          Set-Content -Path (Join-Path $env:RUNNER_TEMP "launch.ps1") -Value $helper -Encoding UTF8
+
+      - name: Packaged first launch without Vulkan
+        shell: pwsh
+        run: |
+          # Hosted runners have no GPU driver. Up to 0.6.14 the game kept
+          # running without a window here; it must explain the requirement.
+          . (Join-Path $env:RUNNER_TEMP "launch.ps1")
+          Launch "no-vulkan" @() "graphics driver with Vulkan support" $null
 
       - name: Install Vulkan loader and Mesa lavapipe
         shell: pwsh
@@ -171,7 +176,10 @@ jobs:
             cmake -S "$tools/loader-src" -B "$tools/loader-build" -A x64 -DUPDATE_DEPS=ON -DBUILD_TESTS=OFF
             cmake --build "$tools/loader-build" --config Release --parallel
             $loader = Get-ChildItem "$tools/loader-build" -Recurse -Filter vulkan-1.dll | Select-Object -First 1
-            "RAGE_VULKAN_LOADER=$($loader.FullName)" >> $env:GITHUB_ENV
+            # Test-only: placed next to test executables, never in the package.
+            Copy-Item $loader.FullName $env:RAGE_UNICODE_DIR -Force
+            Get-ChildItem build/release -Recurse -Directory -Filter Release |
+              ForEach-Object { Copy-Item $loader.FullName $_.FullName -Force }
           }
           $asset = gh release view -R pal1000/mesa-dist-win --json assets --jq '.assets[].name' |
             Where-Object { $_ -match '^mesa3d-.*-release-msvc\.7z$' } | Select-Object -First 1
@@ -179,32 +187,49 @@ jobs:
           7z x "$tools/$asset" "-o$tools/mesa" -y | Out-Null
           $icd = Get-ChildItem "$tools/mesa/x64" -Recurse -Filter "lvp_icd*.json" | Select-Object -First 1
           if (-not $icd) { throw "lavapipe ICD not found in $asset" }
+          Get-Content $icd.FullName | Out-Host
           "VK_DRIVER_FILES=$($icd.FullName)" >> $env:GITHUB_ENV
           "VK_ICD_FILENAMES=$($icd.FullName)" >> $env:GITHUB_ENV
           Write-Host "Using $asset with $($icd.FullName)"
+
+      - name: Packaged first launch without a disc (Vulkan available)
+        shell: pwsh
+        env:
+          VK_LOADER_DEBUG: error,warn,driver
+          SDL_LOGGING: "gpu=debug"
+        run: |
+          # The release executable must fail with an actionable message, not
+          # crash or hang, when no disc image is available and dialogs are
+          # suppressed.
+          . (Join-Path $env:RUNNER_TEMP "launch.ps1")
+          $vulkan = "graphics driver with Vulkan support"
+          Launch "no-disc" @() "disc picker suppressed|No Rage Racer disc image" $vulkan
+          # A non-disc file renamed .bin must be rejected by content, which
+          # proves the UTF-8 path was opened rather than mis-encoded.
+          $fake = Join-Path $env:RAGE_UNICODE_DIR "Zła płyta.bin"
+          [IO.File]::WriteAllBytes($fake, (New-Object byte[] (2352 * 32)))
+          Launch "invalid-bin" @("--set", "disc.cue=`"$fake`"") "valid PlayStation|ISO-9660" $vulkan
+          Launch "missing-disc" @("--set", "disc.cue=`"$env:RAGE_UNICODE_DIR\brak.cue`"") "Cannot find or read" $vulkan
 
       - name: Modern renderer smoke on Vulkan (lavapipe)
         shell: pwsh
         run: |
           $bin = "build/release/Release"
-          if ($env:RAGE_VULKAN_LOADER) { Copy-Item $env:RAGE_VULKAN_LOADER $bin -Force }
           $log = Join-Path $env:RUNNER_TEMP "smoke.log"
           $p = Start-Process -FilePath "$bin/rage-racer-smoke.exe" -NoNewWindow -PassThru `
             -ArgumentList @("--set","video.renderer=modern","--set","boot.direct=false","--set","race.enabled=false",
-                            "--set","run.frames=600","--set","diagnostics.log=`"$log`"") `
+                            "--set","run.frames=600") `
             -RedirectStandardOutput "$log.out" -RedirectStandardError "$log.err"
           if (-not $p.WaitForExit(300000)) { $p.Kill(); throw "smoke run hung" }
-          $text = (Get-Content "$log.out" -Raw) + (Get-Content "$log.err" -Raw) + (Get-Content $log -Raw -ErrorAction SilentlyContinue)
+          $text = (Get-Content "$log.out" -Raw) + (Get-Content "$log.err" -Raw)
           Write-Host $text
           if ($p.ExitCode -ne 0) { throw ("smoke run failed with exit code 0x{0:X}" -f $p.ExitCode) }
           if ($text -notmatch "(?i)driver vulkan") { throw "modern renderer did not start on Vulkan" }
+          if ($text -match "Invalid GPU device") { throw "renderer ran without a GPU device" }
 
       - name: GPU and end-to-end tests on lavapipe
         shell: pwsh
         run: |
-          $bin = "build/release/Release"
-          Get-ChildItem build/release -Recurse -Directory -Filter Release |
-            ForEach-Object { if ($env:RAGE_VULKAN_LOADER) { Copy-Item $env:RAGE_VULKAN_LOADER $_.FullName -Force } }
           ctest --test-dir build/release -C Release --output-on-failure -L '^(gpu|e2e)$' --timeout 600 --output-junit e2e-junit.xml
           if ($LASTEXITCODE -ne 0) { throw "Windows GPU/e2e tests failed" }
 

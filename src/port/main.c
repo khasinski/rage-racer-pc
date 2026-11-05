@@ -96,6 +96,16 @@ static ArchiveDumpResult DumpRequestedArchive(void) {
     return ARCHIVE_DUMP_COMPLETE;
 }
 
+/* PsyZ creates the GPU device lazily and keeps the game loop running when
+ * that fails. Without a usable Vulkan (Windows/Linux) or Metal driver the
+ * player would get no window and no explanation, only a background process,
+ * so check for a backend before the renderer starts. Test executables keep
+ * their existing no-GPU behavior. */
+static int GpuBackendAvailable(void) {
+    if (RuntimeConfigEnabled("runtime.test_mode")) return 1;
+    return HostGpuBackendAvailable();
+}
+
 #ifdef __ANDROID__
 __attribute__((visibility("default")))
 #endif
@@ -169,6 +179,24 @@ int main(int argc, char **argv) {
                    ? EXIT_SUCCESS
                    : EXIT_FAILURE;
     }
+    /* Before the disc picker: a player whose machine cannot render should
+     * learn that first, not after choosing a disc image. Disc-only tools do
+     * not render and may run on machines without a GPU. */
+    if (!RuntimeConfigEnabled("tools.car_catalog") &&
+        !RuntimeConfigGet("tools.car_export") && !GpuBackendAvailable())
+        return ReportStartupError(
+            logPath,
+#ifdef __APPLE__
+            "Rage Racer could not create a Metal graphics device.\n"
+            "Update macOS and make sure the game is not running in a "
+            "virtual machine without GPU acceleration."
+#else
+            "Rage Racer needs a graphics driver with Vulkan support, and "
+            "none was found.\n\nInstall the latest graphics driver from "
+            "NVIDIA, AMD or Intel. Remote Desktop sessions, basic display "
+            "drivers and some virtual machines do not provide Vulkan."
+#endif
+        );
     if (!HostInitDisc()) {
         fprintf(stderr, "failed to initialize disc image\n");
         if (HostDiscUserCancelled()) return EXIT_FAILURE;

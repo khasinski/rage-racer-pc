@@ -101,3 +101,19 @@ void HostShowErrorDialog(const char *title, const char *message) {
         fprintf(stderr, "rage-port: error dialog failed: %s\n", SDL_GetError());
     }
 }
+
+int HostGpuBackendAvailable(void) {
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+        fprintf(stderr, "rage-port: video initialization failed: %s\n",
+                SDL_GetError());
+        return 0;
+    }
+    /* The video subsystem stays initialized for PsyZ, which uses it next. */
+    if (!SDL_GPUSupportsShaderFormats(
+            SDL_GPU_SHADERFORMAT_SPIRV | SDL_GPU_SHADERFORMAT_MSL, NULL)) {
+        fprintf(stderr, "rage-port: no usable SDL GPU backend: %s\n",
+                SDL_GetError());
+        return 0;
+    }
+    return 1;
+}
