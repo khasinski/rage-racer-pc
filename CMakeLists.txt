@@ -191,6 +191,7 @@ add_library(rage-rmesh STATIC
     src/render/asset_path.c
     src/render/render_material.c
     src/render/texture_mipmap.c
+    src/render/speed_units_poc.c
     src/render/rmesh.c
     src/render/rmesh_replace.c
     src/render/rmesh_index.c
@@ -385,6 +386,7 @@ if(RAGE_BUILD_PORT)
         src/port/disc_stream_table.c
         src/port/hud_config.c
         src/port/speed_display.c
+        src/port/speed_units_poc.c
         src/port/mod_assets.c
         src/port/hd_pack.c
         src/port/hd_pack_ui.c

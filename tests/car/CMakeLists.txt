@@ -27,10 +27,12 @@ set_tests_properties(car_catalog PROPERTIES LABELS unit)
 add_executable(regional_speed_units_tests
     regional_speed_units_tests.c
     ${CMAKE_SOURCE_DIR}/src/port/speed_display.c
+    ${CMAKE_SOURCE_DIR}/src/render/speed_units_poc.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_ai_setup.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_target_speed.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/car/rival_acceleration.c)
 target_include_directories(regional_speed_units_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)

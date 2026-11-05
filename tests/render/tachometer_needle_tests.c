@@ -6,6 +6,7 @@
 #include "game/render_internal.h"
 
 static GameCarSpec s_CarSpec;
+void PortSpeedUnitsPrepare(void) {}
 GameCarSpec *g_CarSpec = &s_CarSpec;
 GameFrameContext g_FrameContexts[2];
 GameSpriteDesc g_TachoNeedleSprite;

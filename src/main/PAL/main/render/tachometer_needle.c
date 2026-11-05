@@ -1,8 +1,10 @@
 #include "game/car.h"
 #include "game/render.h"
 #include "game/render_internal.h"
+#include "rage/speed_display.h"
 
 void BuildTachoNeedleQuad(void) {
+    PortSpeedUnitsPrepare();
     CarTachometerSpec *spec = &g_CarSpec->tachometer;
     RaceHudPackets *hud0 = &g_FrameContexts[0].layout.raceHud;
     RaceHudPackets *hud1 = &g_FrameContexts[1].layout.raceHud;

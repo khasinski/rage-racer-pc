@@ -3,6 +3,7 @@
 #include "game/race.h"
 #include "game/track.h"
 #include "rage/speed_display.h"
+#include "render/speed_units_poc.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -24,6 +25,59 @@ int main(void) {
     static GameCarRuntime reference[300];
     const char *regions[] = {"PAL", "NTSC-U", "NTSC-J"};
     RaceGridSlot grid[RACE_CAR_SLOT_COUNT] = {0};
+    {
+        static uint8_t rgba[384 * 376 * 4], original[sizeof(rgba)];
+        uint16_t face[24 * 94], before[24 * 94], palette[16] = {0};
+        s_region = "PAL";
+        for (int car = 0; car <= 3; car += 3) {
+            int y0 = car == 0 ? 6 : 7, width = car == 0 ? 15 : 26;
+            for (unsigned i = 0; i < sizeof(face)/sizeof(face[0]); ++i) face[i] = 0x1111;
+            palette[1] = 0x0421; palette[2] = 0x7fff;
+            face[y0 * 24 + 17] = 0x2222;
+            memcpy(before, face, sizeof(face));
+            RageSpeedUnitsConfigure(car, "PAL", "auto");
+            RageSpeedUnitsPatchIndexed(face, palette);
+            CHECK(!memcmp(before, face, sizeof(face)));
+            RageSpeedUnitsConfigure(car, "PAL", "mph");
+            CHECK(SpeedDisplayValue(1168) == 100);
+            CHECK(SpeedDisplayValue(-1) == 0);
+            CHECK(SpeedDisplayValue(1000000) == 999);
+            RageSpeedUnitsPatchIndexed(face, palette);
+            CHECK(memcmp(before, face, sizeof(face)));
+            for (int y = 0; y < 94; ++y) for (int x = 0; x < 96; ++x) {
+                unsigned shift = (unsigned)(x & 3) * 4u;
+                if (x >= 65 && x < 65 + width && y >= y0 && y < y0 + 7) continue;
+                CHECK(((face[y*24+x/4] ^ before[y*24+x/4]) & (15u << shift)) == 0);
+            }
+        }
+        /* Scaled HD patch: preserve every pixel outside the label and alpha. */
+        memset(rgba, 17, sizeof(rgba));
+        memset(rgba + (7 * 4 * 384 + 68 * 4) * 4, 200, 4);
+        memcpy(original, rgba, sizeof(rgba));
+        RageSpeedUnitsPatchRGBA("ui.hud.car.3.page.10.clut.13224.region.0.112.96.94", rgba, 384, 376);
+        CHECK(memcmp(original, rgba, sizeof(rgba)));
+        for (int y = 0; y < 376; ++y) for (int x = 0; x < 384; ++x) {
+            int i = (y * 384 + x) * 4;
+            CHECK(rgba[i+3] == original[i+3]);
+            if (x >= 65*4 && x < 91*4 && y >= 7*4 && y < 14*4) continue;
+            CHECK(!memcmp(rgba+i, original+i, 4));
+        }
+        memcpy(rgba, original, sizeof(rgba));
+        RageSpeedUnitsPatchRGBA("ui.hud.car.4.page.10.clut.13224.region.0.112.96.94", rgba, 384, 376);
+        CHECK(!memcmp(original, rgba, sizeof(rgba)));
+        RageSpeedUnitsPatchRGBA("ui.hud.car.3.page.10.clut.13224.region.0.112.96.94", rgba, 383, 376);
+        CHECK(!memcmp(original, rgba, sizeof(rgba)));
+        RageSpeedUnitsConfigure(3, "PAL", "kmh");
+        CHECK(SpeedDisplayValue(1168) == 160);
+        RageSpeedUnitsConfigure(4, "PAL", "mph");
+        CHECK(RageSpeedUnits() == RAGE_UNITS_AUTO);
+        CHECK(SpeedDisplayValue(1168) == 160);
+        RageSpeedUnitsConfigure(3, "NTSC-U", "kmh");
+        s_region = "NTSC-U";
+        CHECK(RageSpeedUnits() == RAGE_UNITS_AUTO);
+        CHECK(SpeedDisplayValue(1168) == 100);
+        RageSpeedUnitsConfigure(3, "PAL", "auto");
+    }
     s_events.rivalAiConfigs[0][0].speed = 160;
     s_events.rivalAiConfigs[0][0].accelerationStep = 5;
     s_events.aiSpeedKeys[0][0].progress = 32;

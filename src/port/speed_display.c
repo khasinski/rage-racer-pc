@@ -1,5 +1,6 @@
 #include "rage/speed_display.h"
 #include "host_disc.h"
+#include "render/speed_units_poc.h"
 #include <stdint.h>
 #include <string.h>
 
@@ -11,6 +12,8 @@ int SpeedDisplayValue(int internalSpeed) {
      * truncate km/h, then multiply by 100 and divide by 160 for mph.
      * Preserve retail rounding rather than combining the two divisions.
      * This follows disc identity, independently of a timing override. */
-    if (region && strcmp(region, "NTSC-U") == 0) value = value * 100 / 160;
+    if (RageSpeedUnits() == RAGE_UNITS_MPH ||
+        (RageSpeedUnits() == RAGE_UNITS_AUTO && region &&
+         strcmp(region, "NTSC-U") == 0)) value = value * 100 / 160;
     return value < 999 ? (int)value : 999;
 }
