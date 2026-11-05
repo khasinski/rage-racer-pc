@@ -194,7 +194,7 @@ jobs:
                             "--set","run.frames=600","--set","diagnostics.log=`"$log`"") `
             -RedirectStandardOutput "$log.out" -RedirectStandardError "$log.err"
           if (-not $p.WaitForExit(300000)) { $p.Kill(); throw "smoke run hung" }
-          $text = (Get-Content "$log.out" -Raw) + (Get-Content "$log.err" -Raw) + (Get-Content $log -Raw)
+          $text = (Get-Content "$log.out" -Raw) + (Get-Content "$log.err" -Raw) + (Get-Content $log -Raw -ErrorAction SilentlyContinue)
           Write-Host $text
           if ($p.ExitCode -ne 0) { throw ("smoke run failed with exit code 0x{0:X}" -f $p.ExitCode) }
           if ($text -notmatch "(?i)driver vulkan") { throw "modern renderer did not start on Vulkan" }
