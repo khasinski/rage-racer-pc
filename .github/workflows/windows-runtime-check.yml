@@ -233,11 +233,23 @@ jobs:
           if ($text -notmatch "(?i)driver vulkan") { throw "modern renderer did not start on Vulkan" }
           if ($text -match "Invalid GPU device") { throw "renderer ran without a GPU device" }
 
-      - name: GPU and end-to-end tests on lavapipe
+      - name: GPU and disc-independent end-to-end tests on lavapipe
         shell: pwsh
         run: |
-          ctest --test-dir build/release -C Release --output-on-failure -L '^(gpu|e2e)$' --timeout 600 --output-junit e2e-junit.xml
+          # Most e2e scenarios drive retail scenes and need disc/PAL locally;
+          # without it they fail on every OS. This set renders synthetic data
+          # through the real Vulkan pipeline and runs disc-free game paths.
+          $tests = @(
+            'modern_disc_import_bootstrap','keyboard_input','diagnostic_log','window_size',
+            'initial_state','grand_prix_exit','live_effects','environment_provider',
+            'presentation_device','composite_gpu','native_fog_gpu','native_depth_bias_gpu',
+            'native_shadow_uv_gpu','native_shadow_mask_gpu','modern_vram_snapshot_gpu',
+            'graphics_overlay_gpu','ssao_gpu','ui_atlas_blend_gpu')
+          $regex = '^(' + ($tests -join '|') + ')$'
+          ctest --test-dir build/release -C Release --output-on-failure -R $regex --timeout 300 --output-junit e2e-junit.xml
           if ($LASTEXITCODE -ne 0) { throw "Windows GPU/e2e tests failed" }
+          $ran = Select-String -Path build/release/e2e-junit.xml -Pattern '<testcase ' | Measure-Object
+          if ($ran.Count -ne $tests.Count) { throw "Expected $($tests.Count) tests, ran $($ran.Count)" }
 
       - name: Upload diagnostics
         if: always()
