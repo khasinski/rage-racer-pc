@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.20)
+project(rage_hd_server C)
+find_package(SDL3 REQUIRED)
+add_executable(rage-hd-server hd_server.c)
+target_link_libraries(rage-hd-server PRIVATE SDL3::SDL3)
+target_compile_features(rage-hd-server PRIVATE c_std_17)

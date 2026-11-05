@@ -31,6 +31,7 @@ int main(void) {
     shader.code_size = spirv ? composite_frag_spv_len : composite_frag_msl_len;
     shader.entrypoint = spirv ? "main" : "fs_composite";
     shader.num_samplers = 1;
+    shader.num_uniform_buffers = 1;
     SDL_GPUShader *fs = SDL_CreateGPUShader(device,&shader); CHECK(fs);
     SDL_GPUColorTargetDescription targetDesc = {0};
     targetDesc.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
@@ -56,6 +57,8 @@ int main(void) {
     memcpy(mapped,input,sizeof(input)); SDL_UnmapGPUTransferBuffer(device,upload);
     SDL_GPUSamplerCreateInfo samplerInfo={0};
     SDL_GPUSampler *sampler=SDL_CreateGPUSampler(device,&samplerInfo); CHECK(sampler);
+    const float cases[][4] = {{1,1,0,0}, {1.15f,1,0,0}, {1.15f,0,0,0}, {1,0,0,0}, {0.5f,0,0,0}, {1.5f,0,0,0}};
+    for (unsigned sample=0; sample<sizeof(cases)/sizeof(cases[0]); ++sample) {
     SDL_GPUCommandBuffer *cmd=SDL_AcquireGPUCommandBuffer(device); CHECK(cmd);
     SDL_GPUCopyPass *copy=SDL_BeginGPUCopyPass(cmd); CHECK(copy);
     SDL_GPUTextureTransferInfo transfer={0}; transfer.transfer_buffer=upload;
@@ -67,6 +70,7 @@ int main(void) {
     SDL_BindGPUGraphicsPipeline(pass,pipeline);
     SDL_GPUTextureSamplerBinding binding={source,sampler};
     SDL_BindGPUFragmentSamplers(pass,0,&binding,1);
+    SDL_PushGPUFragmentUniformData(cmd,0,cases[sample],sizeof(cases[sample]));
     SDL_DrawGPUPrimitives(pass,3,1,0,0); SDL_EndGPURenderPass(pass);
     copy=SDL_BeginGPUCopyPass(cmd); CHECK(copy);
     region.texture=target; transfer.transfer_buffer=download;
@@ -77,8 +81,12 @@ int main(void) {
     for (int pixel=0;pixel<8;++pixel) {
         float luma=(input[pixel*4]*0.299f+input[pixel*4+1]*0.587f+input[pixel*4+2]*0.114f)/255.0f;
         for (int channel=0;channel<3;++channel) {
-            float c=luma+(input[pixel*4+channel]/255.0f-luma)*1.16f;
-            c=(c-0.5f)*1.04f+0.5f;
+            float c=input[pixel*4+channel]/255.0f;
+            if (cases[sample][1] > 0.5f) {
+                c=luma+(c-luma)*1.16f;
+                c=(c-0.5f)*1.04f+0.5f;
+            }
+            c=powf(fminf(1.0f,fmaxf(0.0f,c)),1.0f/cases[sample][0]);
             int expected=(int)lroundf(fminf(1.0f,fmaxf(0.0f,c))*255.0f);
             CHECK(abs((int)output[pixel*4+channel]-expected)<=1);
         }
@@ -86,6 +94,7 @@ int main(void) {
     }
     SDL_UnmapGPUTransferBuffer(device,download);
     SDL_ReleaseGPUFence(device,fence);
+    }
     SDL_ReleaseGPUSampler(device,sampler);
     SDL_ReleaseGPUTransferBuffer(device,upload); SDL_ReleaseGPUTransferBuffer(device,download);
     SDL_ReleaseGPUTexture(device,source); SDL_ReleaseGPUTexture(device,target);

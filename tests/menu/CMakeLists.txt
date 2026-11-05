@@ -137,6 +137,7 @@ add_executable(main_menu_state_tests
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/main_menu.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_navigation.c)
 target_include_directories(main_menu_state_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
@@ -1585,7 +1586,17 @@ if(TARGET rage-racer-smoke)
             -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.cmake
     )
 set_tests_properties(menu_sweep PROPERTIES LABELS e2e)
-    set_tests_properties(menu_sweep PROPERTIES TIMEOUT 225)
+set_tests_properties(menu_sweep PROPERTIES TIMEOUT 225)
+add_test(NAME menu_sweep_fast
+    COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DFAST_MENUS=1
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_menu_sweep.cmake)
+set_tests_properties(menu_sweep_fast PROPERTIES LABELS e2e TIMEOUT 225)
+    add_test(NAME fast_menus_navigation
+        COMMAND ${CMAKE_COMMAND} -DGAME=$<TARGET_FILE:rage-racer-smoke>
+            -DSOURCE=${CMAKE_SOURCE_DIR}
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_fast_menus.cmake)
+    set_tests_properties(fast_menus_navigation PROPERTIES LABELS e2e TIMEOUT 185)
 
     add_test(
         NAME trophy_view
@@ -1606,3 +1617,36 @@ if(TARGET rage-racer-smoke)
     set_tests_properties(volume_view PROPERTIES LABELS e2e TIMEOUT 150
         SKIP_REGULAR_EXPRESSION "SKIP:")
 endif()
+
+add_executable(native_main_menu_tests native_main_menu_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/main_menu_model.c
+    ${CMAKE_SOURCE_DIR}/src/port/main_menu_raster.c
+    ${CMAKE_SOURCE_DIR}/src/port/main_menu_host.c
+    ${CMAKE_SOURCE_DIR}/src/port/overlay_raster.c
+    ${CMAKE_SOURCE_DIR}/src/port/overlay_model.c
+    ${CMAKE_SOURCE_DIR}/src/port/touch_model.c
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/title_menu_navigation.c
+    ${CMAKE_SOURCE_DIR}/tests/render/stb_truetype_implementation.c)
+target_include_directories(native_main_menu_tests PRIVATE
+    ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include
+    ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
+    $<TARGET_PROPERTY:SDL3::SDL3,INTERFACE_INCLUDE_DIRECTORIES>)
+target_compile_definitions(native_main_menu_tests PRIVATE __psyz=1)
+if(MSVC)
+    target_compile_options(native_main_menu_tests PRIVATE "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+else()
+    target_compile_options(native_main_menu_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+    target_link_libraries(native_main_menu_tests PRIVATE m)
+endif()
+add_test(NAME native_main_menu COMMAND native_main_menu_tests)
+set_tests_properties(native_main_menu PROPERTIES LABELS unit)
+
+foreach(menu_clock_target IN ITEMS
+    car_name_plate_tests main_menu_state_tests timed_draw_script_tests
+    time_attack_plate_tests browse_arrows_tests car_spec_graph_tests
+    class_change_curtain_tests menu_alt_panel_tests menu_light_burst_tests
+    frontend_tests update_menu_mode_tests course_card_tests logo_name_panel_tests)
+    target_sources(${menu_clock_target} PRIVATE
+        ${CMAKE_SOURCE_DIR}/tests/support/menu_animation_stub.c)
+endforeach()

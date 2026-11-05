@@ -455,6 +455,9 @@ static u8 *DrawSkyGradientBands(SkyFrame *work, const SkyBandSetup *band,
         g_EnvironmentColors.fields.slots[ENV_SKY_MIDDLE].cur,
         g_EnvironmentColors.fields.slots[ENV_SKY_TOP].cur);
 
+    /* Move both endpoints to the previous band's upper edge. Leaving x0
+     * at panelX shears this quad whenever the camera rolls. */
+    screenX[0] = screenX[2];
     screenX[1] = screenX[3];
     screenX[2] = Fixed8ToScreen(panelX - band->rowStepX * 3);
     screenX[3] = Fixed8ToScreen(bandRightX - band->rowStepX * 3);

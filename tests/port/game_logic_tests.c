@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -286,6 +287,7 @@ static void test_port_config(void) {
         "texture_filter = linear\n"
         "post = fxaa\n"
         "bloom = on\n"
+        "brightness = 1.30\n"
         "grading = vibrant\n"
         "draw_distance = nonsense\n"
         "unknown.key = 1\n";
@@ -298,6 +300,7 @@ static void test_port_config(void) {
     EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
     EXPECT_EQ(RAGE_MODERN_FPS_VSYNC, config.modernFps);
     EXPECT_EQ(1, config.carLights);
+    EXPECT_EQ(100, (s32)lroundf(config.modernBrightness * 100.0f));
     fd = mkstemp(path);
     if (fd < 0 || write(fd, contents, sizeof(contents) - 1) != sizeof(contents) - 1) {
         failures++;
@@ -305,13 +308,14 @@ static void test_port_config(void) {
         char *arguments[] = {"rage-test", "--config", path};
         close(fd);
         EXPECT_EQ(1, RuntimeConfigInit(3, arguments));
-        EXPECT_EQ(8, PortConfigApplyRuntime(&config));
+        EXPECT_EQ(9, PortConfigApplyRuntime(&config));
         EXPECT_EQ(RAGE_RENDERER_MODERN, config.renderer);
         EXPECT_EQ(RAGE_MODERN_ASPECT_16_9, config.modernAspect);
         EXPECT_EQ(120, config.modernFps);
         EXPECT_EQ(1, config.modernTextureFilterLinear);
         EXPECT_EQ(RAGE_MODERN_POST_FXAA, config.modernPost);
         EXPECT_EQ(1, config.modernGrading);
+        EXPECT_EQ(130, (s32)lroundf(config.modernBrightness * 100.0f));
         EXPECT_EQ(35, (s32)(config.modernInternalScale * 10.0f));
         /* invalid value keeps the default */
         EXPECT_EQ(10, (s32)(config.modernDrawDistance * 10.0f));
@@ -447,6 +451,32 @@ static void test_diagnostic_integer_values(void) {
         setting[sizeof(setting) - 1] = '\0';
         EXPECT_EQ(0, RuntimeConfigInit(3, arguments));
     }
+}
+
+static void test_platform_profile_override(void) {
+    const char *previous = getenv("RAGE_PORT_PROFILE_ROOT");
+    char *saved = previous != NULL ? strdup(previous) : NULL;
+    const char *isolated = TEST_TEMP_PREFIX "isolated-rage-profile";
+    char found[320], tiny[2] = "x";
+#ifdef _WIN32
+    _putenv_s("RAGE_PORT_PROFILE_ROOT", isolated);
+#else
+    setenv("RAGE_PORT_PROFILE_ROOT", isolated, 1);
+#endif
+    EXPECT_EQ(1, PlatformUserConfigDirectory(found, sizeof(found)));
+    EXPECT_EQ(0, strcmp(found, isolated));
+    EXPECT_EQ(1, PlatformUserStateDirectory(found, sizeof(found)));
+    EXPECT_EQ(0, strcmp(found, isolated));
+    EXPECT_EQ(0, PlatformUserConfigDirectory(tiny, sizeof(tiny)));
+    EXPECT_EQ('\0', tiny[0]);
+    EXPECT_EQ(0, PlatformExistingPortableStateDirectory(".", found, sizeof(found)));
+#ifdef _WIN32
+    _putenv_s("RAGE_PORT_PROFILE_ROOT", saved != NULL ? saved : "");
+#else
+    if (saved != NULL) setenv("RAGE_PORT_PROFILE_ROOT", saved, 1);
+    else unsetenv("RAGE_PORT_PROFILE_ROOT");
+#endif
+    free(saved);
 }
 
 static void test_platform_config_path(void) {
@@ -642,6 +672,7 @@ int main(void) {
     test_port_config();
     test_diagnostic_integer_values();
     test_platform_config_path();
+    test_platform_profile_override();
     test_portable_state_path();
     test_ensure_directory();
 

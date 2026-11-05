@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu_internal.h"
 
 enum {
@@ -24,6 +25,7 @@ static void DrawClassChangeCurtainPanels(s32 slide) {
 }
 
 s32 DrawClassChangeCurtain(CourseSelectScreen *screen, s32 step) {
+    step = PortMenuAnimationStep(step);
     if (step == 0) {
         screen->curtainSlide = 0;
         return 0;

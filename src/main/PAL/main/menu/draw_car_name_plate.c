@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/car.h"
 #include "game/menu.h"
 
@@ -62,7 +63,7 @@ static void AdvanceCarNamePlateFade(MenuWidgets *widgets, s32 step) {
 /* The bottom-right plate: grade digit, manufacturer sprite and model-name sprite. */
 void DrawCarNamePlate(MenuWidgets *widgets) {
     GameOrderingTableEntry *ot;
-    s32 step = widgets->carNameStep;
+    s32 step = PortMenuAnimationStep(widgets->carNameStep);
     s32 model = widgets->carNameModel;
     s32 unlockLevel;
     s32 displayedGrade;

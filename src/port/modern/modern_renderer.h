@@ -31,6 +31,7 @@ int ModernRestartPresentation(const RagePortConfig *config);
 int ModernIsEnabled(void);
 /* Both presentation paths use scene capture and the shared frame pacer. */
 int ModernPresentationActive(void);
+float ModernPresentationAspect(void);
 
 /* Switches presentation without restarting or changing game state. The
  * compatibility framebuffer keeps rendering in both modes. */

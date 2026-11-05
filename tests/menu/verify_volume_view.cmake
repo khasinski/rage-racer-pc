@@ -8,8 +8,7 @@ file(MAKE_DIRECTORY "${root}")
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     "${GAME}" --set "disc.image=${disc}" --set race.enabled=false
     --set video.internal_scale=1 --set run.frames=1500
-    --set input.script=120:START,700:START,760:DOWN,780:DOWN,800:DOWN,820:DOWN,850:CONFIRM
-    --set input.state_script=23@65:DOWN,23@85:DOWN,23@105:CONFIRM
+    --set input.state_script=4@40:UP,4@44:UP,4@48:CONFIRM,23@65:DOWN,23@85:DOWN,23@105:CONFIRM
     --set "capture.directory=${root}" --set capture.scene=23
     --set capture.timer_min=150 --set capture.timer_max=150 --set capture.timer_stride=1
     --set "diagnostics.modern_dump=${root}/modern.ppm"

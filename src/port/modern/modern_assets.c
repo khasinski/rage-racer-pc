@@ -20,11 +20,13 @@
 #include "render/mod_manifest.h"
 #include "render/resource_provider.h"
 #include "modern_material_transaction.h"
-#include "modern_png.h"
+#include "modern_image.h"
 #include "modern_prepared_materials.h"
 #include "rage/track_asset_identity.h"
 #include "render/rmesh_replace.h"
 #include "authored_car_data.h"
+
+static int s_textureOverridesEnabled = 1;
 
 /* One entry per bank's first definition. More than one car may share a bank;
  * all matching replacements are assembled before the result is cached. */
@@ -38,6 +40,8 @@ static uint64_t s_preparedTrackRevision = UINT64_MAX;
 static char s_modRoot[1024];
 static const RageModManifest *s_modManifest;
 static int s_modReady;
+static RageModManifest *s_hdManifest;
+static char s_hdRoot[1400];
 /* One immutable override per course/terrain bank for the asset session. */
 static struct {
     RageRuntimeCachedMesh mesh;
@@ -551,6 +555,7 @@ void ModernAssetsShutdown(void) {
     s_modRoot[0] = '\0';
     s_modManifest = NULL;
     s_modReady = 0;
+    free(s_hdManifest);s_hdManifest=NULL;s_hdRoot[0]=0;
     /* Full asset-session shutdown only. Presentation/device restart must keep
      * the manifest alive together with the meshes that were derived from it. */
     ModAssetsShutdown();
@@ -598,18 +603,19 @@ int ModernAssetsReady(void) {
     return (s_source != MODERN_ASSET_SOURCE_NONE);
 }
 
-static int ModernAssetsLoadModPngFile(const char *key,
+static int ModernAssetsLoadRootPngFile(const char *root,const char *key,
                                       const char *relativePath,
                                       ModernAssetImage *image) {
-    char fullPath[sizeof(s_modRoot) + 512];
+    if (!s_textureOverridesEnabled) return 0;
+    char fullPath[1900];
     SDL_Surface *source = NULL, *converted = NULL;
     uint8_t *pixels = NULL;
     size_t rowSize, size;
     int row;
     if (relativePath == NULL ||
-        snprintf(fullPath, sizeof(fullPath), "%s/%s", s_modRoot,
+        snprintf(fullPath, sizeof(fullPath), "%s/%s", root,
                  relativePath) >= (int)sizeof(fullPath)) return 0;
-    source = ModernLoadPNG(SDL_IOFromFile(fullPath, "rb"),
+    source = ModernLoadImage(SDL_IOFromFile(fullPath, "rb"),
                            MODERN_ASSET_MAX_IMAGE_DIMENSION);
     if (source == NULL) {
         fprintf(stderr, "rage-port: cannot load texture override %s: %s\n",
@@ -685,12 +691,40 @@ int ModernAssetsLoadSkyImage(uint32_t assetKey,
     memset(image, 0, sizeof(*image));
     if (capturedLayout != NULL) layout = *capturedLayout;
     else RageSkyCapturePanoramaLayout(&layout, g_SkyTileMap, g_SkyRowBase);
+    /* The main view uses the authored page atlas. Expand that same atlas for
+     * the native mirror, preserving its palette and captured tile selection. */
+    if (ModernAssetsLoadSkyAtlas(assetKey, image)) {
+        size_t panoramaSize = image->size * 2u;
+        uint8_t *panorama = SDL_malloc(panoramaSize);
+        if (panorama == NULL || !RageSkyExpandTexturePageLayoutScaled(
+                panorama, panoramaSize, image->pixels, image->size,
+                image->width, &layout)) {
+            SDL_free(panorama);
+            ModernAssetsFreeMaterialImage(image);
+            return 0;
+        }
+        uint32_t width = image->width * 2u, height = image->height;
+        ModernAssetsFreeMaterialImage(image);
+        image->pixels = panorama;
+        image->size = panoramaSize;
+        image->width = width;
+        image->height = height;
+        return 1;
+    }
+    if (s_hdManifest) {
+        char id[64];const char *path;
+        if(AssetSkyId(id,sizeof(id),assetKey)&&(path=ModManifestFindTexture(s_hdManifest,id))&&
+           ModernAssetsLoadRootPngFile(s_hdRoot,id,path,image)){
+            if(!ModernAssetsExpandSkyStripIfNeeded(image,&layout)){ModernAssetsFreeMaterialImage(image);return 0;}
+            return 1;
+        }
+    }
     if (s_modReady) {
         char skyId[64];
         const char *relativePath;
         if (AssetSkyId(skyId, sizeof(skyId), assetKey) &&
             (relativePath = ModManifestFindTexture(s_modManifest, skyId)) != NULL &&
-            ModernAssetsLoadModPngFile(skyId, relativePath, image)) {
+            ModernAssetsLoadRootPngFile(s_modRoot,skyId, relativePath, image)) {
             if (!ModernAssetsExpandSkyStripIfNeeded(image, &layout)) {
                 ModernAssetsFreeMaterialImage(image);
                 return 0;
@@ -758,12 +792,13 @@ static const char *ModernAssetsFindModMaterialProperties(
     const RenderMeshInstance *instance, uint32_t material,
     uint8_t variant) {
     char exactId[160], baseId[160];
-    if (!s_modReady || !AssetMaterialVariantId(
+    if ((!s_modReady && !s_hdManifest) || !AssetMaterialVariantId(
             exactId, sizeof(exactId), instance->assetKey,
             instance->assetSet, material, variant) ||
         !AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
                         instance->assetSet, material)) return NULL;
-    RageModResolution resolved = ModManifestResolve(s_modManifest, exactId, baseId, RAGE_MOD_RESOLVE_MATERIAL);
+    RageModResolution resolved = ModManifestResolve(s_hdManifest, exactId, baseId, RAGE_MOD_RESOLVE_MATERIAL);
+    if(!resolved.material)resolved=ModManifestResolve(s_modManifest,exactId,baseId,RAGE_MOD_RESOLVE_MATERIAL);
     return resolved.material != NULL ? resolved.material->properties : NULL;
 }
 
@@ -817,19 +852,31 @@ static int ModernAssetsFindMaterial(
 
 static int ModernAssetsLoadModImage(const RenderMeshInstance *instance,
                                     uint32_t material, uint8_t variant,
-                                    ModernAssetImage *image) {
+                                    ModernAssetImage *image, int *paintable) {
     char exactId[160], baseId[160];
-    const char *relativePath;
-    if (!s_modReady ||
+    char paintExact[176], paintBase[176];
+    *paintable = 0;
+    if ((!s_modReady && !s_hdManifest) ||
         !AssetMaterialVariantId(exactId, sizeof(exactId),
                                     instance->assetKey, instance->assetSet,
                                     material, variant) ||
         !AssetMaterialId(baseId, sizeof(baseId), instance->assetKey,
                              instance->assetSet, material)) return 0;
-    RageModResolution resolved = ModManifestResolve(s_modManifest, exactId, baseId, RAGE_MOD_RESOLVE_TEXTURE);
-    relativePath = resolved.texture != NULL ? resolved.texture->path : NULL;
-    if (relativePath == NULL) return 0;
-    return ModernAssetsLoadModPngFile(resolved.texture->key, relativePath, image);
+    snprintf(paintExact,sizeof(paintExact),"%s.paintable",exactId);
+    snprintf(paintBase,sizeof(paintBase),"%s.paintable",baseId);
+    const RageModManifest *layers[] = {s_hdManifest, s_modManifest};
+    const char *roots[] = {s_hdRoot, s_modRoot};
+    for (unsigned layer=0;layer<2;layer++) {
+        if (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
+            RageModResolution painted=ModManifestResolve(layers[layer],paintExact,paintBase,RAGE_MOD_RESOLVE_TEXTURE);
+            if(painted.texture&&ModernAssetsLoadRootPngFile(roots[layer],painted.texture->key,painted.texture->path,image)){
+                *paintable=1;return 1;
+            }
+        }
+        RageModResolution resolved=ModManifestResolve(layers[layer],exactId,baseId,RAGE_MOD_RESOLVE_TEXTURE);
+        if(resolved.texture&&ModernAssetsLoadRootPngFile(roots[layer],resolved.texture->key,resolved.texture->path,image))return 1;
+    }
+    return 0;
 }
 
 static int ModernAssetsApplyCachedCarPaint(const RenderMeshInstance *instance,
@@ -926,19 +973,26 @@ static RageResourceStatus ResolveCachedMaterial(void *context) {
 static RageResourceStatus ResolveModMaterialImage(void *context) {
     MaterialProviderRequest *request=context;
     ModernAssetImage replacement={0};
-    if(!ModernAssetsLoadModImage(request->instance,request->material,request->variant,&replacement))
+    int paintable=0;
+    if(!ModernAssetsLoadModImage(request->instance,request->material,request->variant,&replacement,&paintable))
         return RAGE_RESOURCE_MISSING; /* Preserve legacy rejected-image fallback. */
-    if (request->instance->hasCarPaint) {
-        int painted = (s_source == MODERN_ASSET_SOURCE_DISC)
-            ? NativeAssetImporterApplyCarPaint(request->instance,
-                request->material, request->variant, &replacement)
-            : ModernAssetsApplyCachedCarPaint(request->instance,
-                request->material, request->definition, &replacement);
-        if (!painted) {
-            ModernAssetsFreeMaterialImage(&replacement);
-            return RAGE_RESOURCE_ERROR;
-        }
+    if (RuntimeConfigEnabled("diagnostics.performance_trace") && request->image->pixels) {
+        int sourceZero=0,sourcePartial=0,hdZero=0,hdPartial=0;
+        const uint8_t *source=request->image->pixels,*hd=replacement.pixels;
+        for(size_t i=3;i<request->image->size;i+=4){sourceZero|=source[i]==0;sourcePartial|=source[i]!=0&&source[i]!=255;}
+        for(size_t i=3;i<replacement.size;i+=4){hdZero|=hd[i]==0;hdPartial|=hd[i]!=0&&hd[i]!=255;}
+        fprintf(stderr,"hd-alpha asset=%u set=%u material=%u variant=%u source_zero=%d source_partial=%d hd_zero=%d hd_partial=%d mode=%d\n",
+            request->instance->assetKey,(unsigned)request->instance->assetSet,request->material,
+            (unsigned)request->variant,sourceZero,sourcePartial,hdZero,hdPartial,(int)request->definition->alphaMode);
     }
+    if(paintable && !(s_source==MODERN_ASSET_SOURCE_DISC
+        ? NativeAssetImporterApplyCarPaint(request->instance,request->material,request->variant,&replacement)
+        : ModernAssetsApplyCachedCarPaint(request->instance,request->material,request->definition,&replacement))){
+        ModernAssetsFreeMaterialImage(&replacement);return RAGE_RESOURCE_ERROR;
+    }
+    /* Ordinary PNG overrides remain finished artwork. Only an explicitly
+     * paintable override opts into the retail mask; existing artwork must
+     * not have its authored details recolored implicitly. */
     ModernAssetsFreeMaterialImage(request->image);
     *request->image=replacement;
     return RAGE_RESOURCE_READY;
@@ -985,6 +1039,7 @@ static int ModernAssetsBuildMaterial(const RenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
+    uint32_t runtimeMaterial = material;
     unsigned surface = 0;
     if (instance && (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
                      instance->assetSet == RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1)) {
@@ -1004,9 +1059,13 @@ static int ModernAssetsBuildMaterial(const RenderMeshInstance *instance,
             return 0;
         }
     }
-    if (!AuthoredCarSurfaceResolve(surface,
-            ModernAssetsFindModMaterialProperties(instance, material, variant),
-            definition)) {
+    /* Surface-specific runtime slots may override paint without changing the
+     * glass/rubber sharing its source atlas. Base-slot overrides still work. */
+    const char *properties = ModernAssetsFindModMaterialProperties(
+        instance, runtimeMaterial, variant);
+    if (!properties && runtimeMaterial != material)
+        properties = ModernAssetsFindModMaterialProperties(instance, material, variant);
+    if (!AuthoredCarSurfaceResolve(surface, properties, definition)) {
         ModernAssetsFreeMaterialImage(image);
         return 0;
     }
@@ -1116,4 +1175,140 @@ void ModernAssetsPrepareWorld(const RenderWorld *world) {
             ModernAssetsPrepareInstance(instance);
         }
     }
+}
+
+int ModernAssetsLoadUiImage(const char *key,ModernAssetImage *image) {
+ const char *path=s_hdManifest?ModManifestFindTexture(s_hdManifest,key):NULL;
+ if(path&&ModernAssetsLoadRootPngFile(s_hdRoot,key,path,image))return 1;
+ path=s_modReady?ModManifestFindTexture(s_modManifest,key):NULL;
+ return path&&ModernAssetsLoadRootPngFile(s_modRoot,key,path,image);
+}
+
+void ModernAssetsSetTextureOverridesEnabled(int enabled) {
+    enabled = enabled != 0;
+    if (s_textureOverridesEnabled == enabled) return;
+    s_textureOverridesEnabled = enabled;
+    ModernPreparedMaterialsClear(&s_preparedMaterials);
+    s_generation++;
+}
+
+int ModernAssetsSetHdPack(const char *root,const RageModManifest *manifest) {
+ RageModManifest *copy=NULL;
+ if(root&&manifest){if(strlen(root)>=sizeof(s_hdRoot))return 0;copy=malloc(sizeof(*copy));if(!copy)return 0;*copy=*manifest;}
+ free(s_hdManifest);s_hdManifest=copy;SDL_strlcpy(s_hdRoot,copy?root:"",sizeof(s_hdRoot));
+ ModernPreparedMaterialsClear(&s_preparedMaterials);s_generation++;return 1;
+}
+
+int ModernAssetsHasUiScene(int scene) {
+ if(!s_textureOverridesEnabled||scene<0||scene>=40)return 0;
+ char prefix[48];int n=snprintf(prefix,sizeof(prefix),"ui.scene.%d.",scene);
+ const RageModManifest *layers[]={s_hdManifest,s_modReady?s_modManifest:NULL};
+ for(size_t layer=0;layer<2;layer++)if(layers[layer]&&layers[layer]->error==RAGE_MOD_MANIFEST_OK&&layers[layer]->textureCount<=RAGE_MOD_MANIFEST_MAX_TEXTURES)
+  for(size_t i=0;i<layers[layer]->textureCount;i++)
+   if(!strncmp(layers[layer]->textures[i].key,prefix,(size_t)n))return 1;
+ return 0;
+}
+
+static int UiRegionNumbers(const char *text,unsigned values[4]) {
+    for(int i=0;i<4;i++) {
+        unsigned value=0;int digits=0;
+        while(*text>='0'&&*text<='9') {
+            value=value*10u+(unsigned)(*text++-'0');
+            if(value>256u||++digits>3)return 0;
+        }
+        if(!digits)return 0;
+        values[i]=value;
+        if(i<3){if(*text++!='.')return 0;}else if(*text)return 0;
+    }
+    return values[2]&&values[3]&&values[0]+values[2]<=256u&&values[1]+values[3]<=256u;
+}
+static int FindUiFamily(const char *family,unsigned u,unsigned v,unsigned w,unsigned h,ModernUiRegion *out) {
+    const RageModManifest *layers[]={s_hdManifest,s_modReady?s_modManifest:NULL};
+    if(!s_textureOverridesEnabled)return 0;
+    size_t prefix=strlen(family);
+    for(size_t layer=0;layer<2;layer++) {
+        const RageModManifest *m=layers[layer];
+        if(!m||m->error!=RAGE_MOD_MANIFEST_OK||m->textureCount>RAGE_MOD_MANIFEST_MAX_TEXTURES)continue;
+        /* Region declarations take priority within a layer; later matching
+         * declarations win. An HD full-page declaration precedes ordinary mods. */
+        for(size_t i=m->textureCount;i>0;i--) {
+            const char *key=m->textures[i-1].key;unsigned rect[4];
+            if(strncmp(key,family,prefix)||strncmp(key+prefix,".region.",8)||!UiRegionNumbers(key+prefix+8,rect))continue;
+            if(u<rect[0]||v<rect[1]||u+w>rect[0]+rect[2]||v+h>rect[1]+rect[3])continue;
+            ModernUiRegion result={.x=rect[0],.y=rect[1],.width=rect[2],.height=rect[3]};
+            SDL_strlcpy(result.key,key,sizeof(result.key));*out=result;return 1;
+        }
+        if(ModManifestFindTexture(m,family)) {
+            ModernUiRegion result={.width=256,.height=256};
+            SDL_strlcpy(result.key,family,sizeof(result.key));*out=result;return 1;
+        }
+    }
+    return 0;
+}
+static int ResolveCarUiRegionUncached(int car,int scene,unsigned page,unsigned clut,int hud,
+    unsigned u,unsigned v,unsigned width,unsigned height,ModernUiRegion *out) {
+    if(!out||scene<0||scene>=40||page>511||clut>65535||!width||!height||
+       u>255||v>255||width>256-u||height>256-v)return 0;
+    char family[96];
+    snprintf(family,sizeof(family),"ui.scene.%d.page.%u.clut.%u",scene,page,clut);
+    if(FindUiFamily(family,u,v,width,height,out))return 1;
+    if(hud&&(scene==12||scene==17)&&page<32) {
+        if(car>=0&&car<13) {
+            snprintf(family,sizeof(family),"ui.hud.car.%d.page.%u.clut.%u",car,page,clut);
+            if(FindUiFamily(family,u,v,width,height,out))return 1;
+        }
+        snprintf(family,sizeof(family),"ui.hud.page.%u.clut.%u",page,clut);
+        return FindUiFamily(family,u,v,width,height,out);
+    }
+    return 0;
+}
+
+int ModernAssetsResolveCarUiRegion(int car,int scene,unsigned page,unsigned clut,int hud,
+    unsigned u,unsigned v,unsigned width,unsigned height,ModernUiRegion *out) {
+    enum { UI_REGION_CACHE_SIZE=512 };
+    static struct {
+        uint64_t generation;
+        unsigned key[9];
+        int valid,found;
+        ModernUiRegion region;
+    } cache[UI_REGION_CACHE_SIZE];
+    if(!out)return 0;
+    unsigned key[9]={(unsigned)car,(unsigned)scene,page,clut,(unsigned)hud,u,v,width,height};
+    uint32_t hash=2166136261u;
+    for(unsigned i=0;i<9;i++)hash=(hash^key[i])*16777619u;
+    unsigned slot=hash&(UI_REGION_CACHE_SIZE-1);
+    if(cache[slot].valid&&cache[slot].generation==s_generation&&
+       !memcmp(cache[slot].key,key,sizeof(key))){
+        if(cache[slot].found)*out=cache[slot].region;
+        return cache[slot].found;
+    }
+    ModernUiRegion region;
+    int found=ResolveCarUiRegionUncached(car,scene,page,clut,hud,u,v,width,height,&region);
+    cache[slot].generation=s_generation;
+    memcpy(cache[slot].key,key,sizeof(key));
+    cache[slot].valid=1;cache[slot].found=found;
+    if(found){cache[slot].region=region;*out=region;}
+    return found;
+}
+
+int ModernAssetsResolveUiRegion(int scene,unsigned page,unsigned clut,int hud,
+    unsigned u,unsigned v,unsigned width,unsigned height,ModernUiRegion *out) {
+    return ModernAssetsResolveCarUiRegion(-1,scene,page,clut,hud,u,v,width,height,out);
+}
+
+int ModernAssetsLoadSkyAtlas(uint32_t assetKey, ModernAssetImage *image) {
+    char key[80],base[64];
+    if(!image||!AssetSkyId(base,sizeof(base),assetKey))return 0;
+    memset(image,0,sizeof(*image));
+    snprintf(key,sizeof(key),"%s.atlas",base);
+    const RageModManifest *layers[]={s_hdManifest,s_modReady?s_modManifest:NULL};
+    const char *roots[]={s_hdRoot,s_modRoot};
+    for(int i=0;i<2;i++)if(layers[i]){
+        const char *path=ModManifestFindTexture(layers[i],key);
+        if(path&&ModernAssetsLoadRootPngFile(roots[i],key,path,image)){
+            if(image->width==image->height&&image->width>=256&&image->width%256==0)return 1;
+            ModernAssetsFreeMaterialImage(image);return 0;
+        }
+    }
+    return 0;
 }

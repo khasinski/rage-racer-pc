@@ -97,6 +97,15 @@ int RageSkyExpandTexturePageLayout(uint8_t *destination, size_t destinationSize,
                        512u, 128u, layout, 4);
 }
 
+int RageSkyExpandTexturePageLayoutScaled(uint8_t *destination, size_t destinationSize,
+    const uint8_t *source, size_t sourceSize, uint32_t pageWidth,
+    const RageSkyPanoramaLayout *layout) {
+    if (pageWidth < 256u || pageWidth % 256u != 0u ||
+        pageWidth > UINT32_MAX / 2u) return 0;
+    return ExpandAtlas(destination, destinationSize, source, sourceSize,
+                       pageWidth * 2u, pageWidth / 2u, layout, 4);
+}
+
 int RageSkyExpandPanorama(uint8_t *destination, size_t destinationSize,
     const uint8_t *source, size_t sourceSize,
     const int16_t map[RAGE_SKY_MAP_ROWS][RAGE_SKY_MAP_COLUMNS], int rowBase) {

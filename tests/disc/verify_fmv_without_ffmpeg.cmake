@@ -16,6 +16,7 @@ set(temporary "${root}/pliki tymczasowe żółte")
 file(MAKE_DIRECTORY "${empty_path}" "${temporary}")
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     SDL_AUDIODRIVER=dummy "PATH=${empty_path}" "TMPDIR=${temporary}"
+    "RAGE_PORT_PROFILE_ROOT=${root}/profile"
     RAGE_PORT_SMOKE_FRAMES=380 RAGE_PORT_FMV_TRACE=1
     "${GAME}" --set "disc.image=${disc}"
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 75

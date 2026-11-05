@@ -11,6 +11,9 @@ enum { RAGE_TEXTURE_ATLAS_MIP_LEVELS = 4 };
 
 uint32_t TextureMipLevelCount(uint32_t width, uint32_t height,
                                   uint32_t maximumLevels);
+/* HD replacements of a 256-square page need extra levels to retain the same
+ * native atlas footprint at distance, without filtering below that footprint. */
+uint32_t TextureAtlasMipLevelCount(uint32_t width, uint32_t height);
 size_t TextureMipLevelOffsetRGBA8(uint32_t width, uint32_t height,
                                       uint32_t level);
 size_t TextureMipChainSizeRGBA8(uint32_t width, uint32_t height,

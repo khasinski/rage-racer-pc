@@ -7,12 +7,14 @@ if(STYLE STREQUAL "japanese")
     list(APPEND style_args --set content.prologue=japanese)
 endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
-    RAGE_PORT_SMOKE_FRAMES=1250 RAGE_PORT_RAW_INPUT_SCRIPT=400:START,500:START,650:CROSS
+    PSYZ_HEADLESS=1 RAGE_PORT_SMOKE_FRAMES=1250
+    RAGE_PORT_SMOKE_STOP_SCENE=32 RAGE_PORT_SMOKE_STOP_SCENE_TIMER=180
     "RAGE_PORT_CAPTURE_PATH=${capture}" "${GAME}" ${style_args}
+    --set video.renderer=classic --set input.state_script=4@40:CONFIRM
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 75 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)
 set(log "${output}${error}")
-if(NOT result EQUAL 0 OR log MATCHES "primitive buffer exhausted")
+if(NOT result EQUAL 0 OR NOT log MATCHES "scene=32 timer=180" OR log MATCHES "primitive buffer exhausted")
     message(FATAL_ERROR "${STYLE} prologue run failed: ${root}\n${log}")
 endif()
 if(STYLE STREQUAL "japanese" AND NOT log MATCHES "using the extended Japanese-release prologue text")

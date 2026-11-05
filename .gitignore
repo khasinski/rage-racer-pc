@@ -97,3 +97,15 @@ debug_source.c
 .visual-cache/
 rage-port.cfg
 markers/
+
+# Local run output and captures.
+output/
+
+# Local dependencies and leftovers from retired prototypes.
+**/node_modules/
+/server/target/
+/web/dist/
+/web/e2e-output/
+/web/public/wasm/
+/web/server/wasm/
+/web/server/data/

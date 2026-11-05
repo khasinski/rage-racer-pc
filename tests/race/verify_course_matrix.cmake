@@ -5,17 +5,19 @@ string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef id)
 set(root "${OUTPUT_ROOT}/course-matrix-${id}")
 file(MAKE_DIRECTORY "${root}")
 
+# References reviewed against pre-rebase captures: 0–14 pixels changed per frame
+# (maximum channel delta 9/255); see docs/release-validation-2026-11-03.md.
 # Exact classic captures prove both that the frame is populated and that the
 # selected Grand Prix/Extra Grand Prix course reached its deterministic state.
 set(cases
-    "gp|0|5f6dc846ae40c6c4f26341d5df0578c16b2e8b1b4f2ff4d479d9de2021e54a5d"
-    "gp|1|d0d7f0d9d407ae66e8c41ad4dbf0b4c555201d09ede3f49ccea6d0c929198bb5"
-    "gp|2|d1f2c4e70e657c77a6fd112e42515d6d5fecb2958a0ed4a942f37c35c892897e"
+    "gp|0|b7e298085ac69ead3a6c7c5fbfee04acc609495a9cac60ff17b6f26f73795746"
+    "gp|1|c1a36f3d44d67abc93febf4a4313f0030edbf64a5fa50ba8b2a54a0158808849"
+    "gp|2|3883827a43282f4a28cbcc2e5d0fc44b7407c4ea0a45188edfcbf4fd02dfdce1"
     "gp|3|050f9d3c6f4e4832e1b401c430b939ea4a76a461e8f1749ab63a6025fc9a80ec"
-    "extra-gp|0|c7e6a854abf897a4099f1b1c48cad1d62487e7409d226eece32b45048a3e042d"
-    "extra-gp|1|599b5fa9c178fb042d9357840b269e922446efbb4291899c185dc9a311467db8"
-    "extra-gp|2|95198877e34f6cd5e75a7e58a99c64bfff3d7edf4fde645b446b43cc1be13b65"
-    "extra-gp|3|d661cd8e19a25c399dd657301fb5446d955b3cddcf123b2005ceac8290b27023")
+    "extra-gp|0|3060a3f20ea0ef850885ba470fe45d2e319c65c23378a2968bdb558dbc3c0755"
+    "extra-gp|1|a6fa0f1803520a19a9aecb613374571549c7814d70135e833171a758c0060fbf"
+    "extra-gp|2|964335834e236a156a9285670b80898d0a4f9d72c57c2c89554979e80f2b7ea9"
+    "extra-gp|3|e2cde7e7a708482f287d7e19f982abeebf882c305dd9e65fb8960453d5746cde")
 foreach(case IN LISTS cases)
     string(REPLACE "|" ";" fields "${case}")
     list(GET fields 0 series)

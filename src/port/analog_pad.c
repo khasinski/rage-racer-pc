@@ -355,6 +355,12 @@ static SDL_Joystick *AnalogFindWheel(void) {
     }
     ids = SDL_GetJoysticks(&count);
     if (ids == NULL) return NULL;
+    /* A mapped wheel may also satisfy SDL_IsGamepad. Prefer the explicit
+     * wheel classification over a separate raw pedal/shifter interface. */
+    for (index = 0; index < count && wheel == NULL; index++) {
+        if (SDL_GetJoystickTypeForID(ids[index]) == SDL_JOYSTICK_TYPE_WHEEL)
+            wheel = SDL_OpenJoystick(ids[index]);
+    }
     for (index = 0; index < count && wheel == NULL; index++) {
         if (!SDL_IsGamepad(ids[index])) wheel = SDL_OpenJoystick(ids[index]);
     }
@@ -451,8 +457,11 @@ void PortSampleAnalogPad(void) {
     if (wheel != NULL && !wheelAnnounced) {
         wheelAnnounced = 1;
         announcedPadId = 0;
-        fprintf(stderr, "rage-port: racing wheel active as negcon (%s)\n",
-                SDL_GetJoystickName(wheel));
+        fprintf(stderr, "rage-port: racing wheel active as negcon (%s) "
+                        "id=%u vid=%04x pid=%04x type=%d\n",
+                SDL_GetJoystickName(wheel), (unsigned)SDL_GetJoystickID(wheel),
+                SDL_GetJoystickVendor(wheel), SDL_GetJoystickProduct(wheel),
+                (int)SDL_GetJoystickType(wheel));
     } else if (pad != NULL &&
                SDL_GetGamepadID(pad) != announcedPadId) {
         wheelAnnounced = 0;

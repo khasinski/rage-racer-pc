@@ -221,6 +221,9 @@ int PlatformExistingPortableStateDirectory(
         return 0;
     }
     out[0] = '\0';
+    /* Explicit test/profile isolation also excludes legacy portable saves. */
+    const char *profileRoot = getenv("RAGE_PORT_PROFILE_ROOT");
+    if (profileRoot != NULL && profileRoot[0] != '\0') return 0;
     if (executableDirectory == NULL || executableDirectory[0] == '\0') {
         return 0;
     }
@@ -280,6 +283,13 @@ static int CopyAndroidStoragePath(const char *source, char *out,
 int PlatformUserConfigDirectory(char *out, size_t outSize) {
     if (out == NULL || outSize == 0) return 0;
     out[0] = '\0';
+    const char *profileRoot = getenv("RAGE_PORT_PROFILE_ROOT");
+    if (profileRoot != NULL && profileRoot[0] != '\0') {
+        size_t length = strlen(profileRoot);
+        if (length >= outSize) return 0;
+        memcpy(out, profileRoot, length + 1);
+        return 1;
+    }
 #ifdef __ANDROID__
     return CopyAndroidStoragePath(SDL_GetAndroidInternalStoragePath(), out,
                                   outSize);
@@ -316,6 +326,9 @@ int PlatformUserConfigDirectory(char *out, size_t outSize) {
 int PlatformUserStateDirectory(char *out, size_t outSize) {
     if (out == NULL || outSize == 0) return 0;
     out[0] = '\0';
+    const char *profileRoot = getenv("RAGE_PORT_PROFILE_ROOT");
+    if (profileRoot != NULL && profileRoot[0] != '\0')
+        return PlatformUserConfigDirectory(out, outSize);
 #if defined(_WIN32) || defined(__APPLE__) || defined(__ANDROID__)
     return PlatformUserConfigDirectory(out, outSize);
 #else

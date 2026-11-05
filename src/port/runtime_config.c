@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "platform_paths.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 enum { RAGE_RUNTIME_MAX_VALUES = 192, RAGE_RUNTIME_KEY_MAX = 95,
        RAGE_RUNTIME_VALUE_MAX = 1023 };
@@ -16,6 +19,11 @@ typedef struct RageRuntimeValue {
 
 static RageRuntimeValue s_values[RAGE_RUNTIME_MAX_VALUES];
 static int s_valueCount;
+static int s_isolateSettings = 1;
+static char s_settingsPath[RAGE_RUNTIME_VALUE_MAX + 1];
+void RuntimeConfigIsolateUserSettings(void) { s_isolateSettings = 1; }
+void RuntimeConfigEnableUserSettings(void) { s_isolateSettings = 0; }
+const char *RuntimeConfigSettingsPath(void) { return s_settingsPath[0] ? s_settingsPath : NULL; }
 
 static char *Trim(char *text) {
     char *end;
@@ -42,8 +50,31 @@ static int Store(const char *key, const char *value) {
     return 1;
 }
 
-static int LoadIni(const char *path) {
-    FILE *file = fopen(path, "r");
+static int PreferenceKey(const char *key) {
+    static const char *keys[] = {
+        "video.renderer", "video.internal_scale", "video.aspect", "video.fps",
+        "video.draw_distance", "video.texture_filter", "video.post", "video.grading",
+        "video.brightness", "video.ssao", "video.shadows", "video.car_lights", "video.fullscreen",
+        "input.analog", "input.wheel", "input.steering_linearity", "input.force_feedback",
+        "input.ffb_gain", "game.tick_rate", "hud.anchor", "hud.show_lap_times", "hud.show_time_limit",
+        "camera.chase_distance", "camera.chase_height", "camera.chase_turn_lookahead", "mods.fast_menus"};
+    for (unsigned i = 0; i < sizeof(keys)/sizeof(keys[0]); ++i)
+        if (!strcmp(keys[i], key)) return 1;
+    return 0;
+}
+
+static FILE *OpenIni(const char *path) {
+#ifdef _WIN32
+    wchar_t wide[4096];
+    if (!MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, path, -1, wide, 4096)) return NULL;
+    return _wfopen(wide, L"r");
+#else
+    return fopen(path, "r");
+#endif
+}
+
+static int LoadIni(const char *path, int preferences) {
+    FILE *file = OpenIni(path);
     char line[1400], section[64] = "";
     int applied = 0, lineNumber = 0;
     if (!file) {
@@ -85,6 +116,7 @@ static int LoadIni(const char *path) {
         equals = Trim(equals + 1);
         if (*section) snprintf(key, sizeof(key), "%s.%s", section, text);
         else snprintf(key, sizeof(key), "%s", text);
+        if (preferences && !PreferenceKey(key)) continue;
         if (!Store(key, equals))
             fprintf(stderr, "rage-port: %s:%d: setting is too long or capacity is exhausted\n",
                     path, lineNumber);
@@ -99,6 +131,7 @@ int RuntimeConfigInit(int argc, char **argv) {
     const char *configPath = NULL, *scenarioPath = NULL;
     char defaultPath[RAGE_RUNTIME_VALUE_MAX + 1];
     s_valueCount = 0;
+    s_settingsPath[0] = 0;
     if (argc < 0 || (argc > 0 && argv == NULL)) return 0;
     for (index = 0; index < argc; index++) {
         if (argv[index] == NULL) return 0;
@@ -116,15 +149,26 @@ int RuntimeConfigInit(int argc, char **argv) {
     }
     if (!configPath) configPath = getenv("RAGE_CONFIG");
     if (!scenarioPath) scenarioPath = getenv("RAGE_TEST_SCENARIO");
-    if (configPath && *configPath) {
-        if (LoadIni(configPath) < 0) valid = 0;
+    if (!configPath && PlatformFindConfigFile(argc > 0 ? argv[0] : NULL,
+            "rage-port.ini", defaultPath, sizeof(defaultPath)))
+        LoadIni(defaultPath, 0);
+    const char *settingsPath = getenv("RAGE_PORT_SETTINGS_PATH");
+    for (index = 1; index + 1 < argc; ++index) {
+        if (!strcmp(argv[index], "--set") && !strncmp(argv[index + 1], "settings.path=", 14))
+            settingsPath = argv[index + 1] + 14;
     }
-    else if (PlatformFindConfigFile(argc > 0 ? argv[0] : NULL,
-                                        "rage-port.ini", defaultPath,
-                                        sizeof(defaultPath)))
-        LoadIni(defaultPath);
+    const char *headless = getenv("PSYZ_HEADLESS");
+    if (settingsPath && *settingsPath && strlen(settingsPath) < sizeof(s_settingsPath))
+        strcpy(s_settingsPath, settingsPath);
+    else if (!settingsPath && !s_isolateSettings && !(headless && !strcmp(headless, "1")))
+        PlatformUserConfigPath("settings.ini", s_settingsPath, sizeof(s_settingsPath));
+    if (s_settingsPath[0]) {
+        FILE *preferences = OpenIni(s_settingsPath);
+        if (preferences) { fclose(preferences); LoadIni(s_settingsPath, 1); }
+    }
+    if (configPath && *configPath && LoadIni(configPath, 0) < 0) valid = 0;
     if (scenarioPath && *scenarioPath) {
-        if (LoadIni(scenarioPath) < 0) valid = 0;
+        if (LoadIni(scenarioPath, 0) < 0) valid = 0;
         Store("race.enabled", "true");
     }
     for (index = 1; index < argc; index++) {
@@ -208,6 +252,7 @@ static const EnvironmentAlias s_environmentAliases[] = {
     {"hooks.option_sweep", "RAGE_PORT_SMOKE_OPTION_SWEEP"},
     {"hooks.play_fmv", "RAGE_PORT_SMOKE_PLAY_FMV"},
     {"hooks.retire", "RAGE_PORT_SMOKE_RETIRE"},
+    {"hooks.retries_remaining", "RAGE_PORT_SMOKE_RETRIES_REMAINING"},
     {"input.disable_host", "RAGE_PORT_DISABLE_HOST_INPUT"},
     {"input.raw_script", "RAGE_PORT_RAW_INPUT_SCRIPT"},
     {"input.state_script", "RAGE_PORT_STATE_INPUT_SCRIPT"},

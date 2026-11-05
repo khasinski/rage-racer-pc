@@ -107,7 +107,7 @@ int ModManifestParse(const char *text, size_t size, RageModManifest *out) {
     RageModManifestError error = RAGE_MOD_MANIFEST_INVALID;
     if (out == NULL) return 0;
     memset(out, 0, sizeof(*out));
-    if (text == NULL) goto invalid;
+    if (text == NULL || size > RAGE_MOD_MANIFEST_MAX_BYTES) goto invalid;
     out->schemaVersion = RAGE_MOD_MANIFEST_SCHEMA_VERSION;
     for (i = 0; i <= size; i++) {
         if (i == size || text[i] == '\n' || text[i] == '\r') {

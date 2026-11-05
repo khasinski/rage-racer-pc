@@ -9,6 +9,8 @@
  * the GPU, so every rule can be tested by feeding the model actions. */
 
 typedef struct OverlayValues {
+    int hdEnabled;
+    int hdBusy;
     RagePortConfig config;
     PortSessionOptions session;
 } OverlayValues;
@@ -20,6 +22,8 @@ typedef struct OverlaySetting {
     const char *const *names;
     int (*get)(const OverlayValues *values);
     void (*set)(OverlayValues *values, int index);
+    int slider;
+    int modernOnly;
 } OverlaySetting;
 
 enum {
@@ -27,9 +31,10 @@ enum {
     OVERLAY_PAGE_CONTROLS,
     OVERLAY_PAGE_AUDIO,
     OVERLAY_PAGE_VIEW,
+    OVERLAY_PAGE_MODS,
     OVERLAY_PAGE_COUNT,
-    /* Rows after a page's settings: resume the game, quit the game. */
-    OVERLAY_ACTION_ROWS = 2,
+    /* Rows after a page's settings: reset this page, resume, quit. */
+    OVERLAY_ACTION_ROWS = 3,
     /* A graphics change rebuilds the presentation, so it waits for the player
      * to stop stepping through values. */
     OVERLAY_APPLY_DELAY_MS = 300,
@@ -56,10 +61,18 @@ typedef struct OverlayModel {
     int open;
     int page;
     int selected;
+    int sliderDragging; /* captured row + 1, or zero */
+    char settingsStatus[128];
     int dirty;         /* the panel needs repainting */
     int configPending; /* values.config differs from what the game runs */
     int sessionPending;
     unsigned changedAtMs;
+    int packAction;
+    char packStatus[160];
+    int packDownloader; /* 0 hidden, 1 working, 2 complete, 3 failed */
+    int packPercent, packCanCancel;
+    unsigned packDownloadedBytes, packTotalBytes;
+    char packPhase[48];
     int quitPending;
     int flushInput;    /* closed since the caller last asked */
 } OverlayModel;
@@ -67,6 +80,9 @@ typedef struct OverlayModel {
 void OverlayModelOpen(OverlayModel *model, const RagePortConfig *config,
                       const PortSessionOptions *session);
 void OverlayModelClose(OverlayModel *model);
+
+int OverlaySettingAvailable(const OverlayModel *model, int row);
+void OverlayModelResetPage(OverlayModel *model, unsigned nowMs);
 
 int OverlayModelSettingCount(const OverlayModel *model);
 int OverlayModelRowCount(const OverlayModel *model);
@@ -77,7 +93,8 @@ void OverlayModelDo(OverlayModel *model, OverlayAction action,
                     unsigned nowMs);
 
 /* A pointer at (x, y) in design units from the panel's top left. A click on
- * a tab, a row or the area around the panel acts; moving only selects. */
+ * a tab, a row or the area around the panel acts; moving only selects.
+ * click: 0 hover, 1 press, 2 drag, -1 release. Drags retain the slider row. */
 void OverlayModelPointer(OverlayModel *model, float x, float y, int click,
                          unsigned nowMs);
 
@@ -107,6 +124,7 @@ enum {
     OVERLAY_ACTION_GAP = 14,
     OVERLAY_FOOTER_H = 74,
     OVERLAY_VALUE_W = 250,
+    OVERLAY_SLIDER_W = 160,
     OVERLAY_TAB_TOP = 62,
     OVERLAY_TAB_H = 34,
     OVERLAY_REFERENCE_H = 820,

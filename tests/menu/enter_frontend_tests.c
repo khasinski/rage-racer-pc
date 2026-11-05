@@ -56,7 +56,7 @@ int main(void) {
           g_SceneTimer == 0);
     CHECK(s_frontend.idleTimer == 0 && s_frontend.menuSlide == 0 &&
           s_frontend.pulse == 0);
-    CHECK(s_frontend.state == FRONTEND_STATE_TITLE);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_OPENING);
     CHECK(s_frontend.fade == 0 && s_frontend.exitTimer == 0 &&
           s_frontend.attractTimer == -1);
     CHECK(s_classRefreshCalls == 1 && s_reverbCalls == 1);

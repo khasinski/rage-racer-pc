@@ -10,6 +10,8 @@
 #include <limits.h>
 #include <stdio.h>
 
+extern int g_TestMenuAnimationTicks;
+
 static Frontend s_frontend;
 
 static OptionMenu s_optionMenu;
@@ -45,6 +47,9 @@ static s32 s_saveRequests;
 static s32 s_selectBgmRequests;
 static s32 s_shuffleCalls;
 static s32 s_labelCount;
+static int s_quitRequested,s_nativeSelection=-1,s_nativeActivate;
+void PortMainMenuRequestQuit(void){s_quitRequested++;}
+int PortMainMenuTakeInput(int *selection){int flags=0;if(s_nativeSelection>=0){*selection=s_nativeSelection;s_nativeSelection=-1;flags=1;}if(s_nativeActivate){flags|=2;s_nativeActivate=0;}return flags;}
 static TitleMenuItem s_labelItem[TITLE_MENU_ITEM_COUNT];
 static s32 s_labelY[TITLE_MENU_ITEM_COUNT];
 static s32 s_labelHeight[TITLE_MENU_ITEM_COUNT];
@@ -101,6 +106,7 @@ static void ResetState(s32 selection) {
     g_PadPressed = PAD_CONFIRM;
     s_frontend.state = FRONTEND_STATE_MENU_INPUT;
     s_frontend.idleTimer = 99;
+    s_frontend.pulse = 129;
     s_optionMenu.cursor = 7;
     g_GrandPrixClass = 5;
     g_CourseIndex = 2;
@@ -116,7 +122,7 @@ static void ResetState(s32 selection) {
 
 static int CheckCommonConfirmation(void) {
     CHECK(s_frontend.state == FRONTEND_STATE_MENU_EXIT);
-    CHECK(s_frontend.idleTimer == 0);
+    CHECK(s_frontend.idleTimer == 0 && s_frontend.pulse == 0);
     CHECK(s_shuffleCalls == 1 && s_resetCalls == 1);
     return 0;
 }
@@ -155,6 +161,18 @@ int main(void) {
     CHECK(g_CarTable == g_TimeAttackCars && g_RaceProgress == &g_TimeAttackSave);
     CHECK(g_SeriesSelection == 0 && s_selectBgmRequests == 1);
 
+    ResetState(TITLE_MENU_GRAND_PRIX);
+    s_frontend.state = FRONTEND_STATE_MENU_OPENING;
+    s_frontend.menuSlide = 0;
+    g_TestMenuAnimationTicks = 2;
+    for (int i = 0; i < 7; ++i) UpdateMainMenuOpen();
+    CHECK(s_frontend.menuSlide == 14);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_OPENING);
+    UpdateMainMenuOpen();
+    CHECK(s_frontend.menuSlide == 16);
+    CHECK(s_frontend.state == FRONTEND_STATE_MENU_INPUT);
+    g_TestMenuAnimationTicks = 1;
+
     ResetState(TITLE_MENU_CUSTOM);
     UpdateMainMenuInput();
     CHECK(s_frontend.state == FRONTEND_STATE_MENU_EXIT);
@@ -185,6 +203,7 @@ int main(void) {
     ResetState(TITLE_MENU_OPTIONS);
     UpdateMainMenuInput();
     CHECK(s_optionRequests == 1 && s_optionMenu.cursor == 0);
+    if (CheckCommonConfirmation()) return 1;
 
     ResetState(TITLE_MENU_OPTIONS);
     s_assetComplete = 1;
@@ -196,7 +215,7 @@ int main(void) {
     s_frontend.state = FRONTEND_STATE_MENU_OPENING;
     s_frontend.menuSlide = INT_MAX;
     UpdateMainMenuOpen();
-    CHECK(s_frontend.menuSlide == 0x40);
+    CHECK(s_frontend.menuSlide == 16);
     CHECK(s_frontend.state == FRONTEND_STATE_MENU_INPUT);
 
     s_frontend.state = FRONTEND_STATE_MENU_OPENING;
@@ -207,41 +226,13 @@ int main(void) {
 
     ResetState(TITLE_MENU_CUSTOM);
     g_PadPressed = 0;
-    g_ExtraGrandPrixUnlocked = 0;
-    s_frontend.menuSlide = 0x40;
-    s_frontend.pulse = 0;
     DrawMainMenuRows();
-    CHECK(s_labelCount == TITLE_MENU_ITEM_COUNT - 1);
-    CHECK(s_labelItem[0] == TITLE_MENU_GRAND_PRIX);
-    CHECK(s_labelItem[1] == TITLE_MENU_TIME_ATTACK);
-    CHECK(s_labelItem[2] == TITLE_MENU_CUSTOM);
-    CHECK(s_labelItem[3] == TITLE_MENU_DUEL);
-    CHECK(s_labelItem[4] == TITLE_MENU_LOAD_SAVE);
-    CHECK(s_labelItem[5] == TITLE_MENU_OPTIONS);
-    CHECK(s_labelY[0] == 0x64 && s_labelY[1] == 0x7C);
-    CHECK(s_labelY[2] == 0x94 && s_labelY[3] == 0xAC);
-    CHECK(s_labelY[4] == 0xC4 && s_labelY[5] == 0xDC);
-    CHECK(s_labelY[5] + s_labelHeight[5] <= 240);
-
-    ResetState(TITLE_MENU_CUSTOM);
-    g_PadPressed = 0;
-    g_ExtraGrandPrixUnlocked = 1;
-    s_frontend.menuSlide = 0x40;
-    s_frontend.pulse = 0;
-    DrawMainMenuRows();
-    CHECK(s_labelCount == TITLE_MENU_ITEM_COUNT);
-    CHECK(s_labelItem[0] == TITLE_MENU_GRAND_PRIX);
-    CHECK(s_labelItem[1] == TITLE_MENU_EXTRA_GRAND_PRIX);
-    CHECK(s_labelItem[2] == TITLE_MENU_TIME_ATTACK);
-    CHECK(s_labelItem[3] == TITLE_MENU_CUSTOM);
-    CHECK(s_labelItem[4] == TITLE_MENU_DUEL);
-    CHECK(s_labelItem[5] == TITLE_MENU_LOAD_SAVE);
-    CHECK(s_labelItem[6] == TITLE_MENU_OPTIONS);
-    CHECK(s_labelY[0] == 0x64 && s_labelY[1] == 0x78);
-    CHECK(s_labelY[2] == 0x8C && s_labelY[3] == 0xA0);
-    CHECK(s_labelY[4] == 0xB4 && s_labelY[5] == 0xC8 && s_labelY[6] == 0xDC);
-    CHECK(s_labelY[6] + s_labelHeight[6] <= 240);
-    CHECK(s_labelHeight[3] == 0x10 && s_labelSelected[3] == 1);
+    CHECK(s_labelCount == 0); /* no legacy bitmap menu is queued */
+    s_nativeSelection = TITLE_MENU_LOAD_SAVE;s_nativeActivate=1;
+    UpdateMainMenuInput();CHECK(s_saveRequests==1);
+    ResetState(TITLE_MENU_GRAND_PRIX);g_PadPressed=0;
+    s_nativeSelection=TITLE_MENU_QUIT;s_nativeActivate=1;
+    UpdateMainMenuInput();CHECK(s_quitRequested==1);
 
     puts("main menu state tests passed");
     return 0;

@@ -116,3 +116,30 @@ if(TARGET rage-racer-smoke)
 set_tests_properties(keyboard_input PROPERTIES LABELS e2e)
     set_tests_properties(keyboard_input PROPERTIES TIMEOUT 60)
 endif()
+
+if(TARGET SDL3::Headers)
+    add_executable(force_feedback_device_tests
+        force_feedback_device_tests.c
+        ${CMAKE_SOURCE_DIR}/src/port/force_feedback_device.c
+        ${CMAKE_SOURCE_DIR}/src/port/force_feedback.c)
+    target_include_directories(force_feedback_device_tests PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include
+        ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+    target_compile_definitions(force_feedback_device_tests PRIVATE __psyz=1 SDL_STATIC_LIB)
+    target_link_libraries(force_feedback_device_tests PRIVATE SDL3::Headers)
+    if(MSVC)
+        target_compile_options(force_feedback_device_tests PRIVATE
+            "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")
+    else()
+        target_compile_options(force_feedback_device_tests PRIVATE
+            "${RAGE_FORCE_INCLUDE_OPTION}${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h"
+            ${RAGE_STRICT_WARNING_OPTIONS})
+        target_link_libraries(force_feedback_device_tests PRIVATE m)
+    endif()
+    foreach(scenario IN ITEMS wheel rumble_only open_failure start_failure gamepad preview
+                              constant_only hotplug retry)
+        add_test(NAME force_feedback_device_${scenario}
+            COMMAND force_feedback_device_tests ${scenario})
+        set_tests_properties(force_feedback_device_${scenario} PROPERTIES LABELS unit)
+    endforeach()
+endif()

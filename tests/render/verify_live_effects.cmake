@@ -10,7 +10,8 @@ if(NOT result STREQUAL "0")
     message(FATAL_ERROR "Cannot generate native assets: ${root}")
 endif()
 set(scenario "${root}/scenario.ini")
-file(WRITE "${scenario}" "[race]\nenabled=true\nmode=grand-prix\nseries=gp\nclass=0\ncourse=0\ncar=3\n[video]\nrenderer=modern\n[modern]\nassets=${assets}\n[run]\nframes=1500\n[stop]\nscene=12\ntimer=250\n[hooks]\ntoggle_effects_frames=1000,1060,1120,1180\n[diagnostics]\nrenderer_lifecycle=true\n")
+file(WRITE "${scenario}" "[race]\nenabled=true\nmode=grand-prix\nseries=gp\nclass=0\ncourse=0\ncar=3\n[video]\nrenderer=modern\n[modern]\nassets=${assets}\n[run]\nframes=1500\n[stop]\nscene=12\ntimer=450\n[hooks]\ntoggle_effects_frames=1000,1060,1120,1180\n[diagnostics]\nrenderer_lifecycle=true\n")
+# Faster menu transitions must leave enough race time for all four hooks.
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     "${GAME}" --scenario "${scenario}" WORKING_DIRECTORY "${SOURCE}"
     RESULT_VARIABLE result TIMEOUT 165 OUTPUT_VARIABLE output ERROR_VARIABLE error)

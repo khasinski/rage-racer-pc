@@ -1,7 +1,7 @@
-# Repeatable Linux modern-renderer profiling with real local disc data.
+# Repeatable hidden modern-renderer profiling with real local disc data.
 cmake_minimum_required(VERSION 3.20)
-if(NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-    message(FATAL_ERROR "This profiling harness currently supports Linux")
+if(NOT CMAKE_HOST_SYSTEM_NAME MATCHES "^(Linux|Darwin)$")
+    message(FATAL_ERROR "This profiling harness supports Linux and macOS")
 endif()
 # A locked Wayland desktop can throttle swapchain acquisition even when the
 # display reports 120 Hz. Do not record those runs as foreground performance.
@@ -41,7 +41,7 @@ if(LAPS LESS 1 OR LAPS GREATER 100 OR RACES GREATER 100 OR CLASS GREATER 5 OR
    COURSE GREATER 3 OR TIMEOUT LESS 1 OR TIMEOUT GREATER 3600 OR RESTARTS GREATER 10)
     message(FATAL_ERROR "Profiling limits out of range")
 endif()
-foreach(option TRACE PREWARM VERIFY_VRAM VERIFY_LIFECYCLE)
+foreach(option TRACE PREWARM VERIFY_VRAM VERIFY_LIFECYCLE FRAME_TIMING)
     if(NOT DEFINED ${option})
         set(${option} OFF)
         if(option STREQUAL "PREWARM")
@@ -55,6 +55,10 @@ endif()
 set(trace false)
 set(prewarm false)
 set(lifecycle false)
+set(frame_timing false)
+if(FRAME_TIMING)
+    set(frame_timing true)
+endif()
 if(VERIFY_LIFECYCLE OR RESTARTS GREATER 0)
     set(lifecycle true)
 endif()
@@ -78,10 +82,17 @@ if(VERIFY_VRAM)
     list(APPEND oracleEnv PSYZ_VERIFY_VRAM_READ_CACHE=1)
 endif()
 message(STATUS "Profiling session: ${session}")
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+    # BSD time writes resource statistics to the captured stderr file.
+    set(resource_command /usr/bin/time -l)
+else()
+    set(resource_command /usr/bin/time -v -o "${session}/time.txt")
+endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     --unset=RAGE_TEST_SCENARIO --unset=PSYZ_VERIFY_VRAM_READ_CACHE
-    "XDG_STATE_HOME=${session}/state" ${oracleEnv}
-    /usr/bin/time -v -o "${session}/time.txt"
+    PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
+    "RAGE_PORT_PROFILE_ROOT=${session}/state"
+    "XDG_STATE_HOME=${session}/state" ${oracleEnv} ${resource_command}
     "${GAME}" --config "${CONFIG}" --scenario "${ROOT}/race-scenario.ini"
     --set "disc.image=${DISC}" --set video.renderer=modern
     --set "race.class=${CLASS}" --set "race.course=${COURSE}"
@@ -89,6 +100,8 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env
     --set autopilot.enabled=true --set autopilot.speed=6000
     --set "autopilot.laps=${LAPS}" --set "autopilot.races=${RACES}"
     --set diagnostics.performance=true --set "diagnostics.performance_trace=${trace}"
+    --set diagnostics.test_log=true
+    --set "diagnostics.frame_timing=${frame_timing}"
     --set "diagnostics.renderer_lifecycle=${lifecycle}"
     --set "diagnostics.renderer_restart_count=${RESTARTS}"
     --set "diagnostics.texture_prewarm=${prewarm}"
@@ -150,5 +163,5 @@ if(RESTARTS GREATER 0)
     endif()
 endif()
 file(WRITE "${session}/result.txt"
-    "completed=${completion}\ngame_sha256=${game_hash}\nconfig_sha256=${config_hash}\ntrace=${trace}\nprewarm=${prewarm}\npresentation_restarts=${RESTARTS}\nsdl_video_driver_request=$ENV{SDL_VIDEODRIVER}\nexpected_region=${EXPECT_REGION}\nvram_oracle=${VERIFY_VRAM}\nlifecycle_oracle=${VERIFY_LIFECYCLE}\nvisual_correctness=not_automatically_asserted\n")
+    "completed=${completion}\ngame_sha256=${game_hash}\nconfig_sha256=${config_hash}\ntrace=${trace}\nprewarm=${prewarm}\nframe_timing=${frame_timing}\nheadless=true\npresentation_restarts=${RESTARTS}\nsdl_video_driver_request=$ENV{SDL_VIDEODRIVER}\nexpected_region=${EXPECT_REGION}\nvram_oracle=${VERIFY_VRAM}\nlifecycle_oracle=${VERIFY_LIFECYCLE}\nvisual_correctness=not_automatically_asserted\n")
 message(STATUS "Complete: ${session}")

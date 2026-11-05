@@ -43,6 +43,7 @@ int main(void) {
     for(size_t i=0;i<sizeof(bad)/sizeof(bad[0]);++i)
         assert(ModFileClassify(bad[i])==RAGE_MOD_FILE_INVALID);
     assert(ModFileClassify("textures/folder/A_1-2.png")==RAGE_MOD_FILE_TEXTURE);
+    assert(ModFileClassify("textures/folder/A_1-2.webp")==RAGE_MOD_FILE_TEXTURE);
     assert(ModFileClassify("textures/index.txt")==RAGE_MOD_FILE_TEXTURE);
     assert(ModFileClassify("textures/asset.json")==RAGE_MOD_FILE_TEXTURE);
     assert(ModFileClassify("meshes/body.rmesh")==RAGE_MOD_FILE_MESH);

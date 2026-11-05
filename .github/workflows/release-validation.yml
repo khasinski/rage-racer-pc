@@ -1,0 +1,62 @@
+name: Release validation (no publication)
+
+on:
+  push:
+    branches: ['validation/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    env:
+      PSYZ_HEADLESS: '1'
+      SDL_AUDIODRIVER: dummy
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libdbus-1-dev libdecor-0-dev libegl1-mesa-dev libgl1-mesa-dev libglvnd-dev libibus-1.0-dev libpulse-dev libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev libxtst-dev libssl-dev
+      - name: Configure Unix
+        if: runner.os != 'Windows'
+        run: cmake -S . -B build/validation -DCMAKE_BUILD_TYPE=Release -DRAGE_EMBED_AUTHORED_CARS=OFF -DRAGE_ENABLE_LINT=OFF
+      - name: Configure Windows
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build/validation -G "Visual Studio 17 2022" -A x64 -T ClangCL -DRAGE_EMBED_AUTHORED_CARS=OFF -DRAGE_ENABLE_LINT=OFF
+      - name: Build
+        run: cmake --build build/validation --config Release --parallel 4
+      - name: Unit and functional tests
+        run: ctest --test-dir build/validation -C Release --output-on-failure -L '^(unit|functional)$' --parallel 4 --output-log validation-tests.log
+      - name: Collect game and configuration
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp rage-port.ini race-scenario.ini cars.toml cars.ntscj.toml README.md LICENSE.md dist/
+          if [ -d 'build/validation/Rage Racer.app' ]; then
+            cp -R 'build/validation/Rage Racer.app' dist/
+            cp rage-port.ini race-scenario.ini cars.toml cars.ntscj.toml 'dist/Rage Racer.app/Contents/Resources/'
+          elif [ -f build/validation/Release/rage-racer.exe ]; then
+            cp build/validation/Release/rage-racer.exe dist/Rage-Racer.exe
+          else
+            cp build/validation/rage-racer dist/
+          fi
+          if find dist -name '*.py' -print -quit | grep -q .; then exit 1; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: validation-${{ matrix.os }}
+          path: |
+            dist/
+            build/validation/validation-tests.log
+            build/validation/Testing/Temporary/LastTest.log
+          if-no-files-found: warn

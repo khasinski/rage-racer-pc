@@ -32,11 +32,13 @@ if(SAVED_DISC)
     if(NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" OR NOT PRODUCTION_ENTRY)
         message(FATAL_ERROR "Saved-disc fixture requires Linux production entry")
     endif()
-    file(MAKE_DIRECTORY "${root}/config/rage-racer")
-    file(WRITE "${root}/config/rage-racer/disc-cue-path" "${disc}\n")
+    file(MAKE_DIRECTORY "${root}/profile")
+    file(WRITE "${root}/profile/disc-cue-path" "${disc}\n")
     set(disc_arguments)
 endif()
 execute_process(COMMAND "${CMAKE_COMMAND}" -E env
+    PSYZ_HEADLESS=1 SDL_AUDIODRIVER=dummy
+    "RAGE_PORT_PROFILE_ROOT=${root}/profile"
     --unset=RAGE_PORT_MODERN_ASSETS "XDG_STATE_HOME=${root}/state"
     --unset=RAGE_PORT_DISC_IMAGE --unset=RAGE_PORT_DISC_CUE
     "XDG_CONFIG_HOME=${root}/config"

@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/car.h"
 #include "game/menu.h"
 #include "game/state.h"
@@ -157,7 +158,7 @@ static void DrawMenuTransitions(void) {
         s32 screen = s_menuRuntime.activeDrawScreen;
 
         g_MenuScreenDraw[screen](&s_menuRuntime.drawProgress[screen],
-                                 MENU_ACTIVE_SCREEN_FADE_STEP);
+                                 PortMenuAnimationStep(MENU_ACTIVE_SCREEN_FADE_STEP));
     }
     if (s_menuRuntime.outgoingDrawScreen > MENU_SCREEN_BOOTSTRAP &&
         s_menuRuntime.outgoingDrawScreen < MENU_SCREEN_COUNT) {
@@ -165,7 +166,7 @@ static void DrawMenuTransitions(void) {
 
         s_menuRuntime.outgoingProgress =
             g_MenuScreenDraw[screen](&s_menuRuntime.drawProgress[screen],
-                                     MENU_OUTGOING_SCREEN_FADE_STEP);
+                                     PortMenuAnimationStep(MENU_OUTGOING_SCREEN_FADE_STEP));
     }
 }
 

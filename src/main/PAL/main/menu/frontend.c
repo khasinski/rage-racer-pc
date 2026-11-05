@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/prim.h"
 #include "game/asset.h"
 #include "game/audio.h"
@@ -24,7 +25,7 @@ enum {
 void UpdateMainMenuExit(void) {
     Frontend *frontend = MenuFrontend();
 
-    frontend->pulse++;
+    frontend->pulse = AddClampedMenuValue(frontend->pulse, PortMenuAnimationStep(3), 0, 0x81);
     DrawFullscreenFadeTile(frontend->pulse * 2, 0x59);
 
     if (frontend->pulse >= 0x81) {
@@ -65,7 +66,8 @@ void UpdateTitleAttract(void) {
     void *orderingTable = GamePrimaryOrderingTable(1);
     void *next;
 
-    alpha = 0x7F - frontend->menuSlide * 2;
+    alpha = frontend->state == FRONTEND_STATE_TITLE
+        ? 0x7F - frontend->menuSlide * 2 : 0x30;
     if (alpha < 0x30) {
         alpha = 0x30;
     } else if (alpha > 0x7F) {
@@ -73,11 +75,11 @@ void UpdateTitleAttract(void) {
     }
 
     next = RENDER_PRIM_CURSOR;
-    next = GameQueueShadedSprite(orderingTable, next, 0x28, 0xA0, 0xF0,
-                                 0x18, 0, 0x88, 0x7DC0, alpha);
-    next = GameQueueShadedSprite(orderingTable, next, 0x20, 0xB8, 0x100,
+    next = GameQueueShadedSprite(orderingTable, next, 40, 183, 240,
+                                 24, 0, 0x88, 0x7DC0, alpha);
+    next = GameQueueShadedSprite(orderingTable, next, 32, 218, 256,
                                  0x10, 0, 0xF0, 0x7DC1, alpha);
-    next = GameQueueShadedSprite(orderingTable, next, 0x11A, 0xAF, 0xC, 8,
+    next = GameQueueShadedSprite(orderingTable, next, 289, 185, 12, 8,
                                  0xE0, 0xB0, 0x7DC0, alpha);
     next = QueueDrawModePrim(orderingTable, next, 0x19);
 
@@ -86,20 +88,30 @@ void UpdateTitleAttract(void) {
         panelClut = 0x7D80;
     }
 
-    next = GameQueueShadedSprite(orderingTable, next, 0x34, 0x18, 0x6C,
-                                 0x88, 0, 0, panelClut, alpha);
+    next = GameQueueShadedSprite(orderingTable, next, 52, 8, 108,
+                                 136, 0, 0, panelClut, alpha);
+    /* Explicitly select the crest's 8-bit page for the sprite. The modern
+     * overlay keeps polygon-local pages separate from subsequent sprites.
+     * OT traversal runs this command after the mirrored quad, before the
+     * sprite; the earlier 0x19 command restores the caption's 4-bit page. */
+    next = QueueDrawModePrim(orderingTable, next, 0x99);
     g_RenderState.draw.packetCursor = GameQueueShadedTexturedRect(
-        orderingTable, next, 0xA0, 0x18, -0x6C, 0x88, 0, 0, panelClut, 0x99,
+        orderingTable, next, 160, 8, -108, 136, 0, 0, panelClut, 0x99,
         alpha);
 }
 
+
+static int FrontendAllowsIdleAttract(const Frontend *frontend) {
+    return frontend->state == FRONTEND_STATE_TITLE ||
+           frontend->state == FRONTEND_STATE_MENU_INPUT;
+}
 
 static void UpdateAttractRaceLoading(void) {
     const Frontend *frontend = MenuFrontend();
     s32 randomCourse;
     const GrandPrixClassDefinition *definition;
 
-    if (frontend->state == FRONTEND_STATE_MENU_EXIT ||
+    if (!FrontendAllowsIdleAttract(frontend) ||
         (frontend->attractCycle % 2) != 0) {
         return;
     }
@@ -134,6 +146,7 @@ static void UpdateAttractRaceLoading(void) {
 static void UpdateFrontendIdleAttract(void) {
     Frontend *frontend = MenuFrontend();
 
+    if (!FrontendAllowsIdleAttract(frontend)) return;
     if (frontend->idleTimer < FRONTEND_IDLE_FRAMES) {
         frontend->idleTimer++;
         return;

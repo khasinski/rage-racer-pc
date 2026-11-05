@@ -3,6 +3,7 @@
  * player to stop stepping while session options apply at once, and the
  * pointer lands on the rows and tabs the layout puts there. */
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 
 #include "overlay_model.h"
@@ -84,7 +85,7 @@ static int TestNavigation(void) {
     /* Paging wraps and starts the new page at its first row. */
     OverlayModelDo(&model, OVERLAY_DOWN, 0);
     OverlayModelDo(&model, OVERLAY_PAGE_PREV, 0);
-    CHECK(model.page == OVERLAY_PAGE_VIEW && model.selected == 0);
+    CHECK(model.page == OVERLAY_PAGE_MODS && model.selected == 0);
     CHECK(OverlayModelRowCount(&model) != rows);
     OverlayModelDo(&model, OVERLAY_PAGE_NEXT, 0);
     CHECK(model.page == OVERLAY_PAGE_GRAPHICS);
@@ -169,7 +170,7 @@ static int TestClosingAndQuitting(void) {
     int resume;
 
     Open(&model);
-    resume = OverlayModelSettingCount(&model);
+    resume = OverlayModelSettingCount(&model) + 1;
     model.selected = resume;
     OverlayModelDo(&model, OVERLAY_ACTIVATE, 0);
     CHECK(!model.open && OverlayModelTakeClosed(&model));
@@ -221,9 +222,9 @@ static int TestPointer(void) {
 
     /* The resume row closes, quit asks to quit, outside closes. */
     settings = OverlayModelSettingCount(&model);
-    OverlayModelPointer(&model, 100.0f, OverlayRowTop(settings, settings + 1) + 5.0f, 1, 0);
+    OverlayModelPointer(&model, 100.0f, OverlayRowTop(settings, settings + 2) + 5.0f, 1, 0);
     CHECK(model.open && model.quitPending);
-    OverlayModelPointer(&model, 100.0f, OverlayRowTop(settings, settings) + 5.0f, 1, 0);
+    OverlayModelPointer(&model, 100.0f, OverlayRowTop(settings, settings + 1) + 5.0f, 1, 0);
     CHECK(!model.open);
     Open(&model);
     OverlayModelPointer(&model, -50.0f, 10.0f, 1, 0);
@@ -280,7 +281,123 @@ static int TestLayout(void) {
     return 0;
 }
 
+static int TestPackActions(void){
+ OverlayModel model;Open(&model);OverlayModelSwitchPage(&model,OVERLAY_PAGE_MODS);
+ const int actions[]={1,5,2,3};
+ for(int row=0;row<4;row++){OverlayModelSelect(&model,row);OverlayModelDo(&model,OVERLAY_ACTIVATE,0);CHECK(model.packAction==actions[row]);CHECK(!model.configPending&&!model.sessionPending);}
+ model.packAction=0;
+ OverlayModelSelect(&model,4);OverlayModelDo(&model,OVERLAY_ACTIVATE,0);
+ CHECK(model.values.session.randomTimeOfDay==1);
+ CHECK(model.packAction==0&&!model.configPending&&model.sessionPending);
+ OverlayPending pending=OverlayModelTakePending(&model,0);CHECK(pending.session);
+ OverlayModelDo(&model,OVERLAY_LEFT,1);CHECK(model.values.session.randomTimeOfDay==0);
+ OverlayModelSelect(&model,5);OverlayModelDo(&model,OVERLAY_ACTIVATE,2);
+ CHECK(model.values.session.fastMenus==1 && model.sessionPending);
+ OverlayModelDo(&model,OVERLAY_LEFT,3);CHECK(model.values.session.fastMenus==0);
+ return 0;
+}
+
+static int TestDownloader(void){
+ OverlayModel model;Open(&model);OverlayModelSwitchPage(&model,OVERLAY_PAGE_MODS);
+ model.packDownloader=1;model.packCanCancel=0;
+ OverlayModelDo(&model,OVERLAY_CLOSE,0);CHECK(model.open&&model.packDownloader==1);
+ OverlayModelDo(&model,OVERLAY_PAGE_NEXT,0);CHECK(model.page==OVERLAY_PAGE_MODS);
+ OverlayModelDo(&model,OVERLAY_ACTIVATE,0);CHECK(model.packAction==0);
+ model.packCanCancel=1;OverlayModelDo(&model,OVERLAY_ACTIVATE,0);CHECK(model.packAction==4);
+ model.packAction=0;
+ float button=(float)OverlayDesignHeight(OverlayModelRowCount(&model))-90;
+ OverlayModelPointer(&model,300,button,1,0);CHECK(model.packAction==4);
+ model.packAction=0;model.packDownloader=2;model.packCanCancel=0;
+ OverlayModelDo(&model,OVERLAY_CLOSE,0);CHECK(model.open&&!model.packDownloader&&model.packAction==6);
+ return 0;
+}
+
+static int TestBrightnessAndDisplay(void) {
+    OverlayModel model;
+    int count, brightness = -1, display = -1;
+    const OverlaySetting *settings = OverlayPageSettings(OVERLAY_PAGE_GRAPHICS, &count);
+    Open(&model);
+    for (int i = 0; i < count; ++i) {
+        if (!strcmp(settings[i].label, "Brightness")) brightness = i;
+        if (!strcmp(settings[i].label, "Display mode")) display = i;
+    }
+    CHECK(brightness >= 0 && display >= 0 && settings[brightness].slider);
+    float y = OverlayRowTop(count, brightness) + OVERLAY_ROW_H * 0.5f;
+    OverlayModelPointer(&model, OverlayValueCentre(), y, 1, 10);
+    CHECK(fabsf(model.values.config.modernBrightness - 1.0f) < 0.001f);
+    OverlayModelPointer(&model, OverlayValueCentre() + OVERLAY_SLIDER_W, y, 2, 20);
+    CHECK(fabsf(model.values.config.modernBrightness - 1.5f) < 0.001f);
+    OverlayModelDo(&model, OVERLAY_RIGHT, 30);
+    CHECK(fabsf(model.values.config.modernBrightness - 1.5f) < 0.001f);
+    OverlayModelPointer(&model, OverlayValueCentre() - OVERLAY_SLIDER_W * 0.5f, y, 2, 40);
+    OverlayModelDo(&model, OVERLAY_LEFT, 50);
+    CHECK(fabsf(model.values.config.modernBrightness - 0.5f) < 0.001f);
+    CHECK(OverlayModelTakePending(&model, 400).config);
+    OverlayModelSelect(&model, display);
+    OverlayModelDo(&model, OVERLAY_ACTIVATE, 500);
+    CHECK(model.values.session.fullscreen == 1);
+    OverlayPending pending = OverlayModelTakePending(&model, 500);
+    CHECK(pending.session && !pending.config);
+    return 0;
+}
+
+static int TestResetScopeAndDisabledOptions(void) {
+    OverlayModel model;
+    Open(&model);
+    model.values.config.modernBrightness = 1.4f;
+    model.values.session.analog = 0;
+    model.values.session.chaseDistance = 3;
+    model.values.session.music = 2;
+    model.values.session.fullscreen = 1;
+    OverlayModelSwitchPage(&model, OVERLAY_PAGE_VIEW);
+    OverlayModelSelect(&model, OverlayModelSettingCount(&model));
+    OverlayModelDo(&model, OVERLAY_ACTIVATE, 10);
+    CHECK(model.values.session.chaseDistance == 1);
+    CHECK(model.values.session.music == 2 && model.values.session.analog == 0);
+    CHECK(fabsf(model.values.config.modernBrightness - 1.4f) < 0.001f);
+    CHECK(model.sessionPending && !model.configPending);
+    OverlayModelSwitchPage(&model, OVERLAY_PAGE_GRAPHICS);
+    OverlayModelResetPage(&model, 20);
+    CHECK(model.values.config.modernBrightness == 1 && model.configPending);
+    CHECK(!model.values.session.fullscreen && model.values.session.analog == 0);
+    OverlayModelSwitchPage(&model, OVERLAY_PAGE_CONTROLS);
+    OverlayModelResetPage(&model, 30);
+    CHECK(model.values.session.analog == 1 && model.values.session.tickMultiplier == 1);
+    CHECK(model.values.session.music == 2);
+    OverlayModelSwitchPage(&model, OVERLAY_PAGE_AUDIO);
+    OverlayModelResetPage(&model, 40);
+    CHECK(model.values.session.music == 15 && model.values.session.effects == 15);
+    OverlayModelSwitchPage(&model, OVERLAY_PAGE_MODS);
+    model.values.hdEnabled = 1;
+    model.values.session.randomTimeOfDay = 1;
+    OverlayModelResetPage(&model, 50);
+    CHECK(model.values.hdEnabled && !model.packAction && !model.values.session.randomTimeOfDay);
+
+    Open(&model);
+    model.values.config.renderer = RAGE_RENDERER_CLASSIC;
+    int count;
+    const OverlaySetting *settings = OverlayPageSettings(OVERLAY_PAGE_GRAPHICS, &count);
+    for (int row = 0; row < count; ++row) {
+        if (!settings[row].modernOnly) { CHECK(OverlaySettingAvailable(&model, row)); continue; }
+        CHECK(!OverlaySettingAvailable(&model, row));
+        model.selected = row;
+        int before = settings[row].get(&model.values);
+        OverlayModelDo(&model, OVERLAY_RIGHT, 100);
+        OverlayModelPointer(&model, OverlayValueCentre() + 40,
+                            OverlayRowTop(count, row) + 20, 1, 100);
+        CHECK(settings[row].get(&model.values) == before);
+        CHECK(!model.configPending && !model.sessionPending && !model.sliderDragging);
+    }
+    model.values.config.renderer = RAGE_RENDERER_MODERN;
+    for (int row = 0; row < count; ++row) CHECK(OverlaySettingAvailable(&model, row));
+    return 0;
+}
+
 int main(void) {
+    if (TestResetScopeAndDisabledOptions()) return 1;
+    if (TestBrightnessAndDisplay()) return 1;
+    if(TestDownloader())return 1;
+    if(TestPackActions())return 1;
     if (TestEverySettingRoundTrips()) return 1;
     if (TestNavigation()) return 1;
     if (TestStepsAndPending()) return 1;

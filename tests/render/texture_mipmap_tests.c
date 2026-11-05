@@ -17,6 +17,12 @@ static int failures;
 } while (0)
 
 static void test_mip_chain_keeps_atlas_tiles_separate(void) {
+    EXPECT_EQ(4, TextureAtlasMipLevelCount(256, 256));
+    EXPECT_EQ(5, TextureAtlasMipLevelCount(512, 512));
+    EXPECT_EQ(6, TextureAtlasMipLevelCount(1024, 1024));
+    EXPECT_EQ(7, TextureAtlasMipLevelCount(2048, 2048));
+    EXPECT_EQ(4, TextureAtlasMipLevelCount(1024, 256));
+    EXPECT_EQ(0, TextureAtlasMipLevelCount(0, 256));
     uint8_t source[16 * 8 * 4];
     uint8_t chain[16 * 8 * 4 + 8 * 4 * 4 + 4 * 2 * 4 + 2 * 1 * 4];
     size_t last;

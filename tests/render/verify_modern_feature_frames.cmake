@@ -2,12 +2,17 @@ string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef id)
 set(root "${OUTPUT_ROOT}/modern-features-${id}")
 file(MAKE_DIRECTORY "${root}")
 function(run_feature name aspect filtering post grading width expected_hash)
+    set(brightness 1.0)
+    if(ARGC GREATER 7)
+        set(brightness "${ARGV7}")
+    endif()
     set(capture "${root}/${name}.ppm")
     set(scenario "${root}/${name}.ini")
     file(WRITE "${scenario}" "[modern]\nassets = disc\n[video]\nrenderer = modern\ninternal_scale = 1\naspect = ${aspect}\nfps = logic\ntexture_filter = ${filtering}\npost = ${post}\ngrading = ${grading}\n[diagnostics]\nmodern_dump = ${capture}\nmodern_dump_scene_id = 12\nmodern_dump_timer = 120\n[race]\nenabled = true\nmode = grand-prix\nseries = gp\nclass = 0\ncourse = 0\ncar = 3\n[run]\nframes = 2500\n[stop]\nscene = 12\ntimer = 130\n")
     execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
         RAGE_PORT_DISABLE_HOST_INPUT=1 RAGE_PORT_SYNC_RANDOM=12@0=1
-        "${GAME}" --scenario "${scenario}" WORKING_DIRECTORY "${SOURCE}" TIMEOUT 165
+        "${GAME}" --scenario "${scenario}" --set "video.brightness=${brightness}"
+        WORKING_DIRECTORY "${SOURCE}" TIMEOUT 165
         RESULT_VARIABLE result OUTPUT_VARIABLE output ERROR_VARIABLE error)
     if(NOT result EQUAL 0 OR NOT EXISTS "${capture}")
         message(FATAL_ERROR "Modern ${name} capture failed: ${root}\n${output}${error}")
@@ -22,8 +27,11 @@ function(run_feature name aspect filtering post grading width expected_hash)
     endif()
     set("${name}_hash" "${actual_hash}" PARENT_SCOPE)
 endfunction()
-run_feature(baseline auto nearest none off 320 7ace9207ecd7ed323e3d95a9e3c70472f3b0040233738b5d148cedcbdb4a25c1)
-run_feature(enhanced 16:9 linear fxaa vibrant 426 4dc96ec04b9a7cf4cb47535e5ffa149903a4cf9e9b2fb1b4de36c23636963002)
+# Reviewed together with the neutral-gamma SDK comparison; see the validation
+# report. Brightness=100% intentionally uses the brighter modern baseline.
+run_feature(baseline auto nearest none off 320 fd46b577496cd96f0abca1cc89a5dd61e66a69c24c74eb770dca26da60095013)
+run_feature(enhanced 16:9 linear fxaa vibrant 426 7163c4a7a6e501faf5d6a8fc5bde9403053c78f454d6e8f11ea533144562bce4)
+run_feature(neutral auto nearest none off 320 6d3c229980970314a2c984771cc8f9f3c21bc662ed7c96fb1ba7125d3c28a64b 0.8695652174)
 if(baseline_hash STREQUAL enhanced_hash)
     message(FATAL_ERROR "Modern enhancement pipeline did not affect output: ${root}")
 endif()

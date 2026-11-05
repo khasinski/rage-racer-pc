@@ -277,6 +277,9 @@ add_executable(game_logic_tests
     ${CMAKE_SOURCE_DIR}/src/port/platform_paths.c
 )
 target_link_libraries(game_logic_tests PRIVATE rage-sim)
+if(UNIX)
+    target_link_libraries(game_logic_tests PRIVATE m)
+endif()
 if(APPLE)
     target_link_libraries(game_logic_tests PRIVATE "-framework CoreFoundation")
 endif()
@@ -797,3 +800,36 @@ if(NOT MSVC)
 endif()
 add_test(NAME fmv_zoom COMMAND fmv_zoom_tests)
 set_tests_properties(fmv_zoom PROPERTIES LABELS unit)
+
+add_executable(race_mods_tests race_mods_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/race_mods.c)
+target_include_directories(race_mods_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port
+    ${CMAKE_SOURCE_DIR}/src/port/include ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include)
+target_compile_definitions(race_mods_tests PRIVATE __psyz=1)
+if(NOT MSVC)
+    target_compile_options(race_mods_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+endif()
+add_test(NAME race_mods COMMAND race_mods_tests)
+set_tests_properties(race_mods PROPERTIES LABELS unit)
+add_executable(user_settings_tests user_settings_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/user_settings.c
+    ${CMAKE_SOURCE_DIR}/src/port/port_config.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_config.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_parse.c)
+target_include_directories(user_settings_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(user_settings_tests PRIVATE SDL3::SDL3)
+target_compile_options(user_settings_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+add_test(NAME user_settings COMMAND user_settings_tests "${CMAKE_CURRENT_BINARY_DIR}/user-settings-fixture")
+set_tests_properties(user_settings PROPERTIES LABELS unit TIMEOUT 30)
+
+add_executable(memory_budget_tests memory_budget_tests.c
+    ${CMAKE_SOURCE_DIR}/src/port/memory_budget.c
+    ${CMAKE_SOURCE_DIR}/src/port/runtime_parse.c)
+target_include_directories(memory_budget_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port)
+target_link_libraries(memory_budget_tests PRIVATE SDL3::SDL3)
+target_compile_options(memory_budget_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
+foreach(profile IN ITEMS normal 2gb 4gb available forced_low forced_minimum unknown normal_override pressure)
+    add_test(NAME memory_budget_${profile} COMMAND memory_budget_tests ${profile})
+    set_tests_properties(memory_budget_${profile} PROPERTIES LABELS unit)
+endforeach()

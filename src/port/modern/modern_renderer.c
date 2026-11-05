@@ -1,4 +1,6 @@
+#include "../memory_budget.h"
 #include "modern_renderer.h"
+#include "game/car.h"
 #include "modern_assets.h"
 #include "modern_native_gpu.h"
 #include "modern_ssao.h"
@@ -6,6 +8,13 @@
 #include "modern_sky_reprojection.h"
 #include "modern_overlay_state.h"
 #include "modern_overlay_batches.h"
+#include "../menu_images.h"
+#include "../mod_assets.h"
+/* Shared generated shader storage is defined by graphics_overlay.c. */
+extern unsigned char overlay_vert_spv[],overlay_vert_msl[];
+extern unsigned char overlay_frag_spv[],overlay_frag_msl[];
+extern unsigned int overlay_vert_spv_len,overlay_vert_msl_len;
+extern unsigned int overlay_frag_spv_len,overlay_frag_msl_len;
 #include "modern_presentation_clock.h"
 #include "modern_fmv_zoom.h"
 #include "../classic_motion.h"
@@ -35,6 +44,10 @@
 #include "../runtime_config.h"
 #include "../native_asset_importer.h"
 #include "shaders/modern_vert_spv.h"
+#include "shaders/sky_atlas_frag_spv.h"
+#include "shaders/sky_atlas_frag_msl.h"
+#include "shaders/ui_atlas_frag_spv.h"
+#include "shaders/ui_atlas_frag_msl.h"
 #include "shaders/modern_frag_spv.h"
 #include "shaders/post_vert_spv.h"
 #include "shaders/post_frag_spv.h"
@@ -120,6 +133,19 @@ static int s_mirrorTargetW, s_mirrorTargetH;
 static SDL_GPUSampler *s_sampler;
 static SDL_GPUGraphicsPipeline *s_pipe2d;
 static SDL_GPUGraphicsPipeline *s_pipe2dSub;
+static SDL_GPUGraphicsPipeline *s_pipeMenu;
+static SDL_GPUGraphicsPipeline *s_pipeUiAtlas;
+static SDL_GPUTexture *s_menuTextures[79];
+static SDL_GPUGraphicsPipeline *s_pipeSkyAtlas,*s_pipeSkyAtlasSub;
+static uint32_t s_skyAtlasKey=UINT32_MAX;
+static SDL_GPUSampler *s_skyAtlasSampler;
+static int s_haveSkyAtlas;
+static unsigned s_menuGeneration;
+static char s_hudKeys[64][RAGE_MOD_MANIFEST_KEY_CAPACITY];
+static uint64_t s_uiTraceKeys[64];
+static int s_uiScene=-1;
+static int s_hudFrame;
+static int s_overlayHeight=240;
 static SDL_GPUBuffer *s_vertexBuffer;
 static SDL_GPUTransferBuffer *s_vertexTransfer;
 static SDL_GPUTexture *s_postTarget;
@@ -148,6 +174,10 @@ static int s_waitClassicFrame;
 enum {
     MODERN_PIPE_2D,
     MODERN_PIPE_2D_SUB,
+    MODERN_PIPE_MENU,
+    MODERN_PIPE_UI_ATLAS,
+    MODERN_PIPE_SKY_ATLAS,
+    MODERN_PIPE_SKY_ATLAS_SUB,
 };
 
 #define MODERN_MAX_VERTICES 400000
@@ -195,11 +225,12 @@ static void ModernDisableFrameHistory(void) {
 static SDL_GPUShader *ModernCreateShader(
     const unsigned char *spirv, size_t spirvSize,
     const char *msl, size_t mslSize, SDL_GPUShaderStage stage,
-    const char *mslEntry, int samplers) {
+    const char *mslEntry, int samplers, int uniforms) {
     SDL_GPUShaderFormat formats = SDL_GetGPUShaderFormats(s_device);
     SDL_GPUShaderCreateInfo info = {0};
     info.stage = stage;
     info.num_samplers = (Uint32)samplers;
+    info.num_uniform_buffers=(Uint32)uniforms;
     if ((formats & SDL_GPU_SHADERFORMAT_SPIRV) && spirv != NULL) {
         info.code = spirv;
         info.code_size = spirvSize;
@@ -220,13 +251,13 @@ static SDL_GPUGraphicsPipeline *ModernCreateFullscreenPipeline(
     const unsigned char *vsSpirv, size_t vsSpirvSize,
     const char *vsMsl, size_t vsMslSize, const char *vsMslEntry,
     const unsigned char *fsSpirv, size_t fsSpirvSize,
-    const char *fsMsl, size_t fsMslSize, const char *fsMslEntry, int samplers) {
+    const char *fsMsl, size_t fsMslSize, const char *fsMslEntry, int samplers, int uniforms) {
     SDL_GPUShader *vs = ModernCreateShader(
         vsSpirv, vsSpirvSize, vsMsl, vsMslSize, SDL_GPU_SHADERSTAGE_VERTEX,
-        vsMslEntry, 0);
+        vsMslEntry, 0, 0);
     SDL_GPUShader *fs = ModernCreateShader(
         fsSpirv, fsSpirvSize, fsMsl, fsMslSize, SDL_GPU_SHADERSTAGE_FRAGMENT,
-        fsMslEntry, samplers);
+        fsMslEntry, samplers, uniforms);
     SDL_GPUGraphicsPipeline *pipeline = NULL;
     if (vs && fs) {
         const SDL_GPUColorTargetDescription target = {
@@ -250,7 +281,7 @@ static SDL_GPUGraphicsPipeline *ModernCreatePostPipeline(void) {
         post_vert_spv, post_vert_spv_len,
         (const char *)post_vert_msl, post_vert_msl_len, "vs_post",
         post_frag_spv, post_frag_spv_len,
-        (const char *)post_frag_msl, post_frag_msl_len, "fs_post", 1);
+        (const char *)post_frag_msl, post_frag_msl_len, "fs_post", 1, 0);
 }
 
 static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
@@ -258,7 +289,7 @@ static SDL_GPUGraphicsPipeline *ModernCreateCompositePipeline(void) {
         post_vert_spv, post_vert_spv_len,
         (const char *)post_vert_msl, post_vert_msl_len, "vs_post",
         composite_frag_spv, composite_frag_spv_len,
-        (const char *)composite_frag_msl, composite_frag_msl_len, "fs_composite", 1);
+        (const char *)composite_frag_msl, composite_frag_msl_len, "fs_composite", 1, 1);
 }
 static SDL_GPUGraphicsPipeline *ModernCreateOverlayPipeline(
     SDL_GPUShader *vs, SDL_GPUShader *fs, int subtract) {
@@ -342,8 +373,15 @@ static void ModernDestroyResources(void) {
         RAGE_RELEASE(Texture, s_mirrorTarget);
         RAGE_RELEASE(Texture, s_mirrorDepth);
         RAGE_RELEASE(Sampler, s_sampler);
+        RAGE_RELEASE(Sampler, s_skyAtlasSampler);
+        RAGE_RELEASE(GraphicsPipeline, s_pipeSkyAtlas);
+        RAGE_RELEASE(GraphicsPipeline, s_pipeSkyAtlasSub);
         RAGE_RELEASE(GraphicsPipeline, s_pipe2d);
         RAGE_RELEASE(GraphicsPipeline, s_pipe2dSub);
+        RAGE_RELEASE(GraphicsPipeline, s_pipeMenu);
+        RAGE_RELEASE(GraphicsPipeline, s_pipeUiAtlas);
+        for(int i=0;i<79;i++)RAGE_RELEASE(Texture,s_menuTextures[i]);
+        memset(s_hudKeys,0,sizeof(s_hudKeys));memset(s_uiTraceKeys,0,sizeof(s_uiTraceKeys));s_menuGeneration=0;s_uiScene=-1;
         RAGE_RELEASE(Buffer, s_vertexBuffer);
         RAGE_RELEASE(TransferBuffer, s_vertexTransfer);
         RAGE_RELEASE(Texture, s_postTarget);
@@ -393,11 +431,24 @@ static void ModernEnsureLinearSampler(void) {
     if (s_samplerLinear != NULL) return;
     samplerInfo.min_filter = SDL_GPU_FILTER_LINEAR;
     samplerInfo.mag_filter = SDL_GPU_FILTER_LINEAR;
+    /* Full-frame FXAA/composite taps must never wrap to the opposite screen
+     * edge. In particular, changing a right-edge texture must not alter the
+     * left border (or top-edge detail the bottom border). */
+    samplerInfo.address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    samplerInfo.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+    samplerInfo.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
     s_samplerLinear = SDL_CreateGPUSampler(s_device, &samplerInfo);
 }
 
+static int ModernCompositeNeeded(void) {
+    return s_config.modernGrading || fabsf(RAGE_MODERN_BRIGHTNESS_BASELINE * s_config.modernBrightness - 1.0f) > 0.0001f;
+}
+static int ModernCompositeActive(void) {
+    return s_config.modernGrading || (s_enabled && ModernCompositeNeeded());
+}
+
 static void ModernReleaseLinearSamplerIfUnused(void) {
-    if (s_config.modernPost != RAGE_MODERN_POST_NONE || s_config.modernGrading ||
+    if (s_config.modernPost != RAGE_MODERN_POST_NONE || ModernCompositeNeeded() ||
         s_samplerLinear == NULL) return;
     SDL_ReleaseGPUSampler(s_device, s_samplerLinear);
     s_samplerLinear = NULL;
@@ -428,7 +479,7 @@ static void ModernEnableSsao(void) {
     if (!ModernSsaoReady()) {
         fullscreen = ModernCreateShader(
             post_vert_spv, post_vert_spv_len, (const char *)post_vert_msl,
-            post_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX, "vs_post", 0);
+            post_vert_msl_len, SDL_GPU_SHADERSTAGE_VERTEX, "vs_post", 0, 0);
         created = fullscreen != NULL &&
             ModernSsaoCreate(s_device, fullscreen, s_targetW, s_targetH);
         if (fullscreen != NULL) SDL_ReleaseGPUShader(s_device, fullscreen);
@@ -453,6 +504,7 @@ static void ModernEnableGrading(void) {
         fprintf(stderr, "rage-port: grading setup failed, disabling: %s\n",
                 SDL_GetError());
         s_config.modernGrading = 0;
+        s_config.modernBrightness = 1.0f;
     }
 }
 
@@ -471,6 +523,9 @@ static int ModernEnsureResources(void) {
     if (s_resourcesReady) return 1;
     if (s_device == NULL) return 0;
 
+    if (MemoryBudgetGet()->tier != RAGE_MEMORY_NORMAL &&
+        !SDL_SetGPUAllowedFramesInFlight(s_device, 1))
+        fprintf(stderr, "rage-port: cannot limit GPU frames in flight (%s)\n", SDL_GetError());
     scale = s_config.modernInternalScale;
     if (scale < 0.5f) scale = 0.5f;
     /* 16:9 widens the field of view; the vertical view is unchanged. */
@@ -483,7 +538,7 @@ static int ModernEnsureResources(void) {
     s_mirrorTargetW = (int)(148.0f * scale + 0.5f) & ~1;
     s_mirrorTargetH = (int)(36.0f * scale + 0.5f) & ~1;
 
-    s_ringEnabled = s_enabled && s_markerCaptureEnabled && RuntimeConfigEnabled("diagnostics.marker_history");
+    s_ringEnabled = MemoryBudgetAllowHd() && s_enabled && s_markerCaptureEnabled && RuntimeConfigEnabled("diagnostics.marker_history");
     {
         SDL_GPUTextureCreateInfo info = {0};
         info.type = SDL_GPU_TEXTURETYPE_2D;
@@ -518,11 +573,11 @@ static int ModernEnsureResources(void) {
     vs = ModernCreateShader(
         modern_vert_spv, modern_vert_spv_len,
         (const char *)modern_vert_msl, modern_vert_msl_len,
-        SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0);
+        SDL_GPU_SHADERSTAGE_VERTEX, "vs_main", 0, 0);
     fs = ModernCreateShader(
         modern_frag_spv, modern_frag_spv_len,
         (const char *)modern_frag_msl, modern_frag_msl_len,
-        SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, "fs_main", 1, 0);
     if (vs && fs) {
         s_pipe2d = ModernCreateOverlayPipeline(vs, fs, 0);
         s_pipe2dSub = ModernCreateOverlayPipeline(vs, fs, 1);
@@ -582,7 +637,7 @@ static int ModernEnsureResources(void) {
 
     if (s_config.modernPost != RAGE_MODERN_POST_NONE) ModernEnablePost();
     if (s_config.modernSsao) ModernEnableSsao();
-    if (s_config.modernGrading) ModernEnableGrading();
+    if (ModernCompositeNeeded()) ModernEnableGrading();
 
     if (!s_target || !s_depth || !s_mirrorTarget || !s_mirrorDepth ||
         !s_sampler || !s_pipe2d || !s_pipe2dSub ||
@@ -666,9 +721,222 @@ static void ModernOrtho(ModernVertex *out, float px, float py) {
      * factors above 1 the +0.5 convention shifts the whole layer by half a
      * logical pixel, leaving one-line gaps around full-screen masks. */
     out->x = (px + s_overscanX) / (s_logicalW * 0.5f) - 1.0f;
-    out->y = -(py / 120.0f - 1.0f);
+    out->y = -(py / (s_overlayHeight*.5f) - 1.0f);
     out->z = 0.0f;
     out->w = 1.0f;
+}
+
+static void ModernUiRefresh(void) {
+    unsigned generation=ModAssetsGeneration()+(unsigned)ModernAssetsGeneration();
+    if(generation!=s_menuGeneration) {
+        for(int i=0;i<78;i++) {
+            if(s_menuTextures[i])SDL_ReleaseGPUTexture(s_device,s_menuTextures[i]);
+            s_menuTextures[i]=NULL;
+        }
+        s_menuGeneration=generation;
+        memset(s_hudKeys,0,sizeof(s_hudKeys));memset(s_uiTraceKeys,0,sizeof(s_uiTraceKeys));
+    }
+}
+
+static int ModernUploadUi(int slot,const uint8_t *pixels,int width,int height) {
+    if(slot<0||slot>=79)return 0;
+    if(s_menuTextures[slot])return 1;
+    if(!pixels)return 0;
+    if(!s_pipeMenu) {
+        SDL_GPUShader *vs=ModernCreateShader(overlay_vert_spv,overlay_vert_spv_len,
+            (const char *)overlay_vert_msl,overlay_vert_msl_len,SDL_GPU_SHADERSTAGE_VERTEX,"vs_overlay",0,1);
+        SDL_GPUShader *fs=ModernCreateShader(overlay_frag_spv,overlay_frag_spv_len,
+            (const char *)overlay_frag_msl,overlay_frag_msl_len,SDL_GPU_SHADERSTAGE_FRAGMENT,"fs_overlay",1,0);
+        SDL_GPUColorTargetDescription target={.format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+            .blend_state={.enable_blend=true,.src_color_blendfactor=SDL_GPU_BLENDFACTOR_ONE,
+                .dst_color_blendfactor=SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                .color_blend_op=SDL_GPU_BLENDOP_ADD,.src_alpha_blendfactor=SDL_GPU_BLENDFACTOR_ONE,
+                .dst_alpha_blendfactor=SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.alpha_blend_op=SDL_GPU_BLENDOP_ADD}};
+        SDL_GPUGraphicsPipelineCreateInfo info={0};
+        info.vertex_shader=vs;info.fragment_shader=fs;
+        info.primitive_type=SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+        info.target_info.color_target_descriptions=&target;info.target_info.num_color_targets=1;
+        info.target_info.has_depth_stencil_target=true;
+        info.target_info.depth_stencil_format=SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+        if(vs&&fs)s_pipeMenu=SDL_CreateGPUGraphicsPipeline(s_device,&info);
+        if(vs)SDL_ReleaseGPUShader(s_device,vs);
+        if(fs)SDL_ReleaseGPUShader(s_device,fs);
+        if(!s_pipeMenu)return 0;
+    }
+    SDL_GPUTextureCreateInfo textureInfo={.type=SDL_GPU_TEXTURETYPE_2D,
+        .format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,.usage=SDL_GPU_TEXTUREUSAGE_SAMPLER,
+        .width=(Uint32)width,.height=(Uint32)height,.layer_count_or_depth=1,.num_levels=1};
+    SDL_GPUTexture *texture=SDL_CreateGPUTexture(s_device,&textureInfo);
+    SDL_GPUTransferBufferCreateInfo transferInfo={.usage=SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+        .size=(Uint32)width*(Uint32)height*4u};
+    SDL_GPUTransferBuffer *transfer=SDL_CreateGPUTransferBuffer(s_device,&transferInfo);
+    SDL_GPUCommandBuffer *cmd=NULL;
+    int ok=0;
+    if(!texture||!transfer)goto done;
+    uint8_t *mapped=SDL_MapGPUTransferBuffer(s_device,transfer,false);
+    if(!mapped)goto done;
+    for(size_t p=0;p<(size_t)width*(size_t)height;p++) {
+        unsigned alpha=pixels[p*4+3];
+        for(int c=0;c<3;c++)mapped[p*4+c]=(uint8_t)((pixels[p*4+c]*alpha+127u)/255u);
+        mapped[p*4+3]=(uint8_t)alpha;
+    }
+    SDL_UnmapGPUTransferBuffer(s_device,transfer);
+    cmd=SDL_AcquireGPUCommandBuffer(s_device);
+    if(!cmd)goto done;
+    SDL_GPUCopyPass *copy=SDL_BeginGPUCopyPass(cmd);
+    if(!copy){SDL_CancelGPUCommandBuffer(cmd);goto done;}
+    SDL_GPUTextureTransferInfo source={.transfer_buffer=transfer,
+        .pixels_per_row=(Uint32)width,.rows_per_layer=(Uint32)height};
+    SDL_GPUTextureRegion dest={.texture=texture,.w=(Uint32)width,.h=(Uint32)height,.d=1};
+    SDL_UploadToGPUTexture(copy,&source,&dest,false);
+    SDL_EndGPUCopyPass(copy);
+    ok=SDL_SubmitGPUCommandBuffer(cmd);
+done:
+    if(transfer)SDL_ReleaseGPUTransferBuffer(s_device,transfer);
+    if(ok)s_menuTextures[slot]=texture;
+    else if(texture)SDL_ReleaseGPUTexture(s_device,texture);
+    return ok;
+}
+
+static int ModernMenuTexture(int slot) {
+ ModernUiRefresh();
+ if(slot<0||slot>=14)return 0;
+ if(s_menuTextures[slot])return 1;
+ int w,h;const uint8_t *pixels=MenuImageNative(slot/2,slot%2,&w,&h);
+ return pixels&&ModernUploadUi(slot,pixels,w,h);
+}
+
+static int ModernEnsureUiAtlasPipeline(void) {
+ if(s_pipeUiAtlas)return 1;
+ SDL_GPUShader *vs=ModernCreateShader(overlay_vert_spv,overlay_vert_spv_len,
+  (const char*)overlay_vert_msl,overlay_vert_msl_len,SDL_GPU_SHADERSTAGE_VERTEX,"vs_overlay",0,1);
+ SDL_GPUShader *fs=ModernCreateShader(ui_atlas_frag_spv,ui_atlas_frag_spv_len,
+  (const char*)ui_atlas_frag_msl,ui_atlas_frag_msl_len,SDL_GPU_SHADERSTAGE_FRAGMENT,"fs_ui_atlas",2,1);
+ SDL_GPUColorTargetDescription target={.format=SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+  .blend_state={.enable_blend=true,.src_color_blendfactor=SDL_GPU_BLENDFACTOR_ONE,
+   .dst_color_blendfactor=SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+   .color_blend_op=SDL_GPU_BLENDOP_ADD,.src_alpha_blendfactor=SDL_GPU_BLENDFACTOR_ONE,
+   .dst_alpha_blendfactor=SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,.alpha_blend_op=SDL_GPU_BLENDOP_ADD}};
+ SDL_GPUGraphicsPipelineCreateInfo info={0};info.vertex_shader=vs;info.fragment_shader=fs;
+ info.primitive_type=SDL_GPU_PRIMITIVETYPE_TRIANGLELIST;
+ info.target_info.color_target_descriptions=&target;info.target_info.num_color_targets=1;
+ info.target_info.has_depth_stencil_target=true;info.target_info.depth_stencil_format=SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+ if(vs&&fs)s_pipeUiAtlas=SDL_CreateGPUGraphicsPipeline(s_device,&info);
+ if(vs){SDL_ReleaseGPUShader(s_device,vs);}if(fs){SDL_ReleaseGPUShader(s_device,fs);}
+ return s_pipeUiAtlas!=NULL;
+}
+
+static void ModernUiSetScene(int scene) {
+ ModernUiRefresh();
+ if(scene==s_uiScene)return;
+ for(int i=14;i<78;i++)if(s_menuTextures[i]){
+  SDL_ReleaseGPUTexture(s_device,s_menuTextures[i]);s_menuTextures[i]=NULL;
+ }
+ memset(s_hudKeys,0,sizeof(s_hudKeys));memset(s_uiTraceKeys,0,sizeof(s_uiTraceKeys));s_uiScene=scene;
+}
+
+static int ModernEmitUiAtlasUv(const Modern2DState *state,const Modern2DState *clip,
+ int x,int y,int w,int h,int sourceU0,int sourceV0,int sourceU1,int sourceV1,
+ unsigned clut,unsigned color,int semi) {
+ int u=sourceU0<sourceU1?sourceU0:sourceU1,v=sourceV0<sourceV1?sourceV0:sourceV1;
+ int sourceW=abs(sourceU1-sourceU0),sourceH=abs(sourceV1-sourceV0);
+ if((state->tpage&0x100u)||(semi&&((state->tpage>>5)&3u)==2u)||s_uiScene<0||s_overlay.currentLayer!=MODERN_LAYER_HUD||state->twin!=0x0000FFFFu||
+    w<=0||h<=0||u<0||v<0||sourceW<=0||sourceH<=0||u+sourceW>256||v+sourceH>256||s_overlay.spanCount>=s_overlay.spanCapacity)return 0;
+ ModernUiRefresh();
+ unsigned page=state->tpage&0x19fu;
+ ModernUiRegion region;
+ if(!ModernAssetsResolveCarUiRegion(g_PlayerCarIndex,s_uiScene,page,clut,s_hudFrame,(unsigned)u,(unsigned)v,(unsigned)sourceW,(unsigned)sourceH,&region)){
+  if(RuntimeConfigEnabled("diagnostics.ui_trace")){
+   uint64_t key=1u+page+((uint64_t)clut<<9);int seen=0;
+   for(int i=0;i<64;i++)if(s_uiTraceKeys[i]==key)seen=1;
+   if(!seen)for(int i=0;i<64;i++)if(!s_uiTraceKeys[i]){s_uiTraceKeys[i]=key;fprintf(stderr,"ui-atlas scene=%d page=%u clut=%u uv=%d,%d size=%d,%d ready=0\n",s_uiScene,page,clut,u,v,w,h);break;}
+  }
+  return 0;
+ }
+ int slot=-1;
+ for(int i=0;i<64;i++)if(!strcmp(s_hudKeys[i],region.key)){slot=i+14;break;}
+ if(slot<0)for(int i=0;i<64;i++)if(!s_hudKeys[i][0]){
+  SDL_strlcpy(s_hudKeys[i],region.key,sizeof(s_hudKeys[i]));slot=i+14;
+  ModernAssetImage image={0};
+  int ready=ModernAssetsLoadUiImage(region.key,&image);
+  if(RuntimeConfigEnabled("diagnostics.ui_trace"))fprintf(stderr,"ui-atlas %s uv=%d,%d size=%d,%d ready=%d\n",region.key,u,v,w,h,ready);
+  if(ready){
+   if(image.width<=4096&&image.height<=4096&&image.width%region.width==0&&image.height%region.height==0&&
+      image.width/region.width>=1&&image.width/region.width==image.height/region.height)
+    ModernUploadUi(slot,image.pixels,(int)image.width,(int)image.height);
+   ModernAssetsFreeMaterialImage(&image);
+  }
+  break;
+ }
+ if(slot<0||!s_menuTextures[slot]||!ModernEnsureUiAtlasPipeline())return 0;
+ ModernSpan *span=&s_overlay.spans[s_overlay.spanCount++];memset(span,0,sizeof(*span));
+ span->pipeline=MODERN_PIPE_UI_ATLAS;span->count=1;span->imageSlot=(uint8_t)slot;
+ span->imagePage=state->tpage;span->imageClut=clut;span->imageSemi=(uint32_t)semi;
+ span->pass=s_overlay.currentPass;span->layer=s_overlay.currentLayer;
+ span->hasScissor=clip->hasScissor;span->scissor=clip->scissor;
+ ModernVertex top,bottom;ModernOrtho(&top,(float)x,(float)y);ModernOrtho(&bottom,(float)(x+w),(float)(y+h));
+ span->imageRect[0]=top.x;span->imageRect[1]=top.y;span->imageRect[2]=bottom.x;span->imageRect[3]=bottom.y;
+ span->imageUV[0]=(sourceU0-(float)region.x)/(float)region.width;
+ span->imageUV[1]=(sourceV0-(float)region.y)/(float)region.height;
+ span->imageUV[2]=(sourceU1-(float)region.x)/(float)region.width;
+ span->imageUV[3]=(sourceV1-(float)region.y)/(float)region.height;
+ span->imageSourceRect[0]=(float)region.x;span->imageSourceRect[1]=(float)region.y;
+ span->imageSourceRect[2]=(float)region.width;span->imageSourceRect[3]=(float)region.height;
+ for(int c=0;c<3;c++)span->imageTint[c]=((color>>(c*8))&255u)/128.0f;
+ span->imageTint[3]=1.0f;
+ return 1;
+}
+
+static int ModernEmitUiAtlas(const Modern2DState *state,const Modern2DState *clip,
+ int x,int y,int w,int h,int u,int v,unsigned clut,unsigned color,int semi) {
+ return ModernEmitUiAtlasUv(state,clip,x,y,w,h,u,v,u+w,v+h,clut,color,semi);
+}
+
+static void ModernEmitMenuImage(const RageCapturePacket *packet,
+                                 const Modern2DState *state,const Modern2DState *spanState) {
+    int slot=packet->menuItem*2+packet->menuSelected;
+    if(!(packet->flags&RAGE_CAPTURE_PACKET_MENU_IMAGE_DRAW)||
+       !ModernMenuTexture(slot)||s_overlay.spanCount>=s_overlay.spanCapacity)return;
+    ModernSpan *span=&s_overlay.spans[s_overlay.spanCount++];
+    memset(span,0,sizeof(*span));
+    span->pipeline=MODERN_PIPE_MENU;span->count=1;span->imageSlot=(uint8_t)slot;
+    span->pass=s_overlay.currentPass;span->layer=s_overlay.currentLayer;
+    span->hasScissor=spanState->hasScissor;span->scissor=spanState->scissor;
+    ModernVertex top,bottom;
+    ModernOrtho(&top,(float)(packet->menuX+state->offsetX),(float)(packet->menuY+state->offsetY));
+    ModernOrtho(&bottom,(float)(packet->menuX+state->offsetX+MENU_IMAGE_WIDTH),
+        (float)(packet->menuY+state->offsetY+packet->menuHeight));
+    span->imageRect[0]=top.x;span->imageRect[1]=top.y;
+    span->imageRect[2]=bottom.x;span->imageRect[3]=bottom.y;
+    for(int c=0;c<4;c++)span->imageTint[c]=1.0f;
+    span->imageUV[2]=1.0f;span->imageUV[3]=(float)packet->menuHeight/MENU_IMAGE_HEIGHT;
+}
+
+static int ModernRefreshSkyAtlas(const RenderWorld *world) {
+    if(!world||!world->hasCamera)return 0;
+    uint32_t key=world->camera.skyAssetKey;
+    ModernUiRefresh();
+    if(s_skyAtlasKey==key&&s_menuTextures[78])return 1;
+    if(s_menuTextures[78]){SDL_ReleaseGPUTexture(s_device,s_menuTextures[78]);s_menuTextures[78]=NULL;}
+    s_skyAtlasKey=key;
+    ModernAssetImage image={0};
+    if(!ModernAssetsLoadSkyAtlas(key,&image))return 0;
+    if(!s_pipeSkyAtlas){
+        SDL_GPUShader *vs=ModernCreateShader(modern_vert_spv,modern_vert_spv_len,
+            (const char*)modern_vert_msl,modern_vert_msl_len,SDL_GPU_SHADERSTAGE_VERTEX,"vs_main",0,0);
+        SDL_GPUShader *fs=ModernCreateShader(sky_atlas_frag_spv,sky_atlas_frag_spv_len,
+            (const char*)sky_atlas_frag_msl,sky_atlas_frag_msl_len,SDL_GPU_SHADERSTAGE_FRAGMENT,"fs_sky_atlas",1,0);
+        if(vs&&fs){s_pipeSkyAtlas=ModernCreateOverlayPipeline(vs,fs,0);s_pipeSkyAtlasSub=ModernCreateOverlayPipeline(vs,fs,1);}
+        if(vs){SDL_ReleaseGPUShader(s_device,vs);}if(fs){SDL_ReleaseGPUShader(s_device,fs);}
+    }
+    if(!s_skyAtlasSampler){
+        SDL_GPUSamplerCreateInfo sampler={0};
+        sampler.min_filter=sampler.mag_filter=s_config.modernTextureFilterLinear?SDL_GPU_FILTER_LINEAR:SDL_GPU_FILTER_NEAREST;
+        sampler.address_mode_u=sampler.address_mode_v=SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE;
+        s_skyAtlasSampler=SDL_CreateGPUSampler(s_device,&sampler);
+    }
+    int ok=s_skyAtlasSampler&&s_pipeSkyAtlas&&s_pipeSkyAtlasSub&&ModernUploadUi(78,image.pixels,(int)image.width,(int)image.height);
+    ModernAssetsFreeMaterialImage(&image);return ok;
 }
 
 static void ClassicEmitPauseLabel(const Modern2DState *state,
@@ -769,9 +1037,14 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
             spanState.scissor.w += 2 * margin;
         }
         if (spanState.hasScissor) {
-            ModernOverlayStateScaleScissor(&spanState.scissor, s_logicalW,
-                                           s_overscanX, s_targetW, s_targetH);
+            ModernOverlayStateScaleScissorHeight(&spanState.scissor, s_logicalW,
+                                           s_overscanX, s_targetW, s_targetH,s_overlayHeight);
             if (spanState.scissor.w <= 0 || spanState.scissor.h <= 0) return;
+        }
+        if(s_enabled&&(packet->flags&RAGE_CAPTURE_PACKET_MENU_IMAGE)&&
+           ModernMenuTexture(packet->menuItem*2+packet->menuSelected)) {
+            ModernEmitMenuImage(packet,state,&spanState);
+            return;
         }
         if (isPoly) {
             ModernVertex corners[4];
@@ -812,15 +1085,34 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                     if (vertex == 1) prim_tpage = (uvWord >> 16) & 0x1FFu;
                 }
             }
+            /* Rectangular UI quads can reflect an atlas region (the title's
+             * right crest). Keep their exact destination and UV endpoints;
+             * triangles, perspective/rotated and shaded quads stay native. */
+            if (s_enabled && textured && quad && !gouraud &&
+                !(packet->flags & RAGE_CAPTURE_PACKET_3D) &&
+                rawX[0] == rawX[2] && rawX[1] == rawX[3] &&
+                rawY[0] == rawY[1] && rawY[2] == rawY[3] &&
+                rawX[1] > rawX[0] && rawY[2] > rawY[0] &&
+                corners[0].u == corners[2].u && corners[1].u == corners[3].u &&
+                corners[0].v == corners[1].v && corners[2].v == corners[3].v) {
+                Modern2DState quadState = *state;
+                quadState.tpage = prim_tpage;
+                if (ModernEmitUiAtlasUv(&quadState,&spanState,
+                    (int)rawX[0],(int)rawY[0],(int)(rawX[1]-rawX[0]),
+                    (int)(rawY[2]-rawY[0]),(int)corners[0].u,(int)corners[0].v,
+                    (int)corners[1].u,(int)corners[2].v,clut,
+                    raw?0x808080u:colors[0],semi)) return;
+            }
             /* A polygon carries its texture page in the primitive. Unlike a
              * GP0(E1) draw-mode command, it does not change the page used by
              * later sprites. Classic includes the race's 3D polygons here;
              * leaking their pages hid the PAUSE sprite that follows them. */
             /* Full-screen overlays (fades, night filters) stretch across a
              * widened view; otherwise they mask only the 4:3 centre. */
-            if (packet->table == 0 && !(packet->flags & RAGE_CAPTURE_PACKET_3D) &&
+            if (packet->table == 0 &&
+                !(packet->flags & (RAGE_CAPTURE_PACKET_3D | RAGE_CAPTURE_PACKET_SKY)) &&
                 s_overscanX > 0.0f && minX <= 0 && minY <= 0 && maxX >= 320 &&
-                maxY >= 240) {
+                maxY >= s_overlayHeight) {
                 for (vertex = 0; vertex < count; vertex++) {
                     if (rawX[vertex] <= 0.0f) rawX[vertex] = -s_overscanX;
                     else if (rawX[vertex] >= 320.0f)
@@ -863,6 +1155,10 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                 uint32_t abr = (prim_tpage >> 5) & 3u;
                 int pipeline = (semi && abr == 2u) ? MODERN_PIPE_2D_SUB
                                                    : MODERN_PIPE_2D;
+                if(s_enabled&&s_haveSkyAtlas&&textured&&(packet->flags&RAGE_CAPTURE_PACKET_SKY)&&
+                   (prim_tpage&0x19fu)==0x18u&&clut==0x798Eu&&
+                   state->twin==0x0000FFFFu)
+                    pipeline=(semi&&abr==2u)?MODERN_PIPE_SKY_ATLAS_SUB:MODERN_PIPE_SKY_ATLAS;
                 ModernSpan *span = ModernOverlayBatchesBegin(&s_overlay,
                                                               pipeline, &spanState);
                 if (quad) ModernOverlayBatchesEmitQuad(&s_overlay, span, corners);
@@ -901,13 +1197,14 @@ static void ModernReplay2DPacket(const RageCapturePacket *packet,
                               clut == 0x7893 && w == 0x28 && h == 8;
             px += state->offsetX;
             py += state->offsetY;
+            if(s_enabled&&textured&&ModernEmitUiAtlas(state,&spanState,px,py,w,h,u0,v0,clut,raw?0x808080u:words[0],semi))return;
             if (pauseForeground) {
                 ClassicEmitPauseLabel(state, &spanState, px, py,
                                       (uint8_t)(words[0] & 0xFFu));
                 return;
             }
             if (packet->table == 0 && s_overscanX > 0.0f && !textured && px <= 0 && py <= 0 &&
-                px + w >= 320 && py + h >= 240) {
+                px + w >= 320 && py + h >= s_overlayHeight) {
                 /* Full-screen fade/filter tiles cover the widened view. */
                 px = (int)(-s_overscanX - 1.0f);
                 w = 320 - 2 * px;
@@ -1066,6 +1363,8 @@ static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
 }
 
 static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
+    s_hudFrame=snapshot->sceneId==12||snapshot->sceneId==17;
+    s_haveSkyAtlas=ModernRefreshSkyAtlas(ModernNativeGpuPreparedWorld());
 
     Modern2DState state2d;
     int i;
@@ -1145,7 +1444,7 @@ static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
 
 /* The texture the frame chain ends in: composite > fxaa > raw target. */
 static SDL_GPUTexture *ModernPresentTexture(void) {
-    if (s_config.modernGrading &&
+    if (ModernCompositeActive() &&
         s_finalTarget != NULL && s_pipeComposite != NULL) {
         return s_finalTarget;
     }
@@ -1174,6 +1473,11 @@ static void ModernFullscreenPass(SDL_GPUCommandBuffer *cmd,
     }
     SDL_BindGPUGraphicsPipeline(pass, pipeline);
     SDL_BindGPUFragmentSamplers(pass, 0, bindings, (Uint32)sourceCount);
+    if (pipeline == s_pipeComposite) {
+        const float controls[4] = {s_enabled ? RAGE_MODERN_BRIGHTNESS_BASELINE * s_config.modernBrightness : 1.0f,
+                                   (float)s_config.modernGrading, 0, 0};
+        SDL_PushGPUFragmentUniformData(cmd, 0, controls, sizeof(controls));
+    }
     SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
     SDL_EndGPURenderPass(pass);
 }
@@ -1218,6 +1522,7 @@ static void ModernRenderOverlaySelection(SDL_GPUCommandBuffer *cmd,
     SDL_GPUTextureSamplerBinding texture = {.texture = vram,
                                             .sampler = s_sampler};
     int spanIndex;
+    int usingSkyAtlas=0;
     if (pass == NULL) return;
     SDL_BindGPUVertexBuffers(pass, 0, &vertex, 1);
     SDL_BindGPUFragmentSamplers(pass, 0, &texture, 1);
@@ -1226,6 +1531,42 @@ static void ModernRenderOverlaySelection(SDL_GPUCommandBuffer *cmd,
         SDL_Rect scissor = {0, 0, s_targetW, s_targetH};
         if (span->pass != passNumber || span->count == 0 ||
             (layerMask & (1u << span->layer)) == 0) continue;
+        if(span->pipeline==MODERN_PIPE_SKY_ATLAS||span->pipeline==MODERN_PIPE_SKY_ATLAS_SUB){
+            SDL_GPUGraphicsPipeline *sky=span->pipeline==MODERN_PIPE_SKY_ATLAS?s_pipeSkyAtlas:s_pipeSkyAtlasSub;
+            SDL_GPUTextureSamplerBinding image={s_menuTextures[78],s_skyAtlasSampler};
+            SDL_BindGPUGraphicsPipeline(pass,sky);
+            SDL_BindGPUFragmentSamplers(pass,0,&image,1);
+            if(span->hasScissor)scissor=span->scissor;
+            SDL_SetGPUScissor(pass,&scissor);
+            SDL_DrawGPUPrimitives(pass,(Uint32)span->count,1,(Uint32)span->start,0);
+            bound=NULL;usingSkyAtlas=1;continue;
+        }
+        if(usingSkyAtlas){SDL_BindGPUFragmentSamplers(pass,0,&texture,1);usingSkyAtlas=0;}
+        if(span->pipeline==MODERN_PIPE_MENU||span->pipeline==MODERN_PIPE_UI_ATLAS) {
+            struct {float rect[4],uv[4],tint[4];} uniform;
+            memcpy(uniform.rect,span->imageRect,sizeof(uniform.rect));
+            memcpy(uniform.uv,span->imageUV,sizeof(uniform.uv));
+            memcpy(uniform.tint,span->imageTint,sizeof(uniform.tint));
+            SDL_GPUTextureSamplerBinding image={.texture=s_menuTextures[span->imageSlot],.sampler=s_sampler};
+            if(span->pipeline==MODERN_PIPE_UI_ATLAS){
+                SDL_GPUTextureSamplerBinding sources[2]={image,texture};
+                struct {uint32_t state[4];float rect[4];} source={{span->imagePage,span->imageClut,span->imageSemi,0},{0}};
+                memcpy(source.rect,span->imageSourceRect,sizeof(source.rect));
+                SDL_BindGPUGraphicsPipeline(pass,s_pipeUiAtlas);
+                SDL_BindGPUFragmentSamplers(pass,0,sources,2);
+                SDL_PushGPUFragmentUniformData(cmd,0,&source,sizeof(source));
+            }else{
+                SDL_BindGPUGraphicsPipeline(pass,s_pipeMenu);
+                SDL_BindGPUFragmentSamplers(pass,0,&image,1);
+            }
+            SDL_PushGPUVertexUniformData(cmd,0,&uniform,sizeof(uniform));
+            if(span->hasScissor)scissor=span->scissor;
+            SDL_SetGPUScissor(pass,&scissor);
+            SDL_DrawGPUPrimitives(pass,6,1,0,0);
+            SDL_BindGPUFragmentSamplers(pass,0,&texture,1);
+            bound=NULL;
+            continue;
+        }
         if (pipelines[span->pipeline] != bound) {
             bound = pipelines[span->pipeline];
             SDL_BindGPUGraphicsPipeline(pass, bound);
@@ -1304,6 +1645,16 @@ static int ModernCompareProfileInterval(const void *a, const void *b) {
     return (x > y) - (x < y);
 }
 
+static int ModernHasUiImages(const RageSceneSnapshot *snapshot) {
+    /* The replacement title menu is native even without an installed HD pack. */
+    if(snapshot->sceneId==GAME_SCENE_FRONTEND)return 1;
+    if(!s_enabled)return 0;
+    if(ModernAssetsHasUiScene(snapshot->sceneId))return 1;
+    for(int i=0;i<snapshot->packetCount;i++)
+        if(snapshot->packets[i].flags&RAGE_CAPTURE_PACKET_MENU_IMAGE_DRAW)return 1;
+    return 0;
+}
+
 void ModernFrameTexturesReady(void) {
     if (!ModernPresentationActive() || !s_device || !s_resourcesReady) return;
     const RageSceneSnapshot *snapshot = CapturePrevious();
@@ -1323,6 +1674,9 @@ void ModernFrameTexturesReady(void) {
 }
 
 static int ModernRender(const RageSceneSnapshot *snapshot) {
+    int menuFrame=ModernHasUiImages(snapshot)&&
+        !GameRenderWorldSceneHas3d((GameSceneId)snapshot->sceneId);
+    s_overlayHeight=menuFrame&&snapshot->displayHeight==480?480:240;
     SDL_GPUCommandBuffer *cmd;
     SDL_GPUTexture *vram;
     static Uint64 profileBuildNs, profileSubmitNs, profilePrepareNs;
@@ -1342,7 +1696,16 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         profileTrace = RuntimeConfigEnabled("diagnostics.performance_trace");
     }
     if (profile) profileStart = SDL_GetTicksNS();
-    if (s_enabled) ModernBuildOverlayFrame(snapshot);
+    ModernUiSetScene(snapshot->sceneId);
+    s_hudFrame=snapshot->sceneId==12||snapshot->sceneId==17;
+    if(menuFrame) {
+        Modern2DState state;
+        ModernOverlayBatchesReset(&s_overlay,0,MODERN_LAYER_HUD);
+        ModernOverlayStateInitHeight(&state,snapshot->displayPageY,s_overlayHeight);
+        s_skyPacketCamera=s_skyPresentationCamera=NULL;
+        for(int i=0;i<snapshot->packetCount;i++)ModernReplay2DPacket(&snapshot->packets[i],&state);
+    }
+    else if (s_enabled) ModernBuildOverlayFrame(snapshot);
     else ClassicBuildFrame(snapshot);
     if (profile) profileBuilt = SDL_GetTicksNS();
     cmd = SDL_AcquireGPUCommandBuffer(s_device);
@@ -1374,7 +1737,8 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         }
         SDL_EndGPUCopyPass(copy);
     }
-    if (s_enabled) {
+    if(menuFrame)ModernRenderOverlaySelection(cmd,vram,0,1u<<MODERN_LAYER_HUD,1);
+    else if (s_enabled) {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
         ModernRenderOverlaySelection(cmd, vram, 0,
                                      1u << MODERN_LAYER_SKY, 1);
@@ -1417,13 +1781,14 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             ModernFullscreenPass(cmd, s_pipePost, s_postTarget, sources, 1);
             chain = s_postTarget;
         }
-        if (s_config.modernGrading &&
+        if (ModernCompositeActive() &&
             s_pipeComposite != NULL && s_finalTarget != NULL) {
             SDL_GPUTexture *sources[1];
             sources[0] = chain;
             ModernFullscreenPass(cmd, s_pipeComposite, s_finalTarget, sources, 1);
         }
     }
+    PortMainMenuRenderTarget(s_device,cmd,ModernPresentTexture(),s_targetW,s_targetH);
     if (s_ringEnabled && s_ring[s_ringNext] != NULL) {
         const SDL_GPUBlitInfo blit = {
             .source = {.texture = ModernPresentTexture(),
@@ -1502,10 +1867,11 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         if (frameTiming < 0)
             frameTiming = RuntimeConfigEnabled("diagnostics.frame_timing");
         if (frameTiming)
-            fprintf(stderr, "benchmark-frame frame=%u scene=%d point=%d end_ns=%llu window_flags=%llx\n",
+            fprintf(stderr, "benchmark-frame frame=%u scene=%d point=%d end_ns=%llu window_flags=%llx timer=%u\n",
                     snapshot->frameCounter, snapshot->sceneId,
                     g_PlayerCar.trackPointIndex, (unsigned long long)finished,
-                    (unsigned long long)(s_window ? SDL_GetWindowFlags(s_window) : 0));
+                    (unsigned long long)(s_window ? SDL_GetWindowFlags(s_window) : 0),
+                    (unsigned)snapshot->sceneTimer);
         if (!profileWindowStart) {
             PsyzVideoStats initialStats = {0};
             Psyz_VideoStats(&initialStats);
@@ -1652,6 +2018,31 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     if (s_prev_present_source) {
         s_prev_present_source(info);
     }
+    {
+        static int pressureInjected;
+        int pressureFrame = RuntimeConfigInt("diagnostics.memory_pressure_frame", 0, 0, 10000000);
+        if (!pressureInjected && pressureFrame > 0 &&
+            CaptureCurrent()->frameCounter >= (uint32_t)pressureFrame) {
+            SDL_Event pressure = {0};
+            pressure.type = SDL_EVENT_LOW_MEMORY;
+            SDL_PushEvent(&pressure);
+            pressureInjected = 1;
+        }
+    }
+    /* Watch callbacks may arrive on Android's OS thread. Reclaim GPU resources
+     * here, after submission and before another command buffer is acquired. */
+    if (MemoryBudgetPoll()) {
+        RagePortConfig reduced = s_config;
+        MemoryBudgetApplyConfig(&reduced);
+        MenuImagesSetHdPack(NULL, NULL);
+        ModernAssetsSetHdPack(NULL, NULL);
+        if (!ModernRestartPresentation(&reduced)) {
+            fprintf(stderr, "rage-port: low-memory presentation rebuild failed\n");
+            return;
+        }
+    }
+    if (MemoryBudgetGet()->tier != RAGE_MEMORY_NORMAL && s_device != NULL)
+        SDL_WaitForGPUIdle(s_device);
     /* Opt-in lifecycle exercise at the host callback boundary, after PSY-Z
      * has submitted pending work and before it acquires a swapchain command. */
     {
@@ -1772,8 +2163,8 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
      * carry the previous race's captured faces for a frame or two; rendering
      * that through an emptied world drew a black sky and reprojected the
      * old sky through a dead camera (#32). Present the compat image instead. */
-    if (snapshot->faceCount == 0 ||
-        !GameRenderWorldSceneHas3d((GameSceneId)snapshot->sceneId)) {
+    if (!ModernHasUiImages(snapshot)&&(snapshot->faceCount == 0 ||
+        !GameRenderWorldSceneHas3d((GameSceneId)snapshot->sceneId))) {
         if (s_markerCaptureEnabled) ModernMarkerCheck(snapshot, 0);
         ModernPresentationClockReset(&s_presentationClock);
         /* Menus and other 2D-only scenes use the compatibility framebuffer,
@@ -1787,7 +2178,9 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
         ModernFmvZoomPresent(s_device, s_window, info);
         return;
     }
-    if (snapshot->displayHeight != 0 && snapshot->displayHeight != 240) {
+    if (snapshot->displayHeight != 0 && snapshot->displayHeight != 240 &&
+        !(s_enabled&&snapshot->displayHeight==480&&ModernHasUiImages(snapshot)&&
+          !GameRenderWorldSceneHas3d((GameSceneId)snapshot->sceneId))) {
         if (s_markerCaptureEnabled) ModernMarkerCheck(snapshot, 0);
         ModernPresentationClockReset(&s_presentationClock);
         return;
@@ -1913,6 +2306,12 @@ int ModernInit(const RagePortConfig *config) {
     }
     s_shutdownNeeded = 1;
     s_config = *config;
+    MemoryBudgetApplyConfig(&s_config);
+    ModernAssetsSetTextureOverridesEnabled(MemoryBudgetAllowHd());
+    MenuImagesSetTextureOverridesEnabled(MemoryBudgetAllowHd());
+    MemoryBudgetStartWatch();
+    if (!isfinite(s_config.modernBrightness) || s_config.modernBrightness < 0.5f ||
+        s_config.modernBrightness > 1.5f) s_config.modernBrightness = 1.0f;
     const char *classic = RuntimeConfigGet("video.classic_enhancements");
     s_classicEnhancements = classic == NULL || RuntimeConfigEnabled("video.classic_enhancements");
     s_profileTiming = RuntimeConfigEnabled("diagnostics.performance");
@@ -1940,6 +2339,7 @@ int ModernInit(const RagePortConfig *config) {
     ModernPresentationClockReset(&s_presentationClock);
     s_markerCaptureEnabled = RuntimeConfigEnabled("diagnostics.marker_capture");
     s_enabled = config->renderer == RAGE_RENDERER_MODERN;
+    PortConfigSetActive(&s_config);
     fprintf(stderr, "rage-port: renderer toggle=%s; active=%s\n",
             SDL_GetScancodeName(s_toggleScancode),
             s_enabled ? "modern" : "classic");
@@ -1981,6 +2381,7 @@ static int ModernPresentationSettingsDiffer(const RagePortConfig *a,
     left.modernPost = right.modernPost;
     left.modernSsao = right.modernSsao;
     left.modernGrading = right.modernGrading;
+    left.modernBrightness = right.modernBrightness;
     left.carLights = right.carLights;
     return memcmp(&left, &right, sizeof(left)) != 0;
 }
@@ -2005,10 +2406,12 @@ static void ModernApplyEffects(const RagePortConfig *next) {
             else ModernDisableSsao();
         }
     }
-    if (next->modernGrading != s_config.modernGrading) {
+    if (next->modernGrading != s_config.modernGrading ||
+        next->modernBrightness != s_config.modernBrightness) {
+        s_config.modernBrightness = next->modernBrightness;
         s_config.modernGrading = next->modernGrading;
         if (live) {
-            if (s_config.modernGrading) ModernEnableGrading();
+            if (ModernCompositeNeeded()) ModernEnableGrading();
             else ModernDisableGrading();
         }
     }
@@ -2021,6 +2424,9 @@ int ModernApplyConfig(const RagePortConfig *requested) {
 
     if (requested == NULL || !s_initialized) return 0;
     next = *requested;
+    MemoryBudgetApplyConfig(&next);
+    if (!isfinite(next.modernBrightness) || next.modernBrightness < 0.5f ||
+        next.modernBrightness > 1.5f) next.modernBrightness = 1.0f;
     wantModern = next.renderer == RAGE_RENDERER_MODERN;
     /* The renderer choice is a switch, not a restart: keep the running one
      * through any rebuild and flip it afterwards. */
@@ -2040,10 +2446,12 @@ int ModernApplyConfig(const RagePortConfig *requested) {
 }
 
 void ModernShutdown(void) {
+    MemoryBudgetStopWatch();
     if (!s_shutdownNeeded) return;
     s_shutdownNeeded = 0;
     ModernDetachPresentation();
     ModernAssetsShutdown();
+    MenuImagesSetHdPack(NULL,NULL);
     if (RuntimeConfigEnabled("diagnostics.renderer_lifecycle"))
         fprintf(stderr, "rage-port: modern session shutdown assets_ready=%d meshes=%u\n",
                 ModernAssetsReady(), ModernAssetsCachedMeshCount());
@@ -2104,6 +2512,10 @@ int ModernCaptureFrame(const char *path) {
     }
     return ModernWriteTexturePpm(s_device, ModernPresentTexture(),
                                      s_targetW, s_targetH, path);
+}
+
+float ModernPresentationAspect(void) {
+    return ModernPresentationActive() ? (4.0f/3.0f)*(s_logicalW/320.0f) : 4.0f/3.0f;
 }
 
 int ModernCullMarginX(void) {

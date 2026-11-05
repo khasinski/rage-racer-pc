@@ -16,6 +16,16 @@ static int MipPixelCount(uint32_t width, uint32_t height, size_t *pixels) {
     return 1;
 }
 
+uint32_t TextureAtlasMipLevelCount(uint32_t width, uint32_t height) {
+    uint32_t levels = RAGE_TEXTURE_ATLAS_MIP_LEVELS;
+    uint32_t shortest = width < height ? width : height;
+    while (shortest >= 512) {
+        ++levels;
+        shortest >>= 1;
+    }
+    return TextureMipLevelCount(width, height, levels);
+}
+
 uint32_t TextureMipLevelCount(uint32_t width, uint32_t height,
                                   uint32_t maximumLevels) {
     uint32_t levels = 0;

@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu_internal.h"
 
 enum {
@@ -31,8 +32,8 @@ static void DrawLowerAltPanel(GameOrderingTableEntry *ot, s32 progress) {
 
 void DrawMenuAltPanel(MenuWidgets *widgets) {
     GameOrderingTableEntry *ot = RENDER_OT_BASE;
-    s32 upperStep = widgets->upperAltPanelStep;
-    s32 lowerStep = widgets->lowerAltPanelStep;
+    s32 upperStep = PortMenuAnimationStep(widgets->upperAltPanelStep);
+    s32 lowerStep = PortMenuAnimationStep(widgets->lowerAltPanelStep);
 
     if (upperStep == 0 && lowerStep == 0) {
         widgets->upperAltPanel = 0;

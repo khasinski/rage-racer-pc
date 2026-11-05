@@ -1,0 +1,32 @@
+string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef id)
+set(root "${OUTPUT_ROOT}/ui-atlas-480-${id}")
+file(MAKE_DIRECTORY "${root}/mods")
+set(writeMode write-atlas)
+set(regionSuffix "")
+if(REGION)
+ set(writeMode write-options)
+ set(regionSuffix ".region.0.72.60.24")
+endif()
+execute_process(COMMAND "${FIXTURE}" "${writeMode}" "${root}/mods/atlas.png" RESULT_VARIABLE result)
+if(NOT result EQUAL 0)
+ message(FATAL_ERROR "Cannot write UI atlas fixture")
+endif()
+# Root options uses semi-enabled sprites in the 320x480 scene. The original
+# per-texel STP bit must still control opaque/additive pixels with the new art.
+file(WRITE "${root}/mods/mod.toml" "[textures]\n\"ui.scene.23.page.31.clut.32576${regionSuffix}\" = \"atlas.png\"\n")
+file(WRITE "${root}/game.ini" "[modern]\nassets = disc\n[video]\nrenderer = modern\ninternal_scale = 4\naspect = 4:3\nfps = logic\npost = none\ngrading = off\nbrightness = 0.8695652174\n[mods]\ndirectory = ${root}/mods\n[input]\nstate_script = 4@40:UP,4@44:UP,4@48:CONFIRM\n[run]\nframes = 1010\n[diagnostics]\nmodern_dump = ${root}/ui.ppm\nmodern_dump_frame = 1000\nmodern_dump_offscreen = true\nui_trace = true\n")
+execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
+ RAGE_PORT_DISABLE_HOST_INPUT=1 "${GAME}" --config "${root}/game.ini"
+ WORKING_DIRECTORY "${SOURCE}" TIMEOUT 60 RESULT_VARIABLE result
+ OUTPUT_VARIABLE output ERROR_VARIABLE error)
+if(NOT result EQUAL 0)
+ message(FATAL_ERROR "480 UI atlas game failed: ${root}\n${output}${error}")
+endif()
+set(checkMode check-options-atlas)
+if(REGION)
+ set(checkMode check-options-region)
+endif()
+execute_process(COMMAND "${FIXTURE}" "${checkMode}" "${root}/ui.ppm" RESULT_VARIABLE result)
+if(NOT result EQUAL 0)
+ message(FATAL_ERROR "480 semitransparent HD atlas failed: ${root}\n${output}${error}")
+endif()

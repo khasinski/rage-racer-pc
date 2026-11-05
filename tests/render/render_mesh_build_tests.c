@@ -565,6 +565,7 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
     RenderWorldInit(&world, storage, 1);
     world.camera.verticalFovDegrees = 90.0f;
     world.camera.nearPlane = 1.0f; world.camera.farPlane = 100.0f;
+    storage[0].assetSet = RAGE_RENDER_ASSET_COURSE;
     storage[0].textureScrollU = 64;
     storage[0].transform.scale.x = storage[0].transform.scale.y =
         storage[0].transform.scale.z = 1.0f;
@@ -576,6 +577,7 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
     EXPECT_EQ(1, spanCount);
     EXPECT_EQ(4, spans[0].material);
     EXPECT_EQ(0, spans[0].depthDecal);
+    EXPECT_EQ(1, vertices[0].depthBias < 0);
     EXPECT_EQ(50, (int)(vertices[0].uv[0] * 100.0f));
     EXPECT_EQ(50, (int)(vertices[0].uv[1] * 100.0f));
     {
@@ -583,6 +585,7 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
         EXPECT_EQ(3, RenderBuildNativeCompactPassDraws(&world,
             RAGE_RENDER_PASS_MAIN, 1, 0, test_mesh_lookup, &mesh,
             compact, 3, spans, 1, &spanCount));
+        EXPECT_NEAR(vertices[0].depthBias, compact[0].depthBias, 0.0f);
         EXPECT_NEAR(0.25f, compact[0].uv[0], 0.0f);
         EXPECT_NEAR(0.25f, spans[0].instanceState.textureScrollU, 0.0f);
         EXPECT_NEAR(vertices[0].uv[0], compact[0].uv[0] +
@@ -602,6 +605,11 @@ static void test_native_draw_builder_applies_authored_course_texture_scroll(void
         EXPECT_NEAR(0.75f, next[0].uv[0], 0.0f);
         EXPECT_NEAR(0.25f, next[1].uv[0], 0.0f);
         EXPECT_NEAR(0.75f, next[2].uv[0], 0.0f);
+        /* Ordinary course faces retain their authored depth. */
+        for (i = 0; i < 3; i++) write_u32(bytes + 32 + i * 40 + 36, 4u);
+        EXPECT_EQ(3, RenderBuildNativeDraws(&world, 1.0f, test_mesh_lookup,
+            &mesh, vertices, 3, spans, 1, &spanCount));
+        EXPECT_NEAR(0.0f, vertices[0].depthBias, 0.0f);
     }
 }
 

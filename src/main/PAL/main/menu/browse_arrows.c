@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
@@ -25,6 +26,7 @@ void DrawBrowseArrows(BrowseArrows *arrows, s32 step, s32 courseLayout,
     s32 y;
     s32 slidePhase;
 
+    step = PortMenuAnimationStep(step);
     if (step == 0) {
         arrows->fade = 0;
         return;

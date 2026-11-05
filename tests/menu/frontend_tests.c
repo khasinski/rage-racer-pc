@@ -11,6 +11,8 @@
 
 #include <stdio.h>
 
+extern int g_TestMenuAnimationTicks;
+
 static Frontend s_frontend;
 #include <string.h>
 
@@ -42,6 +44,7 @@ static s32 s_trackRequests;
 static s32 s_spriteCalls;
 static s32 s_lastAlpha;
 static s32 s_lastPanelClut;
+static s32 s_lastDrawMode;
 static s32 s_randomValues[4];
 static s32 s_randomIndex;
 
@@ -128,7 +131,7 @@ u8 *GameQueueShadedTexturedRect(GameOrderingTableEntry *ot, u8 *prim, s32 x, s32
 
 u8 *QueueDrawModePrim(GameOrderingTableEntry *ot, u8 *prim, s32 tpage) {
     (void)ot;
-    (void)tpage;
+    s_lastDrawMode = tpage;
     return prim + 1;
 }
 
@@ -150,7 +153,8 @@ static void Reset(void) {
     g_RenderState.draw.packetCursor = s_packets;
     g_RaceProgress = &s_progress;
     s_frontend.state = FRONTEND_STATE_TITLE;
-    g_FrontendDrawHandlers[FRONTEND_STATE_TITLE] = DrawHandler;
+    for (int i = 0; i < FRONTEND_STATE_COUNT; ++i)
+        g_FrontendDrawHandlers[i] = DrawHandler;
     g_SceneTimer = 0;
     s_frontend.idleTimer = 0;
     s_frontend.attractCycle = 0;
@@ -189,6 +193,24 @@ int main(void) {
             CHECK(s_trackRequests == 1 && g_SceneTimer == 0x1CD);
         }
     }
+    Reset();
+    s_frontend.selection = TITLE_MENU_OPTIONS;
+    for (int i = 0; i < 42; i++) UpdateMainMenuExit();
+    CHECK(s_frontend.pulse == 126 && g_SceneId != 0x16);
+    UpdateMainMenuExit();
+    CHECK(s_frontend.pulse == 129 && g_SceneId == 0x16);
+
+    Reset();
+    g_TestMenuAnimationTicks = 2;
+    s_frontend.pulse = 0;
+    g_SceneId = 4;
+    s_frontend.selection = TITLE_MENU_OPTIONS;
+    for (int i = 0; i < 21; i++) UpdateMainMenuExit();
+    CHECK(s_frontend.pulse == 126 && g_SceneId != 0x16);
+    UpdateMainMenuExit();
+    CHECK(s_frontend.pulse == 129 && g_SceneId == 0x16);
+    g_TestMenuAnimationTicks = 1;
+
     Reset();
     s_frontend.pulse = 0x80;
     s_frontend.selection = 0;
@@ -248,6 +270,25 @@ int main(void) {
     CHECK(g_SceneId == 0x1D && g_GrandPrixMode == 1);
     CHECK(s_frontend.attractCycle == 1);
 
+    /* The always-open native menu retains idle demos; transitions must not
+     * start asynchronous race loads while the player is leaving it. */
+    Reset();
+    s_frontend.state = FRONTEND_STATE_MENU_INPUT;
+    g_SceneTimer = 0x1CC;
+    UpdateFrontend();
+    CHECK(s_trackRequests == 1 && g_SceneTimer == 0x1CD);
+    g_SceneTimer = 0x1CF;
+    s_frontend.idleTimer = 900;
+    UpdateFrontend();
+    CHECK(g_SceneId == 0x1D && s_frontend.attractCycle == 1);
+
+    Reset();
+    s_frontend.state = FRONTEND_STATE_MENU_EXIT;
+    g_SceneTimer = 0x1CC;
+    s_frontend.idleTimer = 900;
+    UpdateFrontend();
+    CHECK(s_trackRequests == 0 && s_frontend.attractCycle == 0);
+
     Reset();
     g_SceneTimer = 0x1CF;
     s_frontend.idleTimer = 900;
@@ -259,6 +300,8 @@ int main(void) {
     s_frontend.menuSlide = 100;
     UpdateTitleAttract();
     CHECK(s_lastAlpha == 0x30);
+    /* The crest's sprite samples the same 8-bit page as its mirrored quad. */
+    CHECK(s_lastDrawMode == 0x99);
     s_frontend.menuSlide = -10;
     for (s32 i = 0; i < CLASS_RECORD_COUNT; i++) {
         g_ClassRecords[i].place = 1;

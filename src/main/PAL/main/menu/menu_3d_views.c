@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/asset.h"
 #include "game/course_index.h"
 #include "game/menu.h"
@@ -41,8 +42,10 @@ static void SetupMenuViewCamera(s32 pitch, s32 yaw) {
 }
 
 static s32 AdvanceMenuViewOffset(void) {
-    g_MenuViewOffset = AdvanceMenuViewOffsetValue(
-        g_MenuViewOffset, g_MenuViewOffsetTarget);
+    for (int tick = 0; tick < PortMenuAnimationTicks(); ++tick) {
+        g_MenuViewOffset = AdvanceMenuViewOffsetValue(
+            g_MenuViewOffset, g_MenuViewOffsetTarget);
+    }
     return g_MenuViewOffset / 1000;
 }
 
@@ -84,32 +87,35 @@ void DrawMenuCarView(void) {
     vec = g_MenuCarPivotOffset;
     SetupMenuViewCamera(0x100, 0);
 
-    currentAngle = g_MenuViewAngle;
-    if (ShowroomCarAtSwapPoint(currentAngle, g_MenuViewAngleTarget,
-                               g_CarSwapToIndex)) {
-        loadAction = ResolveShowroomCarLoadAction(
-            AssetLoadCompletedSuccessfully(), AssetLoadHasFailed());
-        if (loadAction == SHOWROOM_CAR_LOAD_CANCEL) {
+    /* Each substep retains the asset-ready gate at the swap point. */
+    for (int tick = 0; tick < PortMenuAnimationTicks(); ++tick) {
+        currentAngle = g_MenuViewAngle;
+        if (ShowroomCarAtSwapPoint(currentAngle, g_MenuViewAngleTarget,
+                                   g_CarSwapToIndex)) {
+            loadAction = ResolveShowroomCarLoadAction(
+                AssetLoadCompletedSuccessfully(), AssetLoadHasFailed());
+            if (loadAction == SHOWROOM_CAR_LOAD_CANCEL) {
+                g_CarSwapToIndex = -1;
+                return;
+            }
+            if (loadAction == SHOWROOM_CAR_LOAD_WAIT) {
+                return;
+            }
+            if (!ActivateShowroomCarModel(g_CarModelSlot < 1)) {
+                g_CarSwapToIndex = -1;
+                return;
+            }
+            g_CarSwapFromIndex = g_CarSwapToIndex;
             g_CarSwapToIndex = -1;
-            return;
+            if (g_RaceSession.kind == RACE_SESSION_CUSTOM &&
+                MenuCarBrowse()->targetModel >= 0) {
+                MenuCarBrowse()->displayedModel = MenuCarBrowse()->targetModel;
+                MenuCarBrowse()->targetModel = -1;
+            }
+        } else if (currentAngle != g_MenuViewAngleTarget) {
+            g_MenuViewAngle = AdvanceMenuViewAngleValue(
+                currentAngle, g_MenuViewAngleTarget, 24);
         }
-        if (loadAction == SHOWROOM_CAR_LOAD_WAIT) {
-            return;
-        }
-        if (!ActivateShowroomCarModel(g_CarModelSlot < 1)) {
-            g_CarSwapToIndex = -1;
-            return;
-        }
-        g_CarSwapFromIndex = g_CarSwapToIndex;
-        g_CarSwapToIndex = -1;
-        if (g_RaceSession.kind == RACE_SESSION_CUSTOM &&
-            MenuCarBrowse()->targetModel >= 0) {
-            MenuCarBrowse()->displayedModel = MenuCarBrowse()->targetModel;
-            MenuCarBrowse()->targetModel = -1;
-        }
-    } else if (currentAngle != g_MenuViewAngleTarget) {
-        g_MenuViewAngle = AdvanceMenuViewAngleValue(
-            currentAngle, g_MenuViewAngleTarget, 24);
     }
 
     horizontalAngle =
@@ -175,13 +181,15 @@ void DrawMenuCourseView(CourseSelectScreen *screen) {
 
     SetupMenuViewCamera(0x100, 0);
 
-    animation = AdvanceCourseCarouselAnimation(
-        g_MenuViewAngle, g_MenuViewAngleTarget, screen->swapDelay,
-        screen->displayedCourse, screen->pendingCourse);
-    g_MenuViewAngle = animation.angle;
-    screen->swapDelay = animation.swapDelay;
-    screen->displayedCourse = animation.displayedCourse;
-    screen->pendingCourse = animation.pendingCourse;
+    for (int tick = 0; tick < PortMenuAnimationTicks(); ++tick) {
+        animation = AdvanceCourseCarouselAnimation(
+            g_MenuViewAngle, g_MenuViewAngleTarget, screen->swapDelay,
+            screen->displayedCourse, screen->pendingCourse);
+        g_MenuViewAngle = animation.angle;
+        screen->swapDelay = animation.swapDelay;
+        screen->displayedCourse = animation.displayedCourse;
+        screen->pendingCourse = animation.pendingCourse;
+    }
 
     horizontalAngle =
         MenuWrapAngle(g_MenuViewAngle, MENU_COURSE_VIEW_REBASE_SPAN) /
@@ -226,12 +234,14 @@ void DrawTeamNameCharModel(TeamName *teamName) {
 
     SetupMenuViewCamera(0, -104);
 
-    animation = AdvanceTeamNameModelAnimation(
-        g_MenuViewAngle, g_MenuViewAngleTarget, teamName->charModel,
-        GameMenuCursorAnim);
-    g_MenuViewAngle = animation.angle;
-    teamName->charModel = animation.displayedModel;
-    GameMenuCursorAnim = animation.pendingModel;
+    for (int tick = 0; tick < PortMenuAnimationTicks(); ++tick) {
+        animation = AdvanceTeamNameModelAnimation(
+            g_MenuViewAngle, g_MenuViewAngleTarget, teamName->charModel,
+            GameMenuCursorAnim);
+        g_MenuViewAngle = animation.angle;
+        teamName->charModel = animation.displayedModel;
+        GameMenuCursorAnim = animation.pendingModel;
+    }
 
     viewHeight = AdvanceMenuViewOffset();
     baseHeight = 40;

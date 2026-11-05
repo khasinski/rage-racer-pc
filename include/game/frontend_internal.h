@@ -17,16 +17,8 @@ typedef struct Frontend {
 
 Frontend *MenuFrontend(void);
 
-typedef enum TitleMenuItem {
-    TITLE_MENU_GRAND_PRIX,
-    TITLE_MENU_EXTRA_GRAND_PRIX,
-    TITLE_MENU_TIME_ATTACK,
-    TITLE_MENU_CUSTOM,
-    TITLE_MENU_DUEL,
-    TITLE_MENU_LOAD_SAVE,
-    TITLE_MENU_OPTIONS,
-    TITLE_MENU_ITEM_COUNT,
-} TitleMenuItem;
+#include "rage/title_menu.h"
+
 
 TitleMenuItem MoveTitleMenuSelection(s32 selection, s32 direction,
                                      int extraGrandPrixUnlocked);

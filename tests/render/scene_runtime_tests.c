@@ -153,12 +153,21 @@ int main(void) {
     g_SceneId = GAME_SCENE_ENTER_LOST_RACE;
     SceneRuntimeBeforeDispatch(g_SceneId);
     SceneRuntimeLostRace()->choice = 1;
+    g_SceneTimer = -1; /* EnterLostRaceScreen's interactive sentinel. */
     g_SceneId = GAME_SCENE_LOST_RACE;
     SceneRuntimeBeforeDispatch(g_SceneId);
-    CHECK(SceneRuntimeLostRace()->choice == 1);
+    CHECK(SceneRuntimeLostRace()->choice == 1 && g_SceneTimer == -1);
+
+    g_SceneId = GAME_SCENE_ENTER_RACE_END;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    g_SceneTimer = 555; /* EnterRaceEndScreen's hold/fade countdown. */
+    g_SceneId = GAME_SCENE_RACE_END;
+    SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(g_SceneTimer == 555);
 
     g_SceneId = GAME_SCENE_MENU;
     SceneRuntimeBeforeDispatch(g_SceneId);
+    CHECK(g_SceneTimer == 0);
     CHECK(SceneRuntimeAttractDemo()->step == 0 &&
           SceneRuntimeLostRace()->choice == 0);
 

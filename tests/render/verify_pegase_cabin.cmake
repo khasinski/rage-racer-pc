@@ -14,8 +14,9 @@ execute_process(COMMAND "${CMAKE_COMMAND}" -E env SDL_AUDIODRIVER=dummy
     --set stop.scene=12 --set stop.timer=431 --set race.car=2
     --set race.grid=2,1,0,3,4,5,6,7,8,9,10 --set start.player_track_point=0
     --set start.rival_track_points=2,4,6 --set start.freeze=true --set start.camera=1
-    --set video.renderer=modern --set video.internal_scale=1 --set video.aspect=16:9
-    --set "diagnostics.modern_dump=${capture}" --set diagnostics.modern_dump_frame=620
+    --set video.renderer=modern --set video.fps=logic
+    --set video.internal_scale=1 --set video.aspect=16:9
+    --set "diagnostics.modern_dump=${capture}" --set diagnostics.modern_dump_scene_id=12 --set diagnostics.modern_dump_timer=430
     WORKING_DIRECTORY "${SOURCE}" TIMEOUT 165 RESULT_VARIABLE result
     OUTPUT_VARIABLE output ERROR_VARIABLE error)
 set(log "${output}${error}")

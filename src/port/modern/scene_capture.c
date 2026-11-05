@@ -14,6 +14,7 @@
 #include "scene_capture.h"
 #include "modern_renderer.h"
 #include "../runtime_config.h"
+#include "rage/render_world_scene.h"
 
 /* Keep both completed frames intact while the third slot is constructed.
  * These are same-thread borrows, not a cross-thread publication primitive. */
@@ -49,6 +50,22 @@ static int s_scopeHasFaceOwner;
 static RageCaptureRange s_skyRanges[2];
 static int s_skyRangeCount;
 static const uint8_t *s_skyScopeStart;
+static struct {
+    uintptr_t begin,end;
+    int item,selected,x,y,height;
+} s_menuRanges[32];
+static int s_menuRangeCount;
+
+void CaptureMenuImage(const void *begin,const void *end,int item,int selected,
+                      int x,int y,int height) {
+    if(!CaptureActive()||!s_captureBuilding||!begin||
+       (uintptr_t)end<=(uintptr_t)begin||item<0||item>=7||height<=0||
+       s_menuRangeCount>=32)return;
+    int i=s_menuRangeCount++;
+    s_menuRanges[i].begin=(uintptr_t)begin;s_menuRanges[i].end=(uintptr_t)end;
+    s_menuRanges[i].item=item;s_menuRanges[i].selected=selected!=0;
+    s_menuRanges[i].x=x;s_menuRanges[i].y=y;s_menuRanges[i].height=height;
+}
 
 int CaptureActive(void) {
     if (!s_traceInitialized) {
@@ -153,6 +170,7 @@ void CaptureFrameBegin(void) {
     s_scopeStart = NULL;
     s_scopeHasFaceOwner = 0;
     s_skyRangeCount = 0;
+    s_menuRangeCount = 0;
     s_skyScopeStart = NULL;
 }
 
@@ -474,7 +492,9 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
             addressValue < (uintptr_t)tableEnd) {
             bucket = (int)((addressValue - (uintptr_t)tableBegin) /
                            sizeof(*table));
-        } else if (!s_captureClassic && CaptureIs3DPacket(address)) {
+        } else if (!s_captureClassic &&
+                   GameRenderWorldSceneHas3d((GameSceneId)snapshot->sceneId) &&
+                   CaptureIs3DPacket(address)) {
             snapshot->skipped3DPackets++;
         } else {
             int length = getlen(node);
@@ -492,6 +512,10 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
                         &snapshot->packets[snapshot->packetCount++];
                     memset(out, 0, sizeof(*out));
                     out->skyIndex = UINT16_MAX;
+                    /* Showroom and course previews have no semantic native
+                     * world. Keep their projected polygons alongside the UI. */
+                    if (CaptureIs3DPacket(address))
+                        out->flags |= RAGE_CAPTURE_PACKET_3D;
                     if (s_captureClassic) {
                         RageClassicPacketSource *source =
                             &s_classicSources[s_building][snapshot->packetCount - 1];
@@ -511,6 +535,19 @@ static void CaptureWalkTable(RageSceneSnapshot *snapshot, int tableIndex,
                     }
                     out->size = (uint8_t)CapturePacketWords(
                         node, out->words, RAGE_CAPTURE_PACKET_WORDS);
+                    for(int m=0;m<s_menuRangeCount;m++) {
+                        if(addressValue<s_menuRanges[m].begin||addressValue>=s_menuRanges[m].end)continue;
+                        out->flags|=RAGE_CAPTURE_PACKET_MENU_IMAGE;
+                        out->menuItem=(uint8_t)s_menuRanges[m].item;
+                        out->menuSelected=(uint8_t)s_menuRanges[m].selected;
+                        if(addressValue==s_menuRanges[m].begin) {
+                            out->flags|=RAGE_CAPTURE_PACKET_MENU_IMAGE_DRAW;
+                            out->menuX=(int16_t)s_menuRanges[m].x;
+                            out->menuY=(int16_t)s_menuRanges[m].y;
+                            out->menuHeight=(uint16_t)s_menuRanges[m].height;
+                        }
+                        break;
+                    }
                 }
             }
         }

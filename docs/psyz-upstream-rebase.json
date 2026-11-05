@@ -1,0 +1,95 @@
+{
+  "date": "2026-11-03",
+  "upstream": {
+    "repository": "https://github.com/Xeeynamo/psyz",
+    "commit": "f8780dc",
+    "branch": "main"
+  },
+  "fork": {
+    "repository": "https://github.com/khasinski/rage-racer-psyz",
+    "branch": "rage-racer-upstream-20261103",
+    "commit": "8db3cb79c2f3b2835786cdc9000539be813cb9a9",
+    "integrationCommit": "41b68b321af4e6702808459dfc7d3f2494bc3ffe",
+    "aheadOfUpstream": 6,
+    "behindUpstream": 0,
+    "previousCommit": "5b950544640a54b48cbb8e5c4870cf3d5ef62471",
+    "localBackupBranch": "backup/rage-pre-upstream-20261103",
+    "originalForkCommits": 103,
+    "history": "Original port stack consolidated, then rebased onto upstream. Consolidation does not imply all old changes were redundant. The original remote main and local backup preserve the old history."
+  },
+  "upstreamReplacements": [
+    "Native MDEC/VLC replaces the fork's libpress software decoder.",
+    "Upstream GTE core replaces fork transform implementations; only missing SDK color wrappers remain.",
+    "Hardware-accurate upstream SPU voice/reverb core replaces the old fork core; PCM mixing and diagnostic counters/traces remain.",
+    "Upstream kernel event/counter implementation replaces old libapi/libetc event and callback stubs.",
+    "Upstream voice allocator, sequence volume/key-off and libspu SDK implementations replace duplicated host functions; host sequence hooks remain.",
+    "Obsolete rcossin_table.inc and spu_gauss_exact.h removed.",
+    "SDL and nugget updated to the upstream-pinned commits."
+  ],
+  "retainedPortChanges": [
+    "Native renderer present hooks, intermediate presentation, VRAM capture/snapshot APIs and classic texture context.",
+    "Compatibility raster accuracy/correction and sampling caches.",
+    "Deterministic frame timing, hidden headless windows and host input controls.",
+    "Virtual CD backend, bounded XA playback, CD audio reporting and host SEQ/PCM playback.",
+    "Rage Racer VAB placement and zero-voice allocator reset behavior."
+  ],
+  "gameAdaptations": [
+    "GameApplyMatrixLV namespaces the game's differently typed helper away from the new upstream ApplyMatrixLV API.",
+    "Window-size diagnostic now queries SDL logical window dimensions explicitly; upstream display-size API reports pixels.",
+    "Mirror capture test uses logic-rate presentation so the requested diagnostic frame cannot be skipped by host pacing."
+  ],
+  "verification": {
+    "auditStage": "Initial rebase audit, before the follow-up fixes described below.",
+    "platform": "macOS arm64, SDL GPU Metal",
+    "environment": {"PSYZ_HEADLESS": "1", "SDL_AUDIODRIVER": "dummy"},
+    "build": "passed: full Release and standalone PsyZ tests",
+    "fullRageSuite": {
+      "total": 579,
+      "failed": 20,
+      "skipped": 64,
+      "log": "build/reports/psyz-rebase-final-tests.log",
+      "followup": "One new window_size failure was corrected by querying logical dimensions; validated separately. The other 19 failing test names were already failing in the pre-rebase audit. The whole suite is not green."
+    },
+    "targetedRageSuite": {"passed": 14, "failed": 0, "skipped": 0},
+    "targetedRageSuiteLog": "build/reports/psyz-rebase-acceptance-final.log",
+    "targetedScope": "PAL CUE production import and modern race startup, smoke import, audio, engine, race restart, save roundtrip, mirror, renderer/effect toggles, HD pack, overlay, native menu, logical window size.",
+    "upstreamLibrarySuite": {
+      "passed": 439,
+      "failed": 3,
+      "skipped": 1,
+      "filter": "gte*,spu*,libpress*,events*,mdec*,vlc*,video*,horizontal_grid*",
+      "log": "build/reports/psyz-upstream-libraries-tests.log",
+      "failures": "Three horizontal_grid image comparisons differ by approximately 0.3-0.5% with the retained port raster backend. References and tolerances were not changed."
+    },
+    "limits": [
+      "No Windows/Linux runtime validation in this session.",
+      "No interactive driving, native file chooser or double-click acceptance performed.",
+      "The fork retains its custom presentation backend; this is not a promise of full upstream native-canvas rendering parity."
+    ]
+  },
+  "followupAudit": {
+    "report": "docs/release-validation-2026-11-03.md",
+    "rootTests": {
+      "total": 581,
+      "passed": 552,
+      "skipped": 29,
+      "unresolvedFailures": 0,
+      "fullRunLog": "build/reports/release-gates-verified-pal-console.log",
+      "finalFixtureRerunLog": "build/reports/release-gates-pal-last-rerun.log",
+      "note": "The full real-PAL run passed 551 tests and skipped 29. Its remaining FMV temporary-directory fixture failure was corrected by explicitly placing the isolated save profile outside the FMV scratch directory; that test then passed separately."
+    },
+    "ci": {
+      "sourceCommit": "29703d6e43f79caf011ba08198d1df328da451f9",
+      "url": "https://github.com/khasinski/rage-racer-pc/actions/runs/41689181577",
+      "macOS": "passed: build and unit/functional tests",
+      "Windows": "passed: build and unit/functional tests",
+      "Linux": "passed: build and unit/functional tests"
+    },
+    "runtimeLimits": [
+      "No complete normal-physics day/night laps or native chooser/double-click acceptance performed.",
+      "Packaged macOS CLI startup from clean profiles passes with CUE and Track 01 BIN and produces identical modern frames.",
+      "A packaged Linux GPU probe under Apple Silicon x86-64 emulation exits with SIGSEGV; native Linux GPU validation remains required. Independent composite and SSAO Vulkan tests pass in that environment.",
+      "The bazzite host previously used for the Windows VM is unreachable."
+    ]
+  }
+}

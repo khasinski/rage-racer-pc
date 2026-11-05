@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 #include "archive_index.h"
 #include "mod_assets.h"
@@ -78,6 +79,20 @@ void ModAssetsSetSource(const char *region,const char *fingerprint) {
 static int ModAssetsReadManifest(void) {
     char path[1100];
     snprintf(path, sizeof(path), "%s/mod.toml", s_directory);
+#ifdef _WIN32
+    struct _stat info;
+    int status = _stat(path, &info);
+    int regular = status == 0 && (info.st_mode & _S_IFMT) == _S_IFREG;
+#else
+    struct stat info;
+    int status = stat(path, &info);
+    int regular = status == 0 && S_ISREG(info.st_mode);
+#endif
+    if (!regular) {
+        if (status != 0 && errno == ENOENT) return 1;
+        fprintf(stderr, "rage-port: mod manifest is not a readable regular file %s; mod disabled\n", path);
+        return 0;
+    }
     FILE *file = fopen(path, "rb");
     if (file == NULL) {
         if (errno == ENOENT) return 1;
@@ -87,7 +102,7 @@ static int ModAssetsReadManifest(void) {
     long size = -1;
     if (fseek(file, 0, SEEK_END) == 0) size = ftell(file);
     /* More than the maximum meaningful content in the bounded schema. */
-    if (size < 0 || size > 2 * 1024 * 1024 || fseek(file, 0, SEEK_SET) != 0) {
+    if (size < 0 || size > RAGE_MOD_MANIFEST_MAX_BYTES || fseek(file, 0, SEEK_SET) != 0) {
         fclose(file);
         fprintf(stderr, "rage-port: invalid mod manifest size %s; mod disabled\n", path);
         return 0;

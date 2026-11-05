@@ -3,11 +3,15 @@
 
 /* Live copies of the settings the Esc panel can change. Graphics stay on
  * RagePortConfig. These take effect immediately. Analog, the wheel, steering
- * feel, the HUD and the chase camera last until the game closes. Music and
+ * feel, the HUD, the chase camera and Fast menus are remembered by the host preferences.
+ * Random time of day lasts until quit. Music and
  * effects are the save-game volumes. Force feedback is the remembered player
  * choice the pause menu already uses. */
 
 typedef struct PortSessionOptions {
+    int fullscreen;
+    int randomTimeOfDay;
+    int fastMenus;
     int tickMultiplier;
     int analog;
     int wheel;

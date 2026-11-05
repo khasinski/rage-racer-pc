@@ -148,6 +148,28 @@ static int TestSkyGradientPaletteSlots(void) {
     return 0;
 }
 
+static int TestSkyGradientJoinsWhenCameraRolls(void) {
+    const int rolls[] = {-1024, -512, 0, 512, 1024};
+    for (size_t i = 0; i < sizeof(rolls) / sizeof(rolls[0]); ++i) {
+        PacketStorage packets;
+        GameOrderingTableEntry orderingTable[GAME_FRAME_OT_LENGTH];
+        PrepareFrame(&packets, orderingTable);
+        g_CourseIndex = 2;
+        g_SkyRowBase = 0;
+        g_Camera.view.angleZ = rolls[i];
+        DrawSkyBackground(&g_Camera.view);
+        POLY_G4 *bands = (POLY_G4 *)(void *)(
+            g_RenderState.draw.packetCursor - 4 * sizeof(POLY_G4));
+        /* Both endpoints of the upper band must share the middle band's
+         * boundary. An unshifted X endpoint opens a wedge under rolled skies. */
+        CHECK(bands[2].x0 == bands[1].x2);
+        CHECK(bands[2].y0 == bands[1].y2);
+        CHECK(bands[2].x1 == bands[1].x3);
+        CHECK(bands[2].y1 == bands[1].y3);
+    }
+    return 0;
+}
+
 static int TestInvalidSkyMapFallsBackToFirstTile(void) {
     PacketStorage packets;
     GameOrderingTableEntry orderingTable[GAME_FRAME_OT_LENGTH];
@@ -273,6 +295,7 @@ int main(void) {
     if (TestNearGroundCourseSkirt() != 0 ||
         TestFarGroundCourseSkirt() != 0 ||
         TestSkyGradientPaletteSlots() != 0 ||
+        TestSkyGradientJoinsWhenCameraRolls() != 0 ||
         TestInvalidSkyMapFallsBackToFirstTile() != 0 ||
         TestNativeGridMatchesClassicPackets() != 0) {
         return 1;

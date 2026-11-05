@@ -330,6 +330,7 @@ void SimUpdatePlayerCar(PlayerCarRuntime *car) {
     s32 unblendedY;
     s32 unblendedBodyPitch;
     s32 unblendedBodyRoll;
+    s16 unblendedEngineLoad;
 
     if (!s_scaled) {
         UpdatePlayerCar(car);
@@ -341,9 +342,15 @@ void SimUpdatePlayerCar(PlayerCarRuntime *car) {
     unblendedY = car->y;
     unblendedBodyPitch = car->bodyPitch;
     unblendedBodyRoll = car->bodyRoll;
+    unblendedEngineLoad = car->drive.engineLoad;
     SimBlendFields(car, &before, kPlayerFields,
                    sizeof(kPlayerFields) / sizeof(kPlayerFields[0]),
                    s_parity);
+    /* A gear change snapshots the wheel speed for the clutch interval.
+     * Halving that initial condition loses half the launch speed permanently;
+     * only subsequent continuous updates should be blended. */
+    if (before.drive.gearDisp != car->drive.gear && car->drive.clutch > 0)
+        car->drive.engineLoad = unblendedEngineLoad;
     SimBlendCarSubsystems(AsRivalCar(car),
                           (const GameCarRuntime *)&before, unblendedY,
                           unblendedBodyPitch, unblendedBodyRoll, s_parity);
@@ -407,10 +414,11 @@ void SimRaceTrace(void) {
     }
     fprintf(stderr,
             "racetrace frame=%d tick=%u mult=%d x=%d z=%d speed=%d rpm=%d "
-            "gear=%d heading=%d yaw=%d progress=%d rival0=%d,%d\n",
+            "gear=%d heading=%d yaw=%d progress=%d rival0=%d,%d timer=%d accelerator=%d\n",
             g_FrameCounter, s_traceTick++,
             s_scaled ? DOUBLE_MULTIPLIER : RETAIL_MULTIPLIER,
             car->x, car->z, car->speed, car->drive.engineRpm, car->drive.gear,
             car->headingAngle & ANGLE_MASK, car->bodyYaw & ANGLE_MASK,
-            car->trackProgress, g_Cars[0].x, g_Cars[0].z);
+            car->trackProgress, g_Cars[0].x, g_Cars[0].z, g_SceneTimer,
+            car->drive.acceleratorInput.value);
 }

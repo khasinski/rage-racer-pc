@@ -186,7 +186,45 @@ static void test_resolution(void) {
     free(manifest);
 }
 
+static void test_large_texture_manifest(void) {
+    RageModManifest *m = malloc(sizeof(*m));
+    size_t capacity = ((size_t)RAGE_MOD_MANIFEST_MAX_TEXTURES + 1) * 128 + 32;
+    char *text = malloc(capacity);
+    EXPECT(m && text);
+    if (!m || !text) { free(m); free(text); return; }
+    size_t used = (size_t)snprintf(text, capacity, "[textures]\n");
+    size_t lastLine = used;
+    for (unsigned i = 0; i < RAGE_MOD_MANIFEST_MAX_TEXTURES; i++) {
+        lastLine = used;
+        used += (size_t)snprintf(text + used, capacity - used,
+            "\"track.big1.terrain.material.%u.variant.2\" = \"textures/stone.png\"\n", i);
+    }
+    EXPECT(used > 1024 * 1024);
+    EXPECT(ModManifestParse(text, used, m));
+    EXPECT(m->textureCount == RAGE_MOD_MANIFEST_MAX_TEXTURES);
+    char key[96];
+    snprintf(key, sizeof(key), "track.big1.terrain.material.%u.variant.2",
+             RAGE_MOD_MANIFEST_MAX_TEXTURES - 1);
+    const char *path = ModManifestFindTexture(m, key);
+    EXPECT(path && !strcmp(path, "textures/stone.png"));
+    used += (size_t)snprintf(text + used, capacity - used,
+        "\"track.big1.terrain.material.extra\" = \"textures/stone.png\"\n");
+    EXPECT(!ModManifestParse(text, used, m));
+    EXPECT(m->error == RAGE_MOD_MANIFEST_INVALID && m->textureCount == 0);
+    EXPECT(!ModManifestFindTexture(m, key));
+    /* Last assignment still wins even at the new boundary. */
+    used = lastLine + (size_t)snprintf(text + lastLine, capacity - lastLine,
+        "\"track.big1.terrain.material.0.variant.2\" = \"textures/last.png\"\n");
+    EXPECT(ModManifestParse(text, used, m));
+    path = ModManifestFindTexture(m, "track.big1.terrain.material.0.variant.2");
+    EXPECT(path && !strcmp(path, "textures/last.png"));
+    EXPECT(!ModManifestParse("x", (size_t)RAGE_MOD_MANIFEST_MAX_BYTES + 1, m));
+    EXPECT(m->textureCount == 0);
+    free(text); free(m);
+}
+
 int main(void) {
+    test_large_texture_manifest();
     test_mesh_resolution();
     test_dependency_order();
     test_resolution();

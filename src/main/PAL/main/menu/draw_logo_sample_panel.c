@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu.h"
 #include "game/menu_internal.h"
 
@@ -15,6 +16,7 @@ void DrawLogoSamplePanel(LogoSample *samplePanel, const TeamLogo *logo,
     s32 y;
     s32 i;
 
+    step = PortMenuAnimationStep(step);
     if (step == 0) {
         samplePanel->panelSlide = 0;
         return;

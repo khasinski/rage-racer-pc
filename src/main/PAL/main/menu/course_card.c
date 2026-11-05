@@ -1,3 +1,4 @@
+#include "rage/menu_animation.h"
 #include "game/menu.h"
 #include "game/render_internal.h"
 
@@ -44,7 +45,10 @@ void UpdateAndDrawCourseCard(CourseSelectScreen *screen) {
     s32 depth;
     s32 i;
 
-    angle = AdvanceCourseCardSpin(screen);
+    for (int tick = 0; tick < PortMenuAnimationTicks(); ++tick) {
+        AdvanceCourseCardSpin(screen);
+    }
+    angle = screen->cardSpin / 1000;
     if (angle < COURSE_CARD_MIN_ANGLE) {
         angle = COURSE_CARD_MIN_ANGLE;
     }
