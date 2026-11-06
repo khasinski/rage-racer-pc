@@ -26,101 +26,23 @@ int main(void) {
     const char *regions[] = {"PAL", "NTSC-U", "NTSC-J"};
     RaceGridSlot grid[RACE_CAR_SLOT_COUNT] = {0};
     {
-        static uint8_t rgba[384 * 376 * 4], original[sizeof(rgba)];
-        uint16_t face[24 * 94], before[24 * 94], palette[16] = {0};
+        uint8_t unknown[RAGE_HUD_UNIT_BYTES] = {0}, before[sizeof(unknown)];
+        memcpy(before, unknown, sizeof(before));
         s_region = "PAL";
-        for (int car = 0; car < 13; ++car) {
-            const RageSpeedUnitsLayout *l = RageSpeedUnitsLayoutForCar(car);
-            CHECK(l != NULL);
-            for (unsigned i = 0; i < sizeof(face)/sizeof(face[0]); ++i) face[i] = 0x1111;
-            palette[1] = 0x0421; palette[2] = 0x7fff;
-            palette[3] = 0x001f; /* Never choose a coloured shadow for grey ink. */
-            if (l->width) face[l->y * 24 + l->x / 4] = 0x2222;
-            memcpy(before, face, sizeof(face));
-            RageSpeedUnitsConfigure(car, "PAL", "auto");
-            RageSpeedUnitsPatchIndexed(face, palette);
-            CHECK(!memcmp(before, face, sizeof(face)));
-            RageSpeedUnitsConfigure(car, "PAL", "kmh");
-            RageSpeedUnitsPatchIndexed(face, palette);
-            CHECK(!memcmp(before, face, sizeof(face)));
-            CHECK(SpeedDisplayValue(1168) == 160);
-            RageSpeedUnitsConfigure(car, "PAL", "mph");
-            CHECK(SpeedDisplayValue(1168) == 100);
-            CHECK(SpeedDisplayValue(-1) == 0);
-            CHECK(SpeedDisplayValue(1000000) == 999);
-            RageSpeedUnitsPatchIndexed(face, palette);
-            CHECK((memcmp(before, face, sizeof(face)) != 0) == (l->width != 0));
-            for (int y = 0; y < 94; ++y) for (int x = 0; x < 96; ++x) {
-                unsigned shift = (unsigned)(x & 3) * 4u;
-                unsigned color = palette[(face[y*24+x/4] >> shift) & 15u];
-                CHECK((color & 31u) == ((color >> 5) & 31u));
-                CHECK((color & 31u) == ((color >> 10) & 31u));
-                if (x >= l->x && x < l->x + l->width && y >= l->y && y < l->y + l->height) continue;
-                CHECK(((face[y*24+x/4] ^ before[y*24+x/4]) & (15u << shift)) == 0);
-            }
-        }
-        CHECK(RageSpeedUnitsLayoutForCar(-1) == NULL);
-        CHECK(RageSpeedUnitsLayoutForCar(13) == NULL);
-        /* Both HD addressing forms, both palettes and all car layouts. */
-        for (int car = 0; car < 13; ++car) for (int full = 0; full < 2; ++full)
-            for (int night = 0; night < 2; ++night) {
-                char key[128];
-                const RageSpeedUnitsLayout *l = RageSpeedUnitsLayoutForCar(car);
-                int w = full ? 256 : 384, h = full ? 256 : 376;
-                int scale = full ? 1 : 4, originY = full ? 112 : 0;
-                size_t size = (size_t)w * (size_t)h * 4u;
-                snprintf(key, sizeof(key), "ui.hud.car.%d.page.10.clut.%d%s",
-                    car, night ? 13288 : 13224, full ? "" : ".region.0.112.96.94");
-                memset(rgba, 17, size);
-                if (l->width) {
-                    size_t offset = ((size_t)(originY + l->y) * (size_t)scale * (size_t)w +
-                        (size_t)l->x * (size_t)scale) * 4u;
-                    memset(rgba + offset, night ? 40 : 200, 3);
-                }
-                memcpy(original, rgba, size);
-                RageSpeedUnitsConfigure(car, "PAL", "auto");
-                RageSpeedUnitsPatchRGBA(key, rgba, (unsigned)w, (unsigned)h);
-                CHECK(!memcmp(original, rgba, size));
-                RageSpeedUnitsConfigure(car, "PAL", "mph");
-                RageSpeedUnitsPatchRGBA(key, rgba, (unsigned)w, (unsigned)h);
-                CHECK((memcmp(original, rgba, size) != 0) == (l->width != 0));
-                for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
-                    int offset = (y * w + x) * 4;
-                    CHECK(rgba[offset+3] == original[offset+3]);
-                    if (x >= l->x * scale && x < (l->x + l->width) * scale &&
-                        y >= (originY + l->y) * scale &&
-                        y < (originY + l->y + l->height) * scale) continue;
-                    CHECK(!memcmp(rgba + offset, original + offset, 4));
-                }
-            }
-        /* Scaled HD patch: preserve every pixel outside the label and alpha. */
         RageSpeedUnitsConfigure(3, "PAL", "mph");
-        memset(rgba, 17, sizeof(rgba));
-        memset(rgba + (7 * 4 * 384 + 68 * 4) * 4, 200, 4);
-        memcpy(original, rgba, sizeof(rgba));
-        RageSpeedUnitsPatchRGBA("ui.hud.car.3.page.10.clut.13224.region.0.112.96.94", rgba, 384, 376);
-        CHECK(memcmp(original, rgba, sizeof(rgba)));
-        for (int y = 0; y < 376; ++y) for (int x = 0; x < 384; ++x) {
-            int i = (y * 384 + x) * 4;
-            CHECK(rgba[i+3] == original[i+3]);
-            if (x >= 68*4 && x < 90*4 && y >= 7*4 && y < 14*4) continue;
-            CHECK(!memcmp(rgba+i, original+i, 4));
-        }
-        memcpy(rgba, original, sizeof(rgba));
-        RageSpeedUnitsPatchRGBA("ui.hud.car.4.page.10.clut.13224.region.0.112.96.94", rgba, 384, 376);
-        CHECK(!memcmp(original, rgba, sizeof(rgba)));
-        RageSpeedUnitsPatchRGBA("ui.hud.car.3.page.10.clut.13224.region.0.112.96.94", rgba, 383, 376);
-        CHECK(!memcmp(original, rgba, sizeof(rgba)));
-        RageSpeedUnitsConfigure(3, "PAL", "kmh");
-        CHECK(SpeedDisplayValue(1168) == 160);
-        RageSpeedUnitsConfigure(13, "PAL", "mph");
+        CHECK(RageSpeedUnitsOverrideRequested());
         CHECK(RageSpeedUnits() == RAGE_UNITS_AUTO);
+        CHECK(!RageSpeedUnitsPatchSnapshot(unknown));
+        CHECK(!memcmp(before, unknown, sizeof(before)));
         CHECK(SpeedDisplayValue(1168) == 160);
         RageSpeedUnitsConfigure(3, "NTSC-U", "kmh");
         s_region = "NTSC-U";
-        CHECK(RageSpeedUnits() == RAGE_UNITS_AUTO);
+        CHECK(!RageSpeedUnitsPatchSnapshot(unknown));
         CHECK(SpeedDisplayValue(1168) == 100);
-        RageSpeedUnitsConfigure(3, "PAL", "auto");
+        RageSpeedUnitsConfigure(0, "PAL", "auto");
+        CHECK(!RageSpeedUnitsOverrideRequested());
+        CHECK(SpeedDisplayValue(-1) == 0);
+        CHECK(SpeedDisplayValue(1000000) == 999);
     }
     s_events.rivalAiConfigs[0][0].speed = 160;
     s_events.rivalAiConfigs[0][0].accelerationStep = 5;

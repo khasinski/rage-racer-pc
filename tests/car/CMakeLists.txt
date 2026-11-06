@@ -37,6 +37,7 @@ target_include_directories(regional_speed_units_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
     ${CMAKE_SOURCE_DIR}/include)
 target_compile_definitions(regional_speed_units_tests PRIVATE __psyz=1)
+target_link_libraries(regional_speed_units_tests PRIVATE rage-hud-unit-diff)
 if(MSVC)
     target_compile_options(regional_speed_units_tests PRIVATE
         "/FI${CMAKE_SOURCE_DIR}/src/port/include/rage/compat.h")

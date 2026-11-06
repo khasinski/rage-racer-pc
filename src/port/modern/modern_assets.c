@@ -639,7 +639,7 @@ static int ModernAssetsLoadRootPngFile(const char *root,const char *key,
                (const uint8_t *)converted->pixels +
                    (size_t)row * (size_t)converted->pitch,
                rowSize);
-    RageSpeedUnitsPatchRGBA(key, pixels, (unsigned)converted->w, (unsigned)converted->h);
+    if (!RageSpeedUnitsPatchRGBA(key, pixels, (unsigned)converted->w, (unsigned)converted->h)) goto fail;
     image->pixels = pixels;
     image->size = size;
     image->width = (uint32_t)converted->w;
