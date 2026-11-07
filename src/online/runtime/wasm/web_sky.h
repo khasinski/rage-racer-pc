@@ -30,9 +30,9 @@ void WebSkySetCamera(RenderCamera *camera, const ClientRace *race, s32 cameraY,
  * pixels) is left for the browser, which knows its drawing buffer. */
 void WebSkyUniform(const RenderCamera *camera, float aspect, float out[WEB_SKY_FLOATS]);
 
-/* client_frame.c DecodeFrameSky: the 512x256 panorama from the track's
- * texture page and the current environment palette. */
+/* The 512x256 panorama from this race's texture page and current palette.
+ * Desktop requests authored RGB; the browser retains brightness modulation. */
 int WebSkyDecode(const ClientRace *race, const RenderCamera *camera, int page,
-                 uint8_t *rgba, size_t size);
+                 uint8_t *rgba, size_t size, int authoredColors);
 
 #endif

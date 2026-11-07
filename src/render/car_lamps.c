@@ -10,6 +10,8 @@ float CarLightDaylight(Vec3 sky, Vec3 horizon) {
 }
 
 unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
+    uint32_t authoredKey = body->flags & RAGE_SESSION_INSTANCE
+        ? body->assetKey & 0xffffu : body->assetKey;
     /* Centers projected through model 0/material 3's UV triangles. Keeping
      * the patch and its emitter together prevents independent placement drift. */
     static const Lamp special[] = {
@@ -475,7 +477,7 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     if (body->component != 0) return 0;
     /* The three road courses share their class bank (mesh AND textures).
      * Oval banks are separate; only explicitly verified aliases belong here. */
-    uint32_t bank = body->assetKey;
+    uint32_t bank = authoredKey;
     if (bank >= 136u && bank <= 198u && (bank & 1u) == 0u) bank = 88u;
     if ((bank & 1u) == 0 && (bank & 6u) != 6u) bank &= ~7u;
     switch (bank) {
@@ -487,7 +489,7 @@ unsigned CarLamps(const RenderMeshInstance *body, const Lamp **lamps) {
     if (body->assetSet == RAGE_RENDER_ASSET_MODEL_BANK) {
         if (body->mesh != 0) return 0;
         for (unsigned i = 0; i < sizeof(players) / sizeof(*players); ++i) {
-            if (players[i].key != body->assetKey) continue;
+            if (players[i].key != authoredKey) continue;
             *lamps = players[i].lamps;
             return players[i].count;
         }

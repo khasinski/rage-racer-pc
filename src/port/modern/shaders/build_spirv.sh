@@ -62,6 +62,12 @@ if [ "${1:-}" = "native-vertex" ]; then
     exit 0
 fi
 
+if [ "${1:-}" = "native-sky" ]; then
+    build_shader native_sky.vert native_sky_vert vert vs_native_sky
+    build_shader native_sky.frag native_sky_frag frag fs_native_sky
+    exit 0
+fi
+
 if [ "${1:-}" = "native-shadow-vertex" ]; then
     build_shader native_shadow.vert native_shadow_vert vert vs_shadow
     exit 0

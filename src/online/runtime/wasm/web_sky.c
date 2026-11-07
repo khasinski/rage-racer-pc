@@ -108,12 +108,12 @@ void WebSkyUniform(const RenderCamera *camera, float aspect, float out[WEB_SKY_F
 }
 
 int WebSkyDecode(const ClientRace *race, const RenderCamera *camera, int page,
-                 uint8_t *rgba, size_t size) {
+                 uint8_t *rgba, size_t size, int authoredColors) {
     if (!race || !camera || !race->pixels || !camera->hasSkyLayout || page < 0 || page > 1)
         return 0;
     const TextureImage image = {race->pixels->pages[page],
         RAGE_TRACK_VRAM_WIDTH * RAGE_TRACK_VRAM_HEIGHT,
         0, 0, RAGE_TRACK_VRAM_WIDTH, RAGE_TRACK_VRAM_HEIGHT, NULL};
     const TextureImage palette = {race->env.clut, 16, 224, 486, 16, 1, &image};
-    return DecodeSky(&palette, &camera->skyLayout, rgba, size);
+    return DecodeSky(&palette, &camera->skyLayout, rgba, size, authoredColors);
 }

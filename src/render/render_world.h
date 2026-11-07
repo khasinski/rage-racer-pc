@@ -70,6 +70,9 @@ typedef struct RenderCamera {
 } RenderCamera;
 
 enum { RAGE_RENDER_PLAYER_CAR_ENTITY = 11 };
+/* An explicit session owns the mesh/material namespace. The low 16 bits of
+ * its asset key retain the authored model identity for semantic features. */
+enum { RAGE_SESSION_INSTANCE = 1u << 31 };
 
 /* One renderer-neutral sun and ambient environment. Both direct shading and
  * shadow cameras consume this value, so a backend cannot silently use a

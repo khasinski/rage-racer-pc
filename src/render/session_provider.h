@@ -5,7 +5,6 @@
 #include "render_material.h"
 /* An explicit race owner supplies immutable meshes and decoded material
  * pixels. No legacy global/importer fallback is allowed for its instances. */
-enum { RAGE_SESSION_INSTANCE = 1u << 31 };
 typedef struct RageSessionProvider {
     void *context;
     const RenderWorld *(*world)(void *,float aspect);

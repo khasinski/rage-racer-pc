@@ -1508,7 +1508,7 @@ EMSCRIPTEN_KEEPALIVE float *rw_sky(void) { return s_frame.sky; }
  * uploads it; 0 when it cannot be decoded (the gradient still draws). */
 EMSCRIPTEN_KEEPALIVE int rw_decode_sky(uint8_t *rgba) {
     return s_race && s_view.haveStep &&
-           WebSkyDecode(s_race, &s_world.camera, s_frame.page, rgba, WEB_SKY_WIDTH * WEB_SKY_HEIGHT * 4);
+           WebSkyDecode(s_race, &s_world.camera, s_frame.page, rgba, WEB_SKY_WIDTH * WEB_SKY_HEIGHT * 4, s_nativeClient);
 }
 
 /* Changes whenever the panorama's inputs do (palette, texture page, cloud

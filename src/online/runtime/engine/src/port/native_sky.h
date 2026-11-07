@@ -7,5 +7,6 @@
  * TextureImage may overlay a borrowed animated palette. Invalid input or
  * allocation failure preserves output. Source/output must not overlap. */
 int DecodeSky(const TextureImage *source,
-                    const RageSkyPanoramaLayout *layout, uint8_t *rgba, size_t size);
+                    const RageSkyPanoramaLayout *layout, uint8_t *rgba, size_t size,
+                    int authoredColors);
 #endif

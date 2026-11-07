@@ -1,6 +1,7 @@
 #version 450
 
 layout(location = 0) in vec3 worldDirection;
+layout(location = 1) in vec2 screenUV;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D panorama;
 
@@ -54,14 +55,12 @@ void main() {
     /* Classic's clouds are a screen-space 64x128-pixel grid, not a sphere.
      * Reconstruct that grid in the 240-line logical viewport. This keeps its
      * authored pixel density, its tile boundary, pitch and roll together. */
-    /* Convert the GPU's bottom-left fragment coordinates to the PS1 draw
-     * environment's top-left, downward-Y convention. Using the physical
-     * target height avoids backend-specific clip-space Y here. */
+    /* Interpolate top-left screen coordinates from the fullscreen triangle.
+     * Fragment-position Y has different conventions across GPU backends. */
     vec2 screenPixel = vec2(
-        gl_FragCoord.x * (240.0 / sky.gridParams.w) -
+        screenUV.x * sky.gridOrigin.w -
             (sky.gridOrigin.w - 320.0) * 0.5,
-        (sky.gridParams.w - gl_FragCoord.y) *
-            (240.0 / sky.gridParams.w));
+        screenUV.y * 240.0);
     vec2 gridStart = sky.gridParams.z == 1.0
                          ? sky.gridParams.xy
                          : sky.gridOrigin.xy;

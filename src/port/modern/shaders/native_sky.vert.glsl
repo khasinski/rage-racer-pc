@@ -9,10 +9,12 @@ layout(set = 1, binding = 0, std140) uniform NativeCamera {
 } camera;
 
 layout(location = 0) out vec3 worldDirection;
+layout(location = 1) out vec2 screenUV;
 
 void main() {
     vec2 corner = vec2((gl_VertexIndex << 1) & 2, gl_VertexIndex & 2);
     vec2 clip = corner * 2.0 - 1.0;
+    screenUV = vec2(corner.x, 1.0 - corner.y);
     vec3 viewDirection = vec3(clip.x / camera.projection.x,
                               clip.y / camera.projection.y, -1.0);
     worldDirection = camera.viewRow0.xyz * viewDirection.x +

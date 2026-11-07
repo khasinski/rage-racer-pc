@@ -14,6 +14,12 @@ friends** (rooms and invitations), and **Profile & settings**. Name editing,
 optional account login/registration, and the server address live under profile
 settings; no credentials or server configuration are required to start racing.
 
+Desktop sky rendering uses the race's authored RGB cloud panorama and
+interpolated top-left screen coordinates, independently of GPU fragment Y
+conventions. Online material-cache keys retain their authored model identity
+in the low 16 bits so lamp surfaces, glows and projected lights work for the
+entire field. The existing car-lights setting also applies to online races.
+
 **Online Arcade** is a separate casual mode alongside private rooms and Duel.
 It joins one shared community automatically and starts with a single person.
 The server reserves up to eight controllable cars, drives vacant seats with

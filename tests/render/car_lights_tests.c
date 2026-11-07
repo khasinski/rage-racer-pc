@@ -287,6 +287,11 @@ int main(void) {
         const Lamp *lamps;
         unsigned count = CarLamps(&body, &lamps);
         CHECK(count == 4);
+        RenderMeshInstance onlineBody = body;
+        onlineBody.flags |= RAGE_SESSION_INSTANCE;
+        onlineBody.assetKey |= 0x80050000u;
+        const Lamp *onlineLamps;
+        CHECK(CarLamps(&onlineBody, &onlineLamps) == count && onlineLamps == lamps);
         for (unsigned i = 0; i < count; ++i) {
             CHECK(lamps[i].bounds[0] < lamps[i].bounds[2]);
             CHECK(lamps[i].bounds[1] < lamps[i].bounds[3]);
@@ -333,6 +338,13 @@ int main(void) {
         grid[i].transform.scale = (Vec3){1, 1, 1};
         grid[i].transform.position.x = i * 1000;
         grid[i].lamps = (CarLights){1, 0.2f, 1, 1, 0};
+    }
+    RenderCarSpotLights(&world);
+    CHECK(world.spotLightCount == 72);
+    world.spotLightCount = 0;
+    for(int i=0;i<12;i++){
+        grid[i].flags |= RAGE_SESSION_INSTANCE;
+        grid[i].assetKey |= 0x80000000u | ((unsigned)i << 16);
     }
     RenderCarSpotLights(&world);
     CHECK(world.spotLightCount == 72);

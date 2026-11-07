@@ -3,7 +3,8 @@
 #include <string.h>
 
 int DecodeSky(const TextureImage *source,
-                    const RageSkyPanoramaLayout *layout, uint8_t *rgba, size_t size) {
+                    const RageSkyPanoramaLayout *layout, uint8_t *rgba, size_t size,
+                    int authoredColors) {
     enum { PAGE_SIZE = 256 * 256 * 4, SKY_SIZE = 512 * 256 * 4 };
     if (!source || !layout || !rgba || size < SKY_SIZE) return 0;
     for (unsigned row = 0; row < 2; ++row)
@@ -16,9 +17,9 @@ int DecodeSky(const TextureImage *source,
     int decoded = DecodeTexture(&texture, texture.clut, source, storage, PAGE_SIZE, NULL, 0) &&
         RageSkyExpandTexturePageLayout(sky, SKY_SIZE, storage, PAGE_SIZE, layout);
     if (decoded) {
-        /* Sky texels modulate the environment gradient; keep their brightness,
-         * not the palette's tint, matching the existing native importer. */
-        for (size_t pixel = 0; pixel < SKY_SIZE; pixel += 4) {
+        /* The browser's legacy shader modulates the gradient with brightness.
+         * Desktop composites the authored RGB cloud sheet over that gradient. */
+        for (size_t pixel = 0; !authoredColors && pixel < SKY_SIZE; pixel += 4) {
             uint8_t brightness = sky[pixel];
             if (sky[pixel + 1] > brightness) brightness = sky[pixel + 1];
             if (sky[pixel + 2] > brightness) brightness = sky[pixel + 2];

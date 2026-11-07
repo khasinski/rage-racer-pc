@@ -6,6 +6,7 @@
 #include "modern_native_gpu.h"
 #include "modern_ssao.h"
 #include "../runtime_config.h"
+#include "../port_config.h"
 #include "../track_material_page.h"
 #include <limits.h>
 
@@ -1028,6 +1029,10 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
         return;
     }
     world = &s_ownedWorld.world;
+    if (SessionProviderActive() && !PortActiveConfig()->carLights) {
+        for (uint32_t i = 0; i < world->instanceCount; ++i)
+            s_ownedWorld.instances[i].lamps = (CarLights){0};
+    }
     RenderCarSpotLightsWithSettings(
         &s_ownedWorld.world,
         s_headlightPitchDegrees,
