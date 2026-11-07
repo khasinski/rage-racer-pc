@@ -2204,14 +2204,17 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
     if(SessionProviderActive()) {
         if(!ModernEnsureResources()){info->skip_present=true;return;}
         const RenderWorld *world=SessionProviderWorld((float)s_targetW/(float)s_targetH);
-        if(!world)return;
-        ModernNativeGpuPrepare(world,(float)s_targetW/(float)s_targetH);
-        if(!ModernRender(snapshot)){info->skip_present=true;return;}
+        /* Retain the last native frame while the next race synchronizes.
+         * Falling through to the suspended offline frontend flashes its menu. */
+        if(world){
+            ModernNativeGpuPrepare(world,(float)s_targetW/(float)s_targetH);
+            if(!ModernRender(snapshot)){info->skip_present=true;return;}
+        }
         info->texture=ModernPresentTexture();info->w=(Uint32)s_targetW;info->h=(Uint32)s_targetH;
         info->aspect=(4.0f/3.0f)*(s_logicalW/320.0f);info->filter=SDL_GPU_FILTER_LINEAR;
         const char *capture=RuntimeConfigGet("online.capture");
         static int captured;
-        if(capture&&!captured&&world->frame>(uint64_t)RuntimeConfigInt("online.capture_frame",100,1,1000000)){
+        if(world&&capture&&!captured&&world->frame>(uint64_t)RuntimeConfigInt("online.capture_frame",100,1,1000000)){
             captured=ModernWriteTexturePpm(s_device,ModernPresentTexture(),s_targetW,s_targetH,capture);
         }
         return;

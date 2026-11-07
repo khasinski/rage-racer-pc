@@ -28,6 +28,9 @@ if(BUILD_TESTING)
     target_link_libraries(online-transport-check PRIVATE rage-online-network)
     find_program(RAGE_ONLINE_NODE node)
     if(RAGE_ONLINE_NODE)
+        add_test(NAME online_race_lifecycle COMMAND ${RAGE_ONLINE_NODE}
+            ${PROJECT_SOURCE_DIR}/tests/online/race_lifecycle.mjs $<TARGET_FILE:online-client-check>)
+        set_tests_properties(online_race_lifecycle PROPERTIES LABELS functional SKIP_RETURN_CODE 77 TIMEOUT 45)
         add_test(NAME online_transport COMMAND ${RAGE_ONLINE_NODE}
             ${PROJECT_SOURCE_DIR}/tests/online/transport_check.mjs $<TARGET_FILE:online-transport-check>)
         set_tests_properties(online_transport PROPERTIES LABELS unit TIMEOUT 25)

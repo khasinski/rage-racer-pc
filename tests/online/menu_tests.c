@@ -17,6 +17,10 @@ int main(void) {
     CHECK(!OnlineViewJoining(&joining));
     joining.racing=0;joining.raceReady=0;
     CHECK(!OnlineViewJoining(&joining));
+    joining=(OnlineView){.racing=1,.raceReady=1,.localSeat=0};joining.hud[0]=1;
+    CHECK(OnlineViewStarting(&joining));
+    joining.hud[0]=2;CHECK(!OnlineViewStarting(&joining));
+    joining.hud[0]=1;joining.finishing=1;CHECK(!OnlineViewStarting(&joining));
     CHECK(SDL_Init(SDL_INIT_EVENTS));
     OnlineOpen();
     const OnlineView *v=OnlineViewState();

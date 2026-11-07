@@ -33,7 +33,13 @@ static int clockStarted,clockObservation;static uint64_t assetEpoch,frameSerial;
 static RenderWorld world;static RenderMeshInstance instances[4096];
 static RageRuntimeCachedMesh meshes[64];static unsigned meshCount;
 static SDL_AudioStream *audio;
+static int presenting,resultsAvailable,resultCount;
+static OnlineRow resultRows[ONLINE_ROWS];
+static uint64_t resultsAt;
+static uint64_t localFinishedAt;
+static int resultStatus,resultPlace,resultTime;
 static void rows(void);
+static void showResults(void);
 static void disconnect(int closeUI);
 static void fail(const char*text){SDL_strlcpy(view.status,text,sizeof(view.status));}
 static void appendChat(const char *from,const char *text){
@@ -62,7 +68,13 @@ static void sendSettings(void){
 static void setCar(int variant,int manual,int tire){yyjson_mut_doc*d=message("setCar");if(!d)return;yyjson_mut_val*v=yyjson_mut_doc_get_root(d);
     yyjson_mut_obj_add_int(d,v,"variant",variant);yyjson_mut_obj_add_bool(d,v,"manual",manual!=0);yyjson_mut_obj_add_int(d,v,"tire",tire);sendObject(d);}
 static void releaseMeshes(void){for(unsigned i=0;i<meshCount;i++)RuntimeCachedMeshRelease(&meshes[i]);meshCount=0;}
-static void stopRace(void){SessionProviderSet(NULL);view.racing=view.raceReady=0;go=gotFrame=0;inputHistoryCount=0;memset(rawInput,0,sizeof(rawInput));rawInputActive=0;releaseMeshes();if(audio){SDL_DestroyAudioStream(audio);audio=NULL;}}
+static void stopRace(void){SessionProviderSet(NULL);presenting=resultsAvailable=0;resultsAt=localFinishedAt=0;resultStatus=resultPlace=0;resultTime=-1;view.racing=view.raceReady=view.finishing=0;pendingSeat=-1;controlAt=0;go=gotFrame=0;inputHistoryCount=0;memset(view.hud,0,sizeof(view.hud));memset(rawInput,0,sizeof(rawInput));rawInputActive=0;releaseMeshes();if(audio){SDL_DestroyAudioStream(audio);audio=NULL;}}
+static void showResults(void){
+    view.racing=view.finishing=0;view.screen=OS_RESULTS;view.panel=1;
+    view.count=resultCount;memcpy(view.rows,resultRows,(size_t)resultCount*sizeof(resultRows[0]));
+    view.selected=resultCount?resultCount-1:0;SDL_strlcpy(view.title,"Race results",sizeof(view.title));
+    rw_audio_enable(0);if(audio){SDL_DestroyAudioStream(audio);audio=NULL;}
+}
 static const RageRuntimeCachedMesh *mesh(void*ctx,const RenderMeshInstance*i){
     (void)ctx;unsigned key=i->assetKey&0xffffu;
     for(unsigned n=0;n<meshCount;n++)if(meshes[n].assetKey==key&&meshes[n].assetSet==i->assetSet)return &meshes[n];
@@ -84,7 +96,7 @@ static int sky(void*ctx,void**pixels,uint32_t*w,uint32_t*h){
 }
 static uint64_t revision(void*ctx){(void)ctx;return (assetEpoch<<32)^rw_palette_hash()^(uint32_t)rw_texture_page();}
 static const RenderWorld *scene(void*ctx,float aspect){
-    (void)ctx;if(!view.racing||!view.raceReady)return NULL;
+    (void)ctx;if(!presenting||!view.raceReady)return NULL;
     double interval=lastStep>previousStep?(double)(lastStep-previousStep):40.0;
     float fraction=(float)((simTime+accumulator-(double)lastStep)/interval);if(fraction<0)fraction=0;if(fraction>1)fraction=1;
     if(on_prepare(aspect,fraction)<0)return NULL;
@@ -106,7 +118,7 @@ static const RenderWorld *scene(void*ctx,float aspect){
     return &world;
 }
 static int tachometer(void *ctx,RageRetailTachometer *frame){
-    (void)ctx;if(!view.raceReady||view.localSeat<0)return 0;
+    (void)ctx;if(!view.racing||!view.raceReady||(view.localSeat<0&&(pendingSeat<0||view.lateJoin)))return 0;
     uint32_t current=rw_hud_atlas_revision();
     if(requestedSpeedUnits&&current!=hudUnitsRevision){
         uint8_t snapshot[RAGE_HUD_UNIT_BYTES];RageHudUnitDiff diff;
@@ -141,7 +153,7 @@ static void decodeLogo(const char*text,uint8_t*out,size_t capacity){
 }
 static void raceStart(yyjson_val*root){
     stopRace();readSettings(yyjson_obj_get(root,"settings"),&settings);
-    view.arcade=boolean(root,"arcade");view.arcadeEpoch=integer(root,"epoch");pendingSeat=-1;controlAt=0;view.takeoverSeconds=0;
+    view.arcade=boolean(root,"arcade");view.arcadeEpoch=integer(root,"epoch");view.lateJoin=0;view.takeoverSeconds=0;
     yyjson_val*seats=yyjson_obj_get(root,"seats");int humans=integer(root,"humans"),local=integer(root,"localSeat");
     int32_t setup[36]={0};if(humans<1||humans>12||local>=humans||local< -1){sendBool("loaded","ok",0);fail("Invalid race setup.");return;}
     for(int i=0;i<humans;i++){
@@ -157,7 +169,7 @@ static void raceStart(yyjson_val*root){
     else sendBool("loaded","ok",ok);
     if(!ok){fail("Could not prepare the online race.");view.screen=view.arcade?OS_ARCADE:OS_ROOM;return;}
     if(view.arcade)rw_set_view_seat(integer(root,"viewSeat"));
-    view.localSeat=local;view.racing=1;view.panel=0;view.screen=OS_RACE;view.selected=0;
+    view.localSeat=local;view.racing=presenting=1;view.panel=0;view.screen=OS_RACE;view.selected=0;
     lastClock=SDL_GetTicks();lastStep=previousStep=0;accumulator=simTime=0;newestTick=0;clockStarted=0;marginAt=marginCount=0;settleSeq=0;
     ++assetEpoch;registerProvider();rw_audio_enable(SDL_getenv("PSYZ_HEADLESS")==NULL);
     if(SDL_getenv("PSYZ_HEADLESS")==NULL){SDL_AudioSpec spec={SDL_AUDIO_S16,2,44100};audio=SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,&spec,NULL,NULL);if(audio)SDL_ResumeAudioStreamDevice(audio);}
@@ -192,7 +204,7 @@ static void handleText(const uint8_t*bytes,size_t size){
         yyjson_arr_foreach(list,idx,max,item){if(memberCount>=ONLINE_MEMBERS)break;Member *m=&members[memberCount++];memset(m,0,sizeof(*m));m->id=integer(item,"userId");m->spectator=integer(item,"seat")<0;m->online=boolean(item,"online");m->ping=-1;SDL_strlcpy(m->name,string(item,"name"),sizeof(m->name));}
         if(!view.racing&&view.screen!=OS_RESULTS&&view.screen!=OS_CHAT){view.screen=OS_ARCADE;view.panel=1;}
     }else if(!strcmp(t,"arcadeControl")){
-        if(view.arcade&&integer(r,"epoch")==view.arcadeEpoch){pendingSeat=integer(r,"seat");controlAt=(uint32_t)integer(r,"activateAt");view.lateJoin=boolean(r,"late");if(pendingSeat>=0&&pendingSeat<12)rw_set_view_seat(pendingSeat);}
+        if(view.arcade&&!resultsAvailable&&integer(r,"epoch")==view.arcadeEpoch){pendingSeat=integer(r,"seat");controlAt=(uint32_t)integer(r,"activateAt");view.lateJoin=boolean(r,"late");if(pendingSeat>=0&&pendingSeat<12){rw_set_view_seat(pendingSeat);on_prepare_driver_hud(pendingSeat);}}
     }else if(!strcmp(t,"arcadeChat")){
         view.chatCount=0;yyjson_val *list=yyjson_obj_get(r,"lines"),*item;size_t idx,max;
         yyjson_arr_foreach(list,idx,max,item)appendChat(string(item,"from"),string(item,"text"));
@@ -204,10 +216,16 @@ static void handleText(const uint8_t*bytes,size_t size){
     else if(!strcmp(t,"error")){fail(string(r,"message"));}
     else if(!strcmp(t,"raceEvent")){yyjson_val*e=yyjson_obj_get(r,"event");snprintf(view.status,sizeof(view.status),"%.40s: %.40s",string(e,"name"),string(e,"kind"));}
     else if(!strcmp(t,"results")){
-        stopRace();view.screen=OS_RESULTS;view.panel=1;view.selected=0;view.count=0;SDL_strlcpy(view.title,"Race results",sizeof(view.title));
+        if(resultsAvailable){yyjson_doc_free(d);return;}
+        resultsAvailable=1;resultCount=0;resultsAt=localFinishedAt?localFinishedAt+2500:SDL_GetTicks()+2500;
+        view.finishing=presenting;pendingSeat=-1;view.takeoverSeconds=0;
+        if(presenting)on_end_presentation();
         yyjson_val*list=yyjson_obj_get(r,"results");size_t idx,max;yyjson_val*item;
-        yyjson_arr_foreach(list,idx,max,item){if(view.count>=ONLINE_ROWS-1)break;OnlineRow*row=&view.rows[view.count++];memset(row,0,sizeof(*row));snprintf(row->label,sizeof(row->label),"%d. %.48s",integer(item,"place"),string(item,"name"));int ms=integer(item,"timeMs");if(ms>=0)snprintf(row->value,sizeof(row->value),"%s %d:%02d.%03d",string(item,"status"),ms/60000,ms/1000%60,ms%1000);else SDL_strlcpy(row->value,boolean(item,"joinedLate")?"Joined in progress":string(item,"status"),sizeof(row->value));}
-        OnlineRow*row=&view.rows[view.count++];memset(row,0,sizeof(*row));SDL_strlcpy(row->label,view.arcade?"Arcade lobby / chat / next race":"Return to room / race again",sizeof(row->label));row->action=OA_BACK;row->enabled=1;
+        yyjson_arr_foreach(list,idx,max,item){if(resultCount>=ONLINE_ROWS-1)break;OnlineRow*row=&resultRows[resultCount++];memset(row,0,sizeof(*row));snprintf(row->label,sizeof(row->label),"%d. %.48s",integer(item,"place"),string(item,"name"));int ms=integer(item,"timeMs");if(ms>=0)snprintf(row->value,sizeof(row->value),"%s %d:%02d.%03d",string(item,"status"),ms/60000,ms/1000%60,ms%1000);else SDL_strlcpy(row->value,boolean(item,"joinedLate")?"Joined in progress":string(item,"status"),sizeof(row->value));
+            if(integer(item,"userId")==view.userId){resultStatus=!strcmp(string(item,"status"),"finished")?2:3;resultPlace=integer(item,"place");resultTime=ms;}
+        }
+        OnlineRow*row=&resultRows[resultCount++];memset(row,0,sizeof(*row));SDL_strlcpy(row->label,view.arcade?"Continue":"Return to room",sizeof(row->label));if(view.arcade)SDL_strlcpy(row->value,"Next race starts automatically",sizeof(row->value));row->action=OA_BACK;row->enabled=1;
+        if(!presenting||view.panel||SDL_GetTicks()>=resultsAt)showResults();
     }
     yyjson_doc_free(d);
 }
@@ -224,7 +242,7 @@ static void handleFrame(const uint8_t*p,size_t size){
     if(rw_apply_frame(p+header,(int)(size-header),sequence,applied)==INT32_MIN){fail("Server race frame is incompatible.");return;}
     if(!gotFrame)lastClock=SDL_GetTicks();
     newestTick=tick;gotFrame=1;
-    if(view.arcade&&pendingSeat>=0&&pendingSeat<12&&tick>=controlAt){
+    if(!resultsAvailable&&view.arcade&&pendingSeat>=0&&pendingSeat<12&&tick>=controlAt){
         if(on_local_seat(pendingSeat)){view.localSeat=pendingSeat;inputHistoryCount=0;view.takeoverSeconds=0;lastClock=SDL_GetTicks();accumulator=0;clockStarted=clockObservation=marginCount=marginAt=0;settleSeq=0;fail(view.lateJoin?"Joined in progress; full race time is not ranked.":"");}
         pendingSeat=-1;
     }
@@ -232,9 +250,10 @@ static void handleFrame(const uint8_t*p,size_t size){
     if(view.localSeat>=0&&sequence>=settleSeq){margins[marginAt++%12]=margin;if(marginCount<12)++marginCount;clockObservation=1;}
 }
 static void sampleTick(void){
-    rw_set_pad(view.panel?0:inputHeld,inputStick,view.panel?0:inputThrottle,view.panel?0:inputBrake,inputAnalog);
-    if(rawInputActive){int32_t words[8];memcpy(words,rawInput,sizeof(words));if(view.panel){memset(words,0,sizeof(words));words[0]=1;}on_set_input(words);rawInput[6]=rawInput[7]=0;}
-    if(view.localSeat>=0){int32_t*words=rw_take_input();uint8_t packet[161],latest[40];packet[0]=1;
+    int blocked=view.panel||resultsAvailable||view.hud[9]>=2;
+    rw_set_pad(blocked?0:inputHeld,blocked?0:inputStick,blocked?0:inputThrottle,blocked?0:inputBrake,inputAnalog);
+    if(rawInputActive){int32_t words[8];memcpy(words,rawInput,sizeof(words));if(blocked){memset(words,0,sizeof(words));words[0]=1;}on_set_input(words);rawInput[6]=rawInput[7]=0;}
+    if(view.localSeat>=0&&!resultsAvailable&&view.hud[9]<2){int32_t*words=rw_take_input();uint8_t packet[161],latest[40];packet[0]=1;
         uint32_t values[10]={rw_input_seq(),rw_input_tick()};for(int i=0;i<8;i++)values[i+2]=(uint32_t)words[i];
         for(unsigned i=0;i<10;i++)for(unsigned b=0;b<4;b++)latest[i*4+b]=(uint8_t)(values[i]>>(b*8));
         if(inputHistoryCount==4)memmove(inputHistory,inputHistory+1,3*sizeof(inputHistory[0]));else ++inputHistoryCount;
@@ -249,7 +268,7 @@ static void add(const char*label,const char*value,OnlineAction action,int arg,in
     if(view.count>=ONLINE_ROWS)return;OnlineRow*r=&view.rows[view.count++];memset(r,0,sizeof(*r));SDL_strlcpy(r->label,label,sizeof(r->label));if(value)SDL_strlcpy(r->value,value,sizeof(r->value));r->action=action;r->argument=arg;r->enabled=enabled;r->editable=edit;
 }
 static void rows(void){
-    if(view.screen==OS_RESULTS)return;view.count=0;char value[256];
+    if(view.screen==OS_RESULTS){if(view.arcade)snprintf(view.subtitle,sizeof(view.subtitle),"Next race in %d seconds",view.nextRaceSeconds);else SDL_strlcpy(view.subtitle,"Race complete",sizeof(view.subtitle));return;}view.count=0;char value[256];
     view.fastTransport=OnlineTransportFast(transport);
     SDL_strlcpy(view.title,view.screen==OS_PROFILE?"Online":view.screen==OS_ROOMS?"Online rooms":view.screen==OS_PLAYERS?"Players":"Online duel",sizeof(view.title));
     SDL_strlcpy(view.subtitle,connected?userName:"Jump into a race. No account needed.",sizeof(view.subtitle));
@@ -332,8 +351,12 @@ int OnlineRaceActive(void){return view.racing;}
 int OnlinePanelOpen(void){return view.panel;}
 void OnlineSelect(int row){rows();if(row>=0&&row<view.count)view.selected=row;}
 void OnlineSetInput(int held,int stick,int throttle,int brake,int analog){inputHeld=held;inputStick=stick;inputThrottle=throttle;inputBrake=brake;inputAnalog=analog;rawInputActive=0;}
-int OnlineForceFeedback(int32_t values[8]){return view.racing&&connected&&!view.panel&&on_feedback(values);}
-void OnlineEffectsVolume(float gain){if(audio)SDL_SetAudioStreamGain(audio,gain);}
+int OnlineForceFeedback(int32_t values[8]){return view.racing&&!resultsAvailable&&connected&&!view.panel&&on_feedback(values);}
+void OnlineEffectsVolume(float gain){
+    uint64_t fadeAt=localFinishedAt?localFinishedAt+2500:resultsAvailable?resultsAt:0,now=SDL_GetTicks();
+    if(fadeAt){float remaining=fadeAt>now?(float)(fadeAt-now)/2500.0f:0;if(remaining<1)gain*=remaining;}
+    if(audio)SDL_SetAudioStreamGain(audio,gain);
+}
 void OnlineSetDriverInput(int held,const int32_t words[8]){int up=rawInput[6],down=rawInput[7];memcpy(rawInput,words,sizeof(rawInput));rawInput[6]|=up;rawInput[7]|=down;inputHeld=held;inputStick=inputThrottle=inputBrake=inputAnalog=0;rawInputActive=1;}
 static void disconnect(int closeUI){stopRace();connected=0;token[0]=0;roomId=memberCount=offeredRoom=wantArcade=view.arcade=0;OnlineTransportStop(transport);if(loaded){on_release();loaded=0;}view.screen=OS_PROFILE;view.panel=1;view.active=!closeUI;view.editing=0;editing=NULL;}
 void OnlineActionDo(OnlineAction action,int arg,int direction){
@@ -380,7 +403,7 @@ void OnlineActionDo(OnlineAction action,int arg,int direction){
 void OnlineText(const char*text){if(!editing||!text)return;size_t have=strlen(editing),n=strlen(text);if(n<editCapacity-have)memcpy(editing+have,text,n+1);}
 void OnlineBackspace(void){if(!editing)return;size_t n=strlen(editing);if(!n)return;do{--n;}while(n&&((unsigned char)editing[n]&0xc0)==0x80);editing[n]=0;}
 void OnlineFinishEditing(void){if(view.editing==OA_CHAT&&chat[0]){sendText("chat","text",chat);chat[0]=0;}if(view.editing==OA_JOIN_DUEL&&joinCode[0])sendText("joinDuel","token",joinCode);view.editing=0;editing=NULL;}
-void OnlinePauseMenu(void){if(view.editing){OnlineFinishEditing();return;}if(view.racing){view.panel=!view.panel;view.screen=OS_RACE;view.selected=0;}else OnlineActionDo(OA_BACK,0,0);}
+void OnlinePauseMenu(void){if(view.editing){OnlineFinishEditing();return;}if(view.finishing){showResults();return;}if(view.racing){view.panel=!view.panel;view.screen=OS_RACE;view.selected=0;}else OnlineActionDo(OA_BACK,0,0);}
 void OnlineTick(void){
     if(!view.active)return;static uint8_t packet[65537];int type;size_t size;
     while(transport&&OnlineTransportPoll(transport,&type,packet,sizeof(packet),&size)){
@@ -391,16 +414,19 @@ void OnlineTick(void){
     }
     if(transport&&OnlineTransportDone(transport)){OnlineTransportFree(transport);transport=NULL;}
     if(!transport&&!connected&&token[0]&&retryAt&&SDL_GetTicks()>=retryAt){retryAt=0;connectAs("resume");}
-    if(view.racing&&gotFrame&&connected){
+    if(presenting&&gotFrame&&connected){
         uint64_t now=SDL_GetTicks();double delta=(double)(now-lastClock);lastClock=now;if(delta>250)delta=250;accumulator+=delta;
-        if(view.localSeat>=0&&marginCount&&clockObservation){clockObservation=0;int low=margins[0];for(int i=1;i<marginCount;i++)if(margins[i]<low)low=margins[i];
+        if(!resultsAvailable&&view.localSeat>=0&&marginCount&&clockObservation){clockObservation=0;int low=margins[0];for(int i=1;i<marginCount;i++)if(margins[i]<low)low=margins[i];
             if(!clockStarted){clockStarted=1;marginCount=marginAt=0;}
             else if(low<0||low>10){accumulator+=(2-low)*20;settleSeq=rw_input_seq()+1;marginCount=marginAt=0;}
             else if(low<2)accumulator+=1;else if(low>3)accumulator-=1;
         }
         int steps=0;while(accumulator>=20&&steps++<16){sampleTick();accumulator-=20;}
         int32_t*h=rw_hud();if(h)memcpy(view.hud,h,sizeof(view.hud));
+        if(view.localSeat>=0&&view.hud[9]==2&&!localFinishedAt)localFinishedAt=SDL_GetTicks();
+        if(resultsAvailable&&resultStatus){view.hud[9]=resultStatus;view.hud[4]=resultPlace;if(resultTime>=0)view.hud[6]=resultTime;}
     }
+    if(view.finishing&&SDL_GetTicks()>=resultsAt)showResults();
     rows();
 }
 void OnlineShutdown(void){disconnect(1);if(transport){OnlineTransportFree(transport);transport=NULL;}}

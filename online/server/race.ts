@@ -224,7 +224,7 @@ export class Race {
     this.sim.free(this.handle);
   }
 
-  private publishFrame(serverTick: number): void {
+  private publishFrame(serverTick: number,reliable=false): void {
     const frame = this.sim.frame(this.handle);
     if (!frame) return;
     const header = 10 + this.acks.length * 4;
@@ -244,10 +244,10 @@ export class Race {
       const client = this.room.client(id);
       if (!client) continue;
       const selected=client.native?packet:legacy;
-      if (client.rtc?.open && client.rtc.send(client.native?(compressed ??= deflateRawSync(packet,{level:1})):(legacyCompressed ??= deflateRawSync(legacy,{level:1})))) continue;
+      if (!reliable && client.rtc?.open && client.rtc.send(client.native?(compressed ??= deflateRawSync(packet,{level:1})):(legacyCompressed ??= deflateRawSync(legacy,{level:1})))) continue;
       const ws = client.ws;
       // A slow link skips frames rather than falling ever further behind.
-      if (ws.readyState === ws.OPEN && ws.bufferedAmount < BACKLOG_BYTES) ws.send(selected);
+      if (ws.readyState === ws.OPEN && (reliable||ws.bufferedAmount < BACKLOG_BYTES)) ws.send(selected);
     }
   }
 
@@ -282,6 +282,7 @@ export class Race {
 
   /** Stores and announces the results, and frees the race. */
   private finish(): void {
+    this.publishFrame(this.sim.simTick(this.handle),true);
     const results: RaceResult[] = this.seats.map((seat, index) => {
       const state = this.sim.seat(this.handle, index);
       const finished = state.status === STATUS_FINISHED;

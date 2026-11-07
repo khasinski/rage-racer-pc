@@ -27,3 +27,21 @@ test('private races preserve legacy web frames while desktop receives epochs, on
     race.free();
   }
 });
+
+test('private final state uses reliable WS before results for both checkpoint formats',()=>{
+  for(const native of [false,true]){
+    let tick=0;const events:(Buffer|unknown)[]=[];
+    const sim={createRace:()=>1,seat:()=>({status:2,place:1,timeMs:100,bestLapMs:-1,lap:1}),start:()=>true,
+      simTick:()=>tick,tick:()=>{tick++;return 3;},frame:()=>new Uint8Array([11]),free:()=>{}} as unknown as Simulation;
+    const client={native,user:{id:1},ws:{OPEN:1,readyState:1,bufferedAmount:100000,send:(p:Buffer)=>events.push(p)},
+      rtc:{open:true,send:()=>true}} as unknown as Client;
+    const store={createRace:()=>42,finishRace:()=>{}} as unknown as Store;
+    const race=Race.create(sim,store,{broadcast:m=>events.push(m),client:()=>client},1,
+      {name:'Finish',classIndex:0,course:0,reverse:false,laps:1,rivals:false,maxPlayers:1},
+      [{userId:1,name:'Racer',variant:6,manual:false,tire:0,paint:null,logo:null}])!;
+    race.watch(1);race.loaded(1);race.step(1000);events.length=0;race.step(4000);
+    const index=events.findIndex(e=>!Buffer.isBuffer(e)&&(e as {t:string}).t==='results');
+    assert(index>0);assert(Buffer.isBuffer(events[index-1]));
+    assert.equal((events[index-1] as Buffer)[0],native?4:2);
+  }
+});

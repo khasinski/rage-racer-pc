@@ -80,6 +80,15 @@ test('late arrivals near finish wait with the community; empty server sleeps',()
   f.arcade.disconnect(a,f.now());f.arcade.disconnect(b,f.now());f.jump(15001);
   assert.equal(f.sim.freed,1);assert.equal(f.arcade.tick(f.now()),false);
 });
+test('final checkpoint precedes results on reliable WS even with RTC and a queued backlog',()=>{
+  const f=fixture(),a=player(1);f.arcade.join(a);f.arcade.loaded(a,1,true);f.advance(150);
+  a.rtc={open:true,send:()=>true} as unknown as Client['rtc'];
+  Object.assign(a.ws,{bufferedAmount:100000});
+  a.messages.length=0;f.sim.phase=3;f.advance(1);
+  assert(Buffer.isBuffer(a.messages[0]));
+  assert.equal(a.messages[0][0],5);assert.equal((a.messages[1] as ServerMessage).t,'results');
+  f.arcade.leave(a);
+});
 test('failed load releases its reserved place; bounded chat is retained',()=>{
   const f=fixture(),a=player(1),b=player(2);f.arcade.join(a);f.arcade.loaded(a,1,true);f.advance(151);f.arcade.join(b);f.arcade.loaded(b,1,false);
   assert(!f.arcade.has(2));

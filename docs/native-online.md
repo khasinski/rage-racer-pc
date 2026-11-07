@@ -26,6 +26,21 @@ chase camera remains in place when the server hands over the car; the change
 of ownership does not switch the driver into the cockpit. Arrivals without a
 scheduled seat see an explicit watching/waiting message.
 
+New grid starts and mid-race takeovers have separate countdown labels. The
+car's retail HUD is prepared during the countdown, so taking control does
+not perform a second asset decode. When a native scene is awaiting its first
+checkpoint, presentation retains the last native image instead of flashing
+the suspended offline frontend.
+
+Finish presentation keeps coasting and the classified time visible for up to
+2.5 seconds, including when results precede the final checkpoint. It does
+not add another delay if that finisher has already coasted while others race.
+Driving input/feedback stop, effects fade, and results retain the race scene
+behind the panel. Arcade results show the next automatic start countdown;
+the next race resets finish/HUD/input state. Both server modes send the final
+checkpoint over ordered WebSocket before results, even when ordinary race
+traffic uses unreliable RTC, so a lost last datagram cannot lose the finish.
+
 The speedometer is the retail car-specific dial, decoded from the selected
 disc together with its day/night palettes and manual/automatic digit strips.
 The race core supplies the evaluated needle, shift-lamp, gear and speed
@@ -133,6 +148,10 @@ round and idle shutdown. With a disc, a real C/WASM test verifies that every
 checkpoint byte except the input block is identical across takeover.
 Native tests cover renderer ABI/provider lifetime and WebSocket framing,
 fragmentation, masking, ping/pong, account replacement and invalid frames.
+`online_race_lifecycle` runs the native executable against real C/WASM frames
+with a deterministic classified finish, delayed final packet and duplicate
+results. It checks the start HUD, coasting camera, result-scene lifetime,
+blocked driving input and the next round. Set `RAGE_TEST_DISC` to enable it.
 
 For silent hidden GPU captures use `rage-racer-smoke` with `hooks.online=arcade`
 or `arcade-lobby`, `hooks.online_seconds`, `online.capture` (PPM scene target)

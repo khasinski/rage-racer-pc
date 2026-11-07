@@ -10,6 +10,8 @@ void rw_set_pad(int,int,int,int,int);
 int on_set_input(const int32_t *);
 int on_feedback(int32_t *);
 int on_local_seat(int);
+int on_prepare_driver_hud(int);
+void on_end_presentation(void);
 int rw_set_view_seat(int);
 int32_t *rw_take_input(void);
 uint32_t rw_input_tick(void);

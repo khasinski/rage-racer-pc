@@ -573,13 +573,14 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
     for(int x=0;x<surface->w;x++){solid[x*4]=solid[x*4+1]=solid[x*4+2]=solid[x*4+3]=255;}
     float s=scale;
     FillRoundRect(surface,0,0,(float)surface->w,(float)(surface->h-1),14*s,kPanel);
-    if(OnlineViewJoining(view)&&!view->panel){
-        DrawText(surface,28*s,43*s,24*s,"Joining race",kText,ALIGN_LEFT);
+    if((OnlineViewJoining(view)||OnlineViewStarting(view))&&!view->panel){
+        int starting=OnlineViewStarting(view),seconds=starting?(view->hud[1]+49)/50:view->takeoverSeconds;
+        DrawText(surface,28*s,43*s,24*s,starting?"Get ready":"Joining race",kText,ALIGN_LEFT);
         if(!view->raceReady){
             DrawText(surface,28*s,98*s,23*s,"Synchronizing...",kAccent,ALIGN_LEFT);
             DrawText(surface,28*s,139*s,15*s,"Preparing the track and your car.",kMuted,ALIGN_LEFT);
-        }else if(view->takeoverSeconds>0){
-            char text[80];snprintf(text,sizeof(text),"Taking control in %d",view->takeoverSeconds);
+        }else if(seconds>0){
+            char text[80];snprintf(text,sizeof(text),starting?"Race starts in %d":"Taking control in %d",seconds);
             DrawText(surface,28*s,98*s,29*s,text,kAccent,ALIGN_LEFT);
             DrawText(surface,28*s,139*s,15*s,"Get ready. Your car is already on track.",kMuted,ALIGN_LEFT);
         }else{
@@ -591,12 +592,14 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
     }
     if(view->racing&&!view->panel){
         char text[96];
-        snprintf(text,sizeof(text),"POS %d/%d   LAP %d/%d",view->hud[4],view->hud[5],view->hud[2]>0?view->hud[2]:1,view->hud[3]);
+        if(view->hud[9]==2)snprintf(text,sizeof(text),"FINISH   POS %d/%d",view->hud[4],view->hud[5]);
+        else if(view->finishing)snprintf(text,sizeof(text),"RACE COMPLETE");
+        else snprintf(text,sizeof(text),"POS %d/%d   LAP %d/%d",view->hud[4],view->hud[5],view->hud[2]>0?view->hud[2]:1,view->hud[3]);
         DrawText(surface,24*s,35*s,18*s,text,kText,ALIGN_LEFT);
         int ms=view->hud[6];if(ms<0)ms=0;snprintf(text,sizeof(text),"%d:%02d.%03d",ms/60000,ms/1000%60,ms%1000);
         DrawText(surface,24*s,72*s,26*s,text,kText,ALIGN_LEFT);
         if(view->hud[0]==1){snprintf(text,sizeof(text),"START %d",(view->hud[1]+49)/50);DrawText(surface,200*s,72*s,18*s,text,kAccent,ALIGN_LEFT);}
-        char notification[256];snprintf(notification,sizeof(notification),"%s",view->status[0]?view->status:"ESC: menu");
+        char notification[256];snprintf(notification,sizeof(notification),"%s",view->finishing?"Results in a moment...":view->hud[9]==2?"Waiting for other drivers...":view->status[0]?view->status:"ESC: menu");
         if(TextWidth(notification,12*s)>272*s){
             while(notification[0]&&TextWidth(notification,12*s)>256*s){
                 size_t n=strlen(notification);do{--n;}while(n&&((unsigned char)notification[n]&0xc0)==0x80);notification[n]=0;
@@ -612,7 +615,7 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
     for(int row=0;row<view->count;row++){
         const OnlineRow *r=&view->rows[row];float top=(128+row*46)*s,base=top+29*s;
         if(row==view->selected){FillRoundRect(surface,16*s,top+3*s,568*s,40*s,9*s,WithAlpha(kAccent,0.16f));FillRoundRect(surface,20*s,top+13*s,3*s,20*s,1.5f*s,kAccent);}
-        Color c=r->enabled?kText:WithAlpha(kMuted,0.6f);
+        Color c=r->enabled||view->screen==OS_RESULTS?kText:WithAlpha(kMuted,0.6f);
         DrawText(surface,32*s,base,view->screen==OS_CHAT&&r->action==OA_NONE?12*s:17*s,r->label,c,ALIGN_LEFT);
         char value[80];snprintf(value,sizeof(value),"%s",r->value);
         float em=16*s;if(TextWidth(value,em)>310*s)em=12*s;

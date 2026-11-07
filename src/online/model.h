@@ -16,7 +16,7 @@ typedef enum OnlineScreen { OS_PROFILE,OS_CONNECTING,OS_ROOMS,OS_ROOM,OS_RACE,OS
 typedef struct OnlineRow {char label[96],value[256];OnlineAction action;int argument,enabled,editable;} OnlineRow;
 typedef struct OnlineView {
     OnlineScreen screen;int active,racing,panel,selected,count,editing,localSeat,userId;
-    int raceReady;
+    int raceReady,finishing;
     char title[96],subtitle[160],status[256];OnlineRow rows[ONLINE_ROWS];
     int32_t hud[16];
     int arcade,arcadeEpoch,nextRaceSeconds,nextCourse,nextClass,lateJoin,takeoverSeconds;
@@ -24,7 +24,10 @@ typedef struct OnlineView {
     char messages[ONLINE_CHAT_LINES][256];
 } OnlineView;
 static inline int OnlineViewJoining(const OnlineView *v){
-    return v->racing && (!v->raceReady || (v->arcade && v->localSeat<0));
+    return v->racing && !v->finishing && (!v->raceReady || (v->arcade && v->localSeat<0));
+}
+static inline int OnlineViewStarting(const OnlineView *v){
+    return v->racing&&v->raceReady&&!v->finishing&&!v->lateJoin&&v->hud[0]==1;
 }
 void OnlineSetDisc(const char *path);
 void OnlineSetServer(const char *url);

@@ -175,6 +175,10 @@ static struct Mirror {
 /* ---- the last built frame -------------------------------------------------- */
 static RenderMeshInstance *s_instances;
 static int s_nativeClient;
+static int s_resultsPresentation;
+static u32 s_finishPresentationTicks;
+static int s_preparedHudSeat=-1;
+static int s_previewHudSeat=-1;
 static RenderWorld s_world;
 static RageNativeDrawVertex *s_vertices;
 static RageNativeDrawSpan *s_spans;
@@ -270,6 +274,7 @@ static int PrepareRace(int classIndex, int course, int reverse, int laps, int ri
     }
     RenderWorldInit(&s_world, s_instances, WEB_INSTANCE_CAPACITY);
     s_localSeat = localSeat;
+    s_preparedHudSeat=localSeat;s_previewHudSeat=-1;s_resultsPresentation=0;s_finishPresentationTicks=0;
     memset(&s_predict, 0, sizeof(s_predict));
     memset(s_smooth, 0, sizeof(s_smooth));
     memset(&s_controls, 0, sizeof(s_controls));
@@ -393,7 +398,7 @@ EMSCRIPTEN_KEEPALIVE int32_t rw_apply_frame(const uint8_t *wire, int size, uint3
     }
     if (!RestoreRaceFrame(&s_race->sim, &frame)) return INT32_MIN;
     ResyncAfterJump();
-    if (s_localSeat < 0) return 0;
+    if (s_localSeat < 0 || s_resultsPresentation) return 0;
     const int known = ackSeq && ackSeq <= p->inputSeq && p->inputSeq - ackSeq < INPUT_HISTORY;
     const int32_t error = known ? (int32_t)(arrivalTick - p->sent[ackSeq % INPUT_HISTORY].tick) : 0;
     if (!p->predicting) {
@@ -429,13 +434,21 @@ EMSCRIPTEN_KEEPALIVE int rw_set_view_seat(int seat) {
     return 1;
 }
 
+EMSCRIPTEN_KEEPALIVE int on_prepare_driver_hud(int seat){
+    if(!s_race||seat<0||seat>=DRIVER_SEAT_LIMIT||s_race->sim.drivers[seat].rival)return 0;
+    s_previewHudSeat=seat;
+    if(s_preparedHudSeat==seat)return 1;
+    if(!WebHudPrepare(s_archive,s_race->sim.drivers[seat].variant))return 0;
+    s_preparedHudSeat=seat;return 1;
+}
+EMSCRIPTEN_KEEPALIVE void on_end_presentation(void){s_resultsPresentation=1;}
 EMSCRIPTEN_KEEPALIVE int on_local_seat(int seat){
     if(!s_race||seat< -1||seat>=DRIVER_SEAT_LIMIT)return 0;
     if(seat>=0&&(s_race->sim.drivers[seat].rival||s_race->sim.drivers[seat].status!=SIM_DRIVING))return 0;
-    if(seat>=0&&!WebHudPrepare(s_archive,s_race->sim.drivers[seat].variant))return 0;
+    if(seat>=0&&!on_prepare_driver_hud(seat))return 0;
     /* The takeover changes ownership, not the camera the driver just saw. */
     if(s_localSeat<0&&seat>=0&&s_view.viewSeat==seat)s_view.selectedView=WEB_VIEW_CHASE;
-    s_localSeat=seat;memset(&s_predict,0,sizeof(s_predict));memset(&s_controls,0,sizeof(s_controls));
+    s_localSeat=seat;s_previewHudSeat=-1;memset(&s_predict,0,sizeof(s_predict));memset(&s_controls,0,sizeof(s_controls));
     if(seat>=0)rw_set_view_seat(seat);
     WebAudioStartRace(s_archive,&s_race->sim,seat,s_nativeClass);
     return 1;
@@ -813,7 +826,7 @@ static void AdvanceFinishRuns(const RaceSim *sim) {
              * car does not jump onto the centreline sample. Later steps ease
              * that error out and the car settles into the lane. */
             if (coasting) DecayCoastError(run);
-        } else if (driver->status == SIM_DRIVING && s_view.haveStep) {
+        } else if (driver->status == SIM_DRIVING && s_view.haveStep && !s_resultsPresentation) {
             run->motion[0] = (float)(pose.x - run->raw[0]);
             run->motion[1] = (float)(pose.y - run->raw[1]);
             run->motion[2] = (float)(pose.z - run->raw[2]);
@@ -859,7 +872,8 @@ static void RecordPresentation(void) {
     struct Presentation *v = &s_view;
     /* The field moves every second clock tick while racing; the key follows
      * the race clock, so finished and spectated cars keep being presented. */
-    const u32 stepTick = sim->phase >= SIM_RACING ? sim->elapsed / SIM_PHYSICS_INTERVAL + 1 : 0;
+    const u32 stepTick = (sim->phase >= SIM_RACING ? sim->elapsed / SIM_PHYSICS_INTERVAL + 1 : 0)
+        + s_finishPresentationTicks / SIM_PHYSICS_INTERVAL;
     RenderCamera camera, mirror;
     v->lastTickStepped = !v->haveStep || stepTick != v->lastStepTick;
     if (!v->lastTickStepped) return;
@@ -884,6 +898,11 @@ static void RecordPresentation(void) {
 EMSCRIPTEN_KEEPALIVE int rw_tick(void) {
     DriverInput input;
     if (!s_race) return -1;
+    if(s_resultsPresentation||s_race->sim.phase==SIM_FINISHED){
+        ++s_finishPresentationTicks;
+        RecordPresentation();WebAudioTick(&s_race->sim);
+        return (int)s_race->sim.phase;
+    }
     input = s_controls.input;
     input.shiftUp = s_controls.pendingShiftUp;
     input.shiftDown = s_controls.pendingShiftDown;
@@ -1681,7 +1700,9 @@ EMSCRIPTEN_KEEPALIVE uint32_t rw_hud_atlas_revision(void) { return WebHudRevisio
 EMSCRIPTEN_KEEPALIVE int on_hud_unit_snapshot(void *out,int size){return WebHudUnitSnapshot(out,size);}
 EMSCRIPTEN_KEEPALIVE int on_hud_apply_units(const void *bytes,int size,int imperial){return WebHudApplyUnitSnapshot(bytes,size,imperial);}
 EMSCRIPTEN_KEEPALIVE const int32_t *rw_tachometer(void) {
-    return WebHudTachometer(s_race, s_view.viewSeat == s_localSeat ? s_localSeat : -1);
+    int seat=s_localSeat;
+    if(s_nativeClient&&seat<0)seat=s_previewHudSeat;
+    return WebHudTachometer(s_race, s_view.viewSeat == seat ? seat : -1);
 }
 EMSCRIPTEN_KEEPALIVE int rw_tachometer_words(void) { return WEB_HUD_TACHO_WORDS; }
 

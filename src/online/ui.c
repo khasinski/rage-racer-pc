@@ -54,7 +54,7 @@ int OnlineEvent(const SDL_Event*e,SDL_Window*w){
 }
 int OnlinePaint(OverlaySurface*s,int width,int height,OverlayLayout*out){
     const OnlineView*v=OnlineViewState();if(!v->active||width<=0||height<=0)return 0;
-    if(OnlineViewJoining(v)&&!v->panel){float scale=fminf((float)height/820.0f,(float)width/520.0f);if(scale>2)scale=2;layout.scale=scale;layout.w=(int)(440*scale);layout.h=(int)(208*scale);layout.x=(width-layout.w)/2;layout.y=(height-layout.h)/2;}
+    if((OnlineViewJoining(v)||OnlineViewStarting(v))&&!v->panel){float scale=fminf((float)height/820.0f,(float)width/520.0f);if(scale>2)scale=2;layout.scale=scale;layout.w=(int)(440*scale);layout.h=(int)(208*scale);layout.x=(width-layout.w)/2;layout.y=(height-layout.h)/2;}
     else if(v->racing&&!v->panel){float scale=fminf((float)height/820.0f,2.0f);if(scale<0.5f)scale=0.5f;layout.scale=scale;layout.w=(int)(320*scale);layout.h=(int)(132*scale);layout.x=20;layout.y=20;}
     else OverlayComputeLayout(v->count+((v->screen==OS_ROOM||v->screen==OS_ARCADE)?2:0),width,height,&layout);
     if(!OverlaySurfaceResize(s,layout.w,layout.h))return 0;OverlayPaintOnline(s,v,layout.scale);*out=layout;return 1;
@@ -97,6 +97,15 @@ void OnlineSmokeTick(void){
     }
     if(!opened)return;
     const OnlineView *v=OnlineViewState();
+    const char *captures=RuntimeConfigGet("capture.online_lifecycle");static unsigned capturedPhases;
+    if(captures){
+        unsigned phase=OnlineViewStarting(v)&&v->takeoverSeconds<=2?1u:v->finishing&&v->hud[0]==3?2u:v->screen==OS_RESULTS?4u:0;
+        if(phase&&!(capturedPhases&phase)){
+            OverlaySurface surface={0};OverlayLayout l;char path[4096];
+            snprintf(path,sizeof(path),"%s-%s.ppm",captures,phase==1?"start":phase==2?"finish":"results");
+            if(OnlinePaint(&surface,1280,960,&l)){OverlaySurfaceDump(&surface,path);capturedPhases|=phase;}OverlaySurfaceRelease(&surface);
+        }
+    }
     if(!strcmp(mode,"arcade-lobby")&&v->racing&&v->localSeat>=0){OnlineActionDo(OA_ARCADE_LOBBY,0,0);}
     if(v->screen==OS_ROOMS&&!requested){
         if(!strcmp(mode,"host")){OnlineActionDo(OA_QUICK_ROOM,0,0);requested=1;}

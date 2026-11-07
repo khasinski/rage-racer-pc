@@ -180,15 +180,15 @@ export class ArcadeSession {
       this.acks[seat * 3 + 2] = (tick - next) >>> 0;
     }
   }
-  private publishFrame(tick: number): void {
+  private publishFrame(tick: number,reliable=false): void {
     const frame = this.sim.frame(this.handle); if (!frame) throw new Error('Invalid Arcade checkpoint');
     const header = 10 + this.acks.length * 4, packet = Buffer.allocUnsafe(header + frame.length);
     packet[0] = BINARY_ARCADE_FRAME; packet.writeUInt32LE(this.epoch, 1); packet.writeUInt32LE(tick, 5); packet[9] = this.slots;
     this.acks.forEach((v, i) => packet.writeUInt32LE(v, 10 + i * 4)); packet.set(frame, header);
     let compressed: Buffer | undefined;
     for (const m of this.members.values()) if (!m.offlineUntil && m.loaded) {
-      if (m.client.rtc?.open && m.client.rtc.send(compressed ??= deflateRawSync(packet, { level: 1 }))) continue;
-      if (m.client.ws.readyState === m.client.ws.OPEN && m.client.ws.bufferedAmount < 65536) m.client.ws.send(packet);
+      if (!reliable && m.client.rtc?.open && m.client.rtc.send(compressed ??= deflateRawSync(packet, { level: 1 }))) continue;
+      if (m.client.ws.readyState === m.client.ws.OPEN && (reliable||m.client.ws.bufferedAmount < 65536)) m.client.ws.send(packet);
     }
   }
   tick(now: number): boolean {
@@ -225,6 +225,9 @@ export class ArcadeSession {
     return true;
   }
   private finish(now: number): void {
+    // The classified final state must arrive on the same ordered channel as
+    // results, even when the last unreliable race packet was lost.
+    this.publishFrame(this.sim.simTick(this.handle),true);
     const results: RaceResult[] = [];
     for (let seat = 0; seat < 12; seat++) {
       const state = this.sim.seat(this.handle, seat); if (state.status < STATUS_DRIVING) continue;

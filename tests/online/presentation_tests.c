@@ -20,8 +20,12 @@ int main(void){
     for(int i=0;i<20;i++)CHECK(rw_tick()>=0);
     CHECK(on_prepare(16.0f/9.0f,1)>0);
     CHECK(!rw_tachometer()[RAGE_TACHO_VISIBLE]);
+    uint32_t preparedRevision=rw_hud_atlas_revision();
+    CHECK(on_prepare_driver_hud(0));CHECK(rw_tachometer()[RAGE_TACHO_VISIBLE]);
+    CHECK(rw_hud_atlas_revision()==preparedRevision);
     RenderCamera before,after;CHECK(on_copy_camera(&before,sizeof(before)));
     CHECK(on_local_seat(0));
+    CHECK(rw_hud_atlas_revision()==preparedRevision);
     for(int i=0;i<2;i++)CHECK(rw_tick()>=0);
     CHECK(on_prepare(16.0f/9.0f,1)>0);CHECK(on_copy_camera(&after,sizeof(after)));
     float dx=after.transform.position.x-before.transform.position.x;
