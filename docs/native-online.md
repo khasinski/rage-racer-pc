@@ -215,7 +215,7 @@ preflight container and database copy were removed; the recovery backup remains.
 
 ### Finish delivery update
 
-The current production backend is image/version **18**, build `6930f66d5`,
+The finish-delivery backend was image/version **18**, build `6930f66d5`,
 layered over version 17 for reliable final-checkpoint delivery in Arcade and
 private races. Version 17 remains available for rollback. The browser index
 and simulation WASM hashes are unchanged; UDP port 7243 remains published.
@@ -227,3 +227,23 @@ identical to the backup. Startup re-salted the configured administrator
 password as usual; its value was verified unchanged. Production native
 verification added one guest and confirmed HTTPS, takeover and UDP traffic.
 Container health and the Swarm rollout completed successfully.
+
+### Duel invitation validation update
+
+The current production backend is image/version **19**, build `cbe725f41`,
+layered over version 18. Duel codes require exactly 12 ASCII letters, digits,
+hyphens or underscores, preserving case and trimming surrounding whitespace.
+The native menu shows a format hint and inline errors, and disables Join for
+invalid input. The server independently checks the format and reports unknown
+or inactive codes, full duels and already-started races separately.
+
+Before rollout, SQLite was backed up to
+`/data/backups/rage-before-validation-2026-11-07T18-52-35.908Z.sqlite` (0600).
+All 41 existing accounts, 29 races and 166 results were preserved, including
+the configured administrator password. Browser and simulation hashes are
+unchanged; UDP port 7243 remains published. Version 18 is available for rollback.
+
+Validation passed all 12 server tests (including real C simulation), native
+menu and GPU overlay tests, a hidden native rendering capture, and a two-client
+native duel using UDP. Production protocol checks confirmed rejection of
+malformed, forbidden-character and unknown invitation codes.
