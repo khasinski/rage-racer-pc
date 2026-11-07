@@ -16,6 +16,9 @@
 #include "game/scene.h"
 #include "game/state.h"
 #include "game/track.h"
+#ifndef __ANDROID__
+#include "../online/model.h"
+#endif
 
 enum {
     FFB_GAIN_STEP = 5,
@@ -420,18 +423,28 @@ void PortUpdateForceFeedback(void) {
     ForceFeedbackTuning tuning;
     ForceFeedbackOutput output;
     float axis = AnalogSteeringDeflection();
+    int onlineDriving=0;int32_t online[8]={0};
+#ifndef __ANDROID__
+    onlineDriving=OnlineForceFeedback(online);
+#endif
 
     LoadSettings();
     /* Keep one effect during a race or settings preview. In ordinary menus
      * release it once so the driver's centering spring can take over. */
     BindWheel(AnalogWheelActive() &&
-                      (g_SceneId == GAME_SCENE_RACE || s_pulseFrames > 0)
+                      (g_SceneId == GAME_SCENE_RACE || onlineDriving || s_pulseFrames > 0)
                   ? AnalogWheelJoystick() : NULL);
     sample.wheelAxis = axis;
     sample.previousWheelAxis = s_previousAxis;
     sample.smoothed = s_smoothed;
     sample.active = Driving();
     if (sample.active) FillCar(&sample);
+    if(onlineDriving){
+        sample.active=1;sample.steerPos=online[0];sample.speed=online[1];
+        sample.steeringLoadAngle=online[2];sample.gripLossTimer=online[3];
+        sample.collisionLateral=online[4];sample.roadImpulse=online[5];sample.crossSlope=online[6];
+        sample.engineWave=EngineWave(online[7]);
+    }
 
     tuning = s_tuning;
     tuning.enabled = s_enabled;

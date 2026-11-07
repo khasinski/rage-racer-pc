@@ -56,6 +56,7 @@ jobs:
           package="Rage-Racer-${VERSION}-linux-x86_64"
           mkdir -p "dist/${package}"
           cp build/release/rage-racer "dist/${package}/rage-racer"
+          cp build/release/librage-online-core.so "dist/${package}/"
           cp README.md LICENSE.md rage-port.ini race-scenario.ini cars.toml cars.ntscj.toml "dist/${package}/"
           mkdir -p "dist/${package}/docs"
           while read -r doc; do cp "docs/${doc}" "dist/${package}/docs/"; done < packaging/release-docs.txt

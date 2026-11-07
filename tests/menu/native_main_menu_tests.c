@@ -10,6 +10,12 @@ static Frontend s_frontend;
 s32 g_SceneId;
 s16 g_ExtraGrandPrixUnlocked;
 static int s_quits;
+const char *HostDiscImagePath(void){return "";}
+const char *RuntimeConfigGet(const char *key){(void)key;return NULL;}
+void OnlineSetDisc(const char *path){(void)path;}
+void OnlineSetServer(const char *url){(void)url;}
+void OnlineOpen(void){}
+
 Frontend *MenuFrontend(void) { return &s_frontend; }
 bool SDL_PushEvent(SDL_Event *event) { if(event->type==SDL_EVENT_QUIT)s_quits++; return true; }
 #define CHECK(x) do { if(!(x)){fprintf(stderr,"%d: %s\n",__LINE__,#x);return 1;} } while(0)

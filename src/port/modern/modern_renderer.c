@@ -34,6 +34,7 @@ extern unsigned int overlay_frag_spv_len,overlay_frag_msl_len;
 #include <string.h>
 #include "modern_texture_dump.h"
 #include "modern_vram_snapshot.h"
+#include "render/session_provider.h"
 #include "../platform_paths.h"
 #include "game/player_car_internal.h"
 #include "game/race.h"
@@ -1363,6 +1364,10 @@ static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
 }
 
 static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
+    if(SessionProviderActive()) {
+        ModernOverlayBatchesReset(&s_overlay,0,MODERN_LAYER_HUD);
+        s_skyPresentationCamera=NULL;s_skyPacketCamera=NULL;return;
+    }
     s_hudFrame=snapshot->sceneId==12||snapshot->sceneId==17;
     s_haveSkyAtlas=ModernRefreshSkyAtlas(ModernNativeGpuPreparedWorld());
 
@@ -1674,7 +1679,7 @@ void ModernFrameTexturesReady(void) {
 }
 
 static int ModernRender(const RageSceneSnapshot *snapshot) {
-    int menuFrame=ModernHasUiImages(snapshot)&&
+    int menuFrame=!SessionProviderActive()&&ModernHasUiImages(snapshot)&&
         !GameRenderWorldSceneHas3d((GameSceneId)snapshot->sceneId);
     s_overlayHeight=menuFrame&&snapshot->displayHeight==480?480:240;
     SDL_GPUCommandBuffer *cmd;
@@ -1742,7 +1747,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
         ModernRenderOverlaySelection(cmd, vram, 0,
                                      1u << MODERN_LAYER_SKY, 1);
-        ModernNativeGpuDraw(cmd, s_target, s_depth, 0, 0, s_targetH);
+        ModernNativeGpuDraw(cmd, s_target, s_depth,SessionProviderActive(),SessionProviderActive(), s_targetH);
         if (s_config.modernSsao && ModernSsaoReady()) {
             ModernSsaoView view;
 
@@ -1788,7 +1793,7 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
             ModernFullscreenPass(cmd, s_pipeComposite, s_finalTarget, sources, 1);
         }
     }
-    PortMainMenuRenderTarget(s_device,cmd,ModernPresentTexture(),s_targetW,s_targetH);
+    if(!SessionProviderActive())PortMainMenuRenderTarget(s_device,cmd,ModernPresentTexture(),s_targetW,s_targetH);
     if (s_ringEnabled && s_ring[s_ringNext] != NULL) {
         const SDL_GPUBlitInfo blit = {
             .source = {.texture = ModernPresentTexture(),
@@ -2155,6 +2160,21 @@ static void ModernPresentSource(PsyzPresentSourceInfo *info) {
      * presenting during this tick; fps mode moves its transforms toward
      * the newest frame by the wall-clock fraction of the tick. */
     snapshot = CapturePrevious();
+    if(SessionProviderActive()) {
+        if(!ModernEnsureResources()){info->skip_present=true;return;}
+        const RenderWorld *world=SessionProviderWorld((float)s_targetW/(float)s_targetH);
+        if(!world)return;
+        ModernNativeGpuPrepare(world,(float)s_targetW/(float)s_targetH);
+        if(!ModernRender(snapshot)){info->skip_present=true;return;}
+        info->texture=ModernPresentTexture();info->w=(Uint32)s_targetW;info->h=(Uint32)s_targetH;
+        info->aspect=(4.0f/3.0f)*(s_logicalW/320.0f);info->filter=SDL_GPU_FILTER_LINEAR;
+        const char *capture=RuntimeConfigGet("online.capture");
+        static int captured;
+        if(capture&&!captured&&world->frame>(uint64_t)RuntimeConfigInt("online.capture_frame",100,1,1000000)){
+            captured=ModernWriteTexturePpm(s_device,ModernPresentTexture(),s_targetW,s_targetH,capture);
+        }
+        return;
+    }
     fpsMode = ModernShouldInterpolate(snapshot);
     /* Scenes with no captured 3D pass through to the compat image, and so
      * do 480-line menu scenes: their double-height buffer follows PS1

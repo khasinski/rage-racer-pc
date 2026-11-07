@@ -109,3 +109,5 @@ output/
 /web/public/wasm/
 /web/server/wasm/
 /web/server/data/
+/online/server/wasm/
+/online/server/data/

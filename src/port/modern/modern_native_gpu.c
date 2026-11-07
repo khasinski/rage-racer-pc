@@ -14,6 +14,7 @@
 #include "modern_material_uniform.h"
 #include "modern_prepared_meshes.h"
 #include "modern_texture_index.h"
+#include "render/session_provider.h"
 #include "modern_upload_queue.h"
 #include "render/render_mesh_build.h"
 #include "render/render_world_snapshot.h"
@@ -129,7 +130,7 @@ typedef struct ModernNativeTexture {
 
 static SDL_GPUDevice *s_device;
 static uint32_t s_textureWarmCursor;
-static ModernTextureKey s_preloadedBanks[128];
+static ModernTextureKey s_preloadedBanks[4096];
 static unsigned s_preloadedBankCount;
 static void ModernNativePreloadWorld(const RenderWorld *world);
 static SDL_GPUGraphicsPipeline *s_texturedOpaque;
@@ -1033,7 +1034,10 @@ void ModernNativeGpuPrepare(const RenderWorld *world, float aspect) {
         s_cockpitHeadlightRecess);
     if (trace) copied = SDL_GetTicksNS();
     void *meshLookupContext = ModernNativePrepareMeshLookup(world);
-    ModernNativePreloadWorld(world);
+    /* Online publishes the complete field and distant course. Warm its
+     * visible draws on demand; palette transitions must not synchronously
+     * rebuild every car/terrain texture in the entire race. */
+    if(!SessionProviderActive())ModernNativePreloadWorld(world);
     if (trace) lookupFinished = SDL_GetTicksNS();
     shadowCenter = world->camera.transform.position;
     for (instance = 0; instance < world->instanceCount; instance++) {

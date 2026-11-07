@@ -1,0 +1,5 @@
+#ifndef RAGE_WEB_NATIVE_EMSCRIPTEN_STUB_H
+#define RAGE_WEB_NATIVE_EMSCRIPTEN_STUB_H
+#include "../../native_exports.h"
+#define EMSCRIPTEN_KEEPALIVE ONLINE_EXPORT
+#endif

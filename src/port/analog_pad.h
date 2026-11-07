@@ -14,6 +14,7 @@ void PortSetWheelEnabled(int enabled);
 float PortSteeringLinearity(void);
 void PortSetSteeringLinearity(float linearity);
 int AnalogWheelActive(void);
+void PortSampleAnalogPad(void);
 struct SDL_Joystick *AnalogWheelJoystick(void);
 struct SDL_Gamepad *AnalogActiveGamepad(void);
 

@@ -19,4 +19,5 @@ void PortMainMenuEdge(int last);
 /* Bits: 1 selection changed, 2 activate. Input is consumed once. */
 int PortMainMenuTakeInput(int *selection);
 void PortMainMenuRequestQuit(void);
+void PortMainMenuRequestOnline(void);
 #endif

@@ -57,6 +57,7 @@ typedef struct RageHostDisc {
 } RageHostDisc;
 
 static RageHostDisc g_RageHostDisc;
+const char *HostDiscImagePath(void) { return g_RageHostDisc.source_path; }
 /* Separate cursor: the mixer reads XA while the main thread reads game data.
  * Installed/retired under the audio lock; only the CD backend borrows it. */
 static DiscRawFile s_BinAudio;

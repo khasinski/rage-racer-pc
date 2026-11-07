@@ -43,6 +43,14 @@ switches renderer directly. Defaults are in
 `rage-port.ini`; see the [classic renderer guide](docs/classic-renderer.md) for
 resolution, widescreen and FPS examples. No game data is supplied in the archive.
 
+## Online multiplayer
+
+Select **ONLINE** in the desktop main menu. **Online Arcade** automatically
+joins a continuous public session, with CPU cars filling the grid and automatic
+starts between rounds. Private rooms and Duel remain separate options. Lobby,
+chat and controls are in game. See [native online](docs/native-online.md) for
+server setup, takeover rules and testing.
+
 ## Build from source
 
 The project uses CMake and its pinned PSY-Z compatibility layer:

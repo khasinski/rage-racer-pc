@@ -5,3 +5,5 @@ font-license.txt
 webp-license.txt
 hd-distribution.md
 curl-license.txt
+native-online.md
+online-licenses.txt

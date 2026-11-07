@@ -1,0 +1,545 @@
+#ifndef GAME_TRACK_H
+#define GAME_TRACK_H
+
+#include "common.h"
+#include <stddef.h>
+#include "game/camera_types.h"
+
+#include "game/integer.h"
+#include "game/vector.h"
+#include "game/shuttle_scenery.h"
+#include "game/spinners.h"
+#include "game/visibility.h"
+#include "game/visible_cell_scan.h"
+
+union GameEnvColor;
+struct GameCarRuntime;
+struct PathSceneryRotationData;
+typedef struct GameEnvironmentCue GameEnvironmentCue;
+
+
+/*
+ * One centreline point, 0x18 bytes. `leftHalfWidth` / `rightHalfWidth` are the left and
+ * right half-widths (SteerCarAlongRoute clamps the lateral offset to
+ * [-leftHalfWidth, rightHalfWidth]); the surface fields are interpolated between
+ * a segment's two endpoints by UpdateCarTrackState and its non-clamping
+ * replay reconstruction in ReconstructReplayCarTrackState.
+ */
+typedef struct GameTrackPoint {
+    s32 x;
+    s32 z;
+    s16 y;
+    s16 angle;
+    /* +0x0C the pitch component of the surface tilt: interpolated, then paired
+     * with the cross-slope angle derived from crossSlope and rotated by the car's
+     * track-relative heading to give the two tilt words at obj +0x20 / +0x28. */
+    s16 surfacePitch;
+    /* +0x0E cross-slope gradient in 1/128 of a unit per unit of lateral
+     * offset. `surfaceY = interp(y) + (interp(crossSlope) * lateral >> 7)` in
+     * GetTrackSurfaceHeight, SampleTrackSurfaceHeight and
+     * UpdateCarTrackState alike. */
+    s16 crossSlope;
+    s16 leftHalfWidth;
+    s16 rightHalfWidth;
+    /* +0x14 arc reference, read as one u16 and split: bits 0..1 select the
+     * cornering model (0 = straight, the arc block is skipped entirely; 2
+     * negates the lateral offset, so it is the mirrored hand), and bits 4..15
+     * are a signed index into g_TrackArcCenters (`(s16)arcRef >> 4`). Bits 2..3
+     * are never read. */
+    u16 arcRef;
+    u16 segmentLength;
+} GameTrackPoint;
+
+typedef enum TrackCurveMode {
+    TRACK_CURVE_NONE,
+    TRACK_CURVE_PRIMARY,
+    TRACK_CURVE_MIRRORED,
+} TrackCurveMode;
+
+static inline TrackCurveMode TrackPointCurveMode(
+    const GameTrackPoint *point) {
+    return (TrackCurveMode)(point->arcRef & 3);
+}
+
+static inline s32 TrackPointArcIndex(const GameTrackPoint *point) {
+    return (s16)point->arcRef >> 4;
+}
+
+typedef struct TrackAiSpeedKey {
+    s16 progress;
+    u16 pitch;
+    s16 slotTargetSpeeds[4];
+} TrackAiSpeedKey;
+
+typedef struct TrackRivalStart {
+    s32 x;
+    s32 z;
+    s16 trackPointIndex;
+    s16 activeFlag;
+} TrackRivalStart;
+
+typedef struct TrackRivalAiConfig {
+    s16 speed;
+    u16 accelerationStep;
+    u16 boostAccelerationThreshold;
+    u16 collisionBoostDuration;
+    u16 boostAcceleration;
+    u16 minimumSpeed;
+    u16 initialEngineRpm;
+    u16 reserved;
+} TrackRivalAiConfig;
+
+typedef struct TrackZone {
+    s32 start;
+    s32 end;
+    s16 code;
+    s16 value;
+} TrackZone;
+
+typedef struct TrackZoneEffect {
+    s32 blend;
+    s16 code;
+    s16 reverb;
+    s16 dark;
+} TrackZoneEffect;
+
+typedef struct TrackEventOffsets {
+    s32 routeScenery;
+    s32 raceIntroCamera;
+    s32 pathSceneryPosition;
+    s32 pathSceneryRotation;
+    s32 reserved;
+    s32 flybyScenery;
+} TrackEventOffsets;
+
+s32 InterpolateTrackAngle(s32 pointIndex, s32 weight);
+s32 SmoothTrackAngle(s32 pointIndex, s32 weight);
+
+typedef struct TrackAmbienceZone {
+    s32 start;
+    s32 end;
+    u16 value;
+    u16 flags;
+} TrackAmbienceZone;
+
+typedef struct TrackRacingLineHint {
+    s16 start;
+    s16 end;
+    s16 minHeight;
+    s16 maxHeight;
+    u16 heightAdjustment;
+    u16 reserved;
+} TrackRacingLineHint;
+
+typedef struct TrackCrestEvent {
+    s32 progress;
+    s32 motionValue;
+} TrackCrestEvent;
+
+typedef struct TrackEventSoundZone {
+    s16 start;
+    s16 end;
+    s16 flags;
+    u16 reserved;
+} TrackEventSoundZone;
+
+/*
+ * A sound that plays from one spot beside the track rather than filling a
+ * stretch of it. It is audible between `start` and `end` along the track,
+ * fading in and out over the two distances, and it is panned by where the
+ * camera stands relative to (sourceX, sourceZ).
+ */
+typedef struct TrackPointAmbienceZone {
+    s32 start;
+    s32 end;
+    u16 fadeInDistance;
+    u16 fadeOutDistance;
+    s32 sourceX;
+    s32 sourceZ;
+    s32 cue; /* 1 or -1 picks one sound, anything else the other */
+} TrackPointAmbienceZone;
+
+enum {
+    TRACK_SERIES_COUNT = 2,
+    TRACK_CREST_EVENT_COUNT = 8,
+    TRACK_RACING_LINE_HINT_COUNT = 30,
+    TRACK_RIVAL_COUNT = 12,
+    TRACK_AI_SPEED_KEY_COUNT = 48,
+    TRACK_ZONE_COUNT = 20,
+    TRACK_POINT_AMBIENCE_ZONE_COUNT = 2,
+    TRACK_AMBIENCE_ZONE_COUNT = 4,
+    TRACK_EVENT_SOUND_ZONE_COUNT = 30,
+    TRACK_SPEED_CUE_COUNT = 3,
+};
+
+static inline s32 TrackPositionForSeries(s32 position, s32 trackLength,
+                                         s32 series) {
+    u32 reversed;
+
+    if (series == 0) return position;
+    reversed = (u32)trackLength - (u32)position;
+    return WrapSigned32(reversed);
+}
+
+typedef struct TrackFinishCue {
+    s16 trackSection;
+    s16 reserved;
+} TrackFinishCue;
+
+typedef struct TrackSpeedCue {
+    s16 trackSection;
+    s16 speedPercent;
+} TrackSpeedCue;
+
+typedef struct TrackRaceCueData {
+    TrackFinishCue finish[TRACK_SERIES_COUNT];
+    u8 reserved08[8];
+    TrackSpeedCue speed[TRACK_SERIES_COUNT][TRACK_SPEED_CUE_COUNT];
+} TrackRaceCueData;
+
+typedef struct TrackEventData {
+    s32 trackWalkStart;
+    TrackCrestEvent crestEvents[TRACK_SERIES_COUNT][TRACK_CREST_EVENT_COUNT];
+    TrackRacingLineHint
+        racingLineHints[TRACK_SERIES_COUNT][TRACK_RACING_LINE_HINT_COUNT];
+    TrackRivalStart rivalStarts[TRACK_SERIES_COUNT][TRACK_RIVAL_COUNT];
+    TrackAiSpeedKey
+        aiSpeedKeys[TRACK_SERIES_COUNT][TRACK_AI_SPEED_KEY_COUNT];
+    TrackRivalAiConfig
+        rivalAiConfigs[TRACK_SERIES_COUNT][TRACK_RIVAL_COUNT];
+    TrackZone zones[TRACK_ZONE_COUNT];
+    TrackEventOffsets offsets;
+    u8 reservedB7C[0x1000];
+    TrackEventSoundZone eventSoundZones[TRACK_EVENT_SOUND_ZONE_COUNT];
+    TrackPointAmbienceZone pointAmbienceZones[TRACK_POINT_AMBIENCE_ZONE_COUNT];
+    TrackAmbienceZone ambienceZones[TRACK_AMBIENCE_ZONE_COUNT];
+    TrackRaceCueData raceCues;
+} TrackEventData;
+
+_Static_assert(__builtin_offsetof(TrackEventData, reservedB7C) == 0xB7C,
+               "track event table layout changed");
+
+/*
+ * One corner's centre of curvature. `GameTrackPoint.arcRef >> 4` indexes this
+ * array, which InstallTrackPoints publishes at `g_TrackArcCenters`
+ * immediately after the point table. The stride is 12, proven by three
+ * independent `* 0xC` sites (UpdateCarDrivetrain, and 8003237C /
+ * UpdateCarTrackState); the third word is never read anywhere in the image.
+ *
+ * The canonical global declaration lives in track_internal.h because the
+ * table is installed and consumed only by track/car internals.
+ */
+/* Validated view into caller-owned event storage; no client globals change. */
+const TrackEventData *ReadTrackEvents(const TrackEventData *events, size_t size);
+
+typedef struct GameTrackArcCenter {
+    s32 x;      /* +0x00 */
+    s32 z;      /* +0x04 */
+    s32 reserved08;  /* +0x08 never read */
+} GameTrackArcCenter;
+
+/* Immutable route data; several races may share it without sharing car state.
+ * Arc references are validated by the route importer before simulation. */
+typedef struct TrackRoute {
+    const GameTrackPoint *points;
+    const GameTrackArcCenter *arcs;
+    s32 count;
+    s32 length;
+} TrackRoute;
+
+static inline s32 RouteIndex(const TrackRoute *route, s32 index) {
+    if (route->count <= 0) return 0;
+    index %= route->count;
+    if (index < 0) index += route->count;
+    return index;
+}
+
+static inline const GameTrackPoint *RoutePoint(const TrackRoute *route,
+                                               s32 index) {
+    return &route->points[RouteIndex(route, index)];
+}
+
+void InterpolateRoutePoint(const TrackRoute *route, s32 pointIndex,
+                            LVec *out, s32 weight);
+s32 InterpolateRouteAngle(const TrackRoute *route, s32 pointIndex, s32 weight);
+s32 SmoothRouteAngle(const TrackRoute *route, s32 pointIndex, s32 weight);
+
+typedef struct TrackPointTable {
+    s32 count;
+    GameTrackPoint points[];
+} TrackPointTable;
+
+/* Validated immutable view into caller-owned asset storage. Invalid data
+ * clears the output view. Storage must remain alive while a race uses it. */
+int ReadTrackRoute(const TrackPointTable *table, size_t size, TrackRoute *route);
+
+/* The retail asset stores its variable-length arc-centre table immediately
+ * after the declared number of centreline points. Keep that format arithmetic
+ * at the asset boundary instead of repeating a layout cast in consumers. */
+static inline const GameTrackArcCenter *TrackPointTableArcCenters(
+    const TrackPointTable *table) {
+    return (const GameTrackArcCenter *)(table->points + table->count);
+}
+
+/* Track centreline points of the loaded course, g_TrackPointCount of them;
+ * walked cyclically. */
+extern const GameTrackPoint *g_TrackPoints;
+
+/* Valid entries in g_TrackPoints; every walker wraps with `% this`. */
+extern s32 g_TrackPointCount;
+
+/*
+ * Reach a centreline point. The track is a closed ring, so every index into it
+ * wraps; this is the one place that does it.
+ *
+ * The rule used to be written in the comment above and applied by hand at each
+ * call site, which meant it was applied at most of them. UpdateFinishCamera
+ * wrapped the index it passed to InterpolateTrackPoint and, two lines later,
+ * handed a raw one to UpdateCarTrackState, which read past the array and took
+ * the process down with it.
+ */
+static inline s32 WrapTrackPointIndex(s32 index) {
+    s32 count = g_TrackPointCount;
+
+    if (count <= 0) return 0;
+    index %= count;
+    if (index < 0) index += count;
+    return index;
+}
+
+static inline const GameTrackPoint *TrackPoint(s32 index) {
+    if (g_TrackPointCount <= 0) return g_TrackPoints;
+    index = WrapTrackPointIndex(index);
+    return &g_TrackPoints[index];
+}
+
+/*
+ * Animated course scenery (func_8003Dxxx / func_8003Fxxx). All four courses
+ * share one coordinate space, so prop positions are one static table at
+ * 0x8007E2C0 and each prop culls itself against the visible-terrain bitmask
+ * g_VisibleCellMask.
+ */
+
+/* Per-frame update+draw of the current course's props, dispatched on the course
+ * index. ...Scenery is the race copy (course passed in), ...Scenery2 the copy
+ * for the replay/attract scenes (reads g_CourseIndex); they keep separate
+ * animation state. `animate` == 0 draws a frozen frame. */
+void DrawCourseScenery(s32 course, s32 timer, s32 animate);
+void DrawPresentationCourseScenery(s32 timer, s32 animate,
+                                   s32 drawRaceStatus);
+void BuildVisibleCells(const GameCameraState *camera, s32 near, s32 far);
+void DrawCourseObjects(void);
+void DrawTerrainCells(const GameCameraState *camera);
+void DrawTerrainCellsWide(const GameCameraState *camera);
+
+/* Update (when animate != 0) and draw the route/flyby/path prop layers enabled
+ * by the current Grand Prix class. Class 5 wraps to the class-0 route layer. */
+void DrawScriptedScenery(s32 animate);
+void DrawStartGridScenery(s32 timer);
+void InitTrackScene(void);
+void TriggerRaceCues(void);
+TrackZoneEffect ReadTrackZoneEffect(const TrackEventData *events, s32 position,
+                                    s32 length, int reverse);
+TrackZoneEffect GetTrackZoneEffect(s32 position);
+void UpdatePointAmbience(const GameCameraState *camera, s32 trackPosition);
+
+/* The static landmark at g_StaticSceneryPos (40594, 6002, 11940), on all four courses;
+ * pass 1 for THE EXTREME OVAL's +0x5000 z shift. Model 0x3A or 0x3B depending
+ * on g_IsEnvironmentMode4. */
+void DrawStaticScenery(s32 shiftForSeriesCourse);
+
+/* A second static landmark at (29266, 6039, 45612): MYTHICAL COAST only, from
+ * g_GrandPrixClass >= 4, and the one prop with no visibility cull. */
+void DrawHighClassScenery(void);
+
+extern ShuttlePath g_ShuttlePathPoints[SHUTTLE_PATH_COUNT];
+
+/* The two shuttle instances. Instance 1 used to carry eight split symbols of
+ * its own, g_Shuttle1DwellCounter..g_Shuttle1AngleZ; they were this array's
+ * second element all along and are addressed as g_ShuttleScenery[1] now. */
+extern GameShuttleScenery g_ShuttleScenery[SHUTTLE_INSTANCE_COUNT];
+
+void InitShuttleScenery(void);
+
+/* Lap distance: the sum of every g_TrackPoints[].segmentLength. Cars' along-
+ * track progress uses the same units. */
+extern s32 g_TrackLength;
+
+/* Base of the course's event/marker block (InstallTrackEventData installs it). Starts
+ * with the s32 track-walk start index; sub-table offsets are at +0xB64..+0xB78
+ * and the per-series marker rows at + g_RaceSeries * 576 + 0x474. */
+extern const TrackEventData *g_TrackEventData;
+
+extern s32 g_CourseModelCount;
+extern s16 g_EnvLerpDuration;
+extern const GameEnvironmentCue *g_EnvScriptCues;
+extern s16 g_EnvSpareFrom;
+extern s16 g_EnvSpareLerp;
+extern s16 g_EnvSpareTo;
+extern s16 g_RaceCueDelay;
+extern s32 g_RaceCueFlags;
+extern s32 g_RouteSceneryFrame;
+extern s32 g_RouteSceneryRotX;
+extern s32 g_RouteSceneryRotZ;
+/* Position of the animated route prop. */
+extern Vec4 g_RouteSceneryPosition;
+
+extern s16 g_ShuttlePathDwellMax[];
+
+void InterpolateTrackPoint(s32 pointIndex, LVec *out, s32 weight);
+
+extern s16 g_AnimSceneryPitch[];
+typedef struct SceneryAnimation {
+    s16 racePosition;
+    s16 raceVariant;
+    s16 presentationVariant;
+} SceneryAnimation;
+extern SceneryAnimation g_SceneryAnimation;
+/* The orientation quads, same three-group shape as the offsets: delta at
+ * 0x8009B1E8, start at +0x10, current at +0x20. Elements 0..2 are pitch, yaw
+ * and roll -- 12-bit angles, wrapped to +-0x800 on load and masked with 0xFFF
+ * on store -- and element 3 is the pull-back distance, a plain length. */
+#define CAMPATH_PITCH 0
+#define CAMPATH_YAW 1
+#define CAMPATH_ROLL 2
+#define CAMPATH_DIST 3
+extern s16 g_EnvLerpFrame;
+extern u8 g_EnvScriptEnabled;
+typedef struct SceneryMotionKeyframe {
+    s16 rotationX;
+    s16 rotationY;
+    s16 rotationZ;
+    s16 duration;
+    s16 speed;
+    s16 reserved;
+} SceneryMotionKeyframe;
+
+typedef struct SceneryMotionStart {
+    Vec4 position;
+    s32 reserved[4];
+} SceneryMotionStart;
+
+enum { SCENERY_MOTION_END = -1 };
+
+typedef struct SceneryMotionData {
+    s16 triggerSection[2][2];
+    s16 firstKeyframe[2][2];
+    SceneryMotionStart start[2];
+    SceneryMotionKeyframe keyframes[1];
+} SceneryMotionData;
+
+typedef struct FlybySceneryState {
+    s32 timer;
+    s32 soundEnabled;
+    s32 keyframeTime;
+    s16 lap;
+    s16 keyframeIndex;
+    Vec4 position;
+    s32 rotationX;
+    s32 rotationY;
+    s32 rotationZ;
+    s32 reserved2C;
+    s32 volume;
+} FlybySceneryState;
+
+extern const SceneryMotionKeyframe *g_FlybySceneryKeyframe;
+extern s32 g_FogNear;
+extern StaticSceneryState g_StaticSceneryState;
+extern s16 g_PathSceneryHalfDelta[3];
+typedef struct PathSceneryPositionKey {
+    LVec position;
+    u16 loopIndex;
+    u16 reserved;
+    s16 span;
+    s16 rate;
+} PathSceneryPositionKey;
+
+typedef union PathSceneryRotationKey {
+    struct {
+        s16 x;
+        s16 y;
+        s16 z;
+        u16 loopIndex;
+        s16 span;
+        s16 rate;
+    } fields;
+    SVec rotation;
+} PathSceneryRotationKey;
+
+typedef struct PathSceneryPositionData {
+    s16 firstKey[2];
+    PathSceneryPositionKey keys[1];
+} PathSceneryPositionData;
+
+typedef struct PathSceneryRotationData {
+    s16 firstKey[2];
+    PathSceneryRotationKey keys[1];
+} PathSceneryRotationData;
+
+extern const PathSceneryPositionKey *g_PathSceneryPosKeys;
+typedef struct PathSceneryCursors {
+    s16 posPhase;
+    s16 rotPhase;
+    s16 posSpan;
+    s16 rotSpan;
+    s16 posRate;
+    s16 rotRate;
+    s16 posIndex;
+    s16 rotIndex;
+} PathSceneryCursors;
+
+extern PathSceneryCursors g_PathSceneryCursors;
+extern s16 g_PathSceneryRotHalfDelta[3];
+extern const PathSceneryRotationKey *g_PathSceneryRotKeys;
+extern s32 g_PathSceneryVolume;
+#define g_ShuttlePath2Points g_ShuttlePathPoints[2]
+extern s16 g_ShuttlePathTravelMax[];
+enum {
+    SKY_TILE_MAP_ROWS = 5,
+    SKY_TILE_MAP_COLUMNS = 16,
+};
+extern s16 g_SkyTileMap[SKY_TILE_MAP_ROWS][SKY_TILE_MAP_COLUMNS];
+extern s16 g_SpinningSceneryAngle[];
+extern u16 g_SpinningSceneryRate[];
+extern SpinningSceneryPlacement g_SpinningSceneryPlacements[4];
+extern s32 g_StartGridSceneryAngle[];
+
+s32 BlendAngle(s32 angleA, s32 angleB, s32 weight);
+extern s32 FindNearestTrackCamera(const struct GameCarRuntime *car);
+void UpdateTrackEventSound(const GameCameraState *camera, s16 trackSection);
+
+extern Vec4 g_AnimSceneryPos[];
+extern SVec g_ShuttlePathAngles[];
+extern Vec4 g_StartGridSceneryPos[];
+
+/* The two tables InstallTerrainCellData splits out of sub-block 7: the
+ * 32x32 cell grid (terrain-cell index in the low 10 bits) and the per-cell
+ * visibility rows read by GetCellVisibility. */
+extern const u16 *g_TerrainCellGrid;
+extern const CellVisibilityRow *g_CellVisibilityTable;
+
+/*
+ * Their byte sizes, which is all InstallTerrainCellData needs them for - it
+ * steps the sub-block pointer past each in turn. Both fall straight out of how
+ * track/visible_cells.c indexes them, and both are fixed, not per-course:
+ *
+ *   grid       g_TerrainCellGrid[y * 32 + x], a u16 per cell
+ *              -> 32 * 32 * 2 = 0x800
+ *   visibility *(u32 *)(base + y * 0x80 + x * 4), bit = region id
+ *              -> a u32 per cell, 32 * 32 * 4 = 0x1000
+ *
+ * The row stride the code uses is the proof of the second: `cellZ << 7` is
+ * 32 u32 entries per row, and 32 such rows are 0x1000. It also caps region ids
+ * at 32, even though the grid word has room for 64 in its top six bits.
+ */
+#define TERRAIN_CELL_GRID_BYTES                                            \
+    (TERRAIN_CELL_GRID_SIZE * TERRAIN_CELL_GRID_SIZE * sizeof(u16))
+#define CELL_VISIBILITY_TABLE_SIZE                                         \
+    (TERRAIN_CELL_GRID_SIZE * sizeof(CellVisibilityRow))
+
+/* Whether the visibility mask holds the cell a world point falls in. The mask
+ * is one bit per 2048-unit cell, a word per row of z and a bit per column of
+ * x. */
+int TrackCellVisible(s32 x, s32 z);
+
+#endif

@@ -3,6 +3,7 @@
 #include "user_settings.h"
 #include "hd_pack_ui.h"
 #include "main_menu_ui.h"
+#include "online/online.h"
 
 #include <SDL3/SDL.h>
 #include <psyz/overlay_sdl3.h>
@@ -12,6 +13,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "modern/modern_renderer.h"
 #include "modern/shaders/overlay_frag_msl.h"
@@ -38,7 +40,7 @@ static int s_windowW, s_windowH;
 static PsyzOverlayEventCB_SDL3 s_prevEvent;
 static PsyzOverlayRenderCB_SDL3GPU s_prevRender;
 
-int PortGraphicsOverlayActive(void) { return s_model.open; }
+int PortGraphicsOverlayActive(void) { return s_model.open || OnlineActive(); }
 
 int PortGraphicsOverlayTakeClosed(void) {
     return OverlayModelTakeClosed(&s_model);
@@ -139,6 +141,11 @@ static void MainMenuMouse(float x, float y, int click) {
 
 static void OnEvent(const SDL_Event *event) {
     if (s_prevEvent != NULL) s_prevEvent(event);
+    if(OnlineActive()&&!s_model.open){
+        SDL_Window*w=NULL;SDL_GPUDevice*d=NULL;Psyz_VideoGetPresentationDevice_SDL3GPU(&w,&d);
+        OnlineEvent(event,w);
+        return;
+    }
     if (!s_model.open && PortMainMenuState().interactive) {
         if(event->type==SDL_EVENT_MOUSE_MOTION) MainMenuMouse(event->motion.x,event->motion.y,0);
         if(event->type==SDL_EVENT_MOUSE_BUTTON_DOWN && event->button.button==SDL_BUTTON_LEFT)
@@ -632,6 +639,20 @@ static void RestoreAndTrackDisplayMode(void) {
 }
 
 void PortGraphicsOverlayTick(void) {
+    OnlineSmokeTick();
+    OnlineSampleInput();
+    if(OnlineActive()){
+        OnlineSmokeTick();OnlineTick();
+        if(OnlineRaceActive()&&PortActiveConfig()->renderer!=RAGE_RENDERER_MODERN){RagePortConfig c=*PortActiveConfig();c.renderer=RAGE_RENDERER_MODERN;ModernApplyConfig(&c);}
+        if(!s_model.open){
+            SDL_Window*w=NULL;SDL_GPUDevice*d=NULL;
+            if(Psyz_VideoGetPresentationDevice_SDL3GPU(&w,&d)&&w){
+                SDL_GetWindowSizeInPixels(w,&s_windowW,&s_windowH);
+                if(OnlinePaint(&s_surface,s_windowW,s_windowH,&s_layout)&&EnsurePipeline(d,SDL_GetGPUSwapchainTextureFormat(d,w)))UploadSurface(d);
+            }
+            return;
+        }
+    }
     if (MemoryBudgetGet()->tier != RAGE_MEMORY_NORMAL && !s_model.settingsStatus[0]) {
         SDL_strlcpy(s_model.settingsStatus,"Low memory: graphics capped and HD textures suspended.",sizeof(s_model.settingsStatus));
         s_model.dirty = 1;
@@ -704,8 +725,10 @@ static void DrawPanel(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
     quad.uv[1] = quad.uv[3] = ((float)s_textureH - 0.5f) / (float)s_textureH;
     quad.tint[0] = quad.tint[1] = quad.tint[2] = 1.0f;
     quad.tint[3] = 0.62f;
-    SDL_PushGPUVertexUniformData(command, 0, &quad, sizeof(quad));
-    SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
+    if(!OnlineRaceActive()||OnlinePanelOpen()||s_model.open){
+        SDL_PushGPUVertexUniformData(command, 0, &quad, sizeof(quad));
+        SDL_DrawGPUPrimitives(pass, 6, 1, 0, 0);
+    }
 
     /* The panel at one texel per pixel. */
     quad.rect[0] = (float)s_layout.x / w * 2.0f - 1.0f;
@@ -723,7 +746,7 @@ static void DrawPanel(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
 
 static void OnRender(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
     if (s_prevRender != NULL) s_prevRender(command, pass);
-    if (s_model.open) DrawPanel(command, pass);
+    if (s_model.open||OnlineActive()) DrawPanel(command, pass);
     else if (PortMainMenuState().active && !ModernPresentationActive() && s_titleTexture)
         DrawMainMenuNative(command,pass,s_windowW,s_windowH);
     else if (TouchEnabled()) DrawTouch(command, pass);
@@ -732,6 +755,7 @@ static void OnRender(SDL_GPUCommandBuffer *command, SDL_GPURenderPass *pass) {
 void PortGraphicsOverlayInstall(void) {
     if (s_installed) return;
     s_installed = 1;
+    atexit(OnlineShutdown);
     s_prevEvent = Psyz_OverlayEvent_SDL3(OnEvent);
     s_prevRender = Psyz_OverlayRender_SDL3GPU(OnRender);
 }

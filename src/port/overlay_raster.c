@@ -564,3 +564,54 @@ void OverlayPaintTouchAtlas(OverlaySurface *surface, const TouchLayout *layout) 
         }
     }
 }
+
+#include "online/model.h"
+void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float scale) {
+    if(!surface||!surface->pixels||!OverlayFontReady())return;
+    memset(surface->pixels,0,(size_t)surface->w*(size_t)surface->h*4u);
+    uint8_t *solid=surface->pixels+(size_t)(surface->h-1)*(size_t)surface->w*4u;
+    for(int x=0;x<surface->w;x++){solid[x*4]=solid[x*4+1]=solid[x*4+2]=solid[x*4+3]=255;}
+    float s=scale;
+    FillRoundRect(surface,0,0,(float)surface->w,(float)(surface->h-1),14*s,kPanel);
+    if(view->racing&&!view->panel){
+        char text[96];int speed=view->hud[7];if(speed<0)speed=0;
+        snprintf(text,sizeof(text),"%03d",speed);DrawText(surface,24*s,67*s,54*s,text,kText,ALIGN_LEFT);
+        DrawText(surface,138*s,65*s,17*s,"km/h",kMuted,ALIGN_LEFT);
+        snprintf(text,sizeof(text),"%d",view->hud[8]);DrawText(surface,243*s,65*s,35*s,text,kAccent,ALIGN_LEFT);
+        snprintf(text,sizeof(text),"POS %d/%d   LAP %d/%d",view->hud[4],view->hud[5],view->hud[2]>0?view->hud[2]:1,view->hud[3]);
+        DrawText(surface,24*s,103*s,18*s,text,kText,ALIGN_LEFT);
+        int ms=view->hud[6];if(ms<0)ms=0;snprintf(text,sizeof(text),"%d:%02d.%03d",ms/60000,ms/1000%60,ms%1000);
+        DrawText(surface,24*s,135*s,22*s,text,kText,ALIGN_LEFT);
+        if(view->hud[0]==1){snprintf(text,sizeof(text),"START %d",(view->hud[1]+49)/50);DrawText(surface,168*s,135*s,18*s,text,kAccent,ALIGN_LEFT);}
+        else if(view->takeoverSeconds){snprintf(text,sizeof(text),"CONTROL IN %d",view->takeoverSeconds);DrawText(surface,156*s,135*s,14*s,text,kAccent,ALIGN_LEFT);}
+        else DrawText(surface,180*s,135*s,14*s,view->arcade&&view->localSeat<0?"CPU / next race":"ESC: menu",kMuted,ALIGN_LEFT);
+        return;
+    }
+    DrawText(surface,32*s,45*s,29*s,view->title,kText,ALIGN_LEFT);
+    DrawText(surface,32*s,82*s,14*s,view->subtitle,kMuted,ALIGN_LEFT);
+    FillRoundRect(surface,32*s,112*s,536*s,1,0,WithAlpha(kText,0.1f));
+    for(int row=0;row<view->count;row++){
+        const OnlineRow *r=&view->rows[row];float top=(128+row*46)*s,base=top+29*s;
+        if(row==view->selected){FillRoundRect(surface,16*s,top+3*s,568*s,40*s,9*s,WithAlpha(kAccent,0.16f));FillRoundRect(surface,20*s,top+13*s,3*s,20*s,1.5f*s,kAccent);}
+        Color c=r->enabled?kText:WithAlpha(kMuted,0.6f);
+        DrawText(surface,32*s,base,view->screen==OS_CHAT&&r->action==OA_NONE?12*s:17*s,r->label,c,ALIGN_LEFT);
+        char value[80];snprintf(value,sizeof(value),"%s",r->value);
+        float em=16*s;if(TextWidth(value,em)>310*s)em=12*s;
+        while(value[0]&&TextWidth(value,em)>310*s){
+            size_t n=strlen(value);do{--n;}while(n&&((unsigned char)value[n]&0xc0)==0x80);value[n]=0;
+        }
+        DrawText(surface,568*s,base,em,value,r->editable&&view->editing&&row==view->selected?kAccent:kMuted,ALIGN_RIGHT);
+    }
+    float bottom=(128+view->count*46+20)*s;
+    if(view->screen==OS_ROOM||view->screen==OS_ARCADE){
+        int first=view->chatCount>3?view->chatCount-3:0;
+        for(int i=first;i<view->chatCount;i++){
+            char line[100];snprintf(line,sizeof(line),"%.88s",view->messages[i]);
+            DrawText(surface,32*s,bottom+16*s,12*s,line,kMuted,ALIGN_LEFT);bottom+=22*s;
+        }
+        bottom+=10*s;
+    }
+    char status[100];size_t n=strlen(view->status);if(n>86)n=86;memcpy(status,view->status,n);status[n]=0;
+    DrawText(surface,32*s,bottom+16*s,13*s,status,kMuted,ALIGN_LEFT);
+    DrawText(surface,32*s,bottom+40*s,12*s,view->editing?"Type to edit / Enter: done / Ctrl+A: replace":"Arrows / D-pad: select   Enter / A: confirm   Esc / B: back",kMuted,ALIGN_LEFT);
+}

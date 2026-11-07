@@ -17,7 +17,7 @@ get_filename_component(ROOT "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 add_library(asset_support STATIC)
 foreach(name asset_id car_paint authored_car_surface mod_manifest mod_selection
         mod_provider mod_file_snapshot mod_file_policy asset_path render_material
-        texture_mipmap rmesh rmesh_replace rmesh_index rmesh_cache render_world)
+        texture_mipmap rmesh rmesh_replace rmesh_index rmesh_cache render_world session_provider)
     target_sources(asset_support PRIVATE "${ROOT}/src/render/${name}.c")
 endforeach()
 target_include_directories(asset_support PUBLIC "${ROOT}/src")

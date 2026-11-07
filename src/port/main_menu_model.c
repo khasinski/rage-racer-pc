@@ -4,6 +4,9 @@
 /* One ordered list shared by rendering, pointer hit testing and navigation. */
 static const char *const s_labels[TITLE_MENU_ITEM_COUNT] = {
     "GRAND PRIX", "EXTRA GRAND PRIX", "TIME ATTACK", "CUSTOM RACE", "DUEL",
+#ifndef __ANDROID__
+    "ONLINE",
+#endif
     "LOAD GAME", "SETTINGS", "QUIT GAME"
 };
 const char *MainMenuLabel(int item) {

@@ -307,6 +307,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 add_library(rage-render-world STATIC
+    src/render/session_provider.c
     src/render/car_lights.c
     src/render/car_lamps.c
     src/render/render_world.c
@@ -337,6 +338,10 @@ if(RAGE_BUILD_PORT)
         external/libchdr/deps/miniz-3.1.2)
     add_subdirectory(external/psyz/psyz external-psyz)
     include(cmake/hd_dependencies.cmake)
+    if(NOT ANDROID)
+        enable_language(CXX)
+        add_subdirectory(src/online)
+    endif()
     target_link_libraries(rage-render-world PUBLIC rage-hd-image)
 
     file(GLOB_RECURSE RAGE_GAME_SOURCES CONFIGURE_DEPENDS
@@ -700,6 +705,22 @@ if(RAGE_BUILD_PORT)
         endif()
         target_link_libraries(${RAGE_PORT_TARGET} PRIVATE
             rage-sim psyz rage-render-world rage-content rage-car-catalog chdr-static miniz rage-json rage-hd-network)
+        if(NOT ANDROID)
+            target_sources(${RAGE_PORT_TARGET} PRIVATE src/online/ui.c)
+            target_link_libraries(${RAGE_PORT_TARGET} PRIVATE rage-online-client)
+            add_custom_command(TARGET ${RAGE_PORT_TARGET} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    "$<TARGET_FILE:rage-online-core>" "$<TARGET_FILE_DIR:${RAGE_PORT_TARGET}>"
+                VERBATIM)
+            if(APPLE)
+                set_property(TARGET ${RAGE_PORT_TARGET} APPEND PROPERTY BUILD_RPATH "@loader_path")
+            elseif(UNIX)
+                set_property(TARGET ${RAGE_PORT_TARGET} APPEND PROPERTY BUILD_RPATH "$ORIGIN")
+                set_property(TARGET ${RAGE_PORT_TARGET} PROPERTY BUILD_RPATH_USE_ORIGIN TRUE)
+            endif()
+        else()
+            target_sources(${RAGE_PORT_TARGET} PRIVATE src/online/disabled.c)
+        endif()
         if(WIN32)
             target_link_libraries(${RAGE_PORT_TARGET} PRIVATE comdlg32 legacy_stdio_definitions)
         endif()

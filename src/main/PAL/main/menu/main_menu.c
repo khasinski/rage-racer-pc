@@ -68,6 +68,9 @@ void UpdateMainMenuInput(void) {
 
     if (pressed & PAD_CONFIRM) {
         PlaySoundCue(2);
+#ifndef __ANDROID__
+        if(frontend->selection==TITLE_MENU_ONLINE){PortMainMenuRequestOnline();return;}
+#endif
         if (frontend->selection == TITLE_MENU_QUIT) {
             PortMainMenuRequestQuit();
             return;

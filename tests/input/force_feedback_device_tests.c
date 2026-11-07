@@ -11,6 +11,8 @@
 #include <string.h>
 
 void PortUpdateForceFeedback(void);
+static int onlineDriving;
+int OnlineForceFeedback(int32_t values[8]){int32_t sample[8]={1000,800,200,2,24,80,10,5000};memcpy(values,sample,sizeof(sample));return onlineDriving;}
 PlayerCarRuntime g_PlayerCar;
 s16 g_GripLossTimer, g_RacePhase;
 s32 g_RacePaused, g_SceneId, g_TrackPointCount;
@@ -117,6 +119,14 @@ static void Drive(void) {
 int main(int argc, char **argv) {
     CHECK(argc == 2);
     Drive();
+    if(!strcmp(argv[1],"online")){
+        g_SceneId=GAME_SCENE_MENU;onlineDriving=1;
+        PortUpdateForceFeedback();
+        CHECK(opens==1 && lastTorque!=0 && lastLow>0 && lastHigh>0);
+        onlineDriving=0;PortUpdateForceFeedback();
+        CHECK(closes==1 && lastLow==0 && lastHigh==0);
+        return 0;
+    }
     if (!strcmp(argv[1], "rumble_only")) constantForce = 0;
     if (!strcmp(argv[1], "open_failure")) failOpen = 1;
     if (!strcmp(argv[1], "start_failure") || !strcmp(argv[1], "retry")) failRun = 1;

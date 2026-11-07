@@ -36,4 +36,8 @@ void OverlayPaintTouchAtlas(OverlaySurface *surface, const TouchLayout *layout);
 /* Writes the panel as a PPM over mid-grey, for looking at it. */
 int OverlaySurfaceDump(const OverlaySurface *surface, const char *path);
 
+/* Native online screens use the same panel, typeface and selection style. */
+struct OnlineView;
+void OverlayPaintOnline(OverlaySurface *surface,const struct OnlineView *view,float scale);
+
 #endif

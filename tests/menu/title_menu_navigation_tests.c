@@ -26,6 +26,8 @@ int main(void) {
     CHECK(MoveTitleMenuSelection(TITLE_MENU_CUSTOM, 1, 1),
           TITLE_MENU_DUEL);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_DUEL, 1, 1),
+          TITLE_MENU_ONLINE);
+    CHECK(MoveTitleMenuSelection(TITLE_MENU_ONLINE, 1, 1),
           TITLE_MENU_LOAD_SAVE);
     CHECK(MoveTitleMenuSelection(TITLE_MENU_GRAND_PRIX, 1, 0),
           TITLE_MENU_TIME_ATTACK);

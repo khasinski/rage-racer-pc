@@ -1,4 +1,5 @@
 #include "menu_images.h"
+#include "rage/title_menu.h"
 #include "mod_assets.h"
 #include "render/mod_manifest.h"
 #include "render/asset_path.h"
@@ -12,9 +13,9 @@ static int s_textureOverridesEnabled = 1;
 
 static struct {
     unsigned generation;
-    uint8_t checked[7][2],valid[7][2];
-    uint8_t pixels[7][2][MENU_IMAGE_WIDTH*MENU_IMAGE_HEIGHT*4];
-    SDL_Surface *native[7][2];
+    uint8_t checked[TITLE_MENU_QUIT][2],valid[TITLE_MENU_QUIT][2];
+    uint8_t pixels[TITLE_MENU_QUIT][2][MENU_IMAGE_WIDTH*MENU_IMAGE_HEIGHT*4];
+    SDL_Surface *native[TITLE_MENU_QUIT][2];
 } images;
 static RageModManifest *hdManifest;
 static char hdRoot[1400];
@@ -24,9 +25,13 @@ int MenuImagesSetHdPack(const char *directory,const RageModManifest *manifest){
     MenuImagesReset();free(hdManifest);hdManifest=copy;SDL_strlcpy(hdRoot,copy?directory:"",sizeof(hdRoot));return 1;
 }
 
-static const char *names[]={"grand-prix","extra-grand-prix","time-attack","custom","duel","load-save","options"};
+static const char *names[]={"grand-prix","extra-grand-prix","time-attack","custom","duel",
+#ifndef __ANDROID__
+"online",
+#endif
+"load-save","options"};
 void MenuImagesReset(void){
-    for(int i=0;i<7;i++)for(int j=0;j<2;j++)SDL_DestroySurface(images.native[i][j]);
+    for(int i=0;i<TITLE_MENU_QUIT;i++)for(int j=0;j<2;j++)SDL_DestroySurface(images.native[i][j]);
     memset(&images,0,sizeof(images));
 }
 void MenuImagesSetTextureOverridesEnabled(int enabled){
@@ -34,7 +39,7 @@ void MenuImagesSetTextureOverridesEnabled(int enabled){
 }
 const uint8_t *MenuImage(int item,int selected){
     if(!s_textureOverridesEnabled)return NULL;
-    if(item<0||item>=7)return NULL;
+    if(item<0||item>=TITLE_MENU_QUIT)return NULL;
     selected=selected!=0;
     unsigned generation=ModAssetsGeneration();
     if(generation!=images.generation){

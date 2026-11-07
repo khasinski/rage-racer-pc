@@ -1,0 +1,285 @@
+#ifndef GAME_RACE_H
+#define GAME_RACE_H
+
+#include "common.h"
+#include "game/camera_types.h"
+#include "game/prize_money.h"
+#include "game/course_index.h"
+#include "game/vector.h"
+#include "game/replay.h"
+#include "game/render_types.h"
+#include "game/scene_state.h"
+#include "game/car.h"
+
+struct PlayerCarRuntime;
+struct GameCarRuntime;
+struct CarEntry;
+
+enum {
+    GRAND_PRIX_SERIES_COUNT = 2,
+    GRAND_PRIX_FINAL_CLASS_INDEX = 5,
+};
+
+typedef enum RaceSessionKind {
+    RACE_SESSION_STANDARD,
+    RACE_SESSION_CUSTOM,
+} RaceSessionKind;
+
+enum {
+    CUSTOM_RACE_COURSE_COUNT = 8,
+    CUSTOM_RACE_MODEL_COUNT = 24,
+};
+
+typedef struct RaceSession {
+    RaceSessionKind kind;
+    s32 course;
+    s32 classIndex;
+    s32 model;
+    CarEntry cars[GAME_CAR_COUNT];
+} RaceSession;
+
+extern RaceSession g_RaceSession;
+
+int CustomRaceUsesRivalModel(void);
+s32 CustomRaceRivalModelForSelection(s32 selection);
+s32 CustomRaceRivalModel(void);
+s32 CustomRacePerformanceCar(s32 course, s32 classIndex, s32 rivalModel);
+s32 CustomRacePreviewCar(s32 model);
+s32 CustomRaceModelCount(s32 classIndex);
+void ApplyCustomRaceSelection(void);
+void DrawCustomRivalPreview(struct GameCarRuntime *object, s32 selection);
+
+/* Grand Prix class index, 0-based; displayed as CLASS(n+1). Also the track
+ * tier: course asset index = 0x57 + (CourseSlot(course) << 1) + (class << 3).
+ * OVAL is gated to class >= 2. */
+extern s32 g_GrandPrixClass;
+
+/* Physical course asset selector. Extra GP uses indices 4..7 for its track
+ * variants, while progress/record tables have four slots per series. Never
+ * index a four-course table with this value directly. */
+
+/* Which Grand Prix series is played: 0 = first (6 classes), non-zero =
+ * Extra GP (5 classes). Outer index of every per-series table. */
+extern s16 g_GrandPrixSeries;
+
+/* Display names: [0..5] first-series classes, [6..10] Extra-GP classes,
+ * [11..13] course names. */
+extern char *g_GrandPrixNames[];
+
+/* Race position, 1 = leading; recomputed each frame from how many cars are
+ * further along. At the finish it indexes g_PrizeMoney. */
+
+/* Round number within the current class; drives the "R O U N D %d" overlay. */
+extern s32 g_GrandPrixRound;
+
+/* 1 = Grand Prix (championship), 0 = Time Attack. Picks the pre-race panel, the
+ * innermost index of the record tables, and the in-race option count
+ * (2 - mode). */
+extern s16 g_GrandPrixMode;
+
+static inline int RaceHasRivals(void) {
+    return g_GrandPrixMode != 0 || g_RaceSession.kind == RACE_SESSION_CUSTOM;
+}
+
+/* In-race copy of g_GrandPrixSeries, latched when the grid is built. Outer
+ * index of the per-series tables and, because the Extra GP runs the
+ * courses backwards, also the lap-direction flag. */
+extern s32 g_RaceSeries;
+
+/* Phase 3 is accepted by a few retail state checks as another driving phase,
+ * but no recovered runtime path assigns it. Keep that gap explicit instead
+ * of inventing a transition name for an unobserved state. */
+typedef enum RacePhase {
+    RACE_PHASE_INTRO = 0,
+    RACE_PHASE_COUNTDOWN = 1,
+    RACE_PHASE_ACTIVE = 2,
+    RACE_PHASE_UNOBSERVED = 3,
+    RACE_PHASE_FINISHED = 4,
+    RACE_PHASE_RETIRED = 5,
+    RACE_PHASE_QUIT = 7,
+    RACE_PHASE_RESTART = 8,
+} RacePhase;
+
+/* Stored as s16 to preserve the retail global layout. */
+extern s16 g_RacePhase;
+
+/* Series / save file the title menu picked (0 first, 1 Extra GP); also indexes
+ * g_MaxClassReached. Final class is 4 for the Grand Prix, 5 for Extra GP. */
+extern s16 g_SeriesSelection;
+
+/* Non-zero once the Extra GP is unlocked (Grand Prix' last class
+ * cleared). Saved at save+0x4E; gates title-menu entry 1. */
+extern s16 g_ExtraGrandPrixUnlocked;
+
+/* Highest class reached per series/save file. Unlocks courses and bounds the
+ * attract-demo class roll. Saved at save+0x50. */
+extern s32 g_MaxClassReached[GRAND_PRIX_SERIES_COUNT];
+
+/* Mirror mode, armed by holding the 0x80C pad combination as the race starts:
+ * swaps left/right in steering, body roll, stereo pan and the sound cue. */
+extern s32 g_MirrorMode;
+
+/* One save slot's Grand Prix / Time Attack progress; InitMenuMode copies it
+ * straight into the live globals and UpdateCourseSelectScreen writes it back. */
+typedef struct GameRaceProgress {
+    s32 course;
+    s32 carIndex;
+    s32 classIndex;
+    s32 maxClassReached; /* highest class unlocked in this slot */
+    union {
+        /* GP and Extra GP prize money, capped at 999999999. */
+        s32 money;
+        /* The Time Attack slot has no balance and stores its series here. */
+        s32 timeAttackSeries;
+    };
+} GameRaceProgress;
+
+_Static_assert(sizeof(GameRaceProgress) == 0x14,
+               "race progress must retain its retail size");
+_Static_assert(__builtin_offsetof(GameRaceProgress, maxClassReached) == 0x0C,
+               "race progress max class must retain its retail offset");
+_Static_assert(__builtin_offsetof(GameRaceProgress, money) == 0x10,
+               "race progress money/series must retain its retail offset");
+_Static_assert(__builtin_offsetof(GameRaceProgress, timeAttackSeries) == 0x10,
+               "time attack series must share the retail money word");
+
+/* The save slot the front end is editing; repointed at one of the three below,
+ * matching the title-menu row that g_CarTable was repointed for. Declared s32
+ * because most translation units only touch the first word. */
+extern GameRaceProgress *g_RaceProgress;
+/* The three slots themselves. Their fields used to be spelled as separate
+ * symbols per serialiser (g_GrandPrixSaveCar and friends); they are members. */
+extern GameRaceProgress g_GrandPrixSave;
+extern GameRaceProgress g_ExtraGrandPrixSave;
+extern GameRaceProgress g_TimeAttackSave;
+
+/* Retail 0x801E6E88 is g_ExtraGrandPrixSave + 0x0C. */
+#define g_ExtraGrandPrixSaveMaxClass (g_ExtraGrandPrixSave.maxClassReached)
+
+void ResetProgressSlot(struct CarEntry *cars, GameRaceProgress *progress);
+s32 StoreRaceSelection(GameRaceProgress *progress, s32 grandPrixMode,
+                       s32 course, s32 carIndex, s32 classIndex, s32 money,
+                       s32 timeAttackSeries);
+
+extern s32 g_ClosestRivalRank;
+
+/* Course-select gate: `g_CourseIndex < (class < 2 ? 2 : 3)`, or 6 : 7 for the
+ * Extra GP. This is the OVAL unlock. */
+
+/* The race-start signal gantry, live for 105 <= g_SceneTimer < 300: the "3" /
+ * "2" / "1" / "GO" dot-matrix board plus the six start lamps. */
+void DrawRaceEndBanner(s32 level);
+
+/*
+ * Per-course records, all in the memory-card save block. Per-file types.
+ *   g_BestTotalTimes  g_BestTotalTimes  [series][course][mode] ms
+ *   g_BestLapTimes    g_BestLapTimes  same shape, best single lap
+ *   g_BestSectorTimes g_BestSectorTimes  [series][course][3] sector splits
+ *   g_CourseProgress  g_CourseProgress  -> the running file's course-result record
+ *   g_GrandPrixCourseProgress      g_GrandPrixCourseProgress  row 0's record
+ *   g_ExtraGrandPrixCourseProgress g_ExtraGrandPrixCourseProgress  row 1's record
+ */
+
+/*
+ * Live race timing. Times are milliseconds; 0x927BF is the saturation value
+ * for anything over 9'59"998, which the HUD prints as dashes.
+ */
+enum { RACE_TIME_MAX_MS = 0x927BF };
+
+/* Frames the player has been driving the wrong way. Past 10 the warning shows
+ * and rival cues are muted; in Time Attack 60 on lap 0 aborts the run. */
+extern s16 g_WrongWayTimer;
+
+/* g_PlayerCar.facingBackwards. Wrong way is `!= g_RaceSeries`, because the
+ * Extra GP drives the course in the other direction. */
+
+/* Non-zero while rival proximity / position sound cues may play: set only in
+ * the middle of a lap and cleared by the wrong-way warning. */
+extern s16 g_RivalCueEnabled;
+
+/* The wrong-way warning: three sprites over a backing panel, drawn once
+ * g_WrongWayTimer passes 10. */
+enum { WRONG_WAY_WARNING_FRAMES = 10 };
+void DrawWrongWayWarning(void);
+
+extern s16 g_PlayerAutoSteer;
+void EnterAttractDemo(void);
+void UpdateAttractDemoScene(void);
+extern s32 g_BgmTrack;
+void StartClassClearFanfare(void);
+s32 TickClassClearFanfare(void);
+extern s32 g_ClassCompleted;
+extern s32 g_ClassResultPlace;
+extern s32 g_LapCount;
+typedef enum PrizeScreenState {
+    PRIZE_SCREEN_STATE_INVALID = -1,
+    PRIZE_SCREEN_STATE_INTRO_FADE_IN,
+    PRIZE_SCREEN_STATE_WAIT_FOR_INTRO_CONFIRM,
+    PRIZE_SCREEN_STATE_HIDE_RACE_TIME,
+    PRIZE_SCREEN_STATE_SHOW_PRIZE_PANEL,
+    PRIZE_SCREEN_STATE_COUNT_PRIZE,
+    PRIZE_SCREEN_STATE_WAIT_FOR_BONUS_CONFIRM,
+    PRIZE_SCREEN_STATE_COUNT_BONUS,
+    PRIZE_SCREEN_STATE_WAIT_TO_FINISH,
+    PRIZE_SCREEN_STATE_FADE_OUT
+} PrizeScreenState;
+
+extern s32 g_RacePaused;
+extern s32 g_RivalCueFlags;
+extern s32 g_SeriesCleared;
+
+/*
+ * None of the Draw* functions below draw. Each one packs primitives at the
+ * render-state cursor and links them into an ordering table; the GPU is not
+ * touched until boot/main_loop.c calls DrawOTag once per frame. That holds
+ * for the whole family, render.h's DrawSprite / DrawLine / DrawSolidRect
+ * included, which is why they are not spelled Queue* - the queueing is the
+ * convention, not the exception.
+ */
+void DrawLostRaceCaption(s32 level);
+void DrawRoundScreen(void);
+void RefreshClassWinState(void);
+void UpdateZoneAmbience(s32 zone);
+
+extern const char *g_NativeCarClassNames[];
+extern const char *g_NativeCarNames[];
+#define g_CarClassNames g_NativeCarClassNames
+#define g_CarNames g_NativeCarNames
+extern s32 g_ClassPromoted;
+extern char *g_CourseNames[COURSE_SLOT_COUNT];
+typedef struct PrologueLine {
+    s16 x;
+    s16 y;
+    const char *text;
+} PrologueLine;
+
+enum {
+    PROLOGUE_LINE_CAPACITY = 17,
+    PROLOGUE_CAMERA_CUT_COUNT = 11,
+};
+extern PrologueLine g_PrologueLines[PROLOGUE_LINE_CAPACITY];
+extern s32 g_PrologueLineCount;
+enum { PROMOTION_BONUS_COUNT = 5 };
+extern s32 g_PromotionBonusTable[PROMOTION_BONUS_COUNT];
+extern u8 g_RankingNameCodes[];
+extern u8 g_TimeRecordNameCodes[];
+
+s32 BeginMirrorPass(void);
+void BuildRaceHudPrims(s32 grandPrixMode);
+void EnterPrizeScreen(void);
+/* times contains at least min(max(lapCount, 0), COURSE_LONG_LAPS) entries. */
+void DrawLapTimes(const s32 *times, s32 lapCount, s32 visibleCount,
+                  s32 activeLap, s32 bestLap, s32 hasRivals);
+void DrawRaceHudLabels(s32 grandPrixMode);
+void DrawRacePosition(s32 position);
+void DrawRaceTimePanel(s32 slideY);
+void DrawRearViewMirror(const GameCameraState *camera, s32 sceneTimer);
+void DrawTimeRemaining(s32 ticks);
+void ResetMirrorState(void);
+s32 UpdateLapAndFinish(RaceScene *state, struct PlayerCarRuntime *car,
+                       s32 grandPrixMode);
+void ExitRaceScene(s32 sceneId);
+void EnterAttractScene(void);
+void EnterBgmSelectScreen(void);
+
+#endif

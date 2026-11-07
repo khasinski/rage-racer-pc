@@ -7,6 +7,7 @@ int HostInitDisc(void);
 const char *HostDiscLastError(void);
 int HostDiscUserCancelled(void);
 const char *HostDiscRegion(void);
+const char *HostDiscImagePath(void);
 int HostDumpArchive(const char *path,char fingerprint[72]);
 int HostDiscFingerprint(char fingerprint[72]);
 int HostLoadArchiveIndex(void *entries, int count);

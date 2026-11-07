@@ -54,6 +54,7 @@ jobs:
           $root = "dist/$package"
           New-Item -ItemType Directory -Force $root | Out-Null
           Copy-Item build/release/Release/rage-racer.exe "$root/Rage-Racer.exe"
+          Copy-Item build/release/Release/rage-online-core.dll $root
           Copy-Item README.md, LICENSE.md, rage-port.ini, race-scenario.ini, cars.toml, cars.ntscj.toml $root
           New-Item -ItemType Directory -Force "$root/docs" | Out-Null
           Get-Content packaging/release-docs.txt | ForEach-Object { Copy-Item "docs/$_" "$root/docs/" }

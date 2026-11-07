@@ -48,6 +48,8 @@ static s32 s_selectBgmRequests;
 static s32 s_shuffleCalls;
 static s32 s_labelCount;
 static int s_quitRequested,s_nativeSelection=-1,s_nativeActivate;
+static int s_onlineRequested;
+void PortMainMenuRequestOnline(void){s_onlineRequested++;}
 void PortMainMenuRequestQuit(void){s_quitRequested++;}
 int PortMainMenuTakeInput(int *selection){int flags=0;if(s_nativeSelection>=0){*selection=s_nativeSelection;s_nativeSelection=-1;flags=1;}if(s_nativeActivate){flags|=2;s_nativeActivate=0;}return flags;}
 static TitleMenuItem s_labelItem[TITLE_MENU_ITEM_COUNT];
@@ -183,6 +185,11 @@ int main(void) {
     CHECK(g_CarTable == g_RaceSession.cars &&
           g_RaceProgress == &g_TimeAttackSave);
     CHECK(s_selectBgmRequests == 1);
+
+    ResetState(TITLE_MENU_ONLINE);
+    UpdateMainMenuInput();
+    CHECK(s_onlineRequested==1 && s_frontend.state==FRONTEND_STATE_MENU_INPUT);
+    CHECK(s_resetCalls==0 && s_shuffleCalls==0);
 
     ResetState(TITLE_MENU_DUEL);
     UpdateMainMenuInput();

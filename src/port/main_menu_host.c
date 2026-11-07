@@ -5,6 +5,12 @@
 #include "game/scene.h"
 #include "game/state.h"
 #include <SDL3/SDL.h>
+#ifndef __ANDROID__
+#include "online/online.h"
+#include "online/model.h"
+#include "host_disc.h"
+#include "runtime_config.h"
+#endif
 
 static int s_pendingSelection = -1;
 static int s_activate;
@@ -48,4 +54,12 @@ void PortMainMenuRequestQuit(void) {
     SDL_zero(event);
     event.type = SDL_EVENT_QUIT;
     SDL_PushEvent(&event);
+}
+void PortMainMenuRequestOnline(void) {
+#ifndef __ANDROID__
+    OnlineSetDisc(HostDiscImagePath());
+    const char *server=RuntimeConfigGet("online.server");
+    if(server)OnlineSetServer(server);
+    OnlineOpen();
+#endif
 }

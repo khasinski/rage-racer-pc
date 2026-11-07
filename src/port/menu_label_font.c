@@ -31,6 +31,9 @@ static const char *kLabels[MENU_LABEL_COUNT] = {
     "TIME ATTACK",
     "CUSTOM",
     "DUEL",
+#ifndef __ANDROID__
+    "ONLINE",
+#endif
     "SAVE&LOAD",
     "OPTION",
     "QUIT GAME",

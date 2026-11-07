@@ -137,7 +137,7 @@ if(TARGET SDL3::Headers)
         target_link_libraries(force_feedback_device_tests PRIVATE m)
     endif()
     foreach(scenario IN ITEMS wheel rumble_only open_failure start_failure gamepad preview
-                              constant_only hotplug retry)
+                              constant_only hotplug retry online)
         add_test(NAME force_feedback_device_${scenario}
             COMMAND force_feedback_device_tests ${scenario})
         set_tests_properties(force_feedback_device_${scenario} PROPERTIES LABELS unit)

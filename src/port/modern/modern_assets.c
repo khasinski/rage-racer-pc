@@ -15,6 +15,7 @@
 #include "game/track_internal.h"
 #include "render/asset_id.h"
 #include "render/speed_units_poc.h"
+#include "render/session_provider.h"
 #include "render/asset_path.h"
 #include "render/car_paint.h"
 #include "render/authored_car_surface.h"
@@ -524,7 +525,7 @@ int ModernAssetsInitRoot(const char *root) {
     return 0;
 }
 
-uint64_t ModernAssetsGeneration(void) { return s_generation; }
+uint64_t ModernAssetsGeneration(void) { return s_generation + SessionProviderRevision(); }
 
 void ModernAssetsShutdown(void) {
     size_t i;
@@ -596,6 +597,7 @@ static const RageRuntimeCachedMesh *ResolveBaseMesh(const RenderMeshInstance *in
 }
 const RageRuntimeCachedMesh *ModernAssetsFind(
     const RenderMeshInstance *instance) {
+    if (instance && (instance->flags & RAGE_SESSION_INSTANCE)) return SessionProviderMesh(instance);
     if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL) return NULL;
     return ModernAuthoredCar(ResolveBaseMesh(instance,0),instance,(s_source == MODERN_ASSET_SOURCE_DISC));
 }
@@ -684,6 +686,11 @@ static int ModernAssetsExpandSkyStripIfNeeded(
 
 int ModernAssetsLoadSkyImage(uint32_t assetKey,
     const RageSkyPanoramaLayout *capturedLayout, ModernAssetImage *image) {
+    if(SessionProviderActive()) {
+        memset(image,0,sizeof(*image));
+        if(!SessionProviderSky(&image->pixels,&image->width,&image->height))return 0;
+        image->size=(size_t)image->width*image->height*4u;return 1;
+    }
     RageSkyPanoramaLayout layout;
     const char *bytes = (const char *)s_environmentIndexBytes;
     RageRuntimeEnvironmentLocation location;
@@ -774,6 +781,10 @@ const RageRuntimeMesh *ModernAssetsMeshLookup(
 const RageRuntimeMesh *ModernAssetsResidentMeshLookup(
     void *context, const RenderMeshInstance *instance) {
     (void)context;
+    if(instance && (instance->flags & RAGE_SESSION_INSTANCE)) {
+        const RageRuntimeCachedMesh *mesh=SessionProviderMesh(instance);
+        return mesh?&mesh->mesh:NULL;
+    }
     if (s_source == MODERN_ASSET_SOURCE_NONE || instance == NULL) return NULL;
     for (size_t i = 0; i != RAGE_AUTHORED_CAR_COUNT; ++i) {
         if (AuthoredCarMatches(&s_authoredCars[i], instance) &&
@@ -1041,6 +1052,11 @@ static int ModernAssetsBuildMaterial(const RenderMeshInstance *instance,
                              uint32_t material, uint8_t variant,
                              RageRenderMaterial *definition,
                              ModernAssetImage *image,RageRenderMaterialStorage *storage) {
+    if(instance && SessionProviderActive() && (instance->assetKey & 0x80000000u)) {
+        (void)storage;memset(image,0,sizeof(*image));
+        if(!SessionProviderMaterial(instance,material,variant,definition,&image->pixels,&image->width,&image->height))return 0;
+        image->size=(size_t)image->width*image->height*4u;return 1;
+    }
     uint32_t runtimeMaterial = material;
     unsigned surface = 0;
     if (instance && (instance->assetSet == RAGE_RENDER_ASSET_MODEL_BANK ||
@@ -1087,6 +1103,9 @@ static int BuildMaterialTransaction(void *context,RageRenderMaterial *definition
                                      definition,image,storage);
 }
 static void ModernAssetsSyncTrackRevision(void) {
+    static uint64_t sessionRevision;
+    uint64_t now=SessionProviderRevision();
+    if(now!=sessionRevision){ModernPreparedMaterialsClear(&s_preparedMaterials);sessionRevision=now;}
     uint64_t revision = TrackAssetIdentityRevision();
     if (revision != s_preparedTrackRevision) {
         ModernPreparedMaterialsClear(&s_preparedMaterials);

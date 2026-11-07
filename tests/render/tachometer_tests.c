@@ -29,6 +29,7 @@ static s32 s_speedX;
 static s32 s_speedY;
 static s32 s_speed;
 static const char *s_region = "PAL";
+int RageSpeedUnits(void){return 0;}
 const char *HostDiscRegion(void) { return s_region; }
 
 int HudRightX(int x) {

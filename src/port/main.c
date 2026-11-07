@@ -1,4 +1,5 @@
 #include "memory_budget.h"
+#include "online/online.h"
 #ifdef __ANDROID__
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -247,6 +248,7 @@ int main(int argc, char **argv) {
             "configuration directory.");
     }
     MainLoop();
+    OnlineShutdown();
     Psyz_PcmMusicUnload();
     Psyz_AudioDestroy();
     ModernShutdown();

@@ -1,0 +1,191 @@
+#ifndef GAME_STATE_H
+#define GAME_STATE_H
+
+#include "common.h"
+#include "game/scene.h"
+
+typedef struct ControllerSetup ControllerSetup;
+
+extern void (*g_SceneHandlers[GAME_SCENE_HANDLER_COUNT])(void);
+
+extern u8 g_PadType;
+#include "game/vector.h"
+#include "psyq/gte.h"
+
+/*
+ * The pad block at 0x801E4368, filled by UpdatePadState from the raw BIOS
+ * buffer at g_PadBuffers. `held` is the inverted button halfword; the two
+ * edge words differ only in auto-repeat, which UpdatePadState folds into
+ * `pressedRepeat` once a button has been held for 30 frames.
+ *
+ * Three of the fields are also declared as standalone globals, which is where
+ * their names come from: held is g_PadHeld, pressed is g_PadPressed and
+ * pressedRepeat is g_PadPressedRepeat.
+ */
+typedef struct PadState {
+    u8 status;
+    u8 type; /* 0x41 digital pad, 0x23 NeGcon */
+    u16 held;
+    u16 prevHeld;
+    s16 pressed;
+    s16 pressedRepeat;
+    s16 twist;   /* NeGcon twist axis, 0x80 centred */
+    s16 buttonI;
+    s16 buttonII;
+    s16 buttonL;
+    s16 reserved12;
+    s16 reserved14;
+    s16 steer;   /* twist after the neutral offset, play deadzone and clamp */
+} PadState;
+
+enum {
+    PAD_PORT_BUFFER_SIZE = 0x28,
+    PAD_PORT_COUNT = 2,
+    PAD_BUFFER_SIZE = PAD_PORT_BUFFER_SIZE * PAD_PORT_COUNT,
+};
+
+enum PadType {
+    PAD_TYPE_NEGCON = 0x23,
+    PAD_TYPE_DIGITAL = 0x41
+};
+
+/*
+ * Button bits after UpdatePadState has inverted the BIOS packet. CONFIRM and
+ * CANCEL are the composites the menus test: any of start, cross or circle
+ * confirms, either of square or triangle backs out.
+ */
+enum PadButton {
+    PAD_L2 = 0x1,
+    PAD_R2 = 0x2,
+    PAD_L1 = 0x4,
+    PAD_R1 = 0x8,
+    PAD_TRIANGLE = 0x10,
+    PAD_CIRCLE = 0x20,
+    PAD_CROSS = 0x40,
+    PAD_SQUARE = 0x80,
+    PAD_SELECT = 0x100,
+    PAD_L3 = 0x200,
+    PAD_R3 = 0x400,
+    PAD_START = 0x800,
+    PAD_UP = 0x1000,
+    PAD_RIGHT = 0x2000,
+    PAD_DOWN = 0x4000,
+    PAD_LEFT = 0x8000,
+
+    PAD_CONFIRM = PAD_START | PAD_CROSS | PAD_CIRCLE,
+    PAD_CANCEL = PAD_SQUARE | PAD_TRIANGLE,
+    PAD_DPAD = PAD_UP | PAD_DOWN | PAD_LEFT | PAD_RIGHT
+};
+
+/* Current top-level game mode; indexes g_GameModeHandlers, dispatched each
+ * frame by UpdateOptionScene. */
+typedef enum OptionMode {
+    OPTION_MODE_FADE,
+    OPTION_MODE_ROOT,
+    OPTION_MODE_CLASS_MENU,
+    OPTION_MODE_CLASS_BROWSE,
+    OPTION_MODE_SOUND_MENU,
+    OPTION_MODE_SOUND_EDIT,
+    OPTION_MODE_CONTROLLER_CONFIG,
+    OPTION_MODE_NEGCON_BEGIN,
+    OPTION_MODE_NEGCON_NEUTRAL,
+    OPTION_MODE_NEGCON_STEER_PLAY,
+    OPTION_MODE_NEGCON_MAX_TWIST,
+    OPTION_MODE_COUNT,
+} OptionMode;
+
+extern s32 g_GameMode;
+#define g_GameModeHandlers g_NativeGameModeHandlers
+extern void (*g_GameModeHandlers[OPTION_MODE_COUNT])(void);
+
+/* Boot the game and run frames until the host requests shutdown. */
+void MainLoop(void);
+void InitSubsystems(void);
+
+/* Controller layer. GameInitPad hands the BIOS the two 0x28-byte halves of
+ * g_PadBuffers and resets input/calibration/mappings to defaults.
+ * UpdatePadState maintains the held / previous / newly-pressed
+ * halfwords in the block at g_PadState. */
+void GameInitPad(void);
+void UpdatePadState(void);
+void LoadPadButtonMapping(s32 mapping0, s32 mapping1);
+extern PadState g_PadState;
+
+/* Controller-config and NeGcon calibration screens: g_GameModeHandlers entries
+ * 7..11, each drawing its own screen plus the shared 3D backdrop. */
+void UpdateControllerConfigScreen(void);
+void DrawControllerConfigScreen(const ControllerSetup *setup);
+void BeginNegconCalibration(void);
+void UpdateNegconNeutralScreen(void);
+void DrawNegconNeutralScreen(void);
+void UpdateNegconSteerPlayScreen(void);
+void DrawNegconSteerPlayScreen(s32 arrowPhase);
+void UpdateNegconMaxTwistScreen(void);
+void DrawNegconMaxTwistScreen(s32 arrowPhase);
+void DrawControllerSetupScene(const ControllerSetup *setup,
+                              s32 showButtonOverlays);
+
+/* Identity of the running scene: queried (`== 0xC`, `== 0x11`, `== 0x1E`, ...)
+ * but never dispatched. Every writer also resets g_SceneTimer. */
+extern s32 g_SceneId;
+
+/* Per-scene frame counter, reset with every g_SceneId write. Scenes sequence
+ * themselves against fixed thresholds. Four TUs need it as u32 and carry their
+ * own unsigned declaration of the same symbol. */
+extern s32 g_SceneTimer;
+
+/* Free-running animation phase counter: drives cyclic effects (sine offsets,
+ * blink tests `& 2` / `& 8`, `% 6` cycles), never a deadline. */
+extern s32 g_AnimTimer;
+
+/*
+ * Boot-time defaults for everything the memory card persists: the three car
+ * tables, the three GameRaceProgress slots, both course-progress blocks,
+ * g_MaxClassReached, the BGM selection and the three audio settings. Called
+ * once, from InitSubsystems.
+ */
+void InitSaveDefaults(void);
+extern s32 g_FrameSyncThreshold;
+extern s32 g_GameClock;
+typedef enum PadErrorState {
+    PAD_ERROR_STATE_INVALID = -1,
+    PAD_ERROR_STATE_NONE,
+    PAD_ERROR_STATE_DISCONNECTED,
+    PAD_ERROR_STATE_INVALID_INPUT
+} PadErrorState;
+
+typedef struct PadValidation {
+    PadErrorState error;
+    s32 countdown;
+    s32 holdBits;
+    u8 lastValidType;
+} PadValidation;
+
+extern PadValidation g_PadValidation;
+
+
+extern s32 g_FrameCounter;
+extern u8 g_PadBuffers[PAD_BUFFER_SIZE];
+extern u16 g_PadPrevHeld;
+extern u16 g_PadHeld;
+extern u16 g_PadPressedRepeat;
+extern u16 g_PadPressed;
+
+extern u8 g_PadRepeatTimer;
+extern s16 g_NegconAnalogI;
+extern s16 g_NegconAnalogII;
+extern s16 g_NegconAnalogL;
+extern s16 g_NegconSteer;
+
+void DrawBootLogo(void);
+void UpdateBootLogoScene(void);
+void DrawEndingStill(void);
+void UpdateEndingStill(void);
+void InitGeom(void);
+void InitRecordTables(void);
+s32 ResetGraph(s32 mode);
+void StepTrackTextureSwap(void);
+
+extern Matrix g_DefaultColorMatrix;
+extern Matrix g_DefaultLightMatrix;
+#endif
