@@ -129,6 +129,10 @@ static int worker(void*context){
     SDL_strlcpy(token,secret,sizeof(token));push(t,ONLINE_AUTH,response->bytes,response->size);yyjson_doc_free(doc);
  socket_connection:
     curl_easy_reset(c);options(c,t);curl_easy_setopt(c,CURLOPT_URL,t->base);curl_easy_setopt(c,CURLOPT_CONNECT_ONLY,1L);
+    /* RFC6455 Upgrade is HTTP/1.1. A reset retains curl's connection cache:
+     * never reuse the authentication request's HTTP/2 TLS connection here. */
+    curl_easy_setopt(c,CURLOPT_HTTP_VERSION,CURL_HTTP_VERSION_1_1);
+    curl_easy_setopt(c,CURLOPT_FRESH_CONNECT,1L);
     if(curl_easy_perform(c)!=CURLE_OK){error(t,"Cannot open the race connection.");goto done;}
     CURLU*u=curl_url();char*host=NULL,*port=NULL,*scheme=NULL;
     if(!u||curl_url_set(u,CURLUPART_URL,t->base,0)!=CURLUE_OK){if(u)curl_url_cleanup(u);error(t,"Invalid server address.");goto done;}

@@ -43,6 +43,10 @@ before race traffic switches to UDP. Loss or silence restores the WebSocket
 fallback and retries the UDP channel with backoff. The panel displays the active
 route. Inbound RTC frames use bounded raw-DEFLATE decompression.
 
+The native RFC6455 handshake explicitly uses a fresh HTTP/1.1 connection.
+The HTTP authentication request may negotiate HTTP/2, but that connection must
+not be reused for a manual WebSocket Upgrade (including on macOS system curl).
+
 Arcade checkpoints include a round epoch. Late UDP packets from an earlier
 round cannot overwrite a new race. Slot ownership and input queues stay on the
 server; a client cannot drive a CPU-controlled or another person's seat.
@@ -117,3 +121,23 @@ continues to use the repository's main C sources; changes affecting both
 physics implementations must be reviewed for parity until they are unified.
 Third-party WebRTC dependency versions, sources and notices are listed in
 `online-licenses.txt`.
+
+## Production deployment, 2026-11-07
+
+`https://rageracer.polanka.ovh` runs CapRover image/version 17, backend build
+`f93f0726b`. The backend-only layer preserves version 16's browser assets,
+operator-provided disc and dependencies. Image/version 16 remains available
+for rollback. Persistent storage is the existing `/data` volume.
+
+Before rollout, SQLite's online backup was saved as
+`/data/backups/rage-before-native-2026-11-07T15-10-11-193Z.sqlite` with restricted
+permissions. Post-deployment comparison confirmed all 33 original accounts
+and every original race/result row were retained. No schema change was needed.
+The browser index SHA-256 remained
+`84849a1edfeb3c5bcdcef415378c7b5cfb4570624c8ad80f8351ccac3bb310cc`.
+
+Preflight used an isolated copy of production SQLite and verified both the
+existing browser's private race and native Arcade. Production verification
+confirmed HTTPS, the native takeover/countdown and race traffic over UDP.
+Container health and the Swarm rollout completed successfully. The temporary
+preflight container and database copy were removed; the recovery backup remains.

@@ -18,6 +18,6 @@ try{
   for(const file of readdirSync(join(online,'server')).filter(f=>f.endsWith('.ts')&&!f.endsWith('.test.ts')))cpSync(join(online,'server',file),join(stage,'server',file));
   writeFileSync(join(stage,'captain-definition'),JSON.stringify({schemaVersion:2,dockerfilePath:'./Dockerfile'}));
   writeFileSync(join(stage,'Dockerfile'),`FROM ${base}\nCOPY shared /app/shared\nCOPY server /app/server\nENV RAGE_BUILD_ID=${build}\nHEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD node -e "fetch('http://127.0.0.1:7243/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"\n`);
-  const result=spawnSync('tar',['-cf',out,'-C',stage,'.'],{stdio:'inherit'});if(result.status!==0)process.exitCode=result.status??1;
+  const result=spawnSync('tar',[...(process.platform==='darwin'?['--no-xattrs']:[]),'-cf',out,'-C',stage,'.'],{stdio:'inherit',env:{...process.env,COPYFILE_DISABLE:'1'}});if(result.status!==0)process.exitCode=result.status??1;
   else console.log(`Backend bundle: ${out}`);
 }finally{rmSync(stage,{recursive:true,force:true});}
