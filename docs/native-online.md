@@ -172,8 +172,8 @@ Third-party WebRTC dependency versions, sources and notices are listed in
 
 ## Production deployment, 2026-11-07
 
-`https://rageracer.polanka.ovh` runs CapRover image/version 17, backend build
-`f93f0726b`. The backend-only layer preserves version 16's browser assets,
+The initial native rollout to `https://rageracer.polanka.ovh` used CapRover
+image/version 17, backend build `f93f0726b`. That layer preserved version 16's browser assets,
 operator-provided disc and dependencies. Image/version 16 remains available
 for rollback. Persistent storage is the existing `/data` volume.
 
@@ -189,3 +189,18 @@ existing browser's private race and native Arcade. Production verification
 confirmed HTTPS, the native takeover/countdown and race traffic over UDP.
 Container health and the Swarm rollout completed successfully. The temporary
 preflight container and database copy were removed; the recovery backup remains.
+
+### Finish delivery update
+
+The current production backend is image/version **18**, build `6930f66d5`,
+layered over version 17 for reliable final-checkpoint delivery in Arcade and
+private races. Version 17 remains available for rollback. The browser index
+and simulation WASM hashes are unchanged; UDP port 7243 remains published.
+
+Before rollout, a fresh online SQLite backup was saved at
+`/data/backups/rage-before-finish-2026-11-07T16-28-32.660Z.sqlite` (mode 0600).
+All 37 existing accounts remain, all 29 race rows and 166 result rows are
+identical to the backup. Startup re-salted the configured administrator
+password as usual; its value was verified unchanged. Production native
+verification added one guest and confirmed HTTPS, takeover and UDP traffic.
+Container health and the Swarm rollout completed successfully.
