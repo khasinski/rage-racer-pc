@@ -1,0 +1,40 @@
+#include "online/model.h"
+#include <SDL3/SDL.h>
+#include <stdio.h>
+#include <string.h>
+
+void OnlineOpen(void);
+void OnlineShutdown(void);
+
+#define CHECK(condition) do { if (!(condition)) { fprintf(stderr,"menu check failed: %s\n",#condition); return 1; } } while (0)
+
+int main(void) {
+    CHECK(SDL_Init(SDL_INIT_EVENTS));
+    OnlineOpen();
+    const OnlineView *v=OnlineViewState();
+    CHECK(v->screen==OS_PROFILE && v->count==4);
+    CHECK(v->rows[0].action==OA_ARCADE && v->rows[0].enabled);
+    CHECK(v->rows[1].action==OA_GUEST);
+    for(int i=0;i<v->count;i++)CHECK(!v->rows[i].editable);
+    OnlineActionDo(OA_PROFILE_OPTIONS,0,0);
+    CHECK(OnlineViewState()->screen==OS_PROFILE_OPTIONS);
+    OnlineActionDo(OA_NAME,0,0);
+    OnlineText(" Test");
+    OnlineFinishEditing();
+    CHECK(!strcmp(OnlineViewState()->rows[0].value,"Racer Test"));
+    OnlineActionDo(OA_ACCOUNT,0,0);
+    CHECK(OnlineViewState()->screen==OS_ACCOUNT);
+    CHECK(v->rows[1].action==OA_PASSWORD && v->rows[2].action==OA_LOGIN);
+    OnlineActionDo(OA_BACK,0,0);
+    CHECK(OnlineViewState()->screen==OS_PROFILE_OPTIONS && v->active);
+    OnlineActionDo(OA_CONNECTION,0,0);
+    CHECK(OnlineViewState()->screen==OS_CONNECTION && v->rows[0].action==OA_SERVER);
+    OnlineActionDo(OA_BACK,0,0);
+    OnlineActionDo(OA_BACK,0,0);
+    CHECK(OnlineViewState()->screen==OS_PROFILE && v->selected==0 && v->active);
+    OnlineActionDo(OA_BACK,0,0);
+    CHECK(!OnlineViewState()->active);
+    OnlineShutdown();
+    SDL_Quit();
+    return 0;
+}

@@ -233,11 +233,27 @@ static void rows(void){
     if(view.screen==OS_RESULTS)return;view.count=0;char value[256];
     view.fastTransport=OnlineTransportFast(transport);
     SDL_strlcpy(view.title,view.screen==OS_PROFILE?"Online":view.screen==OS_ROOMS?"Online rooms":view.screen==OS_PLAYERS?"Players":"Online duel",sizeof(view.title));
-    snprintf(view.subtitle,sizeof(view.subtitle),"%s%s%s",userName[0]?userName:"Rage Racer",connected?"  /  ":"",connected?(OnlineTransportFast(transport)?"UDP / WebRTC":"TCP fallback"):"");
+    SDL_strlcpy(view.subtitle,connected?userName:"Jump into a race. No account needed.",sizeof(view.subtitle));
     if(view.screen==OS_PROFILE){
-        add("Server",server,OA_SERVER,0,1,1);add("Name",name,OA_NAME,0,1,1);char hidden[24];size_t n=strlen(password);if(n>20)n=20;memset(hidden,'*',n);hidden[n]=0;add("Password",hidden,OA_PASSWORD,0,1,1);
-        add("Online Arcade","Drive now / CPU fills the grid",OA_ARCADE,0,1,0);
-        add("Browse rooms as guest","",OA_GUEST,0,1,0);add("Log in","",OA_LOGIN,0,1,0);add("Create account","",OA_REGISTER,0,1,0);add("Back to game","",OA_BACK,0,1,0);
+        add("Play online","Join the next race",OA_ARCADE,0,1,0);
+        add("Play with friends","Rooms & invitations",OA_GUEST,0,1,0);
+        add("Profile & settings","",OA_PROFILE_OPTIONS,0,1,0);
+        add("Back to game","",OA_BACK,0,1,0);
+    }else if(view.screen==OS_PROFILE_OPTIONS){
+        SDL_strlcpy(view.title,"Profile & settings",sizeof(view.title));
+        add("Name",name,OA_NAME,0,1,1);
+        add("Account","Optional",OA_ACCOUNT,0,1,0);
+        add("Connection settings","",OA_CONNECTION,0,1,0);
+        add("Back","",OA_BACK,0,1,0);
+    }else if(view.screen==OS_ACCOUNT){
+        SDL_strlcpy(view.title,"Account",sizeof(view.title));
+        SDL_strlcpy(view.subtitle,"Log in to use your existing racer profile.",sizeof(view.subtitle));
+        add("Name",name,OA_NAME,0,1,1);char hidden[24];size_t n=strlen(password);if(n>20)n=20;memset(hidden,'*',n);hidden[n]=0;add("Password",hidden,OA_PASSWORD,0,1,1);
+        add("Log in","",OA_LOGIN,0,1,0);add("Create account","",OA_REGISTER,0,1,0);add("Back","",OA_BACK,0,1,0);
+    }else if(view.screen==OS_CONNECTION){
+        SDL_strlcpy(view.title,"Connection settings",sizeof(view.title));
+        SDL_strlcpy(view.subtitle,"The default server is ready to play.",sizeof(view.subtitle));
+        add("Server",server,OA_SERVER,0,1,1);add("Back","",OA_BACK,0,1,0);
     }else if(view.screen==OS_CONNECTING){add("Connecting...","",OA_NONE,0,0,0);add("Cancel","",OA_BACK,0,1,0);}
     else if(view.screen==OS_ROOMS){
         add("Online Arcade","Auto-join / continuous racing",OA_ARCADE,0,1,0);
@@ -302,6 +318,8 @@ void OnlineSetDriverInput(int held,const int32_t words[8]){int up=rawInput[6],do
 static void disconnect(int closeUI){stopRace();connected=0;token[0]=0;roomId=memberCount=offeredRoom=wantArcade=view.arcade=0;OnlineTransportStop(transport);if(loaded){on_release();loaded=0;}view.screen=OS_PROFILE;view.panel=1;view.active=!closeUI;view.editing=0;editing=NULL;}
 void OnlineActionDo(OnlineAction action,int arg,int direction){
     Member*m=me();int step=direction<0?-1:1;
+    if(action==OA_PROFILE_OPTIONS||action==OA_ACCOUNT||action==OA_CONNECTION){view.screen=action==OA_PROFILE_OPTIONS?OS_PROFILE_OPTIONS:action==OA_ACCOUNT?OS_ACCOUNT:OS_CONNECTION;view.selected=0;return;}
+    if(action==OA_BACK&&(view.screen==OS_PROFILE_OPTIONS||view.screen==OS_ACCOUNT||view.screen==OS_CONNECTION)){view.screen=view.screen==OS_PROFILE_OPTIONS?OS_PROFILE:OS_PROFILE_OPTIONS;view.selected=0;return;}
     if(action==OA_SERVER||action==OA_NAME||action==OA_PASSWORD||action==OA_CHAT||action==OA_JOIN_DUEL){editing=action==OA_SERVER?server:action==OA_NAME?name:action==OA_PASSWORD?password:action==OA_JOIN_DUEL?joinCode:chat;editCapacity=action==OA_SERVER?sizeof(server):action==OA_NAME?sizeof(name):action==OA_PASSWORD?sizeof(password):action==OA_JOIN_DUEL?sizeof(joinCode):sizeof(chat);view.editing=(int)action;return;}
     if(action==OA_GUEST||action==OA_LOGIN||action==OA_REGISTER){connectAs(action==OA_GUEST?"guest":action==OA_LOGIN?"login":"register");return;}
     if(action==OA_ARCADE){leavingArcade=0;view.arcade=wantArcade=1;if(!connected){connectAs("guest");return;}sendSimple("joinArcade");view.screen=OS_ARCADE;view.panel=1;return;}

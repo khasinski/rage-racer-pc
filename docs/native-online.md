@@ -9,6 +9,11 @@ The game reuses the mounted disc image; it must match the server's disc ID.
 
 ## Online Arcade
 
+The Online entry screen offers **Play online** (guest auto-join), **Play with
+friends** (rooms and invitations), and **Profile & settings**. Name editing,
+optional account login/registration, and the server address live under profile
+settings; no credentials or server configuration are required to start racing.
+
 **Online Arcade** is a separate casual mode alongside private rooms and Duel.
 It joins one shared community automatically and starts with a single person.
 The server reserves up to eight controllable cars, drives vacant seats with
