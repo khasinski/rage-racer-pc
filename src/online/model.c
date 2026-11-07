@@ -60,7 +60,7 @@ static void sendSettings(void){
 static void setCar(int variant,int manual,int tire){yyjson_mut_doc*d=message("setCar");if(!d)return;yyjson_mut_val*v=yyjson_mut_doc_get_root(d);
     yyjson_mut_obj_add_int(d,v,"variant",variant);yyjson_mut_obj_add_bool(d,v,"manual",manual!=0);yyjson_mut_obj_add_int(d,v,"tire",tire);sendObject(d);}
 static void releaseMeshes(void){for(unsigned i=0;i<meshCount;i++)RuntimeCachedMeshRelease(&meshes[i]);meshCount=0;}
-static void stopRace(void){SessionProviderSet(NULL);view.racing=0;go=gotFrame=0;inputHistoryCount=0;memset(rawInput,0,sizeof(rawInput));rawInputActive=0;releaseMeshes();if(audio){SDL_DestroyAudioStream(audio);audio=NULL;}}
+static void stopRace(void){SessionProviderSet(NULL);view.racing=view.raceReady=0;go=gotFrame=0;inputHistoryCount=0;memset(rawInput,0,sizeof(rawInput));rawInputActive=0;releaseMeshes();if(audio){SDL_DestroyAudioStream(audio);audio=NULL;}}
 static const RageRuntimeCachedMesh *mesh(void*ctx,const RenderMeshInstance*i){
     (void)ctx;unsigned key=i->assetKey&0xffffu;
     for(unsigned n=0;n<meshCount;n++)if(meshes[n].assetKey==key&&meshes[n].assetSet==i->assetSet)return &meshes[n];
@@ -82,7 +82,7 @@ static int sky(void*ctx,void**pixels,uint32_t*w,uint32_t*h){
 }
 static uint64_t revision(void*ctx){(void)ctx;return (assetEpoch<<32)^rw_palette_hash()^(uint32_t)rw_texture_page();}
 static const RenderWorld *scene(void*ctx,float aspect){
-    (void)ctx;if(!view.racing||!gotFrame)return NULL;
+    (void)ctx;if(!view.racing||!view.raceReady)return NULL;
     double interval=lastStep>previousStep?(double)(lastStep-previousStep):40.0;
     float fraction=(float)((simTime+accumulator-(double)lastStep)/interval);if(fraction<0)fraction=0;if(fraction>1)fraction=1;
     if(on_prepare(aspect,fraction)<0)return NULL;
@@ -142,7 +142,7 @@ static void raceStart(yyjson_val*root){
     lastClock=SDL_GetTicks();lastStep=previousStep=0;accumulator=simTime=0;newestTick=0;clockStarted=0;marginAt=marginCount=0;settleSeq=0;
     ++assetEpoch;registerProvider();rw_audio_enable(SDL_getenv("PSYZ_HEADLESS")==NULL);
     if(SDL_getenv("PSYZ_HEADLESS")==NULL){SDL_AudioSpec spec={SDL_AUDIO_S16,2,44100};audio=SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,&spec,NULL,NULL);if(audio)SDL_ResumeAudioStreamDevice(audio);}
-    fail("Waiting for the other drivers...");
+    fail(view.arcade?"Preparing your car...":"Waiting for the other drivers...");
 }
 static void handleText(const uint8_t*bytes,size_t size){
     yyjson_doc*d=yyjson_read((const char*)bytes,size,0);if(!d)return;yyjson_val*r=yyjson_doc_get_root(d);const char*t=string(r,"t");
@@ -222,7 +222,7 @@ static void sampleTick(void){
         memcpy(inputHistory[inputHistoryCount-1],latest,sizeof(latest));memcpy(packet+1,inputHistory,inputHistoryCount*40u);
         OnlineTransportSend(transport,1,packet,1+inputHistoryCount*40u);
     }
-    rw_tick();simTime+=20;
+    if(rw_tick()>=0)view.raceReady=1;simTime+=20;
     if(rw_last_tick_stepped()){previousStep=lastStep;lastStep=(uint64_t)simTime;}
     if(audio){int frames=rw_audio_take();if(frames>0&&SDL_GetAudioStreamQueued(audio)<44100*4)SDL_PutAudioStreamData(audio,rw_audio_data(),frames*4);}
 }

@@ -433,6 +433,8 @@ EMSCRIPTEN_KEEPALIVE int on_local_seat(int seat){
     if(!s_race||seat< -1||seat>=DRIVER_SEAT_LIMIT)return 0;
     if(seat>=0&&(s_race->sim.drivers[seat].rival||s_race->sim.drivers[seat].status!=SIM_DRIVING))return 0;
     if(seat>=0&&!WebHudPrepare(s_archive,s_race->sim.drivers[seat].variant))return 0;
+    /* The takeover changes ownership, not the camera the driver just saw. */
+    if(s_localSeat<0&&seat>=0&&s_view.viewSeat==seat)s_view.selectedView=WEB_VIEW_CHASE;
     s_localSeat=seat;memset(&s_predict,0,sizeof(s_predict));memset(&s_controls,0,sizeof(s_controls));
     if(seat>=0)rw_set_view_seat(seat);
     WebAudioStartRace(s_archive,&s_race->sim,seat,s_nativeClass);

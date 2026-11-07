@@ -573,6 +573,22 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
     for(int x=0;x<surface->w;x++){solid[x*4]=solid[x*4+1]=solid[x*4+2]=solid[x*4+3]=255;}
     float s=scale;
     FillRoundRect(surface,0,0,(float)surface->w,(float)(surface->h-1),14*s,kPanel);
+    if(OnlineViewJoining(view)&&!view->panel){
+        DrawText(surface,28*s,43*s,24*s,"Joining race",kText,ALIGN_LEFT);
+        if(!view->raceReady){
+            DrawText(surface,28*s,98*s,23*s,"Synchronizing...",kAccent,ALIGN_LEFT);
+            DrawText(surface,28*s,139*s,15*s,"Preparing the track and your car.",kMuted,ALIGN_LEFT);
+        }else if(view->takeoverSeconds>0){
+            char text[80];snprintf(text,sizeof(text),"Taking control in %d",view->takeoverSeconds);
+            DrawText(surface,28*s,98*s,29*s,text,kAccent,ALIGN_LEFT);
+            DrawText(surface,28*s,139*s,15*s,"Get ready. Your car is already on track.",kMuted,ALIGN_LEFT);
+        }else{
+            DrawText(surface,28*s,98*s,23*s,"Watching this race",kAccent,ALIGN_LEFT);
+            DrawText(surface,28*s,139*s,15*s,"You'll join when a car becomes available.",kMuted,ALIGN_LEFT);
+        }
+        DrawText(surface,28*s,183*s,14*s,"ESC: menu",kMuted,ALIGN_LEFT);
+        return;
+    }
     if(view->racing&&!view->panel){
         char text[96];int speed=view->hud[7];if(speed<0)speed=0;
         snprintf(text,sizeof(text),"%03d",speed);DrawText(surface,24*s,67*s,54*s,text,kText,ALIGN_LEFT);

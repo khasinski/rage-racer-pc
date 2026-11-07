@@ -54,7 +54,8 @@ int OnlineEvent(const SDL_Event*e,SDL_Window*w){
 }
 int OnlinePaint(OverlaySurface*s,int width,int height,OverlayLayout*out){
     const OnlineView*v=OnlineViewState();if(!v->active||width<=0||height<=0)return 0;
-    if(v->racing&&!v->panel){float scale=fminf((float)height/820.0f,2.0f);if(scale<0.5f)scale=0.5f;layout.scale=scale;layout.w=(int)(320*scale);layout.h=(int)(154*scale);layout.x=width-layout.w-20;layout.y=height-layout.h-20;}
+    if(OnlineViewJoining(v)&&!v->panel){float scale=fminf((float)height/820.0f,(float)width/520.0f);if(scale>2)scale=2;layout.scale=scale;layout.w=(int)(440*scale);layout.h=(int)(208*scale);layout.x=(width-layout.w)/2;layout.y=(height-layout.h)/2;}
+    else if(v->racing&&!v->panel){float scale=fminf((float)height/820.0f,2.0f);if(scale<0.5f)scale=0.5f;layout.scale=scale;layout.w=(int)(320*scale);layout.h=(int)(154*scale);layout.x=width-layout.w-20;layout.y=height-layout.h-20;}
     else OverlayComputeLayout(v->count+((v->screen==OS_ROOM||v->screen==OS_ARCADE)?2:0),width,height,&layout);
     if(!OverlaySurfaceResize(s,layout.w,layout.h))return 0;OverlayPaintOnline(s,v,layout.scale);*out=layout;return 1;
 }

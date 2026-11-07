@@ -9,6 +9,14 @@ void OnlineShutdown(void);
 #define CHECK(condition) do { if (!(condition)) { fprintf(stderr,"menu check failed: %s\n",#condition); return 1; } } while (0)
 
 int main(void) {
+    OnlineView joining={.racing=1,.arcade=1,.localSeat=-1};
+    CHECK(OnlineViewJoining(&joining));
+    joining.raceReady=1;joining.takeoverSeconds=3;
+    CHECK(OnlineViewJoining(&joining));
+    joining.localSeat=0;joining.takeoverSeconds=0;
+    CHECK(!OnlineViewJoining(&joining));
+    joining.racing=0;joining.raceReady=0;
+    CHECK(!OnlineViewJoining(&joining));
     CHECK(SDL_Init(SDL_INIT_EVENTS));
     OnlineOpen();
     const OnlineView *v=OnlineViewState();

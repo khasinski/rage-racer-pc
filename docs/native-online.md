@@ -20,6 +20,12 @@ conventions. Online material-cache keys retain their authored model identity
 in the low 16 bits so lamp surfaces, glows and projected lights work for the
 entire field. The existing car-lights setting also applies to online races.
 
+Joining shows a preparation card until the first server snapshot has produced
+a presentation frame, followed by a visible takeover countdown. The spectator
+chase camera remains in place when the server hands over the car; the change
+of ownership does not switch the driver into the cockpit. Arrivals without a
+scheduled seat see an explicit watching/waiting message.
+
 **Online Arcade** is a separate casual mode alongside private rooms and Duel.
 It joins one shared community automatically and starts with a single person.
 The server reserves up to eight controllable cars, drives vacant seats with
