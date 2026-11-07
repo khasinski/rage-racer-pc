@@ -21,6 +21,7 @@ extern unsigned int overlay_frag_spv_len,overlay_frag_msl_len;
 #include "../graphics_overlay.h"
 #include "rage/render_world_game.h"
 #include "rage/track_asset_identity.h"
+#include "rage/hud_config.h"
 
 #include <psyz/overlay_sdl3_gpu.h>
 #include <psyz/present_sdl3_gpu.h>
@@ -136,7 +137,9 @@ static SDL_GPUGraphicsPipeline *s_pipe2d;
 static SDL_GPUGraphicsPipeline *s_pipe2dSub;
 static SDL_GPUGraphicsPipeline *s_pipeMenu;
 static SDL_GPUGraphicsPipeline *s_pipeUiAtlas;
-static SDL_GPUTexture *s_menuTextures[79];
+enum { MODERN_ONLINE_TACHOMETER_SLOT=79, MODERN_UI_TEXTURE_SLOTS=80 };
+static SDL_GPUTexture *s_menuTextures[MODERN_UI_TEXTURE_SLOTS];
+static uint64_t s_tachometerRevision;
 static SDL_GPUGraphicsPipeline *s_pipeSkyAtlas,*s_pipeSkyAtlasSub;
 static uint32_t s_skyAtlasKey=UINT32_MAX;
 static SDL_GPUSampler *s_skyAtlasSampler;
@@ -381,7 +384,7 @@ static void ModernDestroyResources(void) {
         RAGE_RELEASE(GraphicsPipeline, s_pipe2dSub);
         RAGE_RELEASE(GraphicsPipeline, s_pipeMenu);
         RAGE_RELEASE(GraphicsPipeline, s_pipeUiAtlas);
-        for(int i=0;i<79;i++)RAGE_RELEASE(Texture,s_menuTextures[i]);
+        for(int i=0;i<MODERN_UI_TEXTURE_SLOTS;i++)RAGE_RELEASE(Texture,s_menuTextures[i]);
         memset(s_hudKeys,0,sizeof(s_hudKeys));memset(s_uiTraceKeys,0,sizeof(s_uiTraceKeys));s_menuGeneration=0;s_uiScene=-1;
         RAGE_RELEASE(Buffer, s_vertexBuffer);
         RAGE_RELEASE(TransferBuffer, s_vertexTransfer);
@@ -740,7 +743,7 @@ static void ModernUiRefresh(void) {
 }
 
 static int ModernUploadUi(int slot,const uint8_t *pixels,int width,int height) {
-    if(slot<0||slot>=79)return 0;
+    if(slot<0||slot>=MODERN_UI_TEXTURE_SLOTS)return 0;
     if(s_menuTextures[slot])return 1;
     if(!pixels)return 0;
     if(!s_pipeMenu) {
@@ -1363,9 +1366,47 @@ static void ClassicBuildFrame(const RageSceneSnapshot *snapshot) {
     }
 }
 
+static void ModernBuildSessionTachometer(void) {
+    RageRetailTachometer frame={0};RageTachometerQuad quads[7];
+    if(!SessionProviderTachometer(&frame))return;
+    int count=RenderRetailTachometerBuild(&frame,HudRightX(0),quads);
+    if(!count)return;
+    const int slot=MODERN_ONLINE_TACHOMETER_SLOT;
+    if(s_menuTextures[slot]&&s_tachometerRevision!=frame.revision){
+        SDL_ReleaseGPUTexture(s_device,s_menuTextures[slot]);s_menuTextures[slot]=NULL;
+    }
+    if(!ModernUploadUi(slot,frame.atlas,RAGE_TACHO_ATLAS_WIDTH,RAGE_TACHO_ATLAS_HEIGHT))return;
+    s_tachometerRevision=frame.revision;
+    for(int i=0;i<count;i++){
+        const RageTachometerQuad *q=&quads[i];
+        if(q->textured){
+            if(s_overlay.spanCount>=s_overlay.spanCapacity)return;
+            ModernSpan *span=&s_overlay.spans[s_overlay.spanCount++];memset(span,0,sizeof(*span));
+            span->pipeline=MODERN_PIPE_MENU;span->count=1;span->imageSlot=(uint8_t)slot;
+            span->pass=0;span->layer=MODERN_LAYER_HUD;
+            ModernVertex top,bottom;ModernOrtho(&top,q->xy[0][0],q->xy[0][1]);
+            ModernOrtho(&bottom,q->xy[3][0],q->xy[3][1]);
+            span->imageRect[0]=top.x;span->imageRect[1]=top.y;span->imageRect[2]=bottom.x;span->imageRect[3]=bottom.y;
+            span->imageUV[0]=(float)q->u/RAGE_TACHO_ATLAS_WIDTH;span->imageUV[1]=(float)q->v/RAGE_TACHO_ATLAS_HEIGHT;
+            span->imageUV[2]=(float)(q->u+q->w)/RAGE_TACHO_ATLAS_WIDTH;span->imageUV[3]=(float)(q->v+q->h)/RAGE_TACHO_ATLAS_HEIGHT;
+            memcpy(span->imageTint,q->color,sizeof(span->imageTint));
+        }else{
+            ModernVertex vertices[4]={{0}};
+            for(int v=0;v<4;v++){
+                ModernOrtho(&vertices[v],q->xy[v][0],q->xy[v][1]);
+                for(int c=0;c<4;c++)vertices[v].color[c]=(uint8_t)fminf(255,fmaxf(0,q->color[c]*255));
+                vertices[v].attr=0x8000u;
+            }
+            ModernSpan *span=ModernOverlayBatchesBegin(&s_overlay,MODERN_PIPE_2D,NULL);
+            ModernOverlayBatchesEmitQuad(&s_overlay,span,vertices);
+        }
+    }
+}
+
 static void ModernBuildOverlayFrame(const RageSceneSnapshot *snapshot) {
     if(SessionProviderActive()) {
         ModernOverlayBatchesReset(&s_overlay,0,MODERN_LAYER_HUD);
+        ModernBuildSessionTachometer();
         s_skyPresentationCamera=NULL;s_skyPacketCamera=NULL;return;
     }
     s_hudFrame=snapshot->sceneId==12||snapshot->sceneId==17;

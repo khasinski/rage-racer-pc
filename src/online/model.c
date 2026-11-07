@@ -2,6 +2,7 @@
 #include "core_api.h"
 #include "transport.h"
 #include "render/session_provider.h"
+#include "render/speed_units_poc.h"
 #include "SDL3/SDL.h"
 #include "yyjson.h"
 #include <stdio.h>
@@ -17,6 +18,7 @@ static OnlineView view;
 static OnlineTransport *transport;
 static char disc[4096],server[512]="https://rageracer.polanka.ovh",name[21]="Racer",password[201],token[256],chat[201];
 static int loaded,connected,roomId,duel,roomStatus,roomPage,memberCount,roomCount,host,go,gotFrame,offeredRoom;
+static int requestedSpeedUnits;static uint32_t hudUnitsRevision;
 static Room rooms[ONLINE_ROOMS];static Member members[ONLINE_MEMBERS];static Settings settings;
 static int wantArcade,leavingArcade,pendingSeat=-1,nextVariant=-1,courseVote;static uint32_t controlAt;
 static OnlineScreen chatReturn=OS_ROOMS;
@@ -103,7 +105,24 @@ static const RenderWorld *scene(void*ctx,float aspect){
     }
     return &world;
 }
-static void registerProvider(void){RageSessionProvider p={NULL,scene,mesh,material,sky,revision};SessionProviderSet(&p);}
+static int tachometer(void *ctx,RageRetailTachometer *frame){
+    (void)ctx;if(!view.raceReady||view.localSeat<0)return 0;
+    uint32_t current=rw_hud_atlas_revision();
+    if(requestedSpeedUnits&&current!=hudUnitsRevision){
+        uint8_t snapshot[RAGE_HUD_UNIT_BYTES];RageHudUnitDiff diff;
+        int variant=on_hud_unit_snapshot(snapshot,sizeof(snapshot))-1;
+        int model=variant>=0?rw_car_model(variant):-1;
+        if(model>=0&&RageSpeedUnitsRetailDiff((unsigned)model,&diff)&&
+           RageHudUnitDiffApply(&diff,(unsigned)model,requestedSpeedUnits==RAGE_UNITS_MPH,snapshot))
+            on_hud_apply_units(snapshot,sizeof(snapshot),requestedSpeedUnits==RAGE_UNITS_MPH);
+        hudUnitsRevision=rw_hud_atlas_revision();
+    }
+    const int32_t *words=rw_tachometer();const uint8_t *atlas=rw_hud_atlas();
+    if(!words||!atlas||!words[RAGE_TACHO_VISIBLE])return 0;
+    memcpy(frame->words,words,sizeof(frame->words));frame->atlas=atlas;
+    frame->revision=(assetEpoch<<32)|rw_hud_atlas_revision();return 1;
+}
+static void registerProvider(void){RageSessionProvider p={.world=scene,.mesh=mesh,.material=material,.sky=sky,.revision=revision,.tachometer=tachometer};SessionProviderSet(&p);}
 static void connectAs(const char*action){
     if(transport){if(!OnlineTransportDone(transport)){fail("Finishing previous connection...");return;}OnlineTransportFree(transport);transport=NULL;}
     if(!loaded){on_native_client();if(!disc[0]||!rw_load_disc(disc)){fail("Cannot load the selected game image for online play.");return;}loaded=1;}
@@ -305,6 +324,7 @@ static void rows(void){
 }
 void OnlineSetDisc(const char*path){if(!view.active)SDL_strlcpy(disc,path?path:"",sizeof(disc));}
 void OnlineSetServer(const char*url){if(!view.active&&url)SDL_strlcpy(server,url,sizeof(server));}
+void OnlineSetSpeedUnits(const char*units){if(!view.active){requestedSpeedUnits=units&&!strcmp(units,"mph")?RAGE_UNITS_MPH:units&&!strcmp(units,"kmh")?RAGE_UNITS_KMH:0;hudUnitsRevision=0;}}
 const OnlineView *OnlineViewState(void){rows();return &view;}
 void OnlineOpen(void){if(view.active)return;view.active=1;view.panel=1;view.screen=OS_PROFILE;view.selected=0;view.status[0]=0;rows();}
 int OnlineActive(void){return view.active;}

@@ -28,6 +28,7 @@ static inline int OnlineViewJoining(const OnlineView *v){
 }
 void OnlineSetDisc(const char *path);
 void OnlineSetServer(const char *url);
+void OnlineSetSpeedUnits(const char *units);
 const OnlineView *OnlineViewState(void);
 void OnlineActionDo(OnlineAction action,int argument,int direction);
 void OnlineSelect(int row);

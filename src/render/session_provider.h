@@ -3,6 +3,7 @@
 #include "render_world.h"
 #include "rmesh_cache.h"
 #include "render_material.h"
+#include "retail_tachometer.h"
 /* An explicit race owner supplies immutable meshes and decoded material
  * pixels. No legacy global/importer fallback is allowed for its instances. */
 typedef struct RageSessionProvider {
@@ -12,6 +13,7 @@ typedef struct RageSessionProvider {
     int (*material)(void *,const RenderMeshInstance *,uint32_t,uint8_t,RageRenderMaterial *,void **,uint32_t *,uint32_t *);
     int (*sky)(void *,void **,uint32_t *,uint32_t *);
     uint64_t (*revision)(void *);
+    int (*tachometer)(void *,RageRetailTachometer *);
 } RageSessionProvider;
 void SessionProviderSet(const RageSessionProvider *provider);
 int SessionProviderActive(void);
@@ -20,4 +22,5 @@ const RageRuntimeCachedMesh *SessionProviderMesh(const RenderMeshInstance *insta
 int SessionProviderMaterial(const RenderMeshInstance *,uint32_t,uint8_t,RageRenderMaterial *,void **,uint32_t *,uint32_t *);
 int SessionProviderSky(void **,uint32_t *,uint32_t *);
 uint64_t SessionProviderRevision(void);
+int SessionProviderTachometer(RageRetailTachometer *);
 #endif

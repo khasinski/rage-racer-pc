@@ -26,6 +26,18 @@ chase camera remains in place when the server hands over the car; the change
 of ownership does not switch the driver into the cockpit. Arrivals without a
 scheduled seat see an explicit watching/waiting message.
 
+The speedometer is the retail car-specific dial, decoded from the selected
+disc together with its day/night palettes and manual/automatic digit strips.
+The race core supplies the evaluated needle, shift-lamp, gear and speed
+packets. The session provider passes them to the desktop GPU's ordinary HUD
+sprite/quad renderer; the atlas uploads once per prepared car, not every
+frame. The usual HUD edge-anchor setting applies. Positions, race time and
+notifications occupy the upper-left panel and do not duplicate speed/gear.
+The existing `poc.speed_units=kmh|mph` override also applies online: the same
+hash-verified PAL/NTSC-U face-and-palette deltas select the bitmap, together
+with the corresponding retail speed conversion. A mismatched source keeps
+its original dial and units.
+
 **Online Arcade** is a separate casual mode alongside private rooms and Duel.
 It joins one shared community automatically and starts with a single person.
 The server reserves up to eight controllable cars, drives vacant seats with

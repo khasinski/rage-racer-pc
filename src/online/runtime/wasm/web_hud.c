@@ -25,6 +25,7 @@
 #include "game/image_asset.h"
 #include "game/track.h"
 #include "native_texture.h"
+#include "../../../render/hud_unit_diff.h"
 
 enum {
     /* Texture pages and CLUTs as the retail packets name them. */
@@ -75,15 +76,15 @@ typedef enum Lighting { LIGHTING_NORMAL, LIGHTING_DARK, LIGHTING_FADE_FROM_DARK,
 
 /* Layout of the per-frame words (WebHudTachometer). */
 enum {
-    T_VISIBLE = 0,
-    T_NEEDLE = 1,        /* 4 x (x, y), POLY_F4 vertex order */
-    T_NEEDLE_COLOR = 9,  /* r, g, b */
-    T_FACE = 12,         /* x, y (top left), brightness (128 = unmodulated), dark CLUT */
-    T_GEAR = 16,         /* x, y, digit */
-    T_SPEED = 19,        /* x, y, value 0..999 (three digits) */
-    T_DIGIT_CLUT = 22,   /* 0 manual (green), 1 automatic (yellow) */
-    T_SHIFT_LIGHT = 23,  /* x, y, red (green and blue are 32) */
-    T_FACE_SIZE = 26,    /* width, height */
+    T_VISIBLE = RAGE_TACHO_VISIBLE,
+    T_NEEDLE = RAGE_TACHO_NEEDLE,
+    T_NEEDLE_COLOR = RAGE_TACHO_NEEDLE_COLOR,
+    T_FACE = RAGE_TACHO_FACE,
+    T_GEAR = RAGE_TACHO_GEAR,
+    T_SPEED = RAGE_TACHO_SPEED,
+    T_DIGIT_CLUT = RAGE_TACHO_DIGIT_CLUT,
+    T_SHIFT_LIGHT = RAGE_TACHO_SHIFT_LIGHT,
+    T_FACE_SIZE = RAGE_TACHO_FACE_SIZE,
     T_WORDS = 28,
 };
 _Static_assert(T_WORDS <= WEB_HUD_TACHO_WORDS, "tachometer words overflow");
@@ -91,6 +92,9 @@ _Static_assert(T_WORDS <= WEB_HUD_TACHO_WORDS, "tachometer words overflow");
 static uint8_t s_atlas[WEB_HUD_ATLAS_WIDTH * WEB_HUD_ATLAS_HEIGHT * 4];
 static int32_t s_tacho[WEB_HUD_TACHO_WORDS];
 static int s_ready, s_mph;
+static uint32_t s_revision;
+static int s_variant;
+static uint8_t s_unitSnapshot[RAGE_HUD_UNIT_BYTES];
 /* The face CLUT stays in the frame's packet between frames: fading towards
  * night leaves whichever one the previous frames set. */
 static int s_faceDark;
@@ -132,6 +136,11 @@ int WebHudPrepare(const RaceData *archive, int variant) {
         !CopyImageAssetPixels((const u8 *)car + header.imageOffset,
                               carSize - (size_t)header.imageOffset, &pageImage)) return 0;
 
+    /* Preserve the immutable source bytes for verified PAL/NTSC-U deltas. */
+    for(int y=0;y<94;y++)memcpy(s_unitSnapshot+y*48,page+(112+y)*HUD_PAGE_WIDTH+64,48);
+    for(int night=0;night<2;night++)memcpy(s_unitSnapshot+RAGE_HUD_FACE_BYTES+night*32,
+        page+(206+night)*HUD_PAGE_WIDTH+64,32);
+    s_variant=variant;
     memset(s_atlas, 0, sizeof(s_atlas));
     Decode(&vram, HUD_FACE_TPAGE, HUD_FACE_CLUT, HUD_FACE_U, HUD_FACE_V,
            HUD_FACE_WIDTH, HUD_FACE_HEIGHT, 0, 0);
@@ -145,10 +154,27 @@ int WebHudPrepare(const RaceData *archive, int variant) {
     s_mph = strncmp(archive->boot, "SLUS", 4) == 0;
     s_faceDark = 0;
     s_ready = 1;
+    ++s_revision;
     return 1;
 }
 
 const uint8_t *WebHudAtlas(void) { return s_ready ? s_atlas : NULL; }
+uint32_t WebHudRevision(void) { return s_revision; }
+int WebHudUnitSnapshot(void *bytes,int size){
+    if(!s_ready||!bytes||size!=RAGE_HUD_UNIT_BYTES)return 0;
+    memcpy(bytes,s_unitSnapshot,sizeof(s_unitSnapshot));return s_variant+1;
+}
+int WebHudApplyUnitSnapshot(const void *bytes,int size,int imperial){
+    if(!s_ready||!bytes||size!=RAGE_HUD_UNIT_BYTES)return 0;
+    const uint8_t *snapshot=bytes;
+    for(int night=0;night<2;night++)for(int y=0;y<94;y++)for(int x=0;x<96;x++){
+        unsigned index=(snapshot[y*48+x/2]>>((x&1)*4))&15;
+        unsigned at=RAGE_HUD_FACE_BYTES+(unsigned)night*32+index*2;
+        uint16_t word=(uint16_t)((unsigned)snapshot[at]|((unsigned)snapshot[at+1]<<8));
+        TextureColor(word,&s_atlas[(y*WEB_HUD_ATLAS_WIDTH+night*96+x)*4]);
+    }
+    s_mph=imperial!=0;++s_revision;return 1;
+}
 
 static s32 Word(int64_t value) { return (s32)(uint32_t)(uint64_t)value; }
 static s16 Half(int64_t value) { return (s16)(uint16_t)(uint64_t)value; }

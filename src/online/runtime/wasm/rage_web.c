@@ -1677,6 +1677,9 @@ EMSCRIPTEN_KEEPALIVE int rw_seat_status(int seat) {
 EMSCRIPTEN_KEEPALIVE const uint8_t *rw_hud_atlas(void) { return WebHudAtlas(); }
 EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_width(void) { return WEB_HUD_ATLAS_WIDTH; }
 EMSCRIPTEN_KEEPALIVE int rw_hud_atlas_height(void) { return WEB_HUD_ATLAS_HEIGHT; }
+EMSCRIPTEN_KEEPALIVE uint32_t rw_hud_atlas_revision(void) { return WebHudRevision(); }
+EMSCRIPTEN_KEEPALIVE int on_hud_unit_snapshot(void *out,int size){return WebHudUnitSnapshot(out,size);}
+EMSCRIPTEN_KEEPALIVE int on_hud_apply_units(const void *bytes,int size,int imperial){return WebHudApplyUnitSnapshot(bytes,size,imperial);}
 EMSCRIPTEN_KEEPALIVE const int32_t *rw_tachometer(void) {
     return WebHudTachometer(s_race, s_view.viewSeat == s_localSeat ? s_localSeat : -1);
 }

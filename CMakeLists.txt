@@ -307,6 +307,7 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
 endif()
 
 add_library(rage-render-world STATIC
+    src/render/retail_tachometer.c
     src/render/session_provider.c
     src/render/car_lights.c
     src/render/car_lamps.c

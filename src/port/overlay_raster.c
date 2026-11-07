@@ -590,17 +590,20 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
         return;
     }
     if(view->racing&&!view->panel){
-        char text[96];int speed=view->hud[7];if(speed<0)speed=0;
-        snprintf(text,sizeof(text),"%03d",speed);DrawText(surface,24*s,67*s,54*s,text,kText,ALIGN_LEFT);
-        DrawText(surface,138*s,65*s,17*s,"km/h",kMuted,ALIGN_LEFT);
-        snprintf(text,sizeof(text),"%d",view->hud[8]);DrawText(surface,243*s,65*s,35*s,text,kAccent,ALIGN_LEFT);
+        char text[96];
         snprintf(text,sizeof(text),"POS %d/%d   LAP %d/%d",view->hud[4],view->hud[5],view->hud[2]>0?view->hud[2]:1,view->hud[3]);
-        DrawText(surface,24*s,103*s,18*s,text,kText,ALIGN_LEFT);
+        DrawText(surface,24*s,35*s,18*s,text,kText,ALIGN_LEFT);
         int ms=view->hud[6];if(ms<0)ms=0;snprintf(text,sizeof(text),"%d:%02d.%03d",ms/60000,ms/1000%60,ms%1000);
-        DrawText(surface,24*s,135*s,22*s,text,kText,ALIGN_LEFT);
-        if(view->hud[0]==1){snprintf(text,sizeof(text),"START %d",(view->hud[1]+49)/50);DrawText(surface,168*s,135*s,18*s,text,kAccent,ALIGN_LEFT);}
-        else if(view->takeoverSeconds){snprintf(text,sizeof(text),"CONTROL IN %d",view->takeoverSeconds);DrawText(surface,156*s,135*s,14*s,text,kAccent,ALIGN_LEFT);}
-        else DrawText(surface,180*s,135*s,14*s,view->arcade&&view->localSeat<0?"CPU / next race":"ESC: menu",kMuted,ALIGN_LEFT);
+        DrawText(surface,24*s,72*s,26*s,text,kText,ALIGN_LEFT);
+        if(view->hud[0]==1){snprintf(text,sizeof(text),"START %d",(view->hud[1]+49)/50);DrawText(surface,200*s,72*s,18*s,text,kAccent,ALIGN_LEFT);}
+        char notification[256];snprintf(notification,sizeof(notification),"%s",view->status[0]?view->status:"ESC: menu");
+        if(TextWidth(notification,12*s)>272*s){
+            while(notification[0]&&TextWidth(notification,12*s)>256*s){
+                size_t n=strlen(notification);do{--n;}while(n&&((unsigned char)notification[n]&0xc0)==0x80);notification[n]=0;
+            }
+            size_t n=strlen(notification);if(n+3<sizeof(notification))memcpy(notification+n,"...",4);
+        }
+        DrawText(surface,24*s,108*s,12*s,notification,kMuted,ALIGN_LEFT);
         return;
     }
     DrawText(surface,32*s,45*s,29*s,view->title,kText,ALIGN_LEFT);

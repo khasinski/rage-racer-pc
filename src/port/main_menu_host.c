@@ -60,6 +60,7 @@ void PortMainMenuRequestOnline(void) {
     OnlineSetDisc(HostDiscImagePath());
     const char *server=RuntimeConfigGet("online.server");
     if(server)OnlineSetServer(server);
+    OnlineSetSpeedUnits(RuntimeConfigGet("poc.speed_units"));
     OnlineOpen();
 #endif
 }
