@@ -7,13 +7,14 @@
 #include <math.h>
 void OnlineOpen(void);void OnlineTick(void);void OnlineShutdown(void);
 int main(int argc,char**argv){
-    if(argc<4){fprintf(stderr,"usage: online-client-check DISC SERVER host|join|arcade|arcade-cycle [seconds] [lifecycle]\n");return 2;}
+    if(argc<4){fprintf(stderr,"usage: online-client-check DISC SERVER host|join|duel-host|duel-join|arcade|arcade-cycle [seconds] [lifecycle|flow|DUEL_CODE]\n");return 2;}
     SDL_SetHint(SDL_HINT_AUDIO_DRIVER,"dummy");if(!SDL_Init(SDL_INIT_EVENTS|SDL_INIT_AUDIO))return 2;
     int arcade=!strncmp(argv[3],"arcade",6),cycle=!strcmp(argv[3],"arcade-cycle"),firstEpoch=0;
+    int duelHost=!strcmp(argv[3],"duel-host"),duelJoin=!strcmp(argv[3],"duel-join"),invited=0;
     OnlineSetDisc(argv[1]);OnlineSetServer(argv[2]);OnlineOpen();OnlineActionDo(arcade?OA_ARCADE:OA_GUEST,0,0);
     uint64_t start=SDL_GetTicks();int roomRequested=0,ready=0,started=0,frames=0;unsigned long ticks=0;int racing=0,left=0,results=0;
     int lifecycle=argc>5&&!strcmp(argv[5],"lifecycle");
-    int flow=argc>5&&!strcmp(argv[5],"flow"),startSeen=0,coastSeen=0;
+    int flow=!duelJoin&&argc>5&&!strcmp(argv[5],"flow"),startSeen=0,coastSeen=0;
     uint64_t finishSeenAt=0;Vec3 coastStart={0};float coastDistance=0;
     uint64_t until=start+(uint64_t)(argc>4?atoi(argv[4]):30)*1000u;
     while(SDL_GetTicks()<until){
@@ -25,12 +26,18 @@ int main(int argc,char**argv){
         }
         if(v->finishing&&!finishSeenAt)finishSeenAt=SDL_GetTicks();
         if(!arcade&&v->screen==OS_ROOMS&&!roomRequested){
-            if(!strcmp(argv[3],"host")){OnlineActionDo(OA_QUICK_ROOM,0,0);roomRequested=1;}
+            if(duelHost){OnlineActionDo(OA_DUEL,0,0);roomRequested=1;}
+            else if(duelJoin&&argc>5){
+                OnlineActionDo(OA_DUEL_CODE,0,0);OnlineActionDo(OA_JOIN_DUEL,0,0);
+                OnlineText(argv[argc>6?6:5]);OnlineFinishEditing();OnlineActionDo(OA_SUBMIT_DUEL,0,0);roomRequested=1;
+            }
+            else if(!strcmp(argv[3],"host")){OnlineActionDo(OA_QUICK_ROOM,0,0);roomRequested=1;}
             else for(int i=0;i<v->count;i++)if(v->rows[i].action==OA_JOIN&&v->rows[i].enabled&&strstr(v->rows[i].value,"Join lobby")){OnlineActionDo(OA_JOIN,v->rows[i].argument,0);roomRequested=1;break;}
         }
         if(v->screen==OS_ROOM){
+            if(duelHost&&!invited)for(int i=0;i<v->count;i++)if(v->rows[i].action==OA_COPY_INVITE&&v->rows[i].value[0]){printf("DUEL_INVITE=%s\n",v->rows[i].value);fflush(stdout);invited=1;}
             if(!ready){for(int i=0;i<v->count;i++)if(v->rows[i].action==OA_READY&&v->rows[i].enabled){OnlineActionDo(OA_READY,0,0);ready=1;break;}}
-            if(!started&&!strcmp(argv[3],"host")){
+            if(!started&&(!strcmp(argv[3],"host")||duelHost)){
                 int players=0;for(int i=0;i<v->count;i++)if(v->rows[i].action==OA_PLAYERS)players=atoi(v->rows[i].value);
                 for(int i=0;i<v->count;i++)if(players>=2&&v->rows[i].action==OA_START&&v->rows[i].enabled){OnlineActionDo(OA_START,0,0);started=1;}
             }

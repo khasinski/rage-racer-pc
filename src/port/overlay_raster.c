@@ -615,14 +615,22 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
     for(int row=0;row<view->count;row++){
         const OnlineRow *r=&view->rows[row];float top=(128+row*46)*s,base=top+29*s;
         if(row==view->selected){FillRoundRect(surface,16*s,top+3*s,568*s,40*s,9*s,WithAlpha(kAccent,0.16f));FillRoundRect(surface,20*s,top+13*s,3*s,20*s,1.5f*s,kAccent);}
-        Color c=r->enabled||view->screen==OS_RESULTS?kText:WithAlpha(kMuted,0.6f);
+        Color c=r->enabled||r->action==OA_NONE||view->screen==OS_RESULTS?kText:WithAlpha(kMuted,0.6f);
         DrawText(surface,32*s,base,view->screen==OS_CHAT&&r->action==OA_NONE?12*s:17*s,r->label,c,ALIGN_LEFT);
-        char value[80];snprintf(value,sizeof(value),"%s",r->value);
-        float em=16*s;if(TextWidth(value,em)>310*s)em=12*s;
-        while(value[0]&&TextWidth(value,em)>310*s){
+        int activeEdit=r->editable&&view->editing==(int)r->action&&row==view->selected;
+        if(r->editable){
+            FillRoundRect(surface,282*s,(top+3*s),286*s,40*s,6*s,WithAlpha(activeEdit?kAccent:kMuted,activeEdit?0.8f:0.35f));
+            FillRoundRect(surface,283*s,(top+4*s),284*s,38*s,5*s,kPanel);
+        }
+        const char *placeholder=r->action==OA_JOIN_DUEL?"Enter code...":r->action==OA_PASSWORD?"Enter password...":"Type here...";
+        char value[80];snprintf(value,sizeof(value),"%s",r->editable&&!r->value[0]?placeholder:r->value);
+        float limit=(r->editable?258:310)*s;
+        float em=16*s;if(TextWidth(value,em)>limit)em=12*s;
+        while(value[0]&&TextWidth(value,em)>limit){
             size_t n=strlen(value);do{--n;}while(n&&((unsigned char)value[n]&0xc0)==0x80);value[n]=0;
         }
-        DrawText(surface,568*s,base,em,value,r->editable&&view->editing&&row==view->selected?kAccent:kMuted,ALIGN_RIGHT);
+        DrawText(surface,(r->editable?552:568)*s,base,em,value,activeEdit?kAccent:kMuted,ALIGN_RIGHT);
+        if(activeEdit)FillRoundRect(surface,557*s,top+12*s,1.5f*s,22*s,0,kAccent);
     }
     float bottom=(128+view->count*46+20)*s;
     if(view->screen==OS_ROOM||view->screen==OS_ARCADE){
@@ -635,5 +643,5 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
     }
     char status[100];size_t n=strlen(view->status);if(n>86)n=86;memcpy(status,view->status,n);status[n]=0;
     DrawText(surface,32*s,bottom+16*s,13*s,status,kMuted,ALIGN_LEFT);
-    DrawText(surface,32*s,bottom+40*s,12*s,view->editing?"Type to edit / Enter: done / Ctrl+A: replace":"Arrows / D-pad: select   Enter / A: confirm   Esc / B: back",kMuted,ALIGN_LEFT);
+    DrawText(surface,32*s,bottom+40*s,12*s,view->editing?"Type or paste / Enter: done / Esc: cancel / Ctrl+A: replace":"Arrows / D-pad: select   Enter / A: confirm   Esc / B: back",kMuted,ALIGN_LEFT);
 }

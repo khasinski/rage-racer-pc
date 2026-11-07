@@ -14,6 +14,8 @@ typedef struct RageSessionProvider {
     int (*sky)(void *,void **,uint32_t *,uint32_t *);
     uint64_t (*revision)(void *);
     int (*tachometer)(void *,RageRetailTachometer *);
+    uint64_t (*contentRevision)(void *);
+    uint64_t (*materialRevision)(void *,const RenderMeshInstance *,uint32_t,uint8_t);
 } RageSessionProvider;
 void SessionProviderSet(const RageSessionProvider *provider);
 int SessionProviderActive(void);
@@ -23,4 +25,6 @@ int SessionProviderMaterial(const RenderMeshInstance *,uint32_t,uint8_t,RageRend
 int SessionProviderSky(void **,uint32_t *,uint32_t *);
 uint64_t SessionProviderRevision(void);
 int SessionProviderTachometer(RageRetailTachometer *);
+uint64_t SessionProviderContentRevision(void);
+uint64_t SessionProviderMaterialRevision(const RenderMeshInstance *,uint32_t,uint8_t);
 #endif

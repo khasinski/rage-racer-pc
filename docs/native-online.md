@@ -14,11 +14,30 @@ friends** (rooms and invitations), and **Profile & settings**. Name editing,
 optional account login/registration, and the server address live under profile
 settings; no credentials or server configuration are required to start racing.
 
+**Join duel** opens a separate invitation form with an outlined text field,
+placeholder and editing caret. Enter accepts the edited text and selects the
+separate Join button; Escape restores the previous text without sending an
+invitation. Mouse submission also finishes editing before joining.
+
 Desktop sky rendering uses the race's authored RGB cloud panorama and
 interpolated top-left screen coordinates, independently of GPU fragment Y
 conventions. Online material-cache keys retain their authored model identity
 in the low 16 bits so lamp surfaces, glows and projected lights work for the
 entire field. The existing car-lights setting also applies to online races.
+Offline and online now compile the same `src/render/car_lights.c` and state
+definition: the darkness delay, daytime tail lights and brake-light decay
+cannot drift between copies. The native adapter skips only `assetSource`;
+it no longer inserts a synthetic `darkSeconds` field into an older light state.
+
+Session geometry generation is independent of palette/page content changes.
+Each material reports its actual dependency on the animated environment CLUT
+and current track page; fixed car/terrain textures retain their cache entries.
+Texture replacement preserves shared GPU-image ownership without waiting for
+device idle. Sky content has its own refresh identity. Online bank warming
+runs in small per-frame batches and respects the existing low-memory limit.
+Hidden GPU probes retained geometry across palette changes: one initial cache
+reset replaced repeated resets. A 20-second post-load sample had no intervals
+above 16 ms; this is a diagnostic sample, not a frame-rate guarantee.
 
 Joining shows a preparation card until the first server snapshot has produced
 a presentation frame, followed by a visible takeover countdown. The spectator
@@ -84,8 +103,8 @@ Race input and checkpoints normally use an unordered WebRTC DataChannel with
 zero retransmissions (SCTP/DTLS/UDP). HTTP and WebSocket carry authentication,
 chat, room controls and WebRTC signalling. A heartbeat confirms both directions
 before race traffic switches to UDP. Loss or silence restores the WebSocket
-fallback and retries the UDP channel with backoff. The panel displays the active
-route. Inbound RTC frames use bounded raw-DEFLATE decompression.
+fallback and retries the UDP channel with backoff. **Players / ping** displays
+the active route explicitly. Inbound RTC frames use bounded raw-DEFLATE decompression.
 
 The native RFC6455 handshake explicitly uses a fresh HTTP/1.1 connection.
 The HTTP authentication request may negotiate HTTP/2, but that connection must
@@ -152,6 +171,10 @@ fragmentation, masking, ping/pong, account replacement and invalid frames.
 with a deterministic classified finish, delayed final packet and duplicate
 results. It checks the start HUD, coasting camera, result-scene lifetime,
 blocked driving input and the next round. Set `RAGE_TEST_DISC` to enable it.
+The fixture's `profile` mode keeps a C-autopiloted car moving for a 45-second
+hidden native GPU probe. The client checker also supports `duel-host` and
+`duel-join` (invitation after the seconds argument) to exercise invitation
+entry with two actual native clients.
 
 For silent hidden GPU captures use `rage-racer-smoke` with `hooks.online=arcade`
 or `arcade-lobby`, `hooks.online_seconds`, `online.capture` (PPM scene target)

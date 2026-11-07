@@ -6,6 +6,7 @@
 #include "game/car.h"
 #include "game/car_internal.h"
 #include "port/graphics_overlay.h"
+#include "port/port_config.h"
 #include <string.h>
 #include <math.h>
 #include <stdio.h>
@@ -20,8 +21,11 @@ static int replaceSelection;
 static void activate(SDL_Window*w,int direction){
     const OnlineView*v=OnlineViewState();if(v->selected<0||v->selected>=v->count)return;
     const OnlineRow*r=&v->rows[v->selected];if(!r->enabled)return;
-    if(r->action==OA_SETTINGS){PortGraphicsOverlayOpen();return;}
-    OnlineActionDo(r->action,r->argument,direction);
+    OnlineAction action=r->action;int argument=r->argument;
+    if(v->editing==(int)action&&r->editable)return;
+    if(v->editing){if(action==OA_BACK)OnlineCancelEditing();else OnlineFinishEditing();if(w)SDL_StopTextInput(w);}
+    if(action==OA_SETTINGS){PortGraphicsOverlayOpen();return;}
+    OnlineActionDo(action,argument,direction);
     if(OnlineViewState()->editing&&w){replaceSelection=1;SDL_StartTextInput(w);}
 }
 int OnlineEvent(const SDL_Event*e,SDL_Window*w){
@@ -68,6 +72,7 @@ void OnlineSampleInput(void){
     if(!racing&&wasRacing){Psyz_PcmMusicPlay(1);PortUpdateForceFeedback();}
     wasRacing=racing;
     if(!OnlineActive())return;
+    OnlineSetCarLightsEnabled(PortActiveConfig()->carLights);
     RageInputConfig config;InputConfigDefaults(&config);InputConfigApplyRuntime(&config);
     const bool*keys=SDL_GetKeyboardState(NULL);unsigned held=0;
     for(unsigned i=0;i<16;i++){SDL_Scancode key=SDL_GetScancodeFromName(config.keys[i]);if(key!=SDL_SCANCODE_UNKNOWN&&keys[key])held|=1u<<i;}
@@ -108,6 +113,7 @@ void OnlineSmokeTick(void){
     }
     if(!strcmp(mode,"arcade-lobby")&&v->racing&&v->localSeat>=0){OnlineActionDo(OA_ARCADE_LOBBY,0,0);}
     if(v->screen==OS_ROOMS&&!requested){
+        if(!strcmp(mode,"duel-code")){OnlineActionDo(OA_DUEL_CODE,0,0);requested=1;}
         if(!strcmp(mode,"host")){OnlineActionDo(OA_QUICK_ROOM,0,0);requested=1;}
         else if(!strcmp(mode,"join"))for(int i=0;i<v->count;i++)if(v->rows[i].action==OA_JOIN&&v->rows[i].enabled&&strstr(v->rows[i].value,"Join lobby")){OnlineActionDo(OA_JOIN,v->rows[i].argument,0);requested=1;break;}
     }

@@ -44,6 +44,14 @@ int main(void) {
     OnlineActionDo(OA_BACK,0,0);
     OnlineActionDo(OA_BACK,0,0);
     CHECK(OnlineViewState()->screen==OS_PROFILE && v->selected==0 && v->active);
+    OnlineActionDo(OA_DUEL_CODE,0,0);
+    CHECK(OnlineViewState()->screen==OS_DUEL_CODE&&v->rows[0].editable&&!v->rows[1].enabled);
+    OnlineActionDo(OA_JOIN_DUEL,0,0);OnlineText("cancelled");OnlinePauseMenu();
+    CHECK(!OnlineViewState()->editing&&!v->rows[0].value[0]&&!v->rows[1].enabled);
+    OnlineActionDo(OA_JOIN_DUEL,0,0);OnlineText("  AbCd-123 \n");OnlineFinishEditing();
+    CHECK(!strcmp(OnlineViewState()->rows[0].value,"AbCd-123")&&v->rows[1].enabled&&v->selected==1);
+    OnlineActionDo(OA_BACK,0,0);CHECK(OnlineViewState()->screen==OS_ROOMS);
+    OnlineActionDo(OA_BACK,0,0);CHECK(OnlineViewState()->screen==OS_PROFILE);
     OnlineActionDo(OA_BACK,0,0);
     CHECK(!OnlineViewState()->active);
     OnlineShutdown();

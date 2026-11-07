@@ -72,5 +72,20 @@ int main(void){
             }
         }
     }
+    for(int enabled=0;enabled<=1;enabled++){
+        on_lights_enabled(enabled);CHECK(rw_tick()>=0);CHECK(on_prepare(16.0f/9.0f,1)>0);
+        int found=0;
+        for(int i=0;i<on_world_count();i++){
+            RenderMeshInstance body;CHECK(on_copy_instance(i,&body,sizeof(body)));
+            if(body.assetSet!=RAGE_RENDER_ASSET_MODEL_BANK||body.component!=0)continue;
+            CHECK(isfinite(body.lamps.darkSeconds)&&body.lamps.darkSeconds>=0&&body.lamps.darkSeconds<=0.6001f);
+            CHECK(isfinite(body.transform.scale.x)&&fabsf(body.transform.scale.x)>0);
+            if(enabled)CHECK(body.lamps.tail>=0.2f);
+            else CHECK(body.lamps.headlights==0&&body.lamps.tail==0&&body.lamps.stop==0);
+            CHECK(on_material_revision((unsigned)body.assetSet,body.assetKey,0,body.materialVariant)==0);
+            found=1;
+        }
+        CHECK(found);
+    }
     on_release();return 0;
 }

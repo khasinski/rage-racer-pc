@@ -10,3 +10,5 @@ int SessionProviderMaterial(const RenderMeshInstance*i,uint32_t m,uint8_t v,Rage
 int SessionProviderSky(void**p,uint32_t*w,uint32_t*h){return s_provider.sky&&s_provider.sky(s_provider.context,p,w,h);}
 uint64_t SessionProviderRevision(void){return (s_epoch<<32)^(s_provider.revision?s_provider.revision(s_provider.context):0);}
 int SessionProviderTachometer(RageRetailTachometer *frame){return frame&&s_provider.tachometer&&s_provider.tachometer(s_provider.context,frame);}
+uint64_t SessionProviderContentRevision(void){return s_provider.contentRevision?s_provider.contentRevision(s_provider.context):0;}
+uint64_t SessionProviderMaterialRevision(const RenderMeshInstance *i,uint32_t m,uint8_t v){return i&&s_provider.materialRevision?s_provider.materialRevision(s_provider.context,i,m,v):0;}

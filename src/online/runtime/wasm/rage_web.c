@@ -16,6 +16,7 @@
 #include "axis_curve.h"
 #include "client_race.h"
 #include "environment_view.h"
+#include "native_import_stream.h"
 #include "game/angle.h"
 #include "game/car.h"
 #include "game/race_data.h"
@@ -1751,9 +1752,10 @@ EMSCRIPTEN_KEEPALIVE int on_prepare(float aspect,float t) {
     s_nativeOnly=0;
     return result;
 }
-/* Desktop adds darkSeconds to CarLights and omits assetSource. Both are
- * four-byte fields; copy the shared spans around them explicitly. */
-EMSCRIPTEN_KEEPALIVE int on_instance_size(void) { return (int)sizeof(RenderMeshInstance); }
+/* Desktop omits the owned engine's internal assetSource field. CarLights
+ * has one shared definition on both sides of this boundary. */
+EMSCRIPTEN_KEEPALIVE int on_instance_size(void) { return (int)(sizeof(RenderMeshInstance)-sizeof(RenderAssetSource)); }
+EMSCRIPTEN_KEEPALIVE void on_lights_enabled(int enabled){CarLightsSetEnabled(enabled);}
 EMSCRIPTEN_KEEPALIVE int on_world_count(void) { return (int)s_world.instanceCount; }
 EMSCRIPTEN_KEEPALIVE int on_copy_camera(void *out, int size) {
     if (!out || size != (int)sizeof(RenderCamera) || !s_world.hasCamera) return 0;
@@ -1768,10 +1770,7 @@ EMSCRIPTEN_KEEPALIVE int on_copy_instance(int index, void *out, int size) {
     const RenderMeshInstance *src = &s_world.instances[index];
     const size_t prefix = offsetof(RenderMeshInstance, assetSource);
     memcpy(out, src, prefix);
-    const size_t lightEnd = offsetof(RenderMeshInstance, lamps) + sizeof(src->lamps);
-    memcpy((uint8_t *)out + prefix, (const uint8_t *)src + prefix + 4, lightEnd - prefix - 4);
-    memset((uint8_t *)out + lightEnd - 4, 0, 4);
-    memcpy((uint8_t *)out + lightEnd, (const uint8_t *)src + lightEnd, (size_t)size - lightEnd);
+    memcpy((uint8_t *)out + prefix, (const uint8_t *)src + prefix + sizeof(RenderAssetSource), (size_t)size-prefix);
     return 1;
 }
 EMSCRIPTEN_KEEPALIVE const void *on_mesh_bytes(unsigned set, unsigned key, size_t *size) {
@@ -1786,4 +1785,16 @@ EMSCRIPTEN_KEEPALIVE int on_material(unsigned set,unsigned key,unsigned entity,u
     RenderMeshInstance instance = {.assetSet=(RenderAssetSet)set,.assetKey=key,.assetSource=RENDER_ASSET_OWNED,
         .entity=entity,.materialVariant=(uint8_t)variant,.hasCarPaint=(uint8_t)painted,.carPaintColor1=(uint8_t)color1,.carPaintColor2=(uint8_t)color2};
     return DecodeClientMaterial(s_race,&instance,material,s_frame.page,s_race->env.clut,rgba,size);
+}
+EMSCRIPTEN_KEEPALIVE uint64_t on_material_revision(unsigned set,unsigned key,unsigned material,unsigned variant){
+    if(!s_race||set==RAGE_RENDER_ASSET_MODEL_BANK)return 0;
+    RenderMeshInstance instance={.assetSet=(RenderAssetSet)set,.assetKey=key,.assetSource=RENDER_ASSET_OWNED};
+    const RageImportedMeshEntry *entry=FindClientMesh(s_race,&instance);
+    if(!entry||!entry->materials||material>=entry->materialCount)return 0;
+    const RageImportedTextureKey *texture=&entry->materials[material];
+    unsigned clut=ImportMaterialClut(texture,(RenderAssetSet)set,(uint8_t)variant);
+    unsigned x=(clut&63u)*16u,mode=(texture->tpage>>7)&3u,colors=mode?256u:16u;
+    int animated=mode<2&&(clut>>6)==486&&x<240&&x+colors>224;
+    uint64_t page=(set==RAGE_RENDER_ASSET_TRACK_MODEL_BANK_1||set==RAGE_RENDER_ASSET_TRACK_MODEL_BANK_2)?(unsigned)s_frame.page:0;
+    return page|(animated?(uint64_t)PaletteHash()<<1:0);
 }

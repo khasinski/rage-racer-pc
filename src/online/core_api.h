@@ -12,6 +12,7 @@ int on_feedback(int32_t *);
 int on_local_seat(int);
 int on_prepare_driver_hud(int);
 void on_end_presentation(void);
+void on_lights_enabled(int);
 int rw_set_view_seat(int);
 int32_t *rw_take_input(void);
 uint32_t rw_input_tick(void);
@@ -51,4 +52,5 @@ int on_copy_light(void*,int);
 int on_copy_instance(int,void*,int);
 const void *on_mesh_bytes(unsigned,unsigned,size_t *);
 int on_material(unsigned,unsigned,unsigned,unsigned,unsigned,int,int,int,uint8_t*,size_t);
+uint64_t on_material_revision(unsigned,unsigned,unsigned,unsigned);
 #endif

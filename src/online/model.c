@@ -10,6 +10,7 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h>
+#include <ctype.h>
 
 typedef struct Settings {char name[64];int classIndex,course,reverse,laps,rivals,maxPlayers;} Settings;
 typedef struct Room {int id,players,status;Settings settings;} Room;
@@ -23,6 +24,7 @@ static Room rooms[ONLINE_ROOMS];static Member members[ONLINE_MEMBERS];static Set
 static int wantArcade,leavingArcade,pendingSeat=-1,nextVariant=-1,courseVote;static uint32_t controlAt;
 static OnlineScreen chatReturn=OS_ROOMS;
 static char userName[48],invite[64],joinCode[64];static char *editing;static size_t editCapacity;
+static char editOriginal[512];
 static uint64_t lastClock,lastStep,previousStep,retryAt;static double accumulator,simTime;
 static int inputHeld,inputStick,inputThrottle,inputBrake,inputAnalog;
 static int rawInputActive;
@@ -94,7 +96,9 @@ static int sky(void*ctx,void**pixels,uint32_t*w,uint32_t*h){
     uint8_t*p=SDL_malloc((size_t)width*(size_t)height*4u);if(!p)return 0;if(!rw_decode_sky(p)){SDL_free(p);return 0;}
     *pixels=p;*w=(uint32_t)width;*h=(uint32_t)height;return 1;
 }
-static uint64_t revision(void*ctx){(void)ctx;return (assetEpoch<<32)^rw_palette_hash()^(uint32_t)rw_texture_page();}
+static uint64_t revision(void*ctx){(void)ctx;return assetEpoch;}
+static uint64_t contentRevision(void*ctx){(void)ctx;return ((uint64_t)rw_palette_hash()<<1)|(unsigned)rw_texture_page();}
+static uint64_t materialRevision(void*ctx,const RenderMeshInstance*i,uint32_t m,uint8_t v){(void)ctx;return on_material_revision((unsigned)i->assetSet,i->assetKey&0xffffu,m,v);}
 static const RenderWorld *scene(void*ctx,float aspect){
     (void)ctx;if(!presenting||!view.raceReady)return NULL;
     double interval=lastStep>previousStep?(double)(lastStep-previousStep):40.0;
@@ -134,7 +138,7 @@ static int tachometer(void *ctx,RageRetailTachometer *frame){
     memcpy(frame->words,words,sizeof(frame->words));frame->atlas=atlas;
     frame->revision=(assetEpoch<<32)|rw_hud_atlas_revision();return 1;
 }
-static void registerProvider(void){RageSessionProvider p={.world=scene,.mesh=mesh,.material=material,.sky=sky,.revision=revision,.tachometer=tachometer};SessionProviderSet(&p);}
+static void registerProvider(void){RageSessionProvider p={.world=scene,.mesh=mesh,.material=material,.sky=sky,.revision=revision,.tachometer=tachometer,.contentRevision=contentRevision,.materialRevision=materialRevision};SessionProviderSet(&p);}
 static void connectAs(const char*action){
     if(transport){if(!OnlineTransportDone(transport)){fail("Finishing previous connection...");return;}OnlineTransportFree(transport);transport=NULL;}
     if(!loaded){on_native_client();if(!disc[0]||!rw_load_disc(disc)){fail("Cannot load the selected game image for online play.");return;}loaded=1;}
@@ -296,11 +300,17 @@ static void rows(void){
     else if(view.screen==OS_ROOMS){
         add("Online Arcade","Auto-join / continuous racing",OA_ARCADE,0,1,0);
         add("Create room","",OA_QUICK_ROOM,0,1,0);add("Create duel","Same car for both drivers",OA_DUEL,0,1,0);
-        add("Join duel: code",joinCode,OA_JOIN_DUEL,0,1,1);
+        add("Join duel","Enter invitation code",OA_DUEL_CODE,0,1,0);
         int first=roomPage*6;if(first>=roomCount)first=roomPage=0;
         for(int i=first;i<roomCount&&i<first+6;i++){snprintf(value,sizeof(value),"%d/%d  %s",rooms[i].players,rooms[i].settings.maxPlayers,rooms[i].status?"Watch race":"Join lobby");add(rooms[i].settings.name,value,OA_JOIN,rooms[i].id,1,0);}
         if(!roomCount)add("No open rooms yet","Create one above",OA_NONE,0,0,0);
         if(roomCount>6)add("More rooms","Left / Right",OA_NEXT_ROOMS,0,1,0);add("Disconnect","",OA_BACK,0,1,0);
+    }else if(view.screen==OS_DUEL_CODE){
+        SDL_strlcpy(view.title,"Join duel",sizeof(view.title));
+        SDL_strlcpy(view.subtitle,"Paste the invitation code from your friend.",sizeof(view.subtitle));
+        add("Invitation code",joinCode,OA_JOIN_DUEL,0,1,1);
+        add("Join duel","",OA_SUBMIT_DUEL,0,joinCode[0]!=0,0);
+        add("Back","",OA_BACK,0,1,0);
     }else if(view.screen==OS_ROOM){
         SDL_strlcpy(view.title,settings.name,sizeof(view.title));Member*m=me();int editable=host&&!roomStatus&&!duel;
         snprintf(value,sizeof(value),"%d connected%s",memberCount,duel?" / shared car":"");add("Players / ping",value,OA_PLAYERS,0,1,0);
@@ -319,7 +329,7 @@ static void rows(void){
         if(roomStatus)add("Watch race","",OA_WATCH,0,1,0);
         else if(host){int ready=memberCount>0;for(int i=0;i<memberCount;i++)if(!members[i].spectator&&(!members[i].ready||members[i].variant<0||!members[i].online))ready=0;add("Start race","",OA_START,0,ready,0);}
         add("Leave room","",OA_LEAVE_ROOM,0,1,0);
-    }else if(view.screen==OS_PLAYERS){for(int i=0;i<memberCount&&i<ONLINE_ROWS-1;i++){Member*m=&members[i];snprintf(value,sizeof(value),"%s  %s  %d ms",m->host?"Host":"",m->online?(m->ready?"Ready":"Connected"):"Offline",m->ping<0?0:m->ping);add(m->name,value,OA_NONE,0,0,0);}add("Back","",OA_BACK,0,1,0);}
+    }else if(view.screen==OS_PLAYERS){add("Connection",view.fastTransport?"WebRTC DataChannel / UDP":"WebSocket fallback",OA_NONE,0,0,0);for(int i=0;i<memberCount&&i<ONLINE_ROWS-2;i++){Member*m=&members[i];snprintf(value,sizeof(value),"%s  %s  %d ms",m->host?"Host":"",m->online?(m->ready?"Ready":"Connected"):"Offline",m->ping<0?0:m->ping);add(m->name,value,OA_NONE,0,0,0);}add("Back","",OA_BACK,0,1,0);}
     else if(view.screen==OS_RACE){add("Resume race","",OA_RESUME,0,1,0);if(view.arcade)add("Arcade lobby","Next car / course vote / chat",OA_ARCADE_LOBBY,0,1,0);add("Settings","",OA_SETTINGS,0,1,0);add("Players / ping","",OA_PLAYERS,0,1,0);add("Chat","",OA_OPEN_CHAT,0,1,0);add(view.arcade?"Leave Online Arcade":"Leave race","",view.arcade?OA_LEAVE_ARCADE:OA_LEAVE_RACE,0,1,0);}
     else if(view.screen==OS_ARCADE){
         SDL_strlcpy(view.title,"Online Arcade",sizeof(view.title));
@@ -359,16 +369,20 @@ void OnlineEffectsVolume(float gain){
 }
 void OnlineSetDriverInput(int held,const int32_t words[8]){int up=rawInput[6],down=rawInput[7];memcpy(rawInput,words,sizeof(rawInput));rawInput[6]|=up;rawInput[7]|=down;inputHeld=held;inputStick=inputThrottle=inputBrake=inputAnalog=0;rawInputActive=1;}
 static void disconnect(int closeUI){stopRace();connected=0;token[0]=0;roomId=memberCount=offeredRoom=wantArcade=view.arcade=0;OnlineTransportStop(transport);if(loaded){on_release();loaded=0;}view.screen=OS_PROFILE;view.panel=1;view.active=!closeUI;view.editing=0;editing=NULL;}
+void OnlineSetCarLightsEnabled(int enabled){on_lights_enabled(enabled);}
 void OnlineActionDo(OnlineAction action,int arg,int direction){
     Member*m=me();int step=direction<0?-1:1;
+    if(action==OA_DUEL_CODE){view.screen=OS_DUEL_CODE;view.selected=0;return;}
+    if(action==OA_BACK&&view.screen==OS_DUEL_CODE){view.screen=OS_ROOMS;view.selected=0;return;}
     if(action==OA_PROFILE_OPTIONS||action==OA_ACCOUNT||action==OA_CONNECTION){view.screen=action==OA_PROFILE_OPTIONS?OS_PROFILE_OPTIONS:action==OA_ACCOUNT?OS_ACCOUNT:OS_CONNECTION;view.selected=0;return;}
     if(action==OA_BACK&&(view.screen==OS_PROFILE_OPTIONS||view.screen==OS_ACCOUNT||view.screen==OS_CONNECTION)){view.screen=view.screen==OS_PROFILE_OPTIONS?OS_PROFILE:OS_PROFILE_OPTIONS;view.selected=0;return;}
-    if(action==OA_SERVER||action==OA_NAME||action==OA_PASSWORD||action==OA_CHAT||action==OA_JOIN_DUEL){editing=action==OA_SERVER?server:action==OA_NAME?name:action==OA_PASSWORD?password:action==OA_JOIN_DUEL?joinCode:chat;editCapacity=action==OA_SERVER?sizeof(server):action==OA_NAME?sizeof(name):action==OA_PASSWORD?sizeof(password):action==OA_JOIN_DUEL?sizeof(joinCode):sizeof(chat);view.editing=(int)action;return;}
+    if(action==OA_SERVER||action==OA_NAME||action==OA_PASSWORD||action==OA_CHAT||action==OA_JOIN_DUEL){editing=action==OA_SERVER?server:action==OA_NAME?name:action==OA_PASSWORD?password:action==OA_JOIN_DUEL?joinCode:chat;editCapacity=action==OA_SERVER?sizeof(server):action==OA_NAME?sizeof(name):action==OA_PASSWORD?sizeof(password):action==OA_JOIN_DUEL?sizeof(joinCode):sizeof(chat);SDL_strlcpy(editOriginal,editing,sizeof(editOriginal));view.editing=(int)action;return;}
     if(action==OA_GUEST||action==OA_LOGIN||action==OA_REGISTER){connectAs(action==OA_GUEST?"guest":action==OA_LOGIN?"login":"register");return;}
     if(action==OA_ARCADE){leavingArcade=0;view.arcade=wantArcade=1;if(!connected){connectAs("guest");return;}sendSimple("joinArcade");view.screen=OS_ARCADE;view.panel=1;return;}
     if(action==OA_BACK){if(view.screen==OS_CHAT){view.screen=chatReturn;view.selected=0;return;}if(view.screen==OS_RESULTS){view.screen=view.arcade?OS_ARCADE:roomId?OS_ROOM:OS_ROOMS;view.selected=0;return;}if(view.screen==OS_PLAYERS){view.screen=view.arcade?OS_ARCADE:view.racing?OS_RACE:OS_ROOM;view.selected=0;return;}if(view.arcade&&view.screen==OS_ARCADE&&view.racing){view.panel=0;view.screen=OS_RACE;return;}disconnect(view.screen==OS_PROFILE);return;}
     if(!connected)return;
     switch(action){
+    case OA_SUBMIT_DUEL:if(joinCode[0])sendText("joinDuel","token",joinCode);break;
     case OA_LEAVE_ARCADE:sendSimple("leaveArcade");leavingArcade=1;stopRace();view.arcade=wantArcade=0;pendingSeat=-1;controlAt=0;view.screen=OS_ROOMS;view.panel=1;view.selected=0;break;
     case OA_ARCADE_LOBBY:view.screen=OS_ARCADE;view.panel=1;view.selected=0;break;
     case OA_OPEN_CHAT:chatReturn=view.screen;view.screen=OS_CHAT;view.panel=1;view.selected=0;break;
@@ -402,8 +416,17 @@ void OnlineActionDo(OnlineAction action,int arg,int direction){
 }
 void OnlineText(const char*text){if(!editing||!text)return;size_t have=strlen(editing),n=strlen(text);if(n<editCapacity-have)memcpy(editing+have,text,n+1);}
 void OnlineBackspace(void){if(!editing)return;size_t n=strlen(editing);if(!n)return;do{--n;}while(n&&((unsigned char)editing[n]&0xc0)==0x80);editing[n]=0;}
-void OnlineFinishEditing(void){if(view.editing==OA_CHAT&&chat[0]){sendText("chat","text",chat);chat[0]=0;}if(view.editing==OA_JOIN_DUEL&&joinCode[0])sendText("joinDuel","token",joinCode);view.editing=0;editing=NULL;}
-void OnlinePauseMenu(void){if(view.editing){OnlineFinishEditing();return;}if(view.finishing){showResults();return;}if(view.racing){view.panel=!view.panel;view.screen=OS_RACE;view.selected=0;}else OnlineActionDo(OA_BACK,0,0);}
+void OnlineFinishEditing(void){
+    if(view.editing==OA_CHAT&&chat[0]){sendText("chat","text",chat);chat[0]=0;}
+    if(view.editing==OA_JOIN_DUEL){
+        size_t first=0,end=strlen(joinCode);while(first<end&&isspace((unsigned char)joinCode[first]))first++;
+        while(end>first&&isspace((unsigned char)joinCode[end-1]))end--;
+        memmove(joinCode,joinCode+first,end-first);joinCode[end-first]=0;view.selected=1;
+    }
+    view.editing=0;editing=NULL;memset(editOriginal,0,sizeof(editOriginal));
+}
+void OnlineCancelEditing(void){if(editing)SDL_strlcpy(editing,editOriginal,editCapacity);view.editing=0;editing=NULL;memset(editOriginal,0,sizeof(editOriginal));}
+void OnlinePauseMenu(void){if(view.editing){OnlineCancelEditing();return;}if(view.finishing){showResults();return;}if(view.racing){view.panel=!view.panel;view.screen=OS_RACE;view.selected=0;}else OnlineActionDo(OA_BACK,0,0);}
 void OnlineTick(void){
     if(!view.active)return;static uint8_t packet[65537];int type;size_t size;
     while(transport&&OnlineTransportPoll(transport,&type,packet,sizeof(packet),&size)){

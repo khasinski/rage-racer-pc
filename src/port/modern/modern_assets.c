@@ -1103,9 +1103,10 @@ static int BuildMaterialTransaction(void *context,RageRenderMaterial *definition
                                      definition,image,storage);
 }
 static void ModernAssetsSyncTrackRevision(void) {
-    static uint64_t sessionRevision;
+    static uint64_t sessionRevision,contentRevision;
     uint64_t now=SessionProviderRevision();
-    if(now!=sessionRevision){ModernPreparedMaterialsClear(&s_preparedMaterials);sessionRevision=now;}
+    uint64_t content=SessionProviderContentRevision();
+    if(now!=sessionRevision||content!=contentRevision){ModernPreparedMaterialsClear(&s_preparedMaterials);sessionRevision=now;contentRevision=content;}
     uint64_t revision = TrackAssetIdentityRevision();
     if (revision != s_preparedTrackRevision) {
         ModernPreparedMaterialsClear(&s_preparedMaterials);

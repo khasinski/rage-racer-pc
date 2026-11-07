@@ -10,6 +10,7 @@ const require=createRequire(new URL('../../online/package.json',import.meta.url)
 const {WebSocketServer}=require('ws');
 const disc=process.env.RAGE_TEST_DISC;
 if(!disc)process.exit(77);
+const profile=process.argv[3]==='profile';
 const sim=await Simulation.load(disc),variant=sim.classCar(0,3);
 const settings={name:'Lifecycle check',classIndex:0,course:0,reverse:false,laps:1,rivals:false,maxPlayers:1};
 const server=http.createServer((req,res)=>{
@@ -35,7 +36,7 @@ sockets.on('connection',ws=>{
     interval=setInterval(()=>{
       sim.tick(race);const tick=sim.simTick(race);
       if(loaded&&tick%2===0)ws.send(packet(sim.frame(race),tick));
-      if(epoch!==1||tick<400)return;
+      if(profile||epoch!==1||tick<400)return;
       clearInterval(interval);
       // Retiring supplies an otherwise valid final checkpoint (including
       // activeFlag=-1); convert its single seat to a classified finisher.
@@ -67,17 +68,17 @@ sockets.on('connection',ws=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const url=`http://127.0.0.1:${server.address().port}`;
-const smoke=process.argv[3]==='smoke';
-const args=smoke?['--set',`disc.image=${disc}`,'--set',`online.server=${url}`,'--set','hooks.online=arcade','--set','hooks.online_seconds=29','--set','run.frames=12000',...process.argv.slice(4)]
+const smoke=process.argv[3]==='smoke'||profile;
+const args=smoke?['--set',`disc.image=${disc}`,'--set',`online.server=${url}`,'--set','hooks.online=arcade','--set',`hooks.online_seconds=${profile?45:29}`,'--set',`run.frames=${profile?36000:12000}`,...process.argv.slice(4)]
   :[disc,url,'arcade-cycle','35','flow'];
 const child=spawn(process.argv[2],args,{env:{...process.env,PSYZ_HEADLESS:'1',SDL_AUDIODRIVER:'dummy'}});
 let output='';child.stdout.on('data',bytes=>{output+=bytes;});child.stderr.on('data',bytes=>{output+=bytes;});
-const timeout=setTimeout(()=>child.kill(),40000);
+const timeout=setTimeout(()=>child.kill(),profile?60000:40000);
 const code=await new Promise(resolve=>child.on('exit',resolve));
 clearTimeout(timeout);clearInterval(interval);clearTimeout(roundTimer);clearTimeout(finalTimer);clearTimeout(duplicateTimer);
 for(const client of sockets.clients)client.terminate();
 await new Promise(resolve=>sockets.close(resolve));await new Promise(resolve=>server.close(resolve));
 if(race)sim.free(race);
 process.stdout.write(output);
-assert.equal(code,0);assert(epoch>=2);assert.equal(inputDuringResults,0,'no driving input after results');
+assert.equal(code,0);assert(epoch>=(profile?1:2));assert.equal(inputDuringResults,0,'no driving input after results');
 if(!smoke){assert.match(output,/RESULTS received/);assert.match(output,/ARCADE next round/);}

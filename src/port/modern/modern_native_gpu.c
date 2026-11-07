@@ -112,6 +112,7 @@ _Static_assert(sizeof(SpotLight) == 12 * sizeof(float),
 
 
 typedef struct ModernNativeTexture {
+    uint64_t contentRevision;
     uint32_t assetKey;
     uint32_t material;
     uint8_t materialVariant;
@@ -131,6 +132,7 @@ typedef struct ModernNativeTexture {
 
 static SDL_GPUDevice *s_device;
 static uint32_t s_textureWarmCursor;
+static uint64_t s_textureCacheSerial;
 static ModernTextureKey s_preloadedBanks[4096];
 static unsigned s_preloadedBankCount;
 static void ModernNativePreloadWorld(const RenderWorld *world);
@@ -144,6 +146,7 @@ static SDL_GPUGraphicsPipeline *s_sky;
 static SDL_GPUTexture *s_skyTexture;
 static SDL_GPUSampler *s_skySampler;
 static RageSkyTextureIdentity s_skyIdentity;
+static uint64_t s_skyContentRevision;
 static int s_skyHasPanorama;
 static uint32_t s_skyRetryFrames;
 static SDL_GPUGraphicsPipeline *s_lampGlow;
@@ -857,6 +860,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter,
 static void ModernNativeGpuClearTextures(void) {
     uint32_t index;
     s_textureWarmCursor = 0;
+    ++s_textureCacheSerial;
     s_preloadedBankCount = 0;
     if (s_device != NULL) {
         for (index = 0; index < s_textureIndex.count; index++) {
@@ -879,6 +883,7 @@ static void ModernNativeReleaseSkyTexture(void) {
     s_skyTexture = NULL;
     memset(&s_skyIdentity, 0, sizeof(s_skyIdentity));
     s_skyHasPanorama = 0;
+    s_skyContentRevision = 0;
     s_skyRetryFrames = 0;
 }
 
@@ -901,7 +906,8 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
     uint32_t width = 1, height = 1;
     void *mapped;
     int loaded;
-    if (s_skyTexture != NULL && RenderSkyTextureIdentityEqual(&s_skyIdentity, &identity)) {
+    uint64_t contentRevision=SessionProviderContentRevision();
+    if (s_skyTexture != NULL && s_skyContentRevision==contentRevision && RenderSkyTextureIdentityEqual(&s_skyIdentity, &identity)) {
         /* The first native present can occur while the game's sky atlas is
          * still being uploaded to VRAM. Do not retain that blank import for
          * the rest of the course: keep the gradient briefly, then retry. */
@@ -968,6 +974,7 @@ static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
      * so keeping one beside every resident texture only doubles memory use. */
     SDL_ReleaseGPUTransferBuffer(s_device, upload);
     s_skyIdentity = identity;
+    s_skyContentRevision=contentRevision;
     s_skyHasPanorama = loaded;
     s_skyRetryFrames = loaded ? 0 : 30;
     if (RuntimeConfigEnabled("diagnostics.modern_asset_trace")) {
@@ -1398,7 +1405,10 @@ static ModernNativeTexture *ModernNativeFindTexture(
     const RageNativeDrawSpan *span) {
     ModernTextureKey key = ModernTextureKeyFromSpan(span);
     int index = ModernTextureIndexFind(&s_textureIndex, &key);
-    return index >= 0 ? &s_textures[index] : NULL;
+    if(index<0)return NULL;
+    RenderMeshInstance instance={.assetKey=span->assetKey,.assetSet=span->assetSet};
+    uint64_t revision=SessionProviderMaterialRevision(&instance,span->material,span->materialVariant);
+    return s_textures[index].contentRevision==revision?&s_textures[index]:NULL;
 }
 
 static void ModernNativeIndexTexture(const ModernNativeTexture *entry) {
@@ -1432,12 +1442,16 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     char pixelDigest[65];
     int shared = 0;
     if (entry != NULL || span->material == UINT32_MAX) return entry;
+    ModernTextureKey key=ModernTextureKeyFromSpan(span);
+    int previousIndex=ModernTextureIndexFind(&s_textureIndex,&key);
+    ModernNativeTexture *previous=previousIndex>=0?&s_textures[previousIndex]:NULL;
+    ModernNativeTexture candidate={0};entry=&candidate;
     /* Never release unsubmitted uploads to make room. A failed reservation
      * leaves the cache untouched and can be retried after the next prepare. */
     if (!ModernUploadQueueHasRoom(&s_pendingUploads)) return NULL;
     if (trace < 0) trace = RuntimeConfigEnabled("diagnostics.performance_trace");
     if (trace) loadStart = SDL_GetTicksNS();
-    if (s_textureIndex.count == MODERN_TEXTURE_INDEX_CAPACITY) {
+    if (!previous && s_textureIndex.count == MODERN_TEXTURE_INDEX_CAPACITY) {
         /* Only a change of track empties the cache, so this is permanent for
          * the rest of the course: every material after it draws nothing at
          * all. Say so once, because the symptom is missing scenery rather
@@ -1480,7 +1494,6 @@ static ModernNativeTexture *ModernNativeLoadTexture(
     Sha256Init(&digest);
     Sha256Update(&digest, image.pixels, image.size);
     Sha256Finish(&digest, pixelDigest);
-    entry = &s_textures[s_textureIndex.count];
     for (uint32_t i = 0; i < s_textureIndex.count; ++i) {
         ModernNativeTexture *existing = &s_textures[i];
         if (existing->width == image.width && existing->height == image.height &&
@@ -1497,7 +1510,6 @@ static ModernNativeTexture *ModernNativeLoadTexture(
             image.pixels, image.width, image.height, mipLevels,
             mipChain, mipSize)) goto fail;
     if (trace) mipDone = SDL_GetTicksNS();
-    entry = &s_textures[s_textureIndex.count];
     {
         SDL_GPUTextureCreateInfo texture = {0};
         SDL_GPUTransferBufferCreateInfo transfer = {0};
@@ -1576,6 +1588,19 @@ textureReady:
     materialDefinition.baseColorTexture = (RageRenderMaterialPath){0};
     materialDefinition.paintMask = (RageRenderMaterialPath){0};
     entry->definition = materialDefinition;
+    entry->contentRevision=SessionProviderMaterialRevision(&instance,span->material,span->materialVariant);
+    /* Publish a complete replacement. Shared image owners transfer to an
+     * existing alias before retirement, so no cached alias can dangle.
+     * SDL defers GPU destruction; a palette update needs no device-idle wait. */
+    if(previous){
+        if(previous->texture==candidate.texture)candidate.ownsTexture=previous->ownsTexture;
+        else if(previous->texture&&previous->ownsTexture){
+            int retained=0;
+            for(uint32_t i=0;i<s_textureIndex.count;i++)if(&s_textures[i]!=previous&&s_textures[i].texture==previous->texture){s_textures[i].ownsTexture=1;retained=1;break;}
+            if(!retained)SDL_ReleaseGPUTexture(s_device,previous->texture);
+        }
+        *previous=candidate;entry=previous;
+    }else{entry=&s_textures[s_textureIndex.count];*entry=candidate;}
     ModernNativeIndexTexture(entry);
     if (trace) {
         Uint64 done = SDL_GetTicksNS();
@@ -1709,6 +1734,50 @@ static void ModernNativePreloadWorld(const RenderWorld *world) {
                 (SDL_GetTicksNS() - started) / 1000000.0);
 }
 
+/* Warm owned online banks within a small per-frame budget. Visiting their
+ * offscreen materials during the countdown avoids a large decode burst when
+ * they first enter the camera, without a blocking whole-course preload. */
+static void ModernNativeWarmSessionBank(SDL_GPUCommandBuffer *command) {
+    static uint64_t serial=UINT64_MAX;
+    static uint32_t instanceAt,vertexAt;
+    static const RageRuntimeMesh *mesh;
+    static ModernTextureKey key;
+    static ModernTextureIndex attempted;
+    if(serial!=s_textureCacheSerial){serial=s_textureCacheSerial;instanceAt=vertexAt=0;mesh=NULL;}
+    Uint64 started=SDL_GetTicksNS();unsigned loads=0,visited=0;
+    while(s_world&&loads<2&&visited++<512&&SDL_GetTicksNS()-started<1500000u){
+        if(!mesh){
+            if(instanceAt>=s_world->instanceCount){instanceAt=0;return;}
+            const RenderMeshInstance *i=&s_world->instances[instanceAt++];
+            key=(ModernTextureKey){.assetKey=i->assetKey,.assetSet=i->assetSet,.variant=i->materialVariant,
+                .hasCarPaint=i->hasCarPaint,.carPaintColor1=i->carPaintColor1,.carPaintColor2=i->carPaintColor2};
+            unsigned seen;for(seen=0;seen<s_preloadedBankCount;seen++)if(ModernTextureKeyEqual(&key,&s_preloadedBanks[seen]))break;
+            if(seen<s_preloadedBankCount)continue;
+            mesh=ModernAssetsResidentMeshLookup(NULL,i);vertexAt=0;
+            ModernTextureIndexClear(&attempted);if(!mesh)continue;
+        }
+        if(vertexAt>=mesh->vertexCount){
+            if(s_preloadedBankCount<SDL_arraysize(s_preloadedBanks))s_preloadedBanks[s_preloadedBankCount++]=key;
+            mesh=NULL;continue;
+        }
+        RageRuntimeVertex vertex;if(!RuntimeMeshVertex(mesh,vertexAt++,&vertex))continue;
+        uint32_t raw=vertex.material,m=raw&~RAGE_RUNTIME_MATERIAL_SCROLL_U;
+        if(raw==UINT32_MAX)continue;
+        if(m&RAGE_RUNTIME_MATERIAL_METADATA){m&=RAGE_RUNTIME_MATERIAL_INDEX_MASK;if(m==RAGE_RUNTIME_MATERIAL_INDEX_MASK)continue;}
+        RageNativeDrawSpan span={.assetKey=key.assetKey,.assetSet=key.assetSet,.material=m,.materialVariant=key.variant,
+            .hasCarPaint=key.hasCarPaint,.carPaintColor1=key.carPaintColor1,.carPaintColor2=key.carPaintColor2};
+        if(span.assetSet==RAGE_RENDER_ASSET_TERRAIN&&!(raw&RAGE_RUNTIME_MATERIAL_TERRAIN_ENV_CLUT))span.materialVariant&=(uint8_t)~1u;
+        int alternate=TrackMaterialAlternateVariant(span.assetSet,span.materialVariant);
+        for(unsigned bank=0;bank<(alternate>=0?2u:1u);bank++){
+            if(bank)span.materialVariant=(uint8_t)alternate;
+            ModernTextureKey materialKey=ModernTextureKeyFromSpan(&span);
+            if(ModernTextureIndexFind(&attempted,&materialKey)>=0)continue;
+            (void)ModernTextureIndexInsert(&attempted,&materialKey);
+            if(!ModernNativeFindTexture(&span)){(void)ModernNativeLoadTexture(command,&span);loads++;}
+        }
+    }
+}
+
 /* Amortize the opposite track bank while the intro/current bank is visible.
  * Only already requested materials are candidates; no course-wide blocking
  * preload, live VRAM mutation, or invented car/CLUT variants. */
@@ -1719,6 +1788,7 @@ static void ModernNativeWarmTrackBank(SDL_GPUCommandBuffer *command) {
         enabled = value == NULL || RuntimeConfigEnabled("diagnostics.texture_prewarm");
     }
     if (!enabled || !MemoryBudgetAllowHd()) return;
+    if(SessionProviderActive()){ModernNativeWarmSessionBank(command);return;}
     Uint64 start = SDL_GetTicksNS();
     unsigned loads = 0, visited = 0;
     while (s_textureWarmCursor < s_textureIndex.count && loads < 2 && visited++ < 64) {
