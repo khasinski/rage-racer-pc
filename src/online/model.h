@@ -16,7 +16,7 @@ typedef enum OnlineScreen { OS_PROFILE,OS_CONNECTING,OS_ROOMS,OS_ROOM,OS_RACE,OS
 typedef struct OnlineRow {char label[96],value[256];OnlineAction action;int argument,enabled,editable;} OnlineRow;
 typedef struct OnlineView {
     OnlineScreen screen;int active,racing,panel,selected,count,editing,localSeat,userId;
-    int raceReady,finishing;
+    int raceReady,finishing,duelCodeInvalid;
     char title[96],subtitle[160],status[256];OnlineRow rows[ONLINE_ROWS];
     int32_t hud[16];
     int arcade,arcadeEpoch,nextRaceSeconds,nextCourse,nextClass,lateJoin,takeoverSeconds;

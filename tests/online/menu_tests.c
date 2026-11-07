@@ -45,11 +45,20 @@ int main(void) {
     OnlineActionDo(OA_BACK,0,0);
     CHECK(OnlineViewState()->screen==OS_PROFILE && v->selected==0 && v->active);
     OnlineActionDo(OA_DUEL_CODE,0,0);
-    CHECK(OnlineViewState()->screen==OS_DUEL_CODE&&v->rows[0].editable&&!v->rows[1].enabled);
+    CHECK(OnlineViewState()->screen==OS_DUEL_CODE&&v->rows[0].editable&&!v->rows[2].enabled&&!v->duelCodeInvalid);
     OnlineActionDo(OA_JOIN_DUEL,0,0);OnlineText("cancelled");OnlinePauseMenu();
-    CHECK(!OnlineViewState()->editing&&!v->rows[0].value[0]&&!v->rows[1].enabled);
-    OnlineActionDo(OA_JOIN_DUEL,0,0);OnlineText("  AbCd-123 \n");OnlineFinishEditing();
-    CHECK(!strcmp(OnlineViewState()->rows[0].value,"AbCd-123")&&v->rows[1].enabled&&v->selected==1);
+    CHECK(!OnlineViewState()->editing&&!v->rows[0].value[0]&&!v->rows[2].enabled);
+    const char *bad[]={"", "short", "AbCd_12-4567x", "AbCd 123-4567", "AbCd/123-4567", "AbCd_123-45ą"};
+    for(unsigned i=0;i<sizeof(bad)/sizeof(bad[0]);i++){
+        OnlineActionDo(OA_JOIN_DUEL,0,0);OnlineText(bad[i]);
+        CHECK(!OnlineViewState()->rows[2].enabled);
+        OnlineActionDo(OA_SUBMIT_DUEL,0,0);CHECK(OnlineViewState()->status[0]);
+        OnlineCancelEditing();
+    }
+    OnlineActionDo(OA_JOIN_DUEL,0,0);OnlineText("  AbCd_12-4567 \n");
+    CHECK(OnlineViewState()->rows[2].enabled&&!v->duelCodeInvalid);
+    OnlineFinishEditing();
+    CHECK(!strcmp(OnlineViewState()->rows[0].value,"AbCd_12-4567")&&v->rows[2].enabled&&v->selected==2);
     OnlineActionDo(OA_BACK,0,0);CHECK(OnlineViewState()->screen==OS_ROOMS);
     OnlineActionDo(OA_BACK,0,0);CHECK(OnlineViewState()->screen==OS_PROFILE);
     OnlineActionDo(OA_BACK,0,0);

@@ -616,10 +616,13 @@ void OverlayPaintOnline(OverlaySurface *surface,const OnlineView *view,float sca
         const OnlineRow *r=&view->rows[row];float top=(128+row*46)*s,base=top+29*s;
         if(row==view->selected){FillRoundRect(surface,16*s,top+3*s,568*s,40*s,9*s,WithAlpha(kAccent,0.16f));FillRoundRect(surface,20*s,top+13*s,3*s,20*s,1.5f*s,kAccent);}
         Color c=r->enabled||r->action==OA_NONE||view->screen==OS_RESULTS?kText:WithAlpha(kMuted,0.6f);
-        DrawText(surface,32*s,base,view->screen==OS_CHAT&&r->action==OA_NONE?12*s:17*s,r->label,c,ALIGN_LEFT);
+        int duelHint=view->screen==OS_DUEL_CODE&&r->action==OA_NONE;
+        if(duelHint)c=view->duelCodeInvalid?kDanger:kMuted;
+        DrawText(surface,32*s,base,duelHint?13*s:view->screen==OS_CHAT&&r->action==OA_NONE?12*s:17*s,r->label,c,ALIGN_LEFT);
         int activeEdit=r->editable&&view->editing==(int)r->action&&row==view->selected;
         if(r->editable){
-            FillRoundRect(surface,282*s,(top+3*s),286*s,40*s,6*s,WithAlpha(activeEdit?kAccent:kMuted,activeEdit?0.8f:0.35f));
+            int invalid=r->action==OA_JOIN_DUEL&&view->duelCodeInvalid;
+            FillRoundRect(surface,282*s,(top+3*s),286*s,40*s,6*s,WithAlpha(invalid?kDanger:activeEdit?kAccent:kMuted,invalid||activeEdit?0.8f:0.35f));
             FillRoundRect(surface,283*s,(top+4*s),284*s,38*s,5*s,kPanel);
         }
         const char *placeholder=r->action==OA_JOIN_DUEL?"Enter code...":r->action==OA_PASSWORD?"Enter password...":"Type here...";

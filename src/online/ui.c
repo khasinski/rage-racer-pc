@@ -113,7 +113,12 @@ void OnlineSmokeTick(void){
     }
     if(!strcmp(mode,"arcade-lobby")&&v->racing&&v->localSeat>=0){OnlineActionDo(OA_ARCADE_LOBBY,0,0);}
     if(v->screen==OS_ROOMS&&!requested){
-        if(!strcmp(mode,"duel-code")){OnlineActionDo(OA_DUEL_CODE,0,0);requested=1;}
+        if(!strcmp(mode,"duel-code")){
+            OnlineActionDo(OA_DUEL_CODE,0,0);
+            const char *code=RuntimeConfigGet("hooks.online_invite");
+            if(code){OnlineActionDo(OA_JOIN_DUEL,0,0);OnlineText(code);OnlineFinishEditing();}
+            requested=1;
+        }
         if(!strcmp(mode,"host")){OnlineActionDo(OA_QUICK_ROOM,0,0);requested=1;}
         else if(!strcmp(mode,"join"))for(int i=0;i<v->count;i++)if(v->rows[i].action==OA_JOIN&&v->rows[i].enabled&&strstr(v->rows[i].value,"Join lobby")){OnlineActionDo(OA_JOIN,v->rows[i].argument,0);requested=1;break;}
     }

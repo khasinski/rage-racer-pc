@@ -9,7 +9,7 @@ import type { Store } from './db.ts';
 import { Race } from './race.ts';
 import { RaceClock } from './race-clock.ts';
 import { Room, send, type Client } from './room.ts';
-import { carValid, checkSettings, firstCar, normalizeSettings, rollDuel, rollRoom, tireValid } from './room-rules.ts';
+import { carValid, checkDuelCode, checkSettings, firstCar, normalizeSettings, rollDuel, rollRoom, tireValid } from './room-rules.ts';
 import { RTC_ENABLED, RtcLink } from './rtc.ts';
 import type { Simulation } from './sim.ts';
 import { ArcadeSession } from './arcade.ts';
@@ -244,13 +244,13 @@ export class Lobby {
 
   /** The other driver, from the page link. A full duel does not take a third. */
   private joinDuel(client: Client, token: unknown): void {
-    if (typeof token !== 'string' || token.length === 0) return this.fail(client, 'That duel link is not valid.');
-    const room = this.duels.get(token);
-    if (!room) return this.fail(client, 'That duel is over.');
+    const issue = checkDuelCode(token);
+    if (issue) return this.fail(client, issue);
+    const room = this.duels.get((token as string).trim());
+    if (!room) return this.fail(client, 'This duel code is invalid or no longer active.');
     if (room.members.has(client.user.id)) return this.publish(room);
-    if (room.race || room.racers().length >= room.settings.maxPlayers) {
-      return this.fail(client, 'That duel already has two drivers.');
-    }
+    if (room.race) return this.fail(client, 'This duel has already started.');
+    if (room.racers().length >= room.settings.maxPlayers) return this.fail(client, 'This duel is full (2/2 players).');
     if (client.roomId !== null) this.leave(client, 'left');
     this.addMember(room, client);
   }

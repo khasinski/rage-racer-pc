@@ -4,6 +4,14 @@ import { randomBytes, randomInt } from 'node:crypto';
 import { TIRE_COMPOUND_COUNT, type DuelSetup, type RoomSettings } from '../shared/protocol.ts';
 import type { Simulation } from './sim.ts';
 
+/** Invitation tokens encode nine random bytes, with case preserved. */
+export function checkDuelCode(token: unknown): string | null {
+  if (typeof token !== 'string') return 'Enter a 12-character duel code.';
+  const code = token.trim();
+  if (/[^A-Za-z0-9_-]/.test(code)) return 'Use only letters, digits, - or _.';
+  return code.length === 12 ? null : 'Code must contain exactly 12 characters.';
+}
+
 /** An error for the player, or null when the settings can be used. */
 export function checkSettings(sim: Simulation, s: RoomSettings): string | null {
   if (!s || typeof s !== 'object') return 'Missing room settings.';

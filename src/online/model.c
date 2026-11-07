@@ -271,6 +271,21 @@ static void sampleTick(void){
 static void add(const char*label,const char*value,OnlineAction action,int arg,int enabled,int edit){
     if(view.count>=ONLINE_ROWS)return;OnlineRow*r=&view.rows[view.count++];memset(r,0,sizeof(*r));SDL_strlcpy(r->label,label,sizeof(r->label));if(value)SDL_strlcpy(r->value,value,sizeof(r->value));r->action=action;r->argument=arg;r->enabled=enabled;r->editable=edit;
 }
+/* Validate the trimmed code while editing too, so pasting whitespace is OK. */
+static const char *duelCodeIssue(void){
+    const unsigned char *first=(const unsigned char *)joinCode,*end=first+strlen(joinCode);
+    while(first<end&&isspace(*first))first++;
+    while(end>first&&isspace(end[-1]))end--;
+    for(const unsigned char*p=first;p<end;p++)
+        if(!((*p>='A'&&*p<='Z')||(*p>='a'&&*p<='z')||(*p>='0'&&*p<='9')||*p=='-'||*p=='_'))
+            return "Use only letters, digits, - or _.";
+    return end-first==12?NULL:"Code must contain exactly 12 characters.";
+}
+static void trimDuelCode(void){
+    size_t first=0,end=strlen(joinCode);while(first<end&&isspace((unsigned char)joinCode[first]))first++;
+    while(end>first&&isspace((unsigned char)joinCode[end-1]))end--;
+    memmove(joinCode,joinCode+first,end-first);joinCode[end-first]=0;
+}
 static void rows(void){
     if(view.screen==OS_RESULTS){if(view.arcade)snprintf(view.subtitle,sizeof(view.subtitle),"Next race in %d seconds",view.nextRaceSeconds);else SDL_strlcpy(view.subtitle,"Race complete",sizeof(view.subtitle));return;}view.count=0;char value[256];
     view.fastTransport=OnlineTransportFast(transport);
@@ -309,7 +324,9 @@ static void rows(void){
         SDL_strlcpy(view.title,"Join duel",sizeof(view.title));
         SDL_strlcpy(view.subtitle,"Paste the invitation code from your friend.",sizeof(view.subtitle));
         add("Invitation code",joinCode,OA_JOIN_DUEL,0,1,1);
-        add("Join duel","",OA_SUBMIT_DUEL,0,joinCode[0]!=0,0);
+        const char *issue=duelCodeIssue();view.duelCodeInvalid=joinCode[0]&&issue;
+        add(view.duelCodeInvalid?issue:"12 characters: letters, digits, - or _.","",OA_NONE,0,0,0);
+        add("Join duel","",OA_SUBMIT_DUEL,0,issue==NULL,0);
         add("Back","",OA_BACK,0,1,0);
     }else if(view.screen==OS_ROOM){
         SDL_strlcpy(view.title,settings.name,sizeof(view.title));Member*m=me();int editable=host&&!roomStatus&&!duel;
@@ -372,7 +389,8 @@ static void disconnect(int closeUI){stopRace();connected=0;token[0]=0;roomId=mem
 void OnlineSetCarLightsEnabled(int enabled){on_lights_enabled(enabled);}
 void OnlineActionDo(OnlineAction action,int arg,int direction){
     Member*m=me();int step=direction<0?-1:1;
-    if(action==OA_DUEL_CODE){view.screen=OS_DUEL_CODE;view.selected=0;return;}
+    if(action==OA_DUEL_CODE){view.screen=OS_DUEL_CODE;view.selected=0;view.status[0]=0;return;}
+    if(action==OA_SUBMIT_DUEL){trimDuelCode();const char *issue=duelCodeIssue();if(issue){fail(issue);return;}}
     if(action==OA_BACK&&view.screen==OS_DUEL_CODE){view.screen=OS_ROOMS;view.selected=0;return;}
     if(action==OA_PROFILE_OPTIONS||action==OA_ACCOUNT||action==OA_CONNECTION){view.screen=action==OA_PROFILE_OPTIONS?OS_PROFILE_OPTIONS:action==OA_ACCOUNT?OS_ACCOUNT:OS_CONNECTION;view.selected=0;return;}
     if(action==OA_BACK&&(view.screen==OS_PROFILE_OPTIONS||view.screen==OS_ACCOUNT||view.screen==OS_CONNECTION)){view.screen=view.screen==OS_PROFILE_OPTIONS?OS_PROFILE:OS_PROFILE_OPTIONS;view.selected=0;return;}
@@ -382,7 +400,7 @@ void OnlineActionDo(OnlineAction action,int arg,int direction){
     if(action==OA_BACK){if(view.screen==OS_CHAT){view.screen=chatReturn;view.selected=0;return;}if(view.screen==OS_RESULTS){view.screen=view.arcade?OS_ARCADE:roomId?OS_ROOM:OS_ROOMS;view.selected=0;return;}if(view.screen==OS_PLAYERS){view.screen=view.arcade?OS_ARCADE:view.racing?OS_RACE:OS_ROOM;view.selected=0;return;}if(view.arcade&&view.screen==OS_ARCADE&&view.racing){view.panel=0;view.screen=OS_RACE;return;}disconnect(view.screen==OS_PROFILE);return;}
     if(!connected)return;
     switch(action){
-    case OA_SUBMIT_DUEL:if(joinCode[0])sendText("joinDuel","token",joinCode);break;
+    case OA_SUBMIT_DUEL:fail("Joining duel...");sendText("joinDuel","token",joinCode);break;
     case OA_LEAVE_ARCADE:sendSimple("leaveArcade");leavingArcade=1;stopRace();view.arcade=wantArcade=0;pendingSeat=-1;controlAt=0;view.screen=OS_ROOMS;view.panel=1;view.selected=0;break;
     case OA_ARCADE_LOBBY:view.screen=OS_ARCADE;view.panel=1;view.selected=0;break;
     case OA_OPEN_CHAT:chatReturn=view.screen;view.screen=OS_CHAT;view.panel=1;view.selected=0;break;
@@ -414,14 +432,12 @@ void OnlineActionDo(OnlineAction action,int arg,int direction){
     default:break;
     }
 }
-void OnlineText(const char*text){if(!editing||!text)return;size_t have=strlen(editing),n=strlen(text);if(n<editCapacity-have)memcpy(editing+have,text,n+1);}
+void OnlineText(const char*text){if(!editing||!text)return;if(view.editing==OA_JOIN_DUEL)view.status[0]=0;size_t have=strlen(editing),n=strlen(text);if(n<editCapacity-have)memcpy(editing+have,text,n+1);}
 void OnlineBackspace(void){if(!editing)return;size_t n=strlen(editing);if(!n)return;do{--n;}while(n&&((unsigned char)editing[n]&0xc0)==0x80);editing[n]=0;}
 void OnlineFinishEditing(void){
     if(view.editing==OA_CHAT&&chat[0]){sendText("chat","text",chat);chat[0]=0;}
     if(view.editing==OA_JOIN_DUEL){
-        size_t first=0,end=strlen(joinCode);while(first<end&&isspace((unsigned char)joinCode[first]))first++;
-        while(end>first&&isspace((unsigned char)joinCode[end-1]))end--;
-        memmove(joinCode,joinCode+first,end-first);joinCode[end-first]=0;view.selected=1;
+        trimDuelCode();view.selected=duelCodeIssue()?0:2;
     }
     view.editing=0;editing=NULL;memset(editOriginal,0,sizeof(editOriginal));
 }
