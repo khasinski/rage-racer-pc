@@ -85,6 +85,7 @@ function bearer(req: IncomingMessage): string | null {
 }
 
 async function api(req: IncomingMessage, res: ServerResponse, path: string): Promise<void> {
+  if(path==='/api/status'&&req.method==='GET')return json(res,200,{ok:true,build:process.env.RAGE_BUILD_ID??'development',arcade:true,discId:sim.discId,...lobby.status()});
   if (req.method === 'POST' && (path === '/api/register' || path === '/api/login')) {
     const input = await readJson(req);
     if (!input) return json(res, 400, { error: 'Malformed request.' });
@@ -186,6 +187,7 @@ async function serveStatic(res: ServerResponse, path: string): Promise<void> {
 
 const server = createServer((req, res) => {
   const path = new URL(req.url ?? '/', 'http://localhost').pathname;
+  if(path==='/healthz'&&req.method==='GET'){json(res,200,{ok:true,build:process.env.RAGE_BUILD_ID??'development'});return;}
   const handler = path.startsWith('/api/') ? api(req, res, path) : serveStatic(res, path);
   handler.catch((error) => {
     console.error(error);
@@ -224,7 +226,7 @@ server.on('upgrade', (req, socket, head) => {
     return;
   }
   sockets.handleUpgrade(req, socket, head, (ws) => {
-    const client: Client = { ws, user, roomId: null, latencyMs: null };
+    const client: Client = { ws, user, roomId: null, latencyMs: null,native:url.searchParams.get('client')==='native-v1' };
     lastHeard.set(ws, performance.now());
     ws.on('pong', (stamp) => {
       const now = performance.now();

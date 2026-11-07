@@ -48,6 +48,8 @@ export class Lobby {
     setInterval(() => this.sweep(Date.now()), 2000).unref();
   }
 
+  status():{connected:number;privateRaces:number}{return {connected:this.clients.size,privateRaces:this.racing.size};}
+
   // ---- connections -------------------------------------------------------
 
   connect(client: Client): void {

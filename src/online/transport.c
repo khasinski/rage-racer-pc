@@ -136,7 +136,7 @@ static int worker(void*context){
     uint8_t nonce[16];char key[25],accept[29],request[2048];
     if(!host||!scheme||!randomBytes(nonce,sizeof(nonce))){curl_free(host);curl_free(port);curl_free(scheme);curl_url_cleanup(u);goto done;}
     base64(nonce,16,key);OnlineWebSocketAccept(key,accept);
-    snprintf(request,sizeof(request),"GET /ws?token=%s HTTP/1.1\r\nHost: %s%s%s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",token,host,port?":":"",port?port:"",key);
+    snprintf(request,sizeof(request),"GET /ws?token=%s&client=native-v1 HTTP/1.1\r\nHost: %s%s%s\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: %s\r\nSec-WebSocket-Version: 13\r\n\r\n",token,host,port?":":"",port?port:"",key);
     memset(token,0,sizeof(token));curl_free(host);curl_free(port);curl_free(scheme);curl_url_cleanup(u);
     if(!sendBytes(c,t,(uint8_t*)request,strlen(request))){error(t,"WebSocket handshake could not be sent.");goto done;}
     memset(request,0,sizeof(request));

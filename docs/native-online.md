@@ -3,7 +3,8 @@
 Open **ONLINE** in the main menu. All account, room, chat and race screens
 run in the native game, with the same panel style as Esc settings. No browser
 or launcher is required. Select the server origin in the profile panel, or set
-`online.server` in the INI. The development default is `http://127.0.0.1:7243`.
+`online.server` in the INI. The default is `https://rageracer.polanka.ovh`;
+use `http://127.0.0.1:7243` for local development.
 The game reuses the mounted disc image; it must match the server's disc ID.
 
 ## Online Arcade
@@ -64,6 +65,17 @@ npm --prefix online ci
 npm --prefix online run build:sim
 node online/server/main.ts --disc '/path/to/Track 01.bin' --port 7243
 ```
+
+`/healthz` reports the running build; `/api/status` also reports capability,
+disc identity and aggregate connection/race counts. Existing browser clients
+retain checkpoint format 2. Native clients advertise `client=native-v1` in
+their WebSocket URL to receive epoch-tagged private-race frames.
+
+For CapRover backend-only upgrades, `scripts/package-deploy.mjs --base-image`
+creates a small layer over the current image, preserving its browser assets,
+disc and installed dependencies. Verify dependency versions before selecting
+this route. Normal full rebuilds use `deploy/Dockerfile`. Back up `/data/rage.db`
+with SQLite's online backup API and retain the old image/version for rollback.
 
 SQLite data defaults to `online/server/data/`. Deploy the updated server for
 Arcade support; an older browser-only backend does not implement this mode.

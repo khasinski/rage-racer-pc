@@ -6,7 +6,7 @@
     "build:sim": "node scripts/build-sim.mjs",
     "start": "node server/main.ts",
     "typecheck": "tsc --noEmit -p server",
-    "test": "node --test server/arcade.test.ts"
+    "test": "node --test server/arcade.test.ts server/race.test.ts"
   },
   "engines": {"node": ">=24"},
   "dependencies": {"node-datachannel": "0.33.4", "ws": "8.22.0"},

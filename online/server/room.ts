@@ -13,6 +13,7 @@ export interface Client {
   replaced?: boolean; // superseded by a newer connection of the same account
   rtc?: RtcLink; // the race's data channel, once the client offers one
   arcade?: boolean;
+  native?: boolean; // epoch-framed checkpoints; old web clients keep format 2
 }
 
 export interface Member {

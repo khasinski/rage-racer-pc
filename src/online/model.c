@@ -15,7 +15,7 @@ typedef struct Room {int id,players,status;Settings settings;} Room;
 typedef struct Member {int id,variant,manual,tire,ready,host,spectator,online,ping;char name[48];} Member;
 static OnlineView view;
 static OnlineTransport *transport;
-static char disc[4096],server[512]="http://127.0.0.1:7243",name[21]="Racer",password[201],token[256],chat[201];
+static char disc[4096],server[512]="https://rageracer.polanka.ovh",name[21]="Racer",password[201],token[256],chat[201];
 static int loaded,connected,roomId,duel,roomStatus,roomPage,memberCount,roomCount,host,go,gotFrame,offeredRoom;
 static Room rooms[ONLINE_ROOMS];static Member members[ONLINE_MEMBERS];static Settings settings;
 static int wantArcade,leavingArcade,pendingSeat=-1,nextVariant=-1,courseVote;static uint32_t controlAt;

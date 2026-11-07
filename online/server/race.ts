@@ -235,14 +235,19 @@ export class Race {
     packet[9] = this.seatOf.size;
     this.acks.forEach((value, i) => packet.writeUInt32LE(value >>> 0, 10 + i * 4));
     packet.set(frame, header);
-    let compressed: Buffer | null = null; // for data channels, made once
+    // Keep the deployed browser's exact format. Desktop clients negotiate
+    // race epochs in their WS URL; compression is shared once per format.
+    const legacy=Buffer.allocUnsafe(packet.length-4);
+    legacy[0]=2;packet.copy(legacy,1,5);
+    let compressed: Buffer | null = null,legacyCompressed:Buffer|null=null;
     for (const id of this.viewers) {
       const client = this.room.client(id);
       if (!client) continue;
-      if (client.rtc?.open && client.rtc.send(compressed ??= deflateRawSync(packet, { level: 1 }))) continue;
+      const selected=client.native?packet:legacy;
+      if (client.rtc?.open && client.rtc.send(client.native?(compressed ??= deflateRawSync(packet,{level:1})):(legacyCompressed ??= deflateRawSync(legacy,{level:1})))) continue;
       const ws = client.ws;
       // A slow link skips frames rather than falling ever further behind.
-      if (ws.readyState === ws.OPEN && ws.bufferedAmount < BACKLOG_BYTES) ws.send(packet);
+      if (ws.readyState === ws.OPEN && ws.bufferedAmount < BACKLOG_BYTES) ws.send(selected);
     }
   }
 
