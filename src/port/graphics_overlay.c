@@ -39,11 +39,14 @@ static SDL_Window *s_window;
 static int s_windowW, s_windowH;
 static PsyzOverlayEventCB_SDL3 s_prevEvent;
 static PsyzOverlayRenderCB_SDL3GPU s_prevRender;
+static int s_onlineClosed;
 
 int PortGraphicsOverlayActive(void) { return s_model.open || OnlineActive(); }
 
 int PortGraphicsOverlayTakeClosed(void) {
-    return OverlayModelTakeClosed(&s_model);
+    int closed = OverlayModelTakeClosed(&s_model) || s_onlineClosed;
+    s_onlineClosed = 0;
+    return closed;
 }
 
 static unsigned NowMs(void) { return (unsigned)SDL_GetTicks(); }
@@ -144,6 +147,9 @@ static void OnEvent(const SDL_Event *event) {
     if(OnlineActive()&&!s_model.open){
         SDL_Window*w=NULL;SDL_GPUDevice*d=NULL;Psyz_VideoGetPresentationDevice_SDL3GPU(&w,&d);
         OnlineEvent(event,w);
+        /* Flush the pad state before the offline menu resumes, just as when
+         * closing settings. Otherwise the same Enter/A opens Online again. */
+        if (!OnlineActive()) s_onlineClosed = 1;
         return;
     }
     if (!s_model.open && PortMainMenuState().interactive) {

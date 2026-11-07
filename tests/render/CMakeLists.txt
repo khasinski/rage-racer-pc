@@ -2063,7 +2063,6 @@ target_include_directories(graphics_overlay_gpu_tests PRIVATE
     "${PROJECT_SOURCE_DIR}/external/psyz/psyz/include")
 target_link_libraries(graphics_overlay_gpu_tests PRIVATE SDL3::SDL3)
 target_include_directories(graphics_overlay_gpu_tests PRIVATE ${PROJECT_SOURCE_DIR}/src)
-target_sources(graphics_overlay_gpu_tests PRIVATE ${PROJECT_SOURCE_DIR}/src/online/disabled.c)
 add_test(NAME graphics_overlay_gpu COMMAND graphics_overlay_gpu_tests)
 set_tests_properties(graphics_overlay_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
 

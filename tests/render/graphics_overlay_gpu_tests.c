@@ -14,6 +14,22 @@
  * be driven directly; the host services it calls are replaced below. */
 #include "graphics_overlay.c"
 
+static int s_testOnlineActive;
+void OnlineOpen(void){s_testOnlineActive=1;}
+int OnlineActive(void){return s_testOnlineActive;}
+int OnlineRaceActive(void){return 0;}
+int OnlinePanelOpen(void){return s_testOnlineActive;}
+void OnlineTick(void){}
+void OnlineSampleInput(void){}
+int OnlineEvent(const SDL_Event *e,SDL_Window *w){
+    (void)w;
+    if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_GAMEPAD_BUTTON_DOWN||e->type==SDL_EVENT_MOUSE_BUTTON_DOWN)s_testOnlineActive=0;
+    return 1;
+}
+int OnlinePaint(OverlaySurface*s,int w,int h,OverlayLayout*l){(void)s;(void)w;(void)h;(void)l;return 0;}
+void OnlineShutdown(void){s_testOnlineActive=0;}
+void OnlineSmokeTick(void){}
+
 const RageMemoryBudget *MemoryBudgetGet(void){static const RageMemoryBudget budget={16384,8192,RAGE_MEMORY_NORMAL};return &budget;}
 void HdPackUiTick(struct OverlayModel *model){(void)model;}
 MainMenuState PortMainMenuState(void){return (MainMenuState){0};}
@@ -227,6 +243,23 @@ static int TestPanelControls(void) {
     s_model.selected = OverlayModelSettingCount(&s_model) + 1;
     Press(SDL_SCANCODE_RETURN);
     CHECK(!PortGraphicsOverlayActive() && PortGraphicsOverlayTakeClosed());
+
+    /* Online must request the same pad flush as settings on every exit path.
+     * Without it Enter/A remains a fresh press in the offline main menu. */
+    OnlineOpen();
+    Press(SDL_SCANCODE_RETURN);
+    CHECK(!PortGraphicsOverlayActive() && PortGraphicsOverlayTakeClosed());
+    CHECK(!PortGraphicsOverlayTakeClosed());
+    OnlineOpen();
+    Press(SDL_SCANCODE_ESCAPE);
+    CHECK(!PortGraphicsOverlayActive() && PortGraphicsOverlayTakeClosed());
+    OnlineOpen();
+    SDL_Event leave={0};
+    leave.type=SDL_EVENT_GAMEPAD_BUTTON_DOWN;
+    leave.gbutton.button=SDL_GAMEPAD_BUTTON_SOUTH;
+    OnEvent(&leave);
+    CHECK(!PortGraphicsOverlayActive() && PortGraphicsOverlayTakeClosed());
+    CHECK(!PortGraphicsOverlayTakeClosed());
     s_presentationAvailable = 0;
     return 0;
 }
