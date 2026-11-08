@@ -589,3 +589,52 @@ without tearing down native imports. HUD sprite overrides retain captured game
 coordinates and palette identities. See [hd_texture_packs.md](hd_texture_packs.md)
 for the local format, scope and authoring commands; v4 visual evidence is under
 `output/imagegen-poc/v4/evidence`.
+
+## Modern atmosphere update — 2026-11-08
+
+The modern backend now applies aerial perspective and exponential height fog
+per fragment, after texture modulation, direct/environment lighting, reflections
+and emission. Both extinction terms share one transmittance: distant geometry
+loses texture contrast and approaches the authored horizon palette instead of
+merely multiplying its texture by a fogged vertex colour. Night profiles converge
+to their dark horizon rather than a white fog. Authored light zones reduce the
+outdoor scattering term in enclosed scenery; the nearby road remains clear.
+
+The height layer uses the common course sea-level datum and an analytical ray
+integral, with a stable horizontal-ray limit. Its height scale and distance scale
+come from the course's fog range. This is a lightweight atmosphere approximation,
+not a voxel volume, local weather simulation or headlight light shafts. No extra
+render targets, large sky textures, downloads or player-provided assets are needed.
+
+Modern offline and online scenes, including rear-view mirrors, share the native
+sky shader. It renders world-direction cloud layers with four procedural detail
+scales above the original environment gradient. Clouds do not use the captured
+screen-space PS1 grid or its four repetitions around the horizon. The selected
+panorama contributes its palette; its nearest-filtered pixels no longer appear
+as blocks inside the new clouds. Camera translation and absent PS1 grid data do
+not change the new sky. Classic presentation is unchanged.
+
+For same-scene visual comparisons, `diagnostics.legacy_atmosphere=true` restores
+the former fog composition and offline PS1 sky overlay. The existing CPU-fog
+reference also retains legacy surface composition. The new GPU uniform fields
+have an explicit C layout assertion; committed SPIR-V and Metal sources are
+regenerated from the same GLSL with `shaders/build_spirv.sh`.
+
+Validation on macOS/Metal:
+
+- `native_atmosphere_gpu`: production integration function readback covers
+  radial distance, contrast loss, altitude, enclosed light zones, night colours,
+  disabled fog, below-datum and nearly horizontal rays.
+- `native_sky_gpu`: both legacy and modern paths; modern sky remains identical
+  after camera translation or removal of PS1 grid data; dark profiles stay dark.
+- Fog/depth/shadow GPU regression tests, renderer scene/frame/snapshot and mirror
+  checks passed. All three sky atlas/environment/roll runtime tests passed.
+- Classic standard, widescreen and high-FPS presentation tests passed with a PAL
+  disc. Hidden day/night captures were inspected, including the rear-view mirror.
+- A hidden native Online Arcade run reached tick 500, with a moving player car
+  and a captured native scene using the new sky and retail speedometer.
+
+Local comparison captures and logs are in `build/reports/atmosphere/`; the Aya
+comparison shows the same frozen Coast day and Lakeside night scenes before and
+after. Vulkan SPIR-V validation passed during generation; Windows, Android and
+physical device performance have not been measured by this change.

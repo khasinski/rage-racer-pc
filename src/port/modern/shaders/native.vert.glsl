@@ -34,6 +34,7 @@ layout(location = 5) out vec3 environmentLight;
 layout(location = 7) out float shadowReception;
 layout(location = 8) out vec3 viewDirection;
 layout(location = 9) out vec3 worldPositionOut;
+layout(location = 10) out float atmosphereEnabled;
 
 void main() {
     vec3 worldPosition = inPosition;
@@ -61,6 +62,7 @@ void main() {
     uv = inUV + vec2(instance.properties.z, 0.0);
     color = vec4(inColor) / 255.0;
     normal = worldNormal;
+    atmosphereEnabled = camera.fogColor.w > 0.0 ? 0.0 : worldFog.w;
     // Opt-in diagnostic path retains the CPU reference for identical-scene A/B.
     if (camera.fogColor.w > 0.0) {
         fog = worldFog;

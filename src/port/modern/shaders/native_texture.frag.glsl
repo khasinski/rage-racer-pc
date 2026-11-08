@@ -10,10 +10,12 @@ layout(location = 5) in vec3 environmentLight;
 layout(location = 7) in float shadowReception;
 layout(location = 8) in vec3 viewDirection;
 layout(location = 9) in vec3 worldPositionIn;
+layout(location = 10) in float atmosphereEnabled;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D materialTexture;
 layout(set = 2, binding = 1) uniform sampler2DShadow shadowMap;
 #include "native_scene_light.glsl"
+#include "native_atmosphere.glsl"
 #include "native_spot.glsl"
 #include "native_sun_shadow.glsl"
 struct LampPatch {
@@ -36,6 +38,7 @@ vec3 reflectedSky(vec3 direction) {
 }
 
 void main() {
+    vec4 surfaceFog = sceneLight.atmosphereRange.w > 0.5 ? vec4(0.0) : fog;
     /* Material mips are stored premultiplied so transparent atlas texels do
      * not contribute a black fringe. Convert back after filtered sampling. */
     vec4 texel = texture(materialTexture, uv);
@@ -50,7 +53,7 @@ void main() {
     if (material.emissiveAndShading.w >= 0.0)
         materialLighting = material.emissiveAndShading.w;
     float visibility = 1.0;
-    if (shadowReception > 0.5 && materialLighting > 0.0 && fog.a < 1.0) {
+    if (shadowReception > 0.5 && materialLighting > 0.0 && surfaceFog.a < 1.0) {
         visibility = sunVisibility(worldPositionIn, n);
     }
     float shadow = mix(0.10, 1.0, visibility);
@@ -65,8 +68,8 @@ void main() {
     light *= mix(1.0, mix(0.66, 1.0, visibility), materialLighting);
     // Preserve texture contrast, but keep indirect light readable in tunnels.
     light = max(light, vec3(0.18));
-    light = mix(light, vec3(1.0), fog.a);
-    vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
+    light = mix(light, vec3(1.0), surfaceFog.a);
+    vec3 foggedColor = mix(color.rgb, surfaceFog.rgb, surfaceFog.a);
     vec3 modulation = min(foggedColor * 2.0, vec3(1.0));
     vec3 base = texel.rgb * modulation * light * material.baseColor.rgb;
     float roughness = clamp(material.surface.x, 0.0, 1.0);
@@ -103,11 +106,11 @@ void main() {
     vec3 reflected = reflectedSky(reflectionDirection);
     float reflectedLuminance = dot(reflected, vec3(0.2126, 0.7152, 0.0722));
     reflected = mix(vec3(reflectedLuminance), reflected, 0.65);
-    base = mix(base, reflected, clamp(reflectionStrength, 0.0, 0.85) * (1.0 - fog.a));
+    base = mix(base, reflected, clamp(reflectionStrength, 0.0, 0.85) * (1.0 - surfaceFog.a));
     directSpecular *= coat * zoneReflection;
     vec3 specular = directSpecular * step(0.001, materialLighting);
     base += texel.rgb * modulation * material.baseColor.rgb *
-        spotLighting(worldPositionIn, n) * (1.0 - fog.a);
+        spotLighting(worldPositionIn, n) * (1.0 - surfaceFog.a);
     vec3 emissive = texel.rgb * material.emissiveAndShading.rgb;
     for (int i = 0; i < 8; ++i) {
         vec4 bounds = material.lamps[i].bounds;
@@ -120,6 +123,6 @@ void main() {
             all(lessThan(uv, bounds.zw)))
             emissive += material.lamps[i].emission.rgb;
     }
-    outColor = vec4(base + (specular + emissive) * (1.0 - fog.a),
+    outColor = vec4(applyAtmosphere(base + (specular + emissive) * (1.0 - surfaceFog.a), worldPositionIn, environmentLight, atmosphereEnabled),
                     texel.a * color.a * material.baseColor.a);
 }

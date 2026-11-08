@@ -164,8 +164,8 @@ static void AssetPreparation(void) {
 static void Sky(void) {
     char *glsl = Read("src/port/modern/shaders/native_sky.frag.glsl");
     char *dense = Dense(glsl);
-    const char *needles[] = {"cloudBand", "gl_FragCoord.x", "gl_FragCoord.y", "gridOrigin",
-        "sky.gridParams.w-gl_FragCoord.y", "(240.0/sky.gridParams.w)",
+    const char *needles[] = {"cloudBand", "screenUV.x", "screenUV.y", "gridOrigin",
+        "atmosphericSky(direction)", "sky.atmosphere.x>0.5",
         "(sky.gridOrigin.w-320.0)*0.5", "cloudCoverage", "mod(-floor(cloudBand),2.0)",
         "atan(direction.x,-direction.z)", "(4.0/tau)", "sky.gridParams.z==1.0", ":1.0",
         "cloudCoverage*=step(0.0,height)*validGrid", "sky.gridParams.z"};

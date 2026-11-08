@@ -52,6 +52,11 @@ if [ "${1:-}" = "fog-probe" ]; then
     exit 0
 fi
 
+if [ "${1:-}" = "atmosphere-probe" ]; then
+    build_shader atmosphere_probe.frag atmosphere_probe_frag frag fs_atmosphere_probe
+    exit 0
+fi
+
 if [ "${1:-}" = "shadow-uv-probe" ]; then
     build_shader shadow_uv_probe.frag shadow_uv_probe_frag frag fs_shadow_uv_probe
     exit 0
@@ -65,6 +70,12 @@ fi
 if [ "${1:-}" = "native-sky" ]; then
     build_shader native_sky.vert native_sky_vert vert vs_native_sky
     build_shader native_sky.frag native_sky_frag frag fs_native_sky
+    exit 0
+fi
+
+if [ "${1:-}" = "native-surface" ]; then
+    build_shader native_texture.frag native_texture_frag frag fs_native
+    build_shader native_color.frag native_color_frag frag fs_native_color
     exit 0
 fi
 
@@ -108,6 +119,7 @@ build_shader native_shadow.frag native_shadow_frag frag fs_shadow
 build_shader native_shadow_masked.frag native_shadow_masked_frag frag fs_shadow_masked
 build_shader native_texture.frag native_texture_frag frag fs_native
 build_shader native_color.frag native_color_frag frag fs_native_color
+build_shader atmosphere_probe.frag atmosphere_probe_frag frag fs_atmosphere_probe
 build_shader fog_probe.frag fog_probe_frag frag fs_fog_probe
 build_shader shadow_uv_probe.frag shadow_uv_probe_frag frag fs_shadow_uv_probe
 build_shader lamp_glow.vert lamp_glow_vert vert vs_lamp_glow

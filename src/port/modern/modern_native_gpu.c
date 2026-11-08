@@ -82,6 +82,7 @@ typedef struct ModernNativeCameraUniform {
 
 /* Diagnostic A/B reference only; normal rendering evaluates fog on the GPU. */
 static int s_cpuFogReference;
+static int s_legacyAtmosphere;
 
 typedef struct ModernNativeSkyUniform {
     float top[4];
@@ -91,6 +92,7 @@ typedef struct ModernNativeSkyUniform {
     float gridOrigin[4];
     float gridBasis[4];
     float gridParams[4];
+    float atmosphere[4];
 } ModernNativeSkyUniform;
 
 typedef struct ModernNativeLightUniform {
@@ -105,10 +107,16 @@ typedef struct ModernNativeLightUniform {
     float shadowRows[RAGE_RENDER_SHADOW_CASCADES * 3][4];
     float spotCount[4];
     SpotLight spots[RENDER_SPOT_LIGHT_CAPACITY];
+    float atmosphereEye[4]; /* xyz camera, w authored fog near */
+    float atmosphereRange[4]; /* far, height scale, ground altitude, enabled */
+    float atmosphereFogColor[4];
 } ModernNativeLightUniform;
 
 _Static_assert(sizeof(SpotLight) == 12 * sizeof(float),
                "spot light must match three std140 vec4 values");
+_Static_assert(offsetof(ModernNativeLightUniform, atmosphereEye) ==
+                   (21 + 3 * RENDER_SPOT_LIGHT_CAPACITY) * 4 * sizeof(float),
+               "atmosphere must follow the std140 scene light array");
 
 
 typedef struct ModernNativeTexture {
@@ -574,6 +582,8 @@ static void ModernNativeBuildSky(const RenderCamera *camera,
     out->gridParams[1] = camera->skyGridRow.z;
     out->gridParams[2] = camera->skyCloudRow == 0 ? 1.0f : 4.0f;
     out->gridParams[3] = (float)targetHeight;
+    out->atmosphere[0] = s_legacyAtmosphere ? 0.0f : 1.0f;
+    out->atmosphere[1] = camera->skyCloudRow == 0 ? 0.0f : 1.0f;
 }
 
 static void ModernNativeBuildLight(const RenderDirectionalLight *light,
@@ -598,6 +608,21 @@ static void ModernNativeBuildLight(const RenderDirectionalLight *light,
     out->skyBottom[0] = camera->skyBottomColor.x;
     out->skyBottom[1] = camera->skyBottomColor.y;
     out->skyBottom[2] = camera->skyBottomColor.z;
+    if (!s_legacyAtmosphere && camera->fogNear > 0.0f &&
+        camera->fogFar > camera->fogNear &&
+        isfinite(camera->fogNear) && isfinite(camera->fogFar)) {
+        out->atmosphereEye[0] = camera->transform.position.x;
+        out->atmosphereEye[1] = camera->transform.position.y;
+        out->atmosphereEye[2] = camera->transform.position.z;
+        out->atmosphereEye[3] = camera->fogNear;
+        out->atmosphereRange[0] = camera->fogFar;
+        out->atmosphereRange[1] = fmaxf(camera->fogNear * 0.15f, 100.0f);
+        out->atmosphereRange[2] = 0.0f; /* Common course sea-level datum. */
+        out->atmosphereRange[3] = 1.0f;
+        out->atmosphereFogColor[0] = camera->fogColor.x;
+        out->atmosphereFogColor[1] = camera->fogColor.y;
+        out->atmosphereFogColor[2] = camera->fogColor.z;
+    }
     if (s_haveShadowMap) {
         out->shadowParams[0] = (float)RAGE_RENDER_SHADOW_CASCADES;
         out->shadowParams[1] = 1.0f / (float)(2 * s_shadowTile);
@@ -683,6 +708,8 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter,
     if (!ModernAssetsReady()) return 0;
     const char *fogReference = SDL_getenv("RAGE_PORT_NATIVE_CPU_FOG");
     s_cpuFogReference = fogReference != NULL && strcmp(fogReference, "1") == 0;
+    s_legacyAtmosphere = s_cpuFogReference ||
+        RuntimeConfigEnabled("diagnostics.legacy_atmosphere");
     s_cpuGeometryReference = RuntimeConfigEnabled("diagnostics.modern_uncached_geometry");
     s_residentGeometryEnabled =
         !RuntimeConfigEnabled("diagnostics.modern_cpu_geometry");

@@ -1786,9 +1786,12 @@ static int ModernRender(const RageSceneSnapshot *snapshot) {
     if(menuFrame)ModernRenderOverlaySelection(cmd,vram,0,1u<<MODERN_LAYER_HUD,1);
     else if (s_enabled) {
         static uint64_t reportedIncompleteFrame = UINT64_MAX;
-        ModernRenderOverlaySelection(cmd, vram, 0,
-                                     1u << MODERN_LAYER_SKY, 1);
-        ModernNativeGpuDraw(cmd, s_target, s_depth,SessionProviderActive(),SessionProviderActive(), s_targetH);
+        int nativeSky = SessionProviderActive() ||
+            !RuntimeConfigEnabled("diagnostics.legacy_atmosphere");
+        if (!nativeSky)
+            ModernRenderOverlaySelection(cmd, vram, 0,
+                                         1u << MODERN_LAYER_SKY, 1);
+        ModernNativeGpuDraw(cmd, s_target, s_depth, nativeSky, nativeSky, s_targetH);
         if (s_config.modernSsao && ModernSsaoReady()) {
             ModernSsaoView view;
 

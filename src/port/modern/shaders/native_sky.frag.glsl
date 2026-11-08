@@ -13,7 +13,58 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
     vec4 gridOrigin;
     vec4 gridBasis;
     vec4 gridParams;
+    vec4 atmosphere; // enabled, authored cloud profile, reserved, reserved
 } sky;
+
+float cloudHash(vec2 p) {
+    vec3 q = fract(vec3(p.xyx) * 0.1031);
+    q += dot(q, q.yzx + 33.33);
+    return fract((q.x + q.y) * q.z);
+}
+
+float cloudNoise(vec2 p) {
+    vec2 cell = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    return mix(mix(cloudHash(cell), cloudHash(cell + vec2(1, 0)), f.x),
+               mix(cloudHash(cell + vec2(0, 1)),
+                   cloudHash(cell + vec2(1, 1)), f.x), f.y);
+}
+
+vec3 atmosphericSky(vec3 direction) {
+    float height = direction.y;
+    vec3 color = mix(sky.horizon.rgb, sky.middle.rgb,
+                     smoothstep(0.0, 0.20, max(height, 0.0)));
+    color = mix(color, sky.top.rgb, smoothstep(0.20, 0.70, height));
+    if (height < 0.0)
+        return mix(sky.horizon.rgb, sky.bottom.rgb,
+                   smoothstep(0.0, 0.15, -height));
+    /* A horizontal layer sampled along a world-space ray: continuous across
+     * yaw zero, independent of viewport, camera pitch/roll and translation.
+     * Four scales break up the PS1 panorama's repeated tile silhouettes. */
+    vec2 p = direction.xz / max(height + 0.16, 0.16) * 2.2;
+    float cloud = 0.0, weight = 0.57;
+    mat2 turn = mat2(0.8, -0.6, 0.6, 0.8);
+    for (int i = 0; i < 4; ++i) {
+        cloud += cloudNoise(p) * weight;
+        p = turn * p * 2.07 + vec2(17.1, 9.2);
+        weight *= 0.48;
+    }
+    float coverage = smoothstep(mix(0.59, 0.49, sky.atmosphere.y), 0.76, cloud);
+    coverage *= smoothstep(0.015, 0.10, height);
+    float daylight = clamp(dot(sky.horizon.rgb, vec3(0.2126, 0.7152, 0.0722)) * 2.0, 0.0, 1.0);
+    vec3 cloudColor = mix(sky.middle.rgb, vec3(0.95, 0.96, 0.98), daylight * 0.85);
+    cloudColor *= mix(0.68, 1.0, smoothstep(0.48, 0.80, cloud));
+    /* Retain the selected environment/custom panorama's palette in the new
+     * layer, without its screen-space tile density or four yaw repetitions. */
+    /* Palette samples are constant across the layer. Mapping nearest-filtered
+     * PS1 texels onto it would put large pixel blocks back into smooth clouds. */
+    vec4 authored = (texture(panorama, vec2(0.125, 0.5)) +
+                     texture(panorama, vec2(0.375, 0.5)) +
+                     texture(panorama, vec2(0.625, 0.5)) +
+                     texture(panorama, vec2(0.875, 0.5))) * 0.25;
+    cloudColor = mix(cloudColor, authored.rgb * mix(0.10, 1.0, daylight), authored.a * 0.22);
+    return mix(color, cloudColor, coverage);
+}
 
 void main() {
     /*
@@ -22,6 +73,10 @@ void main() {
      * band meant for below the horizon, whatever the gradient said.
      */
     vec3 direction = normalize(worldDirection);
+    if (sky.atmosphere.x > 0.5) {
+        outColor = vec4(atmosphericSky(direction), 1.0);
+        return;
+    }
     float height = direction.y;
     vec3 color;
     /*

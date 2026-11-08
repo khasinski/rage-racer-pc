@@ -52,9 +52,15 @@ int main(void) {
     SDL_GPUTextureTransferInfo source={.transfer_buffer=upload};
     SDL_GPUTextureRegion region={.texture=panorama,.w=1,.h=256,.d=1};
     SDL_UploadToGPUTexture(copy,&source,&region,false);SDL_EndGPUCopyPass(copy);
-    const float camera[5][4]={{0},{1,0,0,0},{0,1,0,0},{0,0,1,0},{1,1,0,0}};
-    const float sky[7][4]={{0,0,1,1},{0,0,1,1},{0,0,1,1},{0,0,1,1},
+    float camera[5][4]={{0},{1,0,0,0},{0,1,0,0},{0,0,1,0},{1,1,0,0}};
+    float sky[8][4]={{0,0,1,1},{0,0,1,1},{0,0,1,1},{0,0,1,1},
         {0,0,0,240},{64,0,0,128},{0,0,4,64}};
+    Uint8 modern[64*64*4];
+    for(int mode=0;mode<5;mode++){
+    if(mode){cmd=SDL_AcquireGPUCommandBuffer(d);CHECK(cmd);sky[7][0]=1;}
+    if(mode==2){camera[0][0]=12345;camera[0][1]=-678;camera[0][2]=500;}
+    if(mode==3){memset(sky[4],0,3*4*sizeof(float));} /* No PS1 grid needed. */
+    if(mode==4)for(int band=0;band<4;band++)for(int c=0;c<3;c++)sky[band][c]=0.01f;
     SDL_PushGPUVertexUniformData(cmd,0,camera,sizeof(camera));
     SDL_PushGPUFragmentUniformData(cmd,0,sky,sizeof(sky));
     SDL_GPUColorTargetInfo color={.texture=target,.load_op=SDL_GPU_LOADOP_CLEAR,.store_op=SDL_GPU_STOREOP_STORE};
@@ -71,9 +77,20 @@ int main(void) {
     CHECK(SDL_WaitForGPUFences(d,true,&fence,1));SDL_ReleaseGPUFence(d,fence);
     p=SDL_MapGPUTransferBuffer(d,download,false);CHECK(p);
     const Uint8 *upper=p+(8*64+32)*4,*lower=p+(55*64+32)*4;
-    CHECK(upper[0]>240 && upper[1]<10 && upper[2]<10);
-    CHECK(lower[2]>240 && lower[0]<10 && lower[1]<10);
+    if(!mode){
+        CHECK(upper[0]>240 && upper[1]<10 && upper[2]<10);
+        CHECK(lower[2]>240 && lower[0]<10 && lower[1]<10);
+    }else if(mode==1){
+        CHECK(upper[2]>upper[0] && upper[2]>upper[1]);
+        CHECK(lower[2]>240 && lower[0]<10 && lower[1]<10);
+        memcpy(modern,p,sizeof(modern));
+    }else if(mode<4){CHECK(memcmp(modern,p,sizeof(modern))==0);}
+    else for(int i=0;i<64*64;i++){
+        CHECK(p[i*4]<40 && p[i*4+1]<40 && p[i*4+2]<40);
+        CHECK(p[i*4+3]==255);
+    }
     SDL_UnmapGPUTransferBuffer(d,download);
+    }
     SDL_ReleaseGPUTransferBuffer(d,upload);SDL_ReleaseGPUTransferBuffer(d,download);
     SDL_ReleaseGPUTexture(d,target);SDL_ReleaseGPUTexture(d,panorama);SDL_ReleaseGPUSampler(d,sampler);
     SDL_ReleaseGPUGraphicsPipeline(d,pipeline);SDL_ReleaseGPUShader(d,vs);SDL_ReleaseGPUShader(d,fs);

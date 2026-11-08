@@ -9,19 +9,22 @@ layout(location = 4) in float lighting;
 layout(location = 5) in vec3 environmentLight;
 layout(location = 7) in float shadowReception;
 layout(location = 9) in vec3 worldPositionIn;
+layout(location = 10) in float atmosphereEnabled;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2DShadow shadowMap;
 #include "native_scene_light.glsl"
+#include "native_atmosphere.glsl"
 #include "native_spot.glsl"
 #include "native_sun_shadow.glsl"
 
 void main() {
+    vec4 surfaceFog = sceneLight.atmosphereRange.w > 0.5 ? vec4(0.0) : fog;
     vec3 n = dot(normal, normal) > 0.000001
         ? normalize(normal) : vec3(0.0, 1.0, 0.0);
     float diffuse = max(dot(n, normalize(sceneLight.direction.xyz)), 0.0);
-    vec3 foggedColor = mix(color.rgb, fog.rgb, fog.a);
+    vec3 foggedColor = mix(color.rgb, surfaceFog.rgb, surfaceFog.a);
     float visibility = 1.0;
-    if (shadowReception > 0.5 && lighting > 0.0 && fog.a < 1.0) {
+    if (shadowReception > 0.5 && lighting > 0.0 && surfaceFog.a < 1.0) {
         visibility = sunVisibility(worldPositionIn, n);
     }
     float shadow = mix(0.10, 1.0, visibility);
@@ -34,7 +37,7 @@ void main() {
     light *= mix(1.0, mix(0.66, 1.0, visibility), lighting);
     // Preserve texture contrast, but keep indirect light readable in tunnels.
     light = max(light, vec3(0.18));
-    light = mix(light, vec3(1.0), fog.a);
-    outColor = vec4(foggedColor * light + color.rgb *
-        spotLighting(worldPositionIn, n) * (1.0 - fog.a), color.a);
+    light = mix(light, vec3(1.0), surfaceFog.a);
+    outColor = vec4(applyAtmosphere(foggedColor * light + color.rgb *
+        spotLighting(worldPositionIn, n) * (1.0 - surfaceFog.a), worldPositionIn, environmentLight, atmosphereEnabled), color.a);
 }
