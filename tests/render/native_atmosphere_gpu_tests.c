@@ -72,6 +72,7 @@ int main(void) {
     }
     CHECK(abs((int)samples[0][0]-26)<=1);
     CHECK(samples[1][0]>samples[0][0] && samples[2][0]>samples[1][0] && samples[3][0]>samples[2][0]);
+    CHECK(samples[2][0]<132); /* Keep the calibrated distance haze subtle. */
     CHECK(samples[4][0]<samples[1][0]);CHECK(samples[5][0]<samples[1][0]);
     CHECK(abs((int)samples[6][0]-26)<=1 && abs((int)samples[7][0]-26)<=1);
     CHECK(samples[8][0]<26); /* Night converges to dark horizon, never white. */

@@ -10,7 +10,7 @@ vec3 applyAtmosphere(vec3 surface, vec3 position, vec3 environment,
     float nearDistance = sceneLight.atmosphereEye.w * 0.25;
     float farDistance = sceneLight.atmosphereRange.x;
     float airDepth = max(distance - nearDistance, 0.0) *
-                     (2.0 / max(farDistance - nearDistance, 1.0));
+                     (0.85 / max(farDistance - nearDistance, 1.0));
     float heightScale = sceneLight.atmosphereRange.y;
     float ground = sceneLight.atmosphereRange.z;
     float h0 = clamp((sceneLight.atmosphereEye.y - ground) / heightScale, -2.0, 20.0);

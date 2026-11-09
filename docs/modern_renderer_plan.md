@@ -638,3 +638,56 @@ Local comparison captures and logs are in `build/reports/atmosphere/`; the Aya
 comparison shows the same frozen Coast day and Lakeside night scenes before and
 after. Vulkan SPIR-V validation passed during generation; Windows, Android and
 physical device performance have not been measured by this change.
+
+## Volumetric clouds and gentler haze — 2026-11-09
+
+Distance haze now uses an air extinction coefficient of 0.85 instead of 2.0,
+retaining substantially more distant texture contrast. Height-fog density is
+unchanged. A GPU readback assertion caps the calibrated distant-scene haze so
+this tuning cannot silently revert to the stronger previous setting.
+
+The default modern sky now integrates a three-dimensional cloud layer with
+32 stratified ray samples and two sun-direction density samples for internal
+shadowing. Height shaping, macro value noise and finer Worley erosion create
+billows; transmission and forward scattering give shaded interiors and bright
+edges. Lighting takes the scene sun direction and environment palette into
+account while keeping daylight scattering close to neutral. Night profiles
+remain dark. Neighbouring rays use different sampling offsets to suppress
+visible integration slices without allocating temporal history targets.
+
+A tileable 64-cubed RGBA8 noise volume is generated in C on first sky use,
+uploaded once, and retained across course changes until device shutdown. Its
+GPU allocation is 1 MiB. The equally sized staging buffer is released after
+encoding the upload. No noise file, downloaded sky pack, shader compiler or
+additional image-generation step is needed when starting the game. The new
+sky retains the original panorama's palette contribution and the existing sky
+atlas override tests. Offline, online and mirror views share the implementation.
+
+Clouds have camera parallax and a slow, deterministic wind offset driven by the
+simulation frame. The wind wraps at a common period of both noise scales, with
+GPU verification that the transition does not visibly jump. The diagnostic
+`diagnostics.flat_clouds=true` selects the preceding flat procedural clouds for
+comparisons. `diagnostics.legacy_atmosphere=true` remains the older complete
+atmosphere comparison. Neither is an automatic renderer fallback.
+
+The approach follows the general noise-volume/ray-integration family discussed
+in Guerrilla's [Nubis presentation](https://www.guerrilla-games.com/read/nubis-authoring-real-time-volumetric-cloudscapes-with-the-decima-engine).
+This is our bounded sky layer, not a port of their production weather system.
+
+Verification:
+
+- Actual Metal sky shader readbacks cover sun-direction changes, 3D camera
+  parallax, wind motion and wrap continuity, dark night profiles, grid-independent
+  projection, and the flat comparison path. The C noise field is periodic in
+  all three axes. SPIR-V validation passed during generation.
+- Native fog, depth, shadow, world/snapshot, material and mirror regressions
+  passed, as did all three sky atlas/environment/roll game tests.
+- Hidden day/night captures and a native Online Arcade capture were inspected.
+  The online client reached tick 500 with a moving player car.
+- On an Apple M5 Max, the isolated 1280x720 sky benchmark measured about
+  0.23 ms/frame for the flat sky and 1.15 ms/frame for the volume sky. These
+  averages include command submission and fence waiting, after four warm-up
+  draws and over twenty measured draws. They are not whole-game GPU timings
+  or measurements of Android/Windows hardware.
+
+Reports and the actual before/after comparison are in `build/reports/clouds/`.

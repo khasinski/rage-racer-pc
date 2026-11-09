@@ -4,6 +4,7 @@ layout(location = 0) in vec3 worldDirection;
 layout(location = 1) in vec2 screenUV;
 layout(location = 0) out vec4 outColor;
 layout(set = 2, binding = 0) uniform sampler2D panorama;
+layout(set = 2, binding = 1) uniform sampler3D cloudVolume;
 
 layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
     vec4 top;
@@ -13,8 +14,76 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
     vec4 gridOrigin;
     vec4 gridBasis;
     vec4 gridParams;
-    vec4 atmosphere; // enabled, authored cloud profile, reserved, reserved
+    vec4 atmosphere; // enabled, authored cloud profile, volume enabled, wind offset
+    vec4 sunDirection;
+    vec4 sunColor;
+    vec4 cloudEye;
 } sky;
+
+float cloudDensity(vec3 p) {
+    float h = (p.y - 20000.0) / 9000.0;
+    if (h <= 0.0 || h >= 1.0) return 0.0;
+    p.x += sky.atmosphere.w;
+    vec3 noise = textureLod(cloudVolume, p / 64000.0, 0.0).rgb;
+    float detail = textureLod(cloudVolume, p / 18000.0, 0.0).g;
+    float profile = smoothstep(0.0, 0.14, h) * (1.0 - smoothstep(0.55, 1.0, h));
+    float threshold = mix(0.50, 0.46, sky.atmosphere.y);
+    float body = smoothstep(threshold, threshold + 0.17, noise.r);
+    float erosion = (1.0 - noise.g) * 0.08 + (1.0 - detail) * 0.18 + (1.0 - noise.b) * 0.07;
+    return max(body * profile - erosion, 0.0) * 1.2;
+}
+
+vec3 volumetricClouds(vec3 direction, vec3 background) {
+    if (direction.y <= 0.025) return background;
+    float begin = max((20000.0 - sky.cloudEye.y) / direction.y, 0.0);
+    float end = min((29000.0 - sky.cloudEye.y) / direction.y, 160000.0);
+    if (end <= begin) return background;
+    float stepLength = (end - begin) / 32.0;
+    vec3 sunlight = dot(sky.sunDirection.xyz, sky.sunDirection.xyz) > 0.001
+        ? normalize(sky.sunDirection.xyz) : normalize(vec3(0.4, 0.7, -0.5));
+    float daylight = clamp(dot(sky.horizon.rgb, vec3(0.2126, 0.7152, 0.0722)) * 2.0, 0.0, 1.0);
+    vec3 sunTint = dot(sky.sunColor.rgb, sky.sunColor.rgb) > 0.001
+        ? sky.sunColor.rgb / max(max(sky.sunColor.r, sky.sunColor.g), sky.sunColor.b)
+        : vec3(1.0, 0.97, 0.92);
+    /* The game's diffuse palette can be strongly blue. Keep that mood in
+     * ambient shadow, while water droplets scatter nearly neutral sunlight. */
+    sunTint = mix(vec3(1.0, 0.97, 0.92), sunTint, 0.15);
+    float forwardScatter = pow(max(dot(direction, sunlight), 0.0), 8.0);
+    vec4 authored = (texture(panorama, vec2(0.125, 0.5)) +
+                     texture(panorama, vec2(0.375, 0.5)) +
+                     texture(panorama, vec2(0.625, 0.5)) +
+                     texture(panorama, vec2(0.875, 0.5))) * 0.25;
+    vec3 ambient = mix(sky.middle.rgb, sky.horizon.rgb, 0.45) * 0.30 + vec3(daylight * 0.20);
+    ambient = mix(ambient, authored.rgb * daylight * 0.5, authored.a * 0.18);
+    vec3 scattered = vec3(0.0);
+    float transmittance = 1.0;
+    /* Stratify neighbouring rays to avoid visible horizontal integration
+     * slices without requiring history buffers or temporal reconstruction. */
+    uvec2 pixel = uvec2(gl_FragCoord.xy);
+    uint hash = pixel.x * 0x8da6b343u ^ pixel.y * 0xd8163841u;
+    hash ^= hash >> 16; hash *= 0x7feb352du;
+    hash ^= hash >> 15; hash *= 0x846ca68bu; hash ^= hash >> 16;
+    float jitter = float(hash & 65535u) / 65536.0;
+    for (int i = 0; i < 32; ++i) {
+        vec3 p = sky.cloudEye.xyz + direction * (begin + (float(i) + jitter) * stepLength);
+        float density = cloudDensity(p);
+        if (density < 0.002) continue;
+        /* Two cone-distance samples approximate self-shadowing. Translucent
+         * edges receive sunlight; the interior and underside stay shaded. */
+        float shadowDepth = cloudDensity(p + sunlight * 2200.0) * 1.2 +
+                            cloudDensity(p + sunlight * 5500.0) * 1.8;
+        float visibility = exp(-shadowDepth);
+        float opacity = 1.0 - exp(-density * stepLength * 0.00045);
+        vec3 light = ambient + sunTint * daylight *
+            (0.12 + visibility * (0.48 + forwardScatter * 0.15));
+        scattered += transmittance * opacity * light;
+        transmittance *= 1.0 - opacity;
+        if (transmittance < 0.015) break;
+    }
+    vec3 result = scattered + background * transmittance;
+    /* Long grazing rays dissolve into the same horizon haze as the course. */
+    return mix(background, result, smoothstep(0.035, 0.14, direction.y));
+}
 
 float cloudHash(vec2 p) {
     vec3 q = fract(vec3(p.xyx) * 0.1031);
@@ -38,6 +107,7 @@ vec3 atmosphericSky(vec3 direction) {
     if (height < 0.0)
         return mix(sky.horizon.rgb, sky.bottom.rgb,
                    smoothstep(0.0, 0.15, -height));
+    if (sky.atmosphere.z > 0.5) return volumetricClouds(direction, color);
     /* A horizontal layer sampled along a world-space ray: continuous across
      * yaw zero, independent of viewport, camera pitch/roll and translation.
      * Four scales break up the PS1 panorama's repeated tile silhouettes. */

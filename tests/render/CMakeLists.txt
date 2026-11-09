@@ -179,6 +179,7 @@ target_compile_options(native_atmosphere_gpu_tests PRIVATE ${RAGE_STRICT_WARNING
 add_test(NAME native_atmosphere_gpu COMMAND native_atmosphere_gpu_tests)
 set_tests_properties(native_atmosphere_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)
 target_include_directories(native_sky_gpu_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/port/modern/shaders")
+target_include_directories(native_sky_gpu_tests PRIVATE "${PROJECT_SOURCE_DIR}/src/port/modern")
 target_link_libraries(native_sky_gpu_tests PRIVATE SDL3::SDL3)
 add_test(NAME native_sky_gpu COMMAND native_sky_gpu_tests)
 set_tests_properties(native_sky_gpu PROPERTIES LABELS gpu SKIP_RETURN_CODE 77 TIMEOUT 30)

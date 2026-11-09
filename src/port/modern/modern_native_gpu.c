@@ -4,6 +4,7 @@
 #include "shaders/lamp_glow_frag_spv.h"
 #include "shaders/lamp_glow_frag_msl.h"
 #include "modern_native_gpu.h"
+#include "cloud_noise.h"
 #include "modern_ssao.h"
 #include "../runtime_config.h"
 #include "../port_config.h"
@@ -93,7 +94,12 @@ typedef struct ModernNativeSkyUniform {
     float gridBasis[4];
     float gridParams[4];
     float atmosphere[4];
+    float sunDirection[4];
+    float sunColor[4];
+    float cloudEye[4];
 } ModernNativeSkyUniform;
+_Static_assert(sizeof(ModernNativeSkyUniform) == 11 * 4 * sizeof(float),
+               "sky must match eleven std140 vec4 values");
 
 typedef struct ModernNativeLightUniform {
     float direction[4];
@@ -153,6 +159,8 @@ static SDL_GPUGraphicsPipeline *s_colorOpaqueDecal;
 static SDL_GPUGraphicsPipeline *s_sky;
 static SDL_GPUTexture *s_skyTexture;
 static SDL_GPUSampler *s_skySampler;
+static SDL_GPUTexture *s_cloudNoise;
+static SDL_GPUSampler *s_cloudSampler;
 static RageSkyTextureIdentity s_skyIdentity;
 static uint64_t s_skyContentRevision;
 static int s_skyHasPanorama;
@@ -584,6 +592,18 @@ static void ModernNativeBuildSky(const RenderCamera *camera,
     out->gridParams[3] = (float)targetHeight;
     out->atmosphere[0] = s_legacyAtmosphere ? 0.0f : 1.0f;
     out->atmosphere[1] = camera->skyCloudRow == 0 ? 0.0f : 1.0f;
+    out->atmosphere[2] = RuntimeConfigEnabled("diagnostics.flat_clouds") ? 0.0f : 1.0f;
+    /* 576000 is a common period of the 64000/18000-unit noise scales. */
+    out->atmosphere[3] = (float)(s_world->frame % 1440000u) * 0.4f;
+    out->sunDirection[0] = s_world->light.direction.x;
+    out->sunDirection[1] = s_world->light.direction.y;
+    out->sunDirection[2] = s_world->light.direction.z;
+    out->sunColor[0] = s_world->light.diffuseColor.x;
+    out->sunColor[1] = s_world->light.diffuseColor.y;
+    out->sunColor[2] = s_world->light.diffuseColor.z;
+    out->cloudEye[0] = camera->transform.position.x;
+    out->cloudEye[1] = camera->transform.position.y;
+    out->cloudEye[2] = camera->transform.position.z;
 }
 
 static void ModernNativeBuildLight(const RenderDirectionalLight *light,
@@ -732,7 +752,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter,
     skyFragment = ModernNativeCreateShader(
         native_sky_frag_spv, native_sky_frag_spv_len,
         native_sky_frag_msl, native_sky_frag_msl_len, "fs_native_sky",
-        SDL_GPU_SHADERSTAGE_FRAGMENT, 1, 0, 1);
+        SDL_GPU_SHADERSTAGE_FRAGMENT, 2, 0, 1);
     shadowVertex = ModernNativeCreateShader(
         native_shadow_vert_spv, native_shadow_vert_spv_len,
         native_shadow_vert_msl, native_shadow_vert_msl_len, "vs_shadow",
@@ -832,6 +852,10 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter,
     sampler.max_anisotropy = 1.0f;
     sampler.enable_anisotropy = false;
     s_skySampler = SDL_CreateGPUSampler(s_device, &sampler);
+    sampler.address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    sampler.address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT;
+    sampler.min_filter = sampler.mag_filter = SDL_GPU_FILTER_LINEAR;
+    s_cloudSampler = SDL_CreateGPUSampler(s_device, &sampler);
     s_lampGlow = CreateLampGlow();
     if (!s_lampGlow) { ModernNativeGpuShutdown(); return 0; }
     {
@@ -872,7 +896,7 @@ int ModernNativeGpuInit(SDL_GPUDevice *device, int linearTextureFilter,
         s_shadowDepth == NULL || s_shadowMasked == NULL ||
         s_shadowTexture == NULL ||
         s_shadowSampler == NULL ||
-        s_skySampler == NULL ||
+        s_skySampler == NULL || s_cloudSampler == NULL ||
         s_vertexBuffer == NULL ||
         s_vertexTransfer == NULL || s_sampler == NULL || s_vertices == NULL ||
         s_spans == NULL || s_mirrorSpans == NULL) {
@@ -912,6 +936,40 @@ static void ModernNativeReleaseSkyTexture(void) {
     s_skyHasPanorama = 0;
     s_skyContentRevision = 0;
     s_skyRetryFrames = 0;
+}
+
+static int ModernNativeEnsureCloudNoise(SDL_GPUCommandBuffer *command) {
+    if (s_cloudNoise) return 1;
+    SDL_GPUTextureCreateInfo texture = {0};
+    texture.type = SDL_GPU_TEXTURETYPE_3D;
+    texture.format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM;
+    texture.usage = SDL_GPU_TEXTUREUSAGE_SAMPLER;
+    texture.width = texture.height = texture.layer_count_or_depth = RAGE_CLOUD_NOISE_EDGE;
+    texture.num_levels = 1;
+    s_cloudNoise = SDL_CreateGPUTexture(s_device, &texture);
+    SDL_GPUTransferBufferCreateInfo info = {0};
+    info.usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD;
+    info.size = RAGE_CLOUD_NOISE_BYTES;
+    SDL_GPUTransferBuffer *upload = SDL_CreateGPUTransferBuffer(s_device, &info);
+    if (!s_cloudNoise || !upload) goto failed;
+    uint8_t *pixels = SDL_MapGPUTransferBuffer(s_device, upload, false);
+    if (!pixels) goto failed;
+    CloudNoiseGenerate(pixels);
+    SDL_UnmapGPUTransferBuffer(s_device, upload);
+    SDL_GPUCopyPass *copy = SDL_BeginGPUCopyPass(command);
+    if (!copy) goto failed;
+    SDL_GPUTextureTransferInfo source = {.transfer_buffer = upload};
+    SDL_GPUTextureRegion region = {.texture = s_cloudNoise,
+        .w = RAGE_CLOUD_NOISE_EDGE, .h = RAGE_CLOUD_NOISE_EDGE, .d = RAGE_CLOUD_NOISE_EDGE};
+    SDL_UploadToGPUTexture(copy, &source, &region, false);
+    SDL_EndGPUCopyPass(copy);
+    SDL_ReleaseGPUTransferBuffer(s_device, upload);
+    return 1;
+failed:
+    if (upload) SDL_ReleaseGPUTransferBuffer(s_device, upload);
+    if (s_cloudNoise) SDL_ReleaseGPUTexture(s_device, s_cloudNoise);
+    s_cloudNoise = NULL;
+    return 0;
 }
 
 static int ModernNativeEnsureSkyTexture(SDL_GPUCommandBuffer *command,
@@ -2455,8 +2513,8 @@ static void ModernNativeGpuDrawSet(
                     ModernNativeResolveDrawMaterial(&spans[spanIndex], texture);
         }
     }
-    if (drawSky &&
-        !ModernNativeEnsureSkyTexture(command, renderCamera))
+    if (drawSky && (!ModernNativeEnsureCloudNoise(command) ||
+        !ModernNativeEnsureSkyTexture(command, renderCamera)))
         return;
     pass = SDL_BeginGPURenderPass(command, &color, 1, &depth);
     if (pass == NULL) return;
@@ -2466,10 +2524,10 @@ static void ModernNativeGpuDrawSet(
         SDL_PushGPUFragmentUniformData(command, 0, &sky, sizeof(sky));
         SDL_BindGPUGraphicsPipeline(pass, s_sky);
         {
-            SDL_GPUTextureSamplerBinding binding = {
-                .texture = s_skyTexture,
-                .sampler = s_skySampler};
-            SDL_BindGPUFragmentSamplers(pass, 0, &binding, 1);
+            SDL_GPUTextureSamplerBinding bindings[2] = {
+                {.texture = s_skyTexture, .sampler = s_skySampler},
+                {.texture = s_cloudNoise, .sampler = s_cloudSampler}};
+            SDL_BindGPUFragmentSamplers(pass, 0, bindings, 2);
         }
         SDL_DrawGPUPrimitives(pass, 3, 1, 0, 0);
     }
@@ -2674,6 +2732,8 @@ void ModernNativeGpuShutdown(void) {
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_colorOpaqueDecal);
         if (s_sky != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_sky);
+        if (s_cloudNoise != NULL) SDL_ReleaseGPUTexture(s_device, s_cloudNoise);
+        if (s_cloudSampler != NULL) SDL_ReleaseGPUSampler(s_device, s_cloudSampler);
         if (s_lampGlow != NULL) SDL_ReleaseGPUGraphicsPipeline(s_device, s_lampGlow);
         if (s_shadowDepth != NULL)
             SDL_ReleaseGPUGraphicsPipeline(s_device, s_shadowDepth);
@@ -2704,6 +2764,8 @@ void ModernNativeGpuShutdown(void) {
     s_colorOpaque = NULL;
     s_colorOpaqueDecal = NULL;
     s_sky = NULL;
+    s_cloudNoise = NULL;
+    s_cloudSampler = NULL;
     s_lampGlow = NULL;
     s_shadowDepth = NULL;
     s_shadowMasked = NULL;
