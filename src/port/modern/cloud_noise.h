@@ -39,11 +39,15 @@ static void CloudNoiseGenerate(uint8_t *pixels){
         /* Texel centres make linear filtering periodic across all six faces. */
         float px=((float)x+0.5f)/8.0f,py=((float)y+0.5f)/8.0f,pz=((float)z+0.5f)/8.0f;
         int at=((z*64+y)*64+x)*4;
-        float base=0.70f*CloudValue(px,py,pz,8)+0.30f*CloudValue(px*2,py*2,pz*2,16);
+        float base=0.50f*CloudValue(px*0.5f,py*0.5f,pz*0.5f,4)+
+            0.28f*CloudValue(px,py,pz,8)+0.15f*CloudValue(px*2,py*2,pz*2,16)+
+            0.07f*CloudValue(px*4,py*4,pz*4,32);
         pixels[at]=(uint8_t)(base*255.0f+0.5f);
-        pixels[at+1]=(uint8_t)(CloudWorley(px,py,pz)*255.0f+0.5f);
-        pixels[at+2]=(uint8_t)(CloudValue(px*4,py*4,pz*4,32)*255.0f+0.5f);
-        pixels[at+3]=255;
+        float billows=0.60f*CloudWorley(px,py,pz)+
+            0.28f*CloudWorley(px*2,py*2,pz*2)+0.12f*CloudWorley(px*4,py*4,pz*4);
+        pixels[at+1]=(uint8_t)(billows*255.0f+0.5f);
+        pixels[at+2]=(uint8_t)(CloudWorley(px*4,py*4,pz*4)*255.0f+0.5f);
+        pixels[at+3]=(uint8_t)(CloudValue(px*0.5f,0,pz*0.5f,4)*255.0f+0.5f);
     }
 }
 #endif

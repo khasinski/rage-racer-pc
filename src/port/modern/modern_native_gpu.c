@@ -5,6 +5,7 @@
 #include "shaders/lamp_glow_frag_msl.h"
 #include "modern_native_gpu.h"
 #include "cloud_noise.h"
+#include "atmosphere_ground.h"
 #include "modern_ssao.h"
 #include "../runtime_config.h"
 #include "../port_config.h"
@@ -637,11 +638,16 @@ static void ModernNativeBuildLight(const RenderDirectionalLight *light,
         out->atmosphereEye[3] = camera->fogNear;
         out->atmosphereRange[0] = camera->fogFar;
         out->atmosphereRange[1] = fmaxf(camera->fogNear * 0.15f, 100.0f);
-        out->atmosphereRange[2] = 0.0f; /* Common course sea-level datum. */
-        out->atmosphereRange[3] = 1.0f;
+        out->atmosphereRange[2] = ModernAtmosphereGroundHeight(s_world, camera);
+        out->atmosphereRange[3] = RuntimeConfigEnabled("diagnostics.atmosphere_off") ? 2.0f : 1.0f;
         out->atmosphereFogColor[0] = camera->fogColor.x;
         out->atmosphereFogColor[1] = camera->fogColor.y;
         out->atmosphereFogColor[2] = camera->fogColor.z;
+        if (RuntimeConfigEnabled("diagnostics.atmosphere_trace") && s_world->frame % 60u == 0)
+            fprintf(stderr, "atmosphere frame=%llu eye=(%.1f,%.1f,%.1f) near=%.1f far=%.1f height=%.1f ground=%.1f\n",
+                (unsigned long long)s_world->frame, camera->transform.position.x,
+                camera->transform.position.y, camera->transform.position.z,
+                camera->fogNear, camera->fogFar, out->atmosphereRange[1], out->atmosphereRange[2]);
     }
     if (s_haveShadowMap) {
         out->shadowParams[0] = (float)RAGE_RENDER_SHADOW_CASCADES;

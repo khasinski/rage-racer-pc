@@ -3,7 +3,7 @@
  * Both share one transmittance and are applied AFTER texture and lighting. */
 vec3 applyAtmosphere(vec3 surface, vec3 position, vec3 environment,
                      float enabled) {
-    if (sceneLight.atmosphereRange.w < 0.5 || enabled < 0.5) return surface;
+    if (sceneLight.atmosphereRange.w != 1.0 || enabled < 0.5) return surface;
     vec3 ray = position - sceneLight.atmosphereEye.xyz;
     float distance = length(ray);
     if (distance < 0.001) return surface;
@@ -13,8 +13,10 @@ vec3 applyAtmosphere(vec3 surface, vec3 position, vec3 environment,
                      (0.85 / max(farDistance - nearDistance, 1.0));
     float heightScale = sceneLight.atmosphereRange.y;
     float ground = sceneLight.atmosphereRange.z;
-    float h0 = clamp((sceneLight.atmosphereEye.y - ground) / heightScale, -2.0, 20.0);
-    float h1 = clamp((position.y - ground) / heightScale, -2.0, 20.0);
+    /* Below the layer base density stays bounded. Negative course coordinates
+     * must never multiply extinction by exp(2) and erase window contrast. */
+    float h0 = clamp((sceneLight.atmosphereEye.y - ground) / heightScale, 0.0, 20.0);
+    float h1 = clamp((position.y - ground) / heightScale, 0.0, 20.0);
     float difference = h1 - h0;
     /* Stable horizontal-ray limit, including the camera exactly at sea level. */
     float averageDensity = abs(difference) < 0.001

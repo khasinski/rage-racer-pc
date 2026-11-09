@@ -691,3 +691,39 @@ Verification:
   or measurements of Android/Windows hardware.
 
 Reports and the actual before/after comparison are in `build/reports/clouds/`.
+
+## Corrected height origin and cloud density — 2026-11-09
+
+The initial height layer's zero-altitude assumption was wrong. For example,
+the Coast camera is near Y=-5591 while the local car root is near Y=-5608.
+Treating zero as sea level placed the scene below the height layer; the old
+negative-height clamp then multiplied density by exp(2), about 7.4. This was
+washing building facades toward a nearly uniform fog colour. A same-view
+capture with atmosphere disabled confirmed the window textures were present.
+
+The height origin now follows the local driving-surface approximation provided
+by the player car root. Main and mirror cameras use the same root; spectator
+views use the nearest car, and scenes without car roots use a camera-relative
+fallback. Density is also capped at its base-layer value below that origin,
+rather than increasing exponentially with negative course coordinates. This
+replaces the common sea-level-zero assumption described in the earlier update.
+The air extinction coefficient remains 0.85; the fix addresses the height
+calculation rather than further reducing every distance effect globally.
+
+`diagnostics.atmosphere_off=true` provides an actual no-atmosphere comparison
+without re-enabling legacy vertex fog. `diagnostics.atmosphere_trace=true`
+reports camera, fog range and layer origin for capture analysis. GPU tests now
+cover negative course coordinates, a translated layer origin and below-layer
+density bounds. C tests cover player-root preference, camera-height independence,
+nearest-car selection and the no-car fallback.
+
+Cloud density now uses a thinner 5000-unit layer (previously 9000), continuous
+rather than binarized base density, multi-scale cellular billows, fine cellular
+erosion and a separate weather/coverage channel. Reduced optical thickness
+keeps edges translucent and avoids smooth opaque cotton-like masses. The
+64-cubed texture remains 1 MiB, with generated data in all four channels.
+
+Actual before/after Coast and village captures, the no-atmosphere reference,
+a dark Lakeside capture and native Online Arcade capture are in
+`build/reports/atmosphere-refine/`. The online trace confirms the layer tracks
+the local car height through the course, including negative world altitudes.

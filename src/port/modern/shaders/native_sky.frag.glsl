@@ -21,22 +21,26 @@ layout(set = 3, binding = 0, std140) uniform NativeSkyColors {
 } sky;
 
 float cloudDensity(vec3 p) {
-    float h = (p.y - 20000.0) / 9000.0;
+    float h = (p.y - 20000.0) / 5000.0;
     if (h <= 0.0 || h >= 1.0) return 0.0;
     p.x += sky.atmosphere.w;
-    vec3 noise = textureLod(cloudVolume, p / 64000.0, 0.0).rgb;
-    float detail = textureLod(cloudVolume, p / 18000.0, 0.0).g;
-    float profile = smoothstep(0.0, 0.14, h) * (1.0 - smoothstep(0.55, 1.0, h));
-    float threshold = mix(0.50, 0.46, sky.atmosphere.y);
-    float body = smoothstep(threshold, threshold + 0.17, noise.r);
-    float erosion = (1.0 - noise.g) * 0.08 + (1.0 - detail) * 0.18 + (1.0 - noise.b) * 0.07;
-    return max(body * profile - erosion, 0.0) * 1.2;
+    vec4 noise = textureLod(cloudVolume, p / vec3(64000.0, 32000.0, 64000.0), 0.0);
+    float detail = textureLod(cloudVolume, p / 18000.0, 0.0).b;
+    float profile = smoothstep(0.0, 0.10, h) * (1.0 - smoothstep(0.45, 1.0, h));
+    /* Continuous density, rather than thresholding smooth value noise into
+     * opaque balls. Cellular billows and a separate weather field break up
+     * the silhouette; fine erosion is strongest at thin edges. */
+    float coverage = mix(0.46, 0.56, sky.atmosphere.y) + noise.a * 0.25;
+    float shape = mix(noise.r, noise.g, 0.35) * profile;
+    float body = max((shape - (1.0 - coverage)) / coverage, 0.0);
+    float erosion = (1.0 - detail) * 0.13;
+    return max(body - erosion, 0.0) * 3.2;
 }
 
 vec3 volumetricClouds(vec3 direction, vec3 background) {
     if (direction.y <= 0.025) return background;
     float begin = max((20000.0 - sky.cloudEye.y) / direction.y, 0.0);
-    float end = min((29000.0 - sky.cloudEye.y) / direction.y, 160000.0);
+    float end = min((25000.0 - sky.cloudEye.y) / direction.y, 160000.0);
     if (end <= begin) return background;
     float stepLength = (end - begin) / 32.0;
     vec3 sunlight = dot(sky.sunDirection.xyz, sky.sunDirection.xyz) > 0.001
@@ -73,7 +77,7 @@ vec3 volumetricClouds(vec3 direction, vec3 background) {
         float shadowDepth = cloudDensity(p + sunlight * 2200.0) * 1.2 +
                             cloudDensity(p + sunlight * 5500.0) * 1.8;
         float visibility = exp(-shadowDepth);
-        float opacity = 1.0 - exp(-density * stepLength * 0.00045);
+        float opacity = 1.0 - exp(-density * stepLength * 0.00035);
         vec3 light = ambient + sunTint * daylight *
             (0.12 + visibility * (0.48 + forwardScatter * 0.15));
         scattered += transmittance * opacity * light;

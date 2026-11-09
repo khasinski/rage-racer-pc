@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include <string.h>
+#include "atmosphere_ground.h"
 #include "native_sky_vert_spv.h"
 #include "native_sky_vert_msl.h"
 #include "atmosphere_probe_frag_spv.h"
@@ -12,6 +13,15 @@
 
 /* Read back the production atmosphere function. No window or game disc. */
 int main(void) {
+    RenderCamera view={0};view.transform.position.y=-5536;
+    RenderMeshInstance roots[3]={0};RenderWorld world={0};world.instances=roots;world.instanceCount=3;
+    roots[0].entity=0;roots[0].transform.position.y=-5500;
+    roots[1].entity=RAGE_RENDER_PLAYER_CAR_ENTITY;roots[1].transform.position.y=-5600;
+    roots[2].entity=0x10000;roots[2].transform.position.y=-8000;
+    CHECK(ModernAtmosphereGroundHeight(&world,&view)==-5600);
+    view.transform.position.y=9000;CHECK(ModernAtmosphereGroundHeight(&world,&view)==-5600);
+    world.instanceCount=1;CHECK(ModernAtmosphereGroundHeight(&world,&view)==-5500);
+    world.instanceCount=0;CHECK(ModernAtmosphereGroundHeight(&world,&view)==8936);
     if(!SDL_Init(SDL_INIT_VIDEO))return 77;
     SDL_GPUDevice *d=SDL_CreateGPUDevice(SDL_GPU_SHADERFORMAT_SPIRV|SDL_GPU_SHADERFORMAT_MSL,false,NULL);
     if(!d){SDL_Quit();return 77;}
@@ -37,8 +47,8 @@ int main(void) {
     SDL_GPUTransferBufferCreateInfo bi={.usage=SDL_GPU_TRANSFERBUFFERUSAGE_DOWNLOAD,.size=8*8*4};
     SDL_GPUTransferBuffer *download=SDL_CreateGPUTransferBuffer(d,&bi);CHECK(download);
     const float camera[5][4]={{0},{1,0,0,0},{0,1,0,0},{0,0,1,0},{1,1,0,0}};
-    unsigned char samples[13][4];
-    for(int test=0;test<13;test++){
+    unsigned char samples[16][4];
+    for(int test=0;test<16;test++){
         /* eye, range, fog colour, horizon, zenith, surface, position, openness */
         float u[8][4]={{0,0,0,100},{500,100,0,1},{0.6f,0.7f,0.8f,0},
             {0.6f,0.7f,0.8f,0},{0.6f,0.7f,0.8f,0},{0.1f,0.1f,0.1f,1},
@@ -55,6 +65,9 @@ int main(void) {
         if(test==10)u[6][2]=-500,u[5][0]=u[5][1]=u[5][2]=0.9f;
         if(test==11)u[0][1]=u[6][1]=-200; /* Below datum: finite, bounded. */
         if(test==12){u[0][1]=0;u[6][1]=0.0001f;} /* Nearly horizontal: stable limit. */
+        if(test==13){u[0][1]=u[6][1]=u[1][2]=-5600;} /* Translated course datum. */
+        if(test==14){u[0][1]=u[6][1]=-5600;} /* Wrong zero cannot amplify density. */
+        if(test==15)u[1][3]=2; /* Explicit no-atmosphere A/B diagnostic. */
         SDL_GPUCommandBuffer *cmd=SDL_AcquireGPUCommandBuffer(d);CHECK(cmd);
         SDL_PushGPUVertexUniformData(cmd,0,camera,sizeof(camera));
         SDL_PushGPUFragmentUniformData(cmd,0,u,sizeof(u));
@@ -80,7 +93,10 @@ int main(void) {
     CHECK(samples[10][0]-samples[2][0]<50); /* Texture/surface contrast attenuates. */
     CHECK(samples[11][0]>=samples[1][0] && samples[11][0]<=154);
     CHECK(abs((int)samples[12][0]-samples[1][0])<=1);
-    for(int i=0;i<13;i++)CHECK(samples[i][3]==255);
+    CHECK(abs((int)samples[13][0]-samples[1][0])<=1);
+    CHECK(abs((int)samples[14][0]-samples[1][0])<=1);
+    CHECK(abs((int)samples[15][0]-26)<=1);
+    for(int i=0;i<16;i++)CHECK(samples[i][3]==255);
     SDL_ReleaseGPUTransferBuffer(d,download);SDL_ReleaseGPUTexture(d,target);
     SDL_ReleaseGPUGraphicsPipeline(d,pipeline);SDL_ReleaseGPUShader(d,vs);SDL_ReleaseGPUShader(d,fs);
     SDL_DestroyGPUDevice(d);SDL_Quit();return 0;
