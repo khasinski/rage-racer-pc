@@ -3,6 +3,7 @@
 #include "render_instance_transform.h"
 #include "render_triangle_geometry.h"
 #include "authored_car_surface.h"
+#include "terrain_seams.h"
 
 #include <math.h>
 #include <stdlib.h>
@@ -21,12 +22,10 @@ static Vec3 TransformPosition(const RageTransformBasis *basis,
 }
 
 static float SnapTerrainCellBoundary(float value) {
-    const float cellSize = 2048.0f;
-    float boundary = roundf(value / cellSize) * cellSize;
     /* Adjacent PS1 terrain cells occasionally disagree by one source GTE
      * unit (0.25 native world units). The original low-resolution rasterizer
      * hid that quantization gap; weld only vertices already on a cell edge. */
-    return fabsf(value - boundary) <= 0.5f ? boundary : value;
+    return RenderSnapTerrainCellBoundary(value);
 }
 
 static Vec3 TransformNormal(const RageTransformBasis *basis,
@@ -235,7 +234,7 @@ static int TerrainQuadIsHidden(
     const RenderWorld *world, const RageTransformBasis *basis,
     const RenderViewTransform *viewTransform,
     const RageRuntimeMesh *mesh, uint32_t first,
-    RagePreparedTerrainQuad *quad) {
+    RagePreparedTerrainQuad *quad, RenderTerrainSeams *seams, const RenderMeshInstance *instance) {
     quad->indicesValid = quad->positionsValid = 0;
     /* Visibility has no UV, normal, fog or lighting dependency. Keep its
      * temporary geometry independent of the expanded shading payload. */
@@ -257,6 +256,7 @@ static int TerrainQuadIsHidden(
         position = TransformPosition(basis, &quad->source[corner]);
         position.x = SnapTerrainCellBoundary(position.x);
         position.z = SnapTerrainCellBoundary(position.z);
+        position = RenderTerrainSeamsPosition(seams, instance, position);
         if (corner < 3) triangles[0][corner] = position;
         else triangles[1][2] = position;
     }
@@ -419,7 +419,7 @@ static int BuildVertex(const RageTransformBasis *basis,
                            const RageRuntimeMesh *mesh, uint32_t index,
                            const RageRuntimeVertex *preparedSource,
                            const Vec3 *preparedPosition,
-                           float aspect, int localSource, RageNativeDrawVertex *out,
+                           float aspect, int localSource, RenderTerrainSeams *seams, RageNativeDrawVertex *out,
                            uint32_t *material, uint32_t *materialFlags,
                            uint8_t *depthDecal) {
     RageRuntimeVertex source;
@@ -445,6 +445,7 @@ static int BuildVertex(const RageTransformBasis *basis,
     if (preparedPosition == NULL && instance->assetSet == RAGE_RENDER_ASSET_TERRAIN) {
         worldPosition.x = SnapTerrainCellBoundary(worldPosition.x);
         worldPosition.z = SnapTerrainCellBoundary(worldPosition.z);
+        worldPosition = RenderTerrainSeamsPosition(seams, instance, worldPosition);
     }
     (void)aspect;
     out->position[0] = worldPosition.x; out->position[1] = worldPosition.y;
@@ -535,6 +536,7 @@ typedef struct RageNativeMeshTemplate {
 typedef struct RageNativeMeshTemplateState {
     RageNativeMeshTemplate *first;
     size_t bytes;
+    RenderTerrainSeams *terrainSeams;
 } RageNativeMeshTemplateState;
 
 static const RageRuntimeMesh *TemplateMeshLookup(void *context,
@@ -667,6 +669,14 @@ static uint32_t RenderBuildNativeDrawsFiltered(
         (world->instanceCount != 0 && world->instances == NULL)) return 0;
     viewTransform = RenderPrepareView(&world->camera);
     frustum = PrepareInstanceFrustum(world, aspect);
+    RenderTerrainSeams *temporarySeams = NULL;
+    RenderTerrainSeams **seamCache = &temporarySeams;
+    if (cache) {
+        if (!cache->state) cache->state = calloc(1, sizeof(RageNativeMeshTemplateState));
+        if (cache->state) seamCache = &((RageNativeMeshTemplateState *)cache->state)->terrainSeams;
+    }
+    RenderTerrainSeamsPrepare(seamCache, world, passFilter, lookup, context);
+    RenderTerrainSeams *seams = *seamCache;
     for (instanceIndex = 0; instanceIndex < world->instanceCount; instanceIndex++) {
         const RenderMeshInstance *instance = &world->instances[instanceIndex];
         const RageRuntimeMesh *mesh;
@@ -730,7 +740,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                     if (count - offset >= 6 && (casters == NULL || viewDraws))
                         terrainQuadHidden = TerrainQuadIsHidden(
                             world, &basis, &viewTransform, mesh, first + offset,
-                            &terrainQuad);
+                            &terrainQuad, seams, instance);
                 }
                 if (casters == NULL ? terrainQuadHidden
                                     : (viewDraws && !terrainQuadHidden)) continue;
@@ -758,7 +768,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
                             instance, &instanceState, mesh, indices[corner],
                             terrainQuad.positionsValid ? &terrainQuad.source[quadSourceCorner[quadCorner]] : NULL,
                             terrainQuad.positionsValid ? &terrainQuad.positions[quadCorner] : NULL,
-                            aspect, localSource,
+                            aspect, localSource, seams,
                             &triangle[corner], &materials[corner],
                             &materialFlags[corner], &depthDecals[corner]);
                         if (gpuFog && valid) {
@@ -877,6 +887,7 @@ static uint32_t RenderBuildNativeDrawsFiltered(
     }
 done:
     *spanCount = spansUsed;
+    RenderTerrainSeamsRelease(temporarySeams);
     return vertexCount;
 }
 
@@ -888,6 +899,7 @@ void RenderNativeMeshTemplateCacheRelease(RageNativeMeshTemplateCache *cache) {
         state->first = entry->next;
         free(entry->vertices); free(entry->spans); free(entry);
     }
+    RenderTerrainSeamsRelease(state->terrainSeams);
     free(state);
     cache->state = NULL;
 }

@@ -2166,6 +2166,11 @@ if(TARGET rage-racer-smoke AND TARGET menu_hd_fixture)
 endif()
 
 if(TARGET rage-racer-smoke)
+    add_test(NAME terrain_seams_runtime COMMAND ${CMAKE_COMMAND}
+        -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
+        -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/verify_terrain_seams.cmake)
+    set_tests_properties(terrain_seams_runtime PROPERTIES LABELS "e2e;gpu" TIMEOUT 60 SKIP_REGULAR_EXPRESSION "SKIP:")
     add_test(NAME waterfall_native COMMAND ${CMAKE_COMMAND}
         -DGAME=$<TARGET_FILE:rage-racer-smoke> -DCHECK=$<TARGET_FILE:ppm_capture_check>
         -DSOURCE=${CMAKE_SOURCE_DIR} -DOUTPUT_ROOT=${CMAKE_BINARY_DIR}

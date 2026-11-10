@@ -535,6 +535,112 @@ static void test_native_draw_builder_welds_terrain_cell_boundaries(void) {
     EXPECT_EQ(375, (int)(vertices[0].position[1] * 100.0f));
 }
 
+static void test_oblique_terrain_seams_share_world_positions(void) {
+    /* Actual Coast seam, away from any axis-aligned cell boundary. */
+    const float p[6][3]={{57001,-5680.25f,-15142},{57557.5f,-5604.25f,-14644},
+        {57648.75f,-5581.75f,-14988.25f},{57001.25f,-5680.25f,-15142},
+        {57649,-5581.75f,-14988.25f},{57068.5f,-5655.25f,-15457.5f}};
+    unsigned char bytes[300]={0};RageRuntimeMesh mesh;RenderMeshInstance storage[2]={0};
+    RenderWorld world;RageNativeGpuVertex vertices[6];RageNativeDrawSpan spans[2];uint32_t count=0;
+    memcpy(bytes,"RRMESH1",7);write_u32(bytes+8,1);write_u32(bytes+12,2);
+    write_u32(bytes+16,6);write_u32(bytes+20,6);
+    write_u32(bytes+24,0);write_u32(bytes+28,3);write_u32(bytes+32,6);
+    for(unsigned i=0;i<6;i++){
+        memcpy(bytes+36+i*40,p[i],sizeof(p[i]));bytes[36+i*40+25]=123;bytes[36+i*40+27]=255;
+        float uv[2]={0.125f+(float)i*0.01f,0.25f};memcpy(bytes+36+i*40+28,uv,sizeof(uv));
+        write_u32(bytes+36+i*40+36,4);write_u32(bytes+276+i*4,i);
+    }
+    EXPECT_EQ(1,RuntimeMeshOpen(&mesh,bytes,sizeof(bytes)));
+    RenderWorldInit(&world,storage,2);world.instanceCount=2;
+    world.camera.verticalFovDegrees=90;world.camera.nearPlane=1;world.camera.farPlane=100000;
+    for(unsigned i=0;i<2;i++){
+        storage[i].entity=0x20000+251+i;storage[i].mesh=i;storage[i].assetKey=88;
+        storage[i].assetSet=RAGE_RENDER_ASSET_TERRAIN;storage[i].flags=RAGE_RENDER_INSTANCE_ENABLE_FOG;
+        storage[i].transform.scale=(Vec3){1,1,1};
+    }
+    RageNativeDrawVertex wide[6];
+    EXPECT_EQ(6,RenderBuildNativeDraws(&world,1,test_mesh_lookup,&mesh,wide,6,spans,2,&count));
+    EXPECT_NEAR(wide[0].position[0],wide[3].position[0],0);
+    RageNativeMeshTemplateCache cache={0};
+    EXPECT_EQ(6,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    for(unsigned axis=0;axis<3;axis++){
+        EXPECT_NEAR(vertices[0].position[axis],vertices[3].position[axis],0);
+        EXPECT_NEAR(vertices[2].position[axis],vertices[4].position[axis],0);
+        EXPECT_NEAR(vertices[3].position[axis],vertices[3].fog[axis],0);
+    }
+    EXPECT_NEAR(0.155f,vertices[3].uv[0],0.00001f);EXPECT_EQ(123,vertices[3].color[1]);
+    EXPECT_NEAR(p[5][0],vertices[5].position[0],0); /* Unmatched vertices stay exact. */
+    /* A neighbour leaving the visible scene cannot reopen the welded edge. */
+    world.instances=storage+1;world.instanceCount=1;
+    EXPECT_EQ(3,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(p[0][0],vertices[0].position[0],0);
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    EXPECT_EQ(3,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(p[3][0],vertices[0].position[0],0); /* Source reset releases correspondence. */
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    world.instances=storage;world.instanceCount=2;
+    RenderMeshInstance swap=storage[0];storage[0]=storage[1];storage[1]=swap;
+    EXPECT_EQ(6,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(p[0][0],vertices[0].position[0],0); /* Canonical position is order independent. */
+    storage[0].transform.position.x=0.125f;
+    EXPECT_EQ(6,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(p[3][0]+0.125f,vertices[0].position[0],0); /* Replaced transforms invalidate old joins. */
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    storage[0].transform.position.x=0;
+    storage[0].assetKey=89;
+    EXPECT_EQ(6,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(p[3][0],vertices[0].position[0],0); /* Asset namespaces never weld together. */
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    storage[0].assetKey=88;storage[0].entity=0x20000+31;storage[1].entity=0x20000;
+    EXPECT_EQ(6,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(p[3][0],vertices[0].position[0],0); /* Grid rows must not wrap. */
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    storage[0].entity=storage[1].entity=0x20000+251;
+    EXPECT_EQ(6,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(p[3][0],vertices[0].position[0],0); /* Never collapse distinct corners within a cell. */
+    RenderNativeMeshTemplateCacheRelease(&cache);
+    storage[0].entity=0x20000+252;
+    float separated=p[3][0]+0.25f;memcpy(bytes+36+3*40,&separated,sizeof(separated));
+    EXPECT_EQ(6,RenderBuildNativeCachedCompactPassDraws(&cache,&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,6,spans,2,&count));
+    EXPECT_NEAR(separated,vertices[0].position[0],0); /* A larger authored gap remains intact. */
+    RenderNativeMeshTemplateCacheRelease(&cache);
+}
+
+static void test_terrain_seam_groups_do_not_collapse_chains(void) {
+    unsigned char bytes[436]={0};RageRuntimeMesh mesh;RenderMeshInstance items[3]={0};
+    RenderWorld world;RageNativeGpuVertex vertices[9];RageNativeDrawSpan spans[3];uint32_t count=0;
+    memcpy(bytes,"RRMESH1",7);write_u32(bytes+8,1);write_u32(bytes+12,3);
+    write_u32(bytes+16,9);write_u32(bytes+20,9);
+    for(unsigned i=0;i<4;i++)write_u32(bytes+24+i*4,i*3);
+    const float points[3]={100,100.25f,99.75f};
+    for(unsigned i=0;i<9;i++){
+        unsigned cell=i/3,corner=i%3;
+        float p[3]={corner?130+(float)cell*20+(float)corner:points[cell],0,corner?-101:-100};
+        memcpy(bytes+40+i*40,p,sizeof(p));bytes[40+i*40+27]=255;
+        write_u32(bytes+40+i*40+36,4);write_u32(bytes+400+i*4,i);
+    }
+    EXPECT_EQ(1,RuntimeMeshOpen(&mesh,bytes,sizeof(bytes)));
+    RenderWorldInit(&world,items,3);world.instanceCount=3;
+    world.camera.verticalFovDegrees=90;world.camera.nearPlane=1;world.camera.farPlane=1000;
+    for(unsigned i=0;i<3;i++){
+        items[i].entity=0x20000+251+i;items[i].mesh=i;items[i].assetKey=88;
+        items[i].assetSet=RAGE_RENDER_ASSET_TERRAIN;items[i].transform.scale=(Vec3){1,1,1};
+    }
+    EXPECT_EQ(9,RenderBuildNativeCompactPassDraws(&world,RAGE_RENDER_PASS_MAIN,1,0,
+        test_mesh_lookup,&mesh,vertices,9,spans,3,&count));
+    EXPECT_NEAR(100,vertices[0].position[0],0);EXPECT_NEAR(100,vertices[3].position[0],0);
+    EXPECT_NEAR(99.75f,vertices[6].position[0],0);
+}
+
 static void test_native_draw_builder_applies_authored_course_texture_scroll(void) {
     unsigned char bytes[164] = {0};
     RageRuntimeMesh mesh;
@@ -1744,6 +1850,8 @@ int main(void) {
     test_native_draw_builder_culls_dynamic_course_backfaces();
     test_native_draw_builder_culls_terrain_per_authored_quad();
     test_native_draw_builder_welds_terrain_cell_boundaries();
+    test_oblique_terrain_seams_share_world_positions();
+    test_terrain_seam_groups_do_not_collapse_chains();
     test_native_draw_builder_applies_authored_course_texture_scroll();
     test_native_draw_builder_preserves_terrain_ot_bias();
     test_native_draw_builder_preserves_dynamic_terrain_material_flags();

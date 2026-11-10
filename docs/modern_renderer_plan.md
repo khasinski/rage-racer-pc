@@ -727,3 +727,50 @@ Actual before/after Coast and village captures, the no-atmosphere reference,
 a dark Lakeside capture and native Online Arcade capture are in
 `build/reports/atmosphere-refine/`. The online trace confirms the layer tracks
 the local car height through the course, including negative world altitudes.
+
+## Oblique terrain seam welding — 2026-11-10
+
+A blue line in the Coast asphalt was an actual gap between adjacent terrain
+cells, not texture filtering. Draw/ray analysis identified cells 251 and 252,
+meshes 141 and 142. Their corresponding edge endpoints differed by one source
+GTE step in X: `(57001,-5680.25,-15142)` versus
+`(57001.25,-5680.25,-15142)`, and `57648.75` versus `57649` at the other endpoint.
+These are oblique joins away from the 2048-unit grid lines, so the existing
+axis-boundary snapping did not affect them.
+
+The modern mesh builder now retains a correspondence cache for exact quarter-unit
+terrain vertices in adjacent cells of the same asset namespace. Matching vertices
+share a deterministic original position, with each group bounded to one source
+step per axis. Different cells within a group must be neighbours in the 32x32
+terrain grid. The cache does not round all vertices to a coarse lattice, merge
+within-cell details or change UVs/colours. Larger gaps and arbitrary sub-quarter
+mod transforms remain unchanged. Existing axis-boundary snapping is retained.
+
+A preparation pass establishes correspondence before triangle culling/shading,
+so all emitted geometry and fog positions agree. The cache survives view changes
+and neighbour disappearance, is shared by the main/mirror/shadow builders, and
+is released with the native mesh cache. Replaced terrain sources/transforms
+invalidate old correspondence. Maps are bounded to 131072 exact positions and
+2048 cell identities; existing cells do not redo the neighbourhood search every
+frame. This changes native render geometry only, without modifying physics,
+classic rendering, imported files or the server simulation.
+
+Validation:
+
+- A same-frame Coast capture had 240 exposed sky pixels in the road regression
+  patch before the fix and zero afterwards. The compiled `road-seam` image check
+  rejects the original image and accepts the repaired one.
+- `terrain_seams_runtime` renders this actual PAL scene headlessly and checks
+  the asphalt patch. `render_mesh_build` reproduces the source coordinates and
+  covers CPU/compact parity, unchanged UVs/colour, reversed cell order, neighbour
+  disappearance, cache reset, source-transform replacement, asset isolation,
+  row wrapping, within-cell details and a deliberately larger gap.
+- Geometry packing/world/snapshot, depth/shadow GPU, mirror and renderer-toggle
+  tests passed. The native vertex budget test passed on both GPU and CPU geometry
+  paths with the PAL disc supplied.
+- Hidden Coast hill/village, Over Pass and Lakeside views were inspected, along
+  with native Online Arcade. In 100 repeated warm preparations the Coast start
+  measured about 0.42 ms median CPU preparation time (not whole-frame timing).
+
+Images, draw/ray dumps, logs and the lossless before/after road crop are under
+`build/reports/road-seams/`; the crop comparison is also presented in Aya.

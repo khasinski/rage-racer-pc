@@ -275,6 +275,19 @@ static int PostBorderPair(const char *before,const char *after) {
     return inside>10000&&outside==0;
 }
 
+static int RoadSeam(const unsigned char *pixels,unsigned width,unsigned height) {
+    if(width!=1280||height!=720)return 0;
+    unsigned holes=0;
+    /* Frozen Coast start: this patch contains asphalt, with no sky or HUD.
+     * The broken oblique cell join exposed 240 pure-blue sky pixels. */
+    for(unsigned y=450;y<550;y++)for(unsigned x=32;x<900;x++){
+        const unsigned char *p=pixels+((size_t)y*width+x)*3;
+        holes+=p[2]>p[0]*2+10&&p[2]>p[1]*2+10;
+    }
+    printf("road seam: sky pixels in asphalt patch=%u\n",holes);
+    return holes==0;
+}
+
 int main(int argc, char **argv) {
     unsigned width = 0, height = 0;
     unsigned char *pixels;
@@ -290,7 +303,8 @@ int main(int argc, char **argv) {
     if (argc != 3) return 2;
     pixels = ReadPPM(argv[2], &width, &height);
     if (!pixels) { fprintf(stderr, "invalid PPM: %s\n", argv[2]); return 1; }
-    if (!strcmp(argv[1], "sky-roll-gradient")) ok = SkyRollGradient(pixels, width, height);
+    if (!strcmp(argv[1], "road-seam")) ok = RoadSeam(pixels, width, height);
+    else if (!strcmp(argv[1], "sky-roll-gradient")) ok = SkyRollGradient(pixels, width, height);
     else if (!strcmp(argv[1], "waterfall-native")) ok = NativeWaterfall(pixels, width, height);
     else if (!strcmp(argv[1], "waterfall")) ok = Waterfall(pixels, width, height);
     else if (!strcmp(argv[1], "pegase")) ok = Pegase(pixels, width, height);
