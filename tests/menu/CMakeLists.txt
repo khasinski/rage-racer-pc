@@ -96,7 +96,8 @@ set_tests_properties(design_mode_state PROPERTIES LABELS functional)
 
 add_executable(car_name_plate_tests
     car_name_plate_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_car_name_plate.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/draw_car_name_plate.c
+    ${CMAKE_SOURCE_DIR}/src/port/jp_text.c)
 target_include_directories(car_name_plate_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -441,7 +442,8 @@ set_tests_properties(memory_card_menu PROPERTIES LABELS functional)
 add_executable(memory_card_screen_tests
     memory_card_screen_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_screen.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_message.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/save/draw_memory_card_message.c
+    ${CMAKE_SOURCE_DIR}/src/port/jp_text.c)
 target_include_directories(memory_card_screen_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -1111,7 +1113,8 @@ set_tests_properties(menu_light_burst PROPERTIES LABELS unit)
 add_executable(ranking_table_tests
     ranking_table_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/ranking_table.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_label.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/course_label.c
+    ${CMAKE_SOURCE_DIR}/src/port/jp_text.c)
 target_include_directories(ranking_table_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -1368,7 +1371,8 @@ set_tests_properties(negcon_calibration_update PROPERTIES LABELS unit)
 
 add_executable(negcon_calibration_draw_tests
     negcon_calibration_draw_tests.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/negcon_calibration_draw.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/negcon_calibration_draw.c
+    ${CMAKE_SOURCE_DIR}/src/port/jp_text.c)
 target_include_directories(negcon_calibration_draw_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include
@@ -1408,7 +1412,8 @@ set_tests_properties(controller_config_update PROPERTIES LABELS unit)
 add_executable(controller_config_draw_tests
     controller_config_draw_tests.c
     ${CMAKE_SOURCE_DIR}/src/main/PAL/main/menu/controller_config_draw.c
-    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/pad/pad_config_screen.c)
+    ${CMAKE_SOURCE_DIR}/src/main/PAL/main/pad/pad_config_screen.c
+    ${CMAKE_SOURCE_DIR}/src/port/jp_text.c)
 target_include_directories(controller_config_draw_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port/include
     ${CMAKE_SOURCE_DIR}/external/psyz/psyz/include

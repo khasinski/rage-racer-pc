@@ -274,10 +274,12 @@ set_tests_properties(architecture_boundaries PROPERTIES LABELS functional)
 
 add_executable(content_options_tests
     content_options_tests.c
-    ${CMAKE_SOURCE_DIR}/src/port/content_options.c)
+    ${CMAKE_SOURCE_DIR}/src/port/content_options.c
+    ${CMAKE_SOURCE_DIR}/src/port/jp_text.c)
 target_include_directories(content_options_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port
-    ${CMAKE_SOURCE_DIR}/include)
+    ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/src/port/include)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     target_compile_options(content_options_tests PRIVATE ${RAGE_STRICT_WARNING_OPTIONS})
 endif()
@@ -687,6 +689,11 @@ target_include_directories(timing_restore_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/src/port ${CMAKE_SOURCE_DIR}/src/port/include)
 add_test(NAME timing_restore COMMAND timing_restore_tests)
 set_tests_properties(timing_restore PROPERTIES LABELS functional)
+
+add_executable(jp_text_tests jp_text_tests.c ${CMAKE_SOURCE_DIR}/src/port/jp_text.c)
+target_include_directories(jp_text_tests PRIVATE ${CMAKE_SOURCE_DIR}/src/port/include)
+add_test(NAME jp_text COMMAND jp_text_tests)
+set_tests_properties(jp_text PROPERTIES LABELS unit)
 
 if(TARGET rage-racer-smoke)
     add_test(NAME runtime_config COMMAND ${CMAKE_COMMAND}

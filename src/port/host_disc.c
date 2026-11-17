@@ -1,4 +1,5 @@
 #include <limits.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #ifdef _WIN32
@@ -39,6 +40,7 @@
 #include "disc_stream_table.h"
 #include "fmv_audio.h"
 #include "content/sha256.h"
+#include "rage/jp_text.h"
 
 typedef struct RageHostDisc {
     FILE *file;
@@ -202,6 +204,28 @@ static void HostSeedStreamTable(void) {
     }
 }
 
+/* A Japanese disc keeps its messages as pre-drawn phrases; read the tables
+ * that cut them out of the sheet from the disc's own executable. */
+static void HostAdoptJapaneseText(const DiscIdentity *identity) {
+    DiscIsoReader reader;
+    DiscIsoFile executable;
+    unsigned char *blob;
+
+    JpTextReset();
+    if (identity->region == NULL || strcmp(identity->region, "NTSC-J") != 0 ||
+        identity->boot[0] == '\0')
+        return;
+    if (!DiscIsoOpen(&reader, HostReadRawSector, NULL) ||
+        !DiscIsoFindFile(&reader, identity->boot, &executable))
+        return;
+    blob = DiscIsoReadWholeFile(&reader, &executable);
+    if (blob == NULL) return;
+    fprintf(stderr, "rage-port: Japanese text tables %s\n",
+            JpTextAdoptExecutable(blob, executable.size) ? "adopted"
+                                                         : "not found");
+    free(blob);
+}
+
 /* Where the movies are and how long they run is a property of the disc in the
  * drive, not of the build.  Read it off the disc that was mounted, and say so
  * once, because a wrong table shows up as movies that start mid-scene and stop
@@ -219,6 +243,7 @@ static void HostAdoptDiscStreamTable(void) {
     fprintf(stderr, "rage-port: disc %s region=%s\n",
             identity.boot[0] != '\0' ? identity.boot : "unidentified",
             identity.region);
+    HostAdoptJapaneseText(&identity);
     if (!identity.tableValid) {
         fprintf(stderr,
                 "rage-port: keeping the built-in PAL FMV table: %s\n",

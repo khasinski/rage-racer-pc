@@ -4,6 +4,7 @@
 #include "game/memcard_internal.h"
 #include "game/menu.h"
 #include "game/state.h"
+#include "rage/jp_text.h"
 
 enum {
     MEMORY_CARD_BUSY_MESSAGE = 5,
@@ -43,6 +44,44 @@ static void DrawMemoryCardMessageText(
     }
 }
 
+/* The Japanese build: each message is a run of phrase strips cut from the
+ * pre-drawn sheet (JAP10/JAP11 DrawMemoryCardMessage), and the slot / busy
+ * icons sit in other places on that sheet. */
+static u8 *DrawJapaneseMemoryCardMessage(
+    s32 message, GameOrderingTableEntry *ot, u8 *prim) {
+    const JpTextGlyph *glyph = JpTextMemoryCardRow(message);
+    s32 x = 0x60;
+    s32 y = 0x40;
+    u8 column = 1;
+
+    if (glyph == NULL) return prim;
+    for (;;) {
+        if (column != 1) {
+            x = JpTextMemoryCardColumnX(column);
+            y = 0x60;
+        }
+        prim = GameQueueSprite(ot, prim, x, y, glyph->width, 0x18,
+                               glyph->u, glyph->v, 0x7F81);
+        x += glyph->width;
+        column = glyph->column;
+        glyph++;
+        if (column == 0) break;
+    }
+    if (message == 6 || message == 8 || message == 10 || message == 12) {
+        prim = GameQueueSprite(ot, prim, 0xA8, 0x60, 0xC, 0x18, 0xF4, 0x30,
+                               0x7F81);
+    } else if (message == 7 || message == 9 || message == 11 ||
+               message == 13) {
+        prim = GameQueueSprite(ot, prim, 0x6C, 0x60, 0xC, 0x18, 0xF4, 0x30,
+                               0x7F81);
+    } else if (message == MEMORY_CARD_BUSY_MESSAGE &&
+               (g_SceneTimer & 0x10) != 0) {
+        prim = GameQueueSprite(ot, prim, 0x108, 0x60, 0xC, 0x18, 0xF4, 0x18,
+                               0x7F81);
+    }
+    return prim;
+}
+
 void DrawMemoryCardMessage(s32 message) {
     const MemoryCardMessageLayout layout = GetMemoryCardMessageLayout();
     GameOrderingTableEntry *ot;
@@ -67,6 +106,10 @@ void DrawMemoryCardMessage(s32 message) {
             (message - MEMORY_CARD_BANNER_FIRST) * 0x18,
             0x7F81);
         prim = QueueDrawModePrim(ot, prim, 0x3F);
+    } else if (JpTextMemoryCardActive()) {
+        prim = RENDER_PRIM_CURSOR_AS(u8);
+        prim = DrawJapaneseMemoryCardMessage(message, ot, prim);
+        prim = QueueDrawModePrim(ot, prim, 0x3D);
     } else {
         /* The text advances the packet cursor, so the cursor must be read
          * after it. Reading it first queued the icon over the text packets

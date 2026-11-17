@@ -4,6 +4,7 @@
 #include "game/render_internal.h"
 #include "game/input_internal.h"
 #include "game/state.h"
+#include "rage/jp_text.h"
 
 void DrawControllerConfigScreen(const ControllerSetup *setup) {
     s32 selection;
@@ -47,10 +48,23 @@ void DrawNegconNeutralScreen(void) {
     GameOrderingTableEntry *ot;
     u8 *prim;
 
-    DrawSpriteString(0x18, 0x30, "Hold the \"NeGcon\" in an untwisted", 0x7F81);
-    DrawSpriteString(0x18, 0x48, "position and press start button.", 0x7F81);
-    ot = GamePrimaryOrderingTable(52);
-    prim = RENDER_PRIM_CURSOR_AS(u8);
+    if (JpTextActive()) {
+        /* JAP10/JAP11: two pre-drawn instruction strips. */
+        ot = GamePrimaryOrderingTable(52);
+        prim = RENDER_PRIM_CURSOR_AS(u8);
+        prim = GameQueueSpriteTrans(ot, prim, 0x18, 0x30, 0x100, 0x18, 0, 0,
+                                    0x7F81);
+        prim = GameQueueSpriteTrans(ot, prim, 0x18, 0x48, 0x5C, 0x18, 0, 0x18,
+                                    0x7F81);
+        prim = QueueDrawModePrim(ot, prim, 0x3F);
+    } else {
+        DrawSpriteString(0x18, 0x30, "Hold the \"NeGcon\" in an untwisted",
+                         0x7F81);
+        DrawSpriteString(0x18, 0x48, "position and press start button.",
+                         0x7F81);
+        ot = GamePrimaryOrderingTable(52);
+        prim = RENDER_PRIM_CURSOR_AS(u8);
+    }
     prim = AddTilePrim(ot, prim, 0, 0x28, 0x124, 0x40, 0, 0, 0);
     g_RenderState.draw.packetCursor =
         AddTilePrim(ot, prim, 0, 0x26, 0x125, 0x44, 0xFF, 0xFF, 0xFF);
