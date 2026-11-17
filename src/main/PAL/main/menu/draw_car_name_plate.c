@@ -1,5 +1,6 @@
 #include "game/car.h"
 #include "game/menu.h"
+#include "rage/jp_text.h"
 
 typedef struct CarNamePlateSprite {
     s16 x;
@@ -46,6 +47,23 @@ static const CarNamePlateSprite s_carNameSprites[GAME_CAR_COUNT] = {
     {0x0FA, 0x2C, 0xA4, 0x30}, {0x0FC, 0x2A, 0x0A, 0x60},
     {0x0F6, 0x30, 0x04, 0x50},
 };
+
+/* JAP10/JAP11: the five cars renamed for Japan carry differently sized
+ * captions on the Japanese disc's atlas. */
+static const CarNamePlateSprite *JapaneseCarNameSprite(s32 model) {
+    static const CarNamePlateSprite model4 = {0x0FF, 0x26, 0x76, 0x50};
+    static const CarNamePlateSprite model10 = {0x100, 0x26, 0xAA, 0x30};
+    static const CarNamePlateSprite model11 = {0x100, 0x26, 0x0E, 0x60};
+    static const CarNamePlateSprite model12 = {0x0FA, 0x2C, 0x08, 0x50};
+
+    switch (model) {
+    case 4: return &model4;
+    case 10: return &model10;
+    case 11: return &model11;
+    case 12: return &model12;
+    default: return &s_carNameSprites[model];
+    }
+}
 
 static void DrawNamePlateSprite(GameOrderingTableEntry *ot,
                                 const CarNamePlateSprite *sprite, s16 y,
@@ -103,8 +121,10 @@ void DrawCarNamePlate(MenuWidgets *widgets) {
     DrawNamePlateSprite(ot,
                         &s_manufacturerSprites[s_carManufacturers[model]],
                         0x178, (u8)shade, 0x3B);
-    DrawNamePlateSprite(ot, &s_carNameSprites[model], 0x188, (u8)shade,
-                        0x3E);
+    DrawNamePlateSprite(ot,
+                        JpTextActive() ? JapaneseCarNameSprite(model)
+                                       : &s_carNameSprites[model],
+                        0x188, (u8)shade, 0x3E);
 
     if (step > 0) {
         AdvanceCarNamePlateFade(widgets, step);

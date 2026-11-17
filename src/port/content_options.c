@@ -5,6 +5,7 @@
 #include "game/car.h"
 #include "game/race.h"
 #include "runtime_config.h"
+#include "rage/jp_text.h"
 
 typedef struct RageRegionalCarName {
     int modelIndex;
@@ -58,16 +59,27 @@ const char *ContentCarNameForStyle(int modelIndex,
     return internationalName;
 }
 
+/* "auto" (and an unset option) follows the mounted disc: a Japanese disc gets
+ * the Japanese-release names and prologue, whose narration is on its Track 02;
+ * every other disc keeps the international ones. */
+static const char *ResolveRegionalStyle(const char *style) {
+    if (style == NULL || style[0] == '\0' || strcmp(style, "auto") == 0)
+        return JpTextActive() ? "japanese" : "international";
+    return style;
+}
+
 void ContentOptionsApply(void) {
-    const char *nameStyle = RuntimeConfigGet("content.car_names");
-    const char *prologueStyle = RuntimeConfigGet("content.prologue");
+    const char *nameStyle =
+        ResolveRegionalStyle(RuntimeConfigGet("content.car_names"));
+    const char *prologueStyle =
+        ResolveRegionalStyle(RuntimeConfigGet("content.prologue"));
     int modelIndex;
     int lineIndex;
     if (nameStyle != NULL && nameStyle[0] != '\0' &&
         strcmp(nameStyle, "international") != 0 &&
         strcmp(nameStyle, "japanese") != 0) {
         fprintf(stderr,
-                "rage-port: content.car_names must be international or japanese; using international\n");
+                "rage-port: content.car_names must be auto, international or japanese; using international\n");
     } else if (nameStyle != NULL && strcmp(nameStyle, "japanese") == 0) {
         for (modelIndex = 0; modelIndex < GAME_CAR_COUNT; modelIndex++) {
             g_NativeCarNames[modelIndex] = ContentCarNameForStyle(
@@ -80,7 +92,7 @@ void ContentOptionsApply(void) {
         strcmp(prologueStyle, "international") == 0) return;
     if (strcmp(prologueStyle, "japanese") != 0) {
         fprintf(stderr,
-                "rage-port: content.prologue must be international or japanese; using international\n");
+                "rage-port: content.prologue must be auto, international or japanese; using international\n");
         return;
     }
     for (lineIndex = 0; lineIndex < PROLOGUE_LINE_CAPACITY; lineIndex++) {

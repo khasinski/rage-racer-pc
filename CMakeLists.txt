@@ -331,7 +331,8 @@ if(RAGE_BUILD_PORT)
     add_library(rage-game-full OBJECT
         ${RAGE_GAME_SOURCES}
         src/port/native_game_state.c
-        src/port/native_handler_tables.c)
+        src/port/native_handler_tables.c
+        src/port/jp_text.c)
     add_library(rage-host-state OBJECT
         ${RAGE_HOST_STATE_SOURCES}
         src/port/native_initialized_state.c

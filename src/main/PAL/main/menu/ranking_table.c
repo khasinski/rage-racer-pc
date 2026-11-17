@@ -7,6 +7,7 @@
 #include "game/render.h"
 #include "game/screens.h"
 #include "game/state.h"
+#include "rage/jp_text.h"
 
 typedef struct RankingCarSprite {
     s16 x;
@@ -41,6 +42,17 @@ static const RankingCarSprite s_carBadgeSprites[GAME_CAR_COUNT] = {
     {0xE8, 0x30, 0x04, 0x50},
 };
 
+/* JAP10/JAP11 DrawRankingTable: the Japanese disc's model captions. */
+static const RankingCarSprite s_japaneseCarBadgeSprites[GAME_CAR_COUNT] = {
+    {0xE7, 0x2A, 0x0A, 0x30}, {0xE7, 0x20, 0x48, 0x30},
+    {0xE9, 0x20, 0x7C, 0x30}, {0xE7, 0x34, 0x00, 0x40},
+    {0xE9, 0x26, 0x76, 0x50}, {0xE8, 0x2A, 0x3E, 0x50},
+    {0xE8, 0x20, 0xB0, 0x50}, {0xE8, 0x28, 0x40, 0x40},
+    {0xE9, 0x22, 0x7A, 0x40}, {0xE9, 0x30, 0xA0, 0x40},
+    {0xE8, 0x26, 0xAA, 0x30}, {0xE8, 0x26, 0x0E, 0x60},
+    {0xE8, 0x2C, 0x08, 0x50},
+};
+
 _Static_assert(sizeof(s_carNameSprites) / sizeof(s_carNameSprites[0]) ==
                GAME_CAR_COUNT,
                "ranking needs a name sprite for every car");
@@ -56,7 +68,8 @@ static void DrawRankingCarSprites(GameOrderingTableEntry *ot, s32 y, s32 carInde
         return;
     }
     name = &s_carNameSprites[carIndex];
-    badge = &s_carBadgeSprites[carIndex];
+    badge = JpTextActive() ? &s_japaneseCarBadgeSprites[carIndex]
+                           : &s_carBadgeSprites[carIndex];
     DrawSprite(ot, name->x, y, name->width, 0x10, name->textureU,
                name->textureV, 0, 0, 0, 0x244, 1, 1, 0x3B);
     DrawSprite(ot, badge->x, y, badge->width, 0x10, badge->textureU,
@@ -75,8 +88,12 @@ static void DrawRankingCourseHeader(GameOrderingTableEntry *ot, s32 slide) {
     DrawSprite(ot, 0xA4, slide + 0x25C, label.nameWidth, 0x10,
                label.nameTextureU, label.nameTextureV, 0, 0, 0, 0x244, 1, 1,
                0x3B);
+    /* The Japanese build reads the fourth course's distance from u = 0x84. */
     DrawSprite(ot, 0xEC, contentY, 0x20, 0x10,
-               label.distanceTextureU, 0xB4, 0, 0, 0, 0x244, 1, 1, 0x3A);
+               JpTextActive() && SeriesCourseIndex() == 3
+                   ? 0x84
+                   : label.distanceTextureU,
+               0xB4, 0, 0, 0, 0x244, 1, 1, 0x3A);
 }
 
 /* The animated five-row ranking/time-record panel. */

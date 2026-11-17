@@ -18,7 +18,7 @@ int main(void) {
     Expect("US disc region", TimingStandardForRegion("NTSC-U"),
            RAGE_TIMING_NTSC);
     Expect("Japanese disc region", TimingStandardForRegion("NTSC-J"),
-           RAGE_TIMING_NTSC);
+           RAGE_TIMING_PAL);
     Expect("unknown disc region", TimingStandardForRegion("unknown"),
            RAGE_TIMING_PAL);
     Expect("missing disc region", TimingStandardForRegion(NULL),

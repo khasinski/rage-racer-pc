@@ -3,6 +3,7 @@
 #include "game/render.h"
 #include "game/render_internal.h"
 #include "game/input_internal.h"
+#include "rage/jp_text.h"
 
 enum {
     NEGCON_GAUGE_CENTER_Y = 230,
@@ -48,16 +49,32 @@ void DrawNegconSteerPlayScreen(s32 arrowPhase) {
     s32 lowerY;
     s32 play = NegconCalibrationIndex(g_NegconSteerPlay);
 
-    DrawSpriteString(0x18, 0x30, "Steer play.", 0x7F81);
-    ot = GamePrimaryOrderingTable(51);
-    prim = RENDER_PRIM_CURSOR_AS(u8);
-    prim = QueueCalibrationArrows(ot, prim, play, arrowPhase);
-    prim = GameQueueSpriteTrans(
-        ot, prim, 0x70, 0x30, 0xC, 0x18, 0x8C, 0x18, 0x7F81);
-    prim = GameQueueSpriteTrans(
-        ot, prim, 0x7C, 0x30, 0xC, 0x18, play * 12 + 152, 0x18, 0x7F81);
-    prim = GameQueueSpriteTrans(
-        ot, prim, 0x88, 0x30, 0xC, 0x18, 0x6C, 0x30, 0x7F81);
+    if (JpTextActive()) {
+        /* JAP10/JAP11: the caption is two pre-drawn phrase strips and the
+         * value sits further right. */
+        ot = GamePrimaryOrderingTable(51);
+        prim = RENDER_PRIM_CURSOR_AS(u8);
+        prim = QueueCalibrationArrows(ot, prim, play, arrowPhase);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x18, 0x30, 0x3C, 0x18, 0, 0, 0x7F81);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x50, 0x30, 0x40, 0x18, 0x58, 0x18, 0x7F81);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x90, 0x30, 0xC, 0x18, play * 12 + 152, 0x18, 0x7F81);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x9C, 0x30, 0xC, 0x18, 0x6C, 0x30, 0x7F81);
+    } else {
+        DrawSpriteString(0x18, 0x30, "Steer play.", 0x7F81);
+        ot = GamePrimaryOrderingTable(51);
+        prim = RENDER_PRIM_CURSOR_AS(u8);
+        prim = QueueCalibrationArrows(ot, prim, play, arrowPhase);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x70, 0x30, 0xC, 0x18, 0x8C, 0x18, 0x7F81);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x7C, 0x30, 0xC, 0x18, play * 12 + 152, 0x18, 0x7F81);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x88, 0x30, 0xC, 0x18, 0x6C, 0x30, 0x7F81);
+    }
     prim = QueueCalibrationPanel(ot, prim);
 
     halfSpan = NegconPlayGaugeHalfSpan(s_playPercent[play]);
@@ -76,10 +93,18 @@ void DrawNegconMaxTwistScreen(s32 arrowPhase) {
     s32 gaugeWidth;
     s32 maxTwist = NegconCalibrationIndex(g_NegconMaxTwist);
 
-    DrawSpriteString(0x18, 0x30, "Maximum twist.", 0x7F81);
+    s32 japanese = JpTextActive();
+
+    if (!japanese) DrawSpriteString(0x18, 0x30, "Maximum twist.", 0x7F81);
     ot = GamePrimaryOrderingTable(51);
     prim = RENDER_PRIM_CURSOR_AS(u8);
     prim = QueueCalibrationArrows(ot, prim, maxTwist, arrowPhase);
+    if (japanese) {
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x18, 0x30, 0x24, 0x18, 0, 0, 0x7F81);
+        prim = GameQueueSpriteTrans(
+            ot, prim, 0x3C, 0x30, 0x18, 0x18, 0xC8, 0x18, 0x7F81);
+    }
     if (maxTwist == NEGCON_CALIBRATION_LAST) {
         gaugeXOffset = 0;
         gaugeWidth = 0x24;
@@ -90,14 +115,14 @@ void DrawNegconMaxTwistScreen(s32 arrowPhase) {
     prim = GameQueueSpriteTrans(
         ot,
         prim,
-        gaugeXOffset + 0x88,
+        gaugeXOffset + (japanese ? 0x54 : 0x88),
         0x30,
         gaugeWidth,
         0x18,
         maxTwist * 24,
         0x30,
         0x7F81);
-    prim = GameQueueSpriteTrans(ot, prim, 0xAC, 0x30, 4, 0x18, 0x78, 0x30,
-                                0x7F81);
+    prim = GameQueueSpriteTrans(ot, prim, japanese ? 0x78 : 0xAC, 0x30, 4,
+                                0x18, 0x78, 0x30, 0x7F81);
     g_RenderState.draw.packetCursor = QueueCalibrationPanel(ot, prim);
 }
